@@ -4,79 +4,65 @@ import React, { useState, useEffect } from 'react';
 import DownloadIcon from './DownloadIcon';
 import CloseIcon from './CloseIcon';
 import StarIcon from './StarIcon';
+import { pwaInstallService } from '../services/pwaInstallService';
 
 interface PWAInstallBannerProps {
   className?: string;
 }
 
 const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = "" }) => {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [showBanner, setShowBanner] = useState(false);
+  const [canInstall, setCanInstall] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
-  const [hasInstalled, setHasInstalled] = useState(false);
+  const [showBanner, setShowBanner] = useState(false);
   const [showMobileFeatures, setShowMobileFeatures] = useState(false);
 
   useEffect(() => {
-    // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches || 
-        (window.navigator as any).standalone === true) {
-      setHasInstalled(true);
-      return;
-    }
-
-    // Listen for beforeinstallprompt event
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setShowBanner(true);
+    // Set up PWA install service listener
+    const handleInstallPromptChange = (prompt: any) => {
+      const canInstallPWA = prompt !== null;
+      const isInstalledPWA = pwaInstallService.isInstalled();
+      
+      setCanInstall(canInstallPWA);
+      setIsInstalled(isInstalledPWA);
+      
+      // Show banner if can install
+      if (canInstallPWA) {
+        setShowBanner(true);
+      }
+      
+      // Show mobile features banner if mobile and not installed
+      if (pwaInstallService.isMobile() && !isInstalledPWA && !canInstallPWA) {
+        setShowMobileFeatures(true);
+      }
     };
 
-    // Listen for appinstalled event
-    const handleAppInstalled = () => {
-      setHasInstalled(true);
-      setShowBanner(false);
-      setDeferredPrompt(null);
-    };
+    pwaInstallService.addListener(handleInstallPromptChange);
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
-
-    // Check if we should show mobile features banner
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    if (isMobile && !hasInstalled) {
-      setShowMobileFeatures(true);
-    }
+    // Debug install criteria
+    pwaInstallService.debugInstallCriteria();
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
+      pwaInstallService.removeListener(handleInstallPromptChange);
     };
-  }, [hasInstalled]);
+  }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
+    if (!canInstall) return;
 
     setIsInstalling(true);
     
     try {
-      // Show the install prompt
-      deferredPrompt.prompt();
-      
-      // Wait for the user to respond to the prompt
-      const { outcome } = await deferredPrompt.userChoice;
-      
-      if (outcome === 'accepted') {
-        console.log('User accepted the install prompt');
-        setHasInstalled(true);
+      const success = await pwaInstallService.showInstallPrompt();
+      if (success) {
+        console.log('PWA installation successful');
+        setIsInstalled(true);
         setShowBanner(false);
-      } else {
-        console.log('User dismissed the install prompt');
       }
     } catch (error) {
       console.error('Error during installation:', error);
     } finally {
       setIsInstalling(false);
-      setDeferredPrompt(null);
     }
   };
 
@@ -93,7 +79,7 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = "" }) =
     }
   };
 
-  if (hasInstalled) {
+  if (isInstalled) {
     return null;
   }
 

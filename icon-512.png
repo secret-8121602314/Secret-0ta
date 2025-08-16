@@ -1,0 +1,10 @@
+# Placeholder PNG Icon
+# This is a placeholder file for icon-512.png
+# 
+# To generate proper PNG icons:
+# 1. Open scripts/icon-converter.html in your browser
+# 2. Download the generated icons
+# 3. Replace this file with the actual PNG
+#
+# Required size: 512x512 pixels
+# Format: PNG with transparency support

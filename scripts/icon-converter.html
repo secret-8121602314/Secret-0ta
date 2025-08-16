@@ -1,0 +1,59 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Icon Converter</title>
+  <style>
+    body { margin: 0; padding: 20px; background: #f0f0f0; }
+    .icon-container { display: flex; gap: 20px; flex-wrap: wrap; }
+    .icon-item { text-align: center; }
+    canvas { border: 1px solid #ccc; margin: 10px; }
+    button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>🎨 PWA Icon Generator</h1>
+  <p>Use this page to generate PNG icons from the SVG for PWA compatibility.</p>
+  
+  <div class="icon-container">
+    <div class="icon-item">
+      <h3>192x192 Icon</h3>
+      <canvas id="canvas192" width="192" height="192"></canvas>
+      <br>
+      <button onclick="downloadIcon(192)">Download 192x192</button>
+    </div>
+    
+    <div class="icon-item">
+      <h3>512x512 Icon</h3>
+      <canvas id="canvas512" width="512" height="512"></canvas>
+      <br>
+      <button onclick="downloadIcon(512)">Download 512x512</button>
+    </div>
+  </div>
+
+  <script>
+    // Load the SVG icon
+    const svgIcon = new Image();
+    svgIcon.onload = function() {
+      // Draw 192x192 icon
+      const canvas192 = document.getElementById('canvas192');
+      const ctx192 = canvas192.getContext('2d');
+      ctx192.drawImage(svgIcon, 0, 0, 192, 192);
+      
+      // Draw 512x512 icon
+      const canvas512 = document.getElementById('canvas512');
+      const ctx512 = canvas512.getContext('2d');
+      ctx512.drawImage(svgIcon, 0, 0, 512, 512);
+    };
+    svgIcon.src = '../icon.svg';
+    
+    function downloadIcon(size) {
+      const canvas = document.getElementById('canvas' + size);
+      const link = document.createElement('a');
+      link.download = 'icon-' + size + '.png';
+      link.href = canvas.toDataURL();
+      link.click();
+    }
+  </script>
+</body>
+</html>
