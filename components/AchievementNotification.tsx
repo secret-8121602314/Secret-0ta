@@ -14,29 +14,10 @@ const AchievementNotification: React.FC<AchievementNotificationProps> = ({
   achievement,
   onClose,
   onShare,
-  autoDismiss = true,
-  dismissDelay = 5000
+  autoDismiss = false,
+  dismissDelay = 0
 }) => {
   const [isVisible, setIsVisible] = useState(true);
-  const [timeRemaining, setTimeRemaining] = useState(dismissDelay / 1000);
-
-  useEffect(() => {
-    // Auto-dismiss countdown
-    if (autoDismiss) {
-      const timer = setInterval(() => {
-        setTimeRemaining(prev => {
-          if (prev <= 1) {
-            setIsVisible(false);
-            setTimeout(onClose, 300);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      
-      return () => clearInterval(timer);
-    }
-  }, [autoDismiss, dismissDelay, onClose]);
 
   const handleClose = () => {
     setIsVisible(false);
@@ -147,15 +128,7 @@ const AchievementNotification: React.FC<AchievementNotificationProps> = ({
           </button>
         </div>
 
-        {/* Auto-dismiss indicator */}
-        {autoDismiss && (
-          <div className="mt-3 text-center">
-            <div className="inline-flex items-center space-x-2 text-xs text-[#FFAB40]/60">
-              <div className="w-2 h-2 bg-[#E53A3A] rounded-full animate-pulse" />
-              <span>Auto-dismissing in {timeRemaining}s</span>
-            </div>
-          </div>
-        )}
+
       </div>
     </div>
   );

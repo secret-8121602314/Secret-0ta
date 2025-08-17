@@ -1048,8 +1048,8 @@ const AppComponent: React.FC = () => {
             {showDailyCheckin && (
               <DailyCheckinBanner
                 onClose={() => setShowDailyCheckin(false)}
-                autoDismiss={true}
-                dismissDelay={5000}
+                autoDismiss={false}
+                dismissDelay={0}
               />
             )}
 
@@ -1068,8 +1068,8 @@ const AppComponent: React.FC = () => {
                   switchConversation('everything-else');
                   setShowSessionContinuation(false);
                 }}
-                autoDismiss={true}
-                dismissDelay={5000}
+                autoDismiss={false}
+                dismissDelay={0}
               />
             )}
 
@@ -1081,8 +1081,8 @@ const AppComponent: React.FC = () => {
                   // Handle sharing achievement
                   console.log('Sharing achievement:', currentAchievement.title);
                 }}
-                autoDismiss={true}
-                dismissDelay={5000}
+                autoDismiss={false}
+                dismissDelay={0}
               />
             )}
 

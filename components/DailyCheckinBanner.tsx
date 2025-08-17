@@ -10,8 +10,8 @@ interface DailyCheckinBannerProps {
 
 const DailyCheckinBanner: React.FC<DailyCheckinBannerProps> = ({ 
   onClose, 
-  autoDismiss = true, 
-  dismissDelay = 5000 
+  autoDismiss = false, 
+  dismissDelay = 0 
 }) => {
   const [goals, setGoals] = useState<DailyGoal[]>([]);
   const [streaks, setStreaks] = useState<UserStreak | null>(null);
@@ -27,17 +27,7 @@ const DailyCheckinBanner: React.FC<DailyCheckinBannerProps> = ({
     
     // Update login streak
     dailyEngagementService.updateLoginStreak();
-    
-    // Auto-dismiss after delay
-    if (autoDismiss) {
-      const timer = setTimeout(() => {
-        setIsVisible(false);
-        setTimeout(onClose, 300); // Wait for fade out animation
-      }, dismissDelay);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [autoDismiss, dismissDelay, onClose]);
+  }, []);
 
   const handleClose = () => {
     setIsVisible(false);
@@ -150,15 +140,7 @@ const DailyCheckinBanner: React.FC<DailyCheckinBannerProps> = ({
           </button>
         </div>
 
-        {/* Auto-dismiss indicator */}
-        {autoDismiss && (
-          <div className="mt-3 text-center">
-            <div className="inline-flex items-center space-x-2 text-xs text-[#FFAB40]/60">
-              <div className="w-2 h-2 bg-[#E53A3A] rounded-full animate-pulse" />
-              <span>Auto-dismissing in {Math.ceil(dismissDelay / 1000)}s</span>
-            </div>
-          </div>
-        )}
+
       </div>
     </div>
   );
