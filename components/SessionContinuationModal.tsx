@@ -81,69 +81,69 @@ const SessionContinuationModal: React.FC<SessionContinuationModalProps> = ({
   const hoursSince = Math.floor((Date.now() - new Date(sessionProgress.lastSession).getTime()) / (1000 * 60 * 60));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/50 backdrop-blur-sm">
       <div className={`
-        bg-gradient-to-r from-green-900/95 to-blue-900/95 backdrop-blur-sm
-        border border-green-500/30 rounded-xl shadow-2xl
-        p-6 text-white w-full max-w-md transition-all duration-300 ease-in-out
+        bg-gradient-to-r from-[#1C1C1C]/95 to-[#2E2E2E]/95 backdrop-blur-sm
+        border border-[#E53A3A]/30 rounded-xl shadow-2xl
+        p-4 sm:p-6 text-white w-full max-w-sm sm:max-w-md transition-all duration-300 ease-in-out
         ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}
       `}>
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
-              <PlayIcon className="w-6 h-6 text-white" />
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] rounded-full flex items-center justify-center">
+              <PlayIcon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
             <div>
-              <h3 className="text-lg font-bold">Continue Your Session?</h3>
-              <p className="text-green-200 text-sm">Pick up where you left off</p>
+              <h3 className="text-base sm:text-lg font-bold">Continue Your Session?</h3>
+              <p className="text-[#FFAB40] text-xs sm:text-sm">Pick up where you left off</p>
             </div>
           </div>
           <button
             onClick={handleClose}
-            className="text-green-200 hover:text-white transition-colors p-1 rounded-full hover:bg-white/10"
+            className="text-[#FFAB40] hover:text-white transition-colors p-1 rounded-full hover:bg-white/10"
           >
-            <XMarkIcon className="w-5 h-5" />
+            <XMarkIcon className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
 
         {/* Session Info */}
-        <div className="mb-6 space-y-4">
-          <div className="bg-white/10 rounded-lg p-4">
-            <h4 className="font-semibold text-lg mb-2">{sessionProgress.gameTitle}</h4>
+        <div className="mb-4 sm:mb-6 space-y-3 sm:space-y-4">
+          <div className="bg-white/5 rounded-lg p-3 sm:p-4">
+            <h4 className="font-semibold text-base sm:text-lg mb-2">{sessionProgress.gameTitle}</h4>
             
-            <div className="space-y-2 text-sm">
+            <div className="space-y-2 text-xs sm:text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-green-200">Progress:</span>
+                <span className="text-[#FFAB40]">Progress:</span>
                 <span className="font-medium">{sessionProgress.progress}%</span>
               </div>
               
               <div className="flex items-center justify-between">
-                <span className="text-green-200">Last Location:</span>
-                <span className="font-medium">{sessionProgress.lastLocation}</span>
+                <span className="text-[#FFAB40]">Last Location:</span>
+                <span className="font-medium truncate max-w-[120px] sm:max-w-[200px]">{sessionProgress.lastLocation}</span>
               </div>
               
               <div className="flex items-center justify-between">
-                <span className="text-green-200">Last Session:</span>
+                <span className="text-[#FFAB40]">Last Session:</span>
                 <span className="font-medium">{hoursSince}h ago</span>
               </div>
               
               <div className="flex items-center justify-between">
-                <span className="text-green-200">New Insights:</span>
+                <span className="text-[#FFAB40]">New Insights:</span>
                 <span className="font-medium">{sessionProgress.newInsights} available</span>
               </div>
             </div>
           </div>
 
           {/* Progress Bar */}
-          <div className="bg-white/10 rounded-lg p-4">
+          <div className="bg-white/5 rounded-lg p-3 sm:p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-green-200">Story Progress</span>
-              <span className="text-sm font-medium">{sessionProgress.progress}%</span>
+              <span className="text-xs sm:text-sm text-[#FFAB40]">Story Progress</span>
+              <span className="text-xs sm:text-sm font-medium">{sessionProgress.progress}%</span>
             </div>
-            <div className="w-full bg-white/20 rounded-full h-3">
+            <div className="w-full bg-white/20 rounded-full h-2 sm:h-3">
               <div 
-                className="bg-gradient-to-r from-green-500 to-blue-500 h-3 rounded-full transition-all duration-500"
+                className="bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] h-2 sm:h-3 rounded-full transition-all duration-500"
                 style={{ width: `${sessionProgress.progress}%` }}
               />
             </div>
@@ -151,26 +151,26 @@ const SessionContinuationModal: React.FC<SessionContinuationModalProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           <button
             onClick={handleContinueSession}
-            className="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white py-3 px-4 rounded-lg font-medium hover:from-green-600 hover:to-blue-600 transition-all duration-200 flex items-center justify-center space-x-2"
+            className="w-full bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white py-2 sm:py-3 px-4 rounded-lg font-medium hover:from-[#D42A2A] hover:to-[#C87A1A] transition-all duration-200 flex items-center justify-center space-x-2 text-sm sm:text-base"
           >
-            <PlayIcon className="w-5 h-5" />
+            <PlayIcon className="w-4 h-4 sm:w-5 sm:h-5" />
             <span>Continue Session</span>
           </button>
           
           <button
             onClick={handleStartNew}
-            className="w-full bg-white/10 text-white py-3 px-4 rounded-lg font-medium hover:bg-white/20 transition-colors flex items-center justify-center space-x-2"
+            className="w-full bg-white/10 text-white py-2 sm:py-3 px-4 rounded-lg font-medium hover:bg-white/20 transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
           >
-            <PlusIcon className="w-5 h-5" />
+            <PlusIcon className="w-4 h-4 sm:w-5 sm:h-5" />
             <span>Start New Session</span>
           </button>
           
           <button
             onClick={handleClose}
-            className="w-full text-green-200 py-2 px-4 rounded-lg hover:text-white transition-colors"
+            className="w-full text-[#FFAB40] py-2 px-4 rounded-lg hover:text-white transition-colors text-sm sm:text-base"
           >
             Maybe Later
           </button>
@@ -178,9 +178,9 @@ const SessionContinuationModal: React.FC<SessionContinuationModalProps> = ({
 
         {/* Auto-dismiss indicator */}
         {autoDismiss && (
-          <div className="mt-4 text-center">
-            <div className="inline-flex items-center space-x-2 text-xs text-green-300">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+          <div className="mt-3 sm:mt-4 text-center">
+            <div className="inline-flex items-center space-x-2 text-xs text-[#FFAB40]/60">
+              <div className="w-2 h-2 bg-[#E53A3A] rounded-full animate-pulse" />
               <span>Auto-dismissing in {timeRemaining}s</span>
             </div>
           </div>

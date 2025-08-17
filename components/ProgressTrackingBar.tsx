@@ -44,7 +44,7 @@ const ProgressTrackingBar: React.FC<ProgressTrackingBarProps> = ({
   const getStreakIcon = (count: number) => {
     if (count >= 7) return <FireIcon className="w-4 h-4 text-orange-500" />;
     if (count >= 3) return <StarIcon className="w-4 h-4 text-yellow-500" />;
-    return <TrophyIcon className="w-4 h-4 text-blue-500" />;
+    return <TrophyIcon className="w-4 h-4 text-[#E53A3A]" />;
   };
 
   const totalGoalsCompleted = goals.reduce((sum, goal) => sum + goal.current, 0);
@@ -54,28 +54,28 @@ const ProgressTrackingBar: React.FC<ProgressTrackingBarProps> = ({
   if (!gameId || !gameTitle) return null;
 
   return (
-    <div className="bg-gradient-to-r from-blue-900/90 to-purple-900/90 backdrop-blur-sm border border-blue-500/30 rounded-lg p-4 mb-4">
+    <div className="bg-gradient-to-r from-[#1C1C1C]/90 to-[#2E2E2E]/90 backdrop-blur-sm border border-[#E53A3A]/30 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center space-x-3">
-          <ChartBarIcon className="w-5 h-5 text-blue-300" />
+        <div className="flex items-center space-x-2 sm:space-x-3">
+          <ChartBarIcon className="w-4 h-4 sm:w-5 sm:h-5 text-[#E53A3A]" />
           <div>
-            <h4 className="text-sm font-medium text-white">Session Progress</h4>
-            <p className="text-xs text-blue-200">{gameTitle}</p>
+            <h4 className="text-xs sm:text-sm font-medium text-white">Session Progress</h4>
+            <p className="text-xs text-[#FFAB40] truncate max-w-[120px] sm:max-w-[200px]">{gameTitle}</p>
           </div>
         </div>
         
         <div className="flex items-center space-x-2">
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="text-blue-200 hover:text-white transition-colors p-1 rounded-full hover:bg-white/10"
+            className="text-[#FFAB40] hover:text-white transition-colors p-1 rounded-full hover:bg-white/10"
           >
-            <ChartBarIcon className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+            <ChartBarIcon className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
           </button>
           
           <button
             onClick={onViewProgress}
-            className="text-xs text-blue-200 hover:text-white transition-colors px-2 py-1 rounded hover:bg-white/10"
+            className="text-xs text-[#FFAB40] hover:text-white transition-colors px-2 py-1 rounded hover:bg-white/10"
           >
             View All
           </button>
@@ -84,26 +84,26 @@ const ProgressTrackingBar: React.FC<ProgressTrackingBarProps> = ({
 
       {/* Session Progress */}
       {sessionProgress && (
-        <div className="mb-3 p-3 bg-white/10 rounded-lg">
+        <div className="mb-3 p-2 sm:p-3 bg-white/5 rounded-lg">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-blue-200">Story Progress</span>
+            <span className="text-xs text-[#FFAB40]">Story Progress</span>
             <span className="text-xs font-medium text-white">{sessionProgress.progress}%</span>
           </div>
           <div className="w-full bg-white/20 rounded-full h-2">
             <div 
-              className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500"
+              className="bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] h-2 rounded-full transition-all duration-500"
               style={{ width: `${sessionProgress.progress}%` }}
             />
           </div>
           
           <div className="flex items-center justify-between mt-2 text-xs">
-            <span className="text-blue-200">
+            <span className="text-[#FFAB40]/80">
               📸 {sessionProgress.screenshotsToday} today
             </span>
-            <span className="text-blue-200">
+            <span className="text-[#FFAB40]/80">
               💬 {sessionProgress.questionsToday} questions
             </span>
-            <span className="text-blue-200">
+            <span className="text-[#FFAB40]/80">
               💡 {sessionProgress.newInsights} insights
             </span>
           </div>
@@ -112,12 +112,12 @@ const ProgressTrackingBar: React.FC<ProgressTrackingBarProps> = ({
 
       {/* Daily Goals Summary */}
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs text-blue-200">Daily Goals</span>
+        <span className="text-xs text-[#FFAB40]">Daily Goals</span>
         <div className="flex items-center space-x-2">
           <span className="text-xs text-white font-medium">
             {totalGoalsCompleted}/{totalGoalsTarget}
           </span>
-          <span className="text-xs text-blue-200">
+          <span className="text-xs text-[#FFAB40]">
             ({overallProgress.toFixed(0)}%)
           </span>
         </div>
@@ -126,7 +126,7 @@ const ProgressTrackingBar: React.FC<ProgressTrackingBarProps> = ({
       {/* Overall Progress Bar */}
       <div className="w-full bg-white/20 rounded-full h-2 mb-3">
         <div 
-          className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-500"
+          className="bg-gradient-to-r from-[#5CBB7B] to-[#4CAF50] h-2 rounded-full transition-all duration-500"
           style={{ width: `${overallProgress}%` }}
         />
       </div>
@@ -136,11 +136,11 @@ const ProgressTrackingBar: React.FC<ProgressTrackingBarProps> = ({
         <div className="space-y-2 mt-3 pt-3 border-t border-white/20">
           {goals.map((goal) => (
             <div key={goal.id} className="flex items-center justify-between text-xs">
-              <div className="flex items-center space-x-2">
-                <span className="text-blue-200">{goal.title}</span>
-                <span className="text-white/60">({goal.current}/{goal.target})</span>
+              <div className="flex items-center space-x-2 flex-1 min-w-0">
+                <span className="text-[#FFAB40] truncate">{goal.title}</span>
+                <span className="text-white/60 flex-shrink-0">({goal.current}/{goal.target})</span>
               </div>
-              <span className="text-green-400 font-medium">{goal.reward}</span>
+              <span className="text-[#5CBB7B] font-medium flex-shrink-0 ml-2">{goal.reward}</span>
             </div>
           ))}
         </div>
@@ -156,7 +156,7 @@ const ProgressTrackingBar: React.FC<ProgressTrackingBarProps> = ({
         </button>
         <button
           onClick={onViewProgress}
-          className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white py-2 px-3 rounded text-xs font-medium hover:from-blue-600 hover:to-purple-600 transition-all duration-200"
+          className="flex-1 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white py-2 px-3 rounded text-xs font-medium hover:from-[#D42A2A] hover:to-[#C87A1A] transition-all duration-200"
         >
           View Progress
         </button>
