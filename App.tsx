@@ -56,6 +56,11 @@ import { pushNotificationService } from './services/pushNotificationService';
 import { appShortcutsService } from './services/appShortcutsService';
 import ScreenLockDebug from './components/ScreenLockDebug';
 import AutoConnectionNotification from './components/AutoConnectionNotification';
+import DailyCheckinBanner from './components/DailyCheckinBanner';
+import SessionContinuationModal from './components/SessionContinuationModal';
+import ProgressTrackingBar from './components/ProgressTrackingBar';
+import AchievementNotification from './components/AchievementNotification';
+import dailyEngagementService, { Achievement } from './services/dailyEngagementService';
 
 
 // A data URL for a 1-second silent WAV file. This prevents needing to host an asset
@@ -110,6 +115,12 @@ const AppComponent: React.FC = () => {
     const [confirmationModal, setConfirmationModal] = useState<{ title: string; message: string; onConfirm: () => void; } | null>(null);
     const [feedbackModalState, setFeedbackModalState] = useState<FeedbackModalState | null>(null);
     const [chatInputValue, setChatInputValue] = useState('');
+
+    // Daily Engagement State
+    const [showDailyCheckin, setShowDailyCheckin] = useState(false);
+    const [showSessionContinuation, setShowSessionContinuation] = useState(false);
+    const [currentAchievement, setCurrentAchievement] = useState<Achievement | null>(null);
+    const [showProgressBar, setShowProgressBar] = useState(false);
 
     const chatInputRef = useRef<HTMLTextAreaElement>(null);
     const chatEndRef = useRef<HTMLDivElement>(null);
@@ -256,6 +267,26 @@ const AppComponent: React.FC = () => {
         initializePWAServices();
     }, []);
 
+    // Daily Engagement Effects
+    useEffect(() => {
+        if (view === 'app' && onboardingStatus === 'complete') {
+            // Check if we should show daily check-in
+            if (dailyEngagementService.shouldShowDailyCheckin()) {
+                setShowDailyCheckin(true);
+            }
+            
+            // Check if we should show session continuation
+            if (dailyEngagementService.shouldShowSessionContinuation()) {
+                setShowSessionContinuation(true);
+            }
+            
+            // Show progress bar for pro users
+            if (usage.tier !== 'free') {
+                setShowProgressBar(true);
+            }
+        }
+    }, [view, onboardingStatus, usage.tier]);
+
     const {
         conversations,
         conversationsOrder,
@@ -284,6 +315,7 @@ const AppComponent: React.FC = () => {
         updateMessageFeedback,
         updateInsightFeedback,
         retryMessage,
+        loadInsightContent,
     } = useChat(isHandsFreeMode);
     
      useEffect(() => {
@@ -377,7 +409,7 @@ const AppComponent: React.FC = () => {
                         addSystemMessage("An analysis is already in progress. Please wait for it to complete before sending a new screenshot.");
                         return;
                     }
-                    await handleSendMessage('', [imageData], true);
+                    await sendMessage('', [imageData], true);
                 }
             } catch (e) {
                 const errorText = e instanceof Error ? e.message : 'Unknown error processing screenshot.';
@@ -569,11 +601,49 @@ const AppComponent: React.FC = () => {
         refreshUsage();
 
         if (result?.success) {
-            // Success
+            // Track daily engagement progress
+            if (activeConversation && activeConversation.id !== 'everything-else') {
+                // Update game session progress
+                dailyEngagementService.updateGameStreak();
+                
+                // Update goal progress
+                if (images && images.length > 0) {
+                    dailyEngagementService.updateGoalProgress('screenshots', images.length);
+                }
+                if (text.trim().length > 0) {
+                    dailyEngagementService.updateGoalProgress('help_others', 1);
+                }
+                
+                // Update session progress
+                const gameProgress = activeConversation.progress || 0;
+                dailyEngagementService.updateSessionProgress(
+                    activeConversation.id,
+                    activeConversation.id,
+                    gameProgress,
+                    'Chat interaction'
+                );
+                
+                // Check for achievements
+                const goals = dailyEngagementService.getDailyGoals();
+                const completedGoals = goals.filter(g => g.current >= g.target).length;
+                if (completedGoals === goals.length && completedGoals > 0) {
+                    // All daily goals completed!
+                    setCurrentAchievement({
+                        id: 'daily_master',
+                        title: 'Daily Master',
+                        description: 'Completed all daily goals!',
+                        icon: 'fire',
+                        reward: '+100 Otakon Points'
+                    });
+                }
+            }
+            
+            // Update last session time
+            dailyEngagementService.updateLastSessionTime();
         } else if (result?.reason === 'limit_reached') {
             setShowUpgradeScreen(true);
         }
-    }, [sendMessage]);
+    }, [sendMessage, activeConversation]);
     
     const clearImagesForReview = useCallback(() => {
         setImagesForReview([]);
@@ -974,6 +1044,48 @@ const AppComponent: React.FC = () => {
               </div>
             )}
 
+            {/* Daily Engagement Components */}
+            {showDailyCheckin && (
+              <DailyCheckinBanner
+                onClose={() => setShowDailyCheckin(false)}
+                autoDismiss={true}
+                dismissDelay={15000}
+              />
+            )}
+
+            {showSessionContinuation && (
+              <SessionContinuationModal
+                onClose={() => setShowSessionContinuation(false)}
+                onContinueSession={(gameId) => {
+                  // Switch to the specific game conversation
+                  if (conversations[gameId]) {
+                    switchConversation(gameId);
+                  }
+                  setShowSessionContinuation(false);
+                }}
+                onStartNew={() => {
+                  // Switch to "Everything Else" conversation
+                  switchConversation('everything-else');
+                  setShowSessionContinuation(false);
+                }}
+                autoDismiss={true}
+                dismissDelay={20000}
+              />
+            )}
+
+            {currentAchievement && (
+              <AchievementNotification
+                achievement={currentAchievement}
+                onClose={() => setCurrentAchievement(null)}
+                onShare={() => {
+                  // Handle sharing achievement
+                  console.log('Sharing achievement:', currentAchievement.title);
+                }}
+                autoDismiss={true}
+                dismissDelay={10000}
+              />
+            )}
+
             <ConversationTabs
                 conversations={conversations}
                 conversationsOrder={conversationsOrder}
@@ -1032,11 +1144,28 @@ const AppComponent: React.FC = () => {
                     userTier={usage.tier}
                     onReorder={reorderInsights}
                     onContextMenu={handleInsightContextMenu}
+                    onLoadInsight={loadInsightContent}
                 />
             )}
 
             <div className="flex-shrink-0 bg-black/50 backdrop-blur-sm z-10">
-                <ChatInput 
+                {/* Progress Tracking Bar for Pro Users */}
+                {showProgressBar && activeConversation && activeConversation.id !== 'everything-else' && (
+                  <ProgressTrackingBar
+                    gameId={activeConversation.id}
+                    gameTitle={activeConversation.id}
+                    onViewProgress={() => {
+                      // TODO: Open progress dashboard
+                      console.log('View progress clicked');
+                    }}
+                    onSetGoals={() => {
+                      // TODO: Open goals setting modal
+                      console.log('Set goals clicked');
+                    }}
+                  />
+                )}
+                
+                <ChatInput
                     value={chatInputValue}
                     onChange={setChatInputValue}
                     onSendMessage={handleSendMessage}
