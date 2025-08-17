@@ -39,6 +39,9 @@ export type Insight = {
   status: InsightStatus;
   isNew?: boolean;
   feedback?: ChatMessageFeedback;
+  isPlaceholder?: boolean; // New flag for placeholder content
+  lastUpdated?: number; // Track when content was last updated
+  generationAttempts?: number; // Track generation attempts for retry logic
 };
 
 export type GeminiModel = 'gemini-2.5-pro' | 'gemini-2.5-flash';

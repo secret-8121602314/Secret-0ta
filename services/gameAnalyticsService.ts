@@ -551,11 +551,28 @@ class GameAnalyticsService {
    * Extract game context from conversation
    */
   extractGameContext(conversation: any): { gameId: string; gameTitle: string } {
-    // Extract game information from conversation context
-    // This is a placeholder - implement based on your conversation structure
+    // Handle undefined/null conversations gracefully
+    if (!conversation) {
+      return {
+        gameId: 'unknown',
+        gameTitle: 'Unknown Game'
+      };
+    }
+
+    // Extract game information from conversation context with better fallbacks
+    const gameId = conversation.gameId || 
+                   conversation.id || 
+                   conversation.title || 
+                   'unknown';
+    
+    const gameTitle = conversation.title || 
+                      conversation.gameTitle || 
+                      conversation.gameId || 
+                      'Unknown Game';
+
     return {
-      gameId: conversation.gameId || conversation.id || 'unknown',
-      gameTitle: conversation.title || conversation.gameTitle || 'Unknown Game'
+      gameId: String(gameId), // Ensure it's a string
+      gameTitle: String(gameTitle) // Ensure it's a string
     };
   }
 

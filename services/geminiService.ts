@@ -172,6 +172,16 @@ ${suggestionsRule}`;
 };
 
 
+// Optimize model selection for better performance
+const getOptimalModel = (task: string): GeminiModel => {
+  // Use Flash model for chat, images, and news (faster, cheaper)
+  // Keep Pro model only for complex insight generation
+  if (task === 'insight_generation') {
+    return 'gemini-2.5-pro';
+  }
+  return 'gemini-2.5-flash';
+};
+
 // ... (existing code: handleError, checkCooldown, etc.)
 const handleSuccess = () => {
     const cooldownEnd = localStorage.getItem(COOLDOWN_KEY);
@@ -460,6 +470,56 @@ const getOrCreateChat = async (conversation: Conversation, hasImages: boolean, m
     return newChat;
 };
 
+export async function sendMessage(
+    message: string,
+    conversation: Conversation,
+    signal: AbortSignal,
+    onChunk: (chunk: string) => void,
+    onError: (error: string) => void,
+    history: ChatMessage[]
+): Promise<void> {
+    if (checkCooldown(onError)) return;
+    
+    try {
+        const model = getOptimalModel('chat');
+        const chat = await getOrCreateChat(conversation, false, model, history);
+
+        const streamPromise = chat.sendMessageStream({ message });
+        const abortPromise = new Promise<never>((_, reject) => {
+            if (signal.aborted) return reject(new DOMException('Aborted', 'AbortError'));
+            signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
+        });
+
+        const stream = await Promise.race([streamPromise, abortPromise]);
+        if (signal.aborted) return;
+        
+        let fullResponse = '';
+        await Promise.race([
+            (async () => {
+                for await (const chunk of stream) {
+                    if (signal.aborted) break;
+                    fullResponse += chunk.text;
+                    onChunk(chunk.text);
+                }
+            })(),
+            abortPromise
+        ]);
+        
+        // Track AI response for learning
+        if (fullResponse) {
+            await trackAIResponse(conversation, message, fullResponse, false);
+        }
+        
+        handleSuccess();
+    } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+            console.log("Stream was aborted by user.");
+        } else {
+            handleError(error, onError);
+        }
+    }
+}
+
 export async function sendMessageWithImages(
     prompt: string,
     images: Array<{ base64: string, mimeType: string }>,
@@ -470,9 +530,9 @@ export async function sendMessageWithImages(
     history: ChatMessage[]
 ): Promise<void> {
     if (checkCooldown(onError)) return;
-
+    
     try {
-        const model: GeminiModel = 'gemini-2.5-flash';
+        const model = getOptimalModel('chat_with_images');
         const chat = await getOrCreateChat(conversation, true, model, history);
 
         const imageParts = images.map(image => ({
@@ -490,9 +550,8 @@ export async function sendMessageWithImages(
         });
 
         const stream = await Promise.race([streamPromise, abortPromise]);
-
         if (signal.aborted) return;
-
+        
         let fullResponse = '';
         await Promise.race([
             (async () => {
@@ -502,14 +561,14 @@ export async function sendMessageWithImages(
                     onChunk(chunk.text);
                 }
             })(),
-            abortPromise,
+            abortPromise
         ]);
-
+        
         // Track AI response for learning
         if (fullResponse) {
             await trackAIResponse(conversation, prompt, fullResponse, true);
         }
-
+        
         handleSuccess();
     } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {
@@ -597,56 +656,6 @@ export const renameChatSession = (oldId: string, newId: string) => {
         console.warn(`Cannot rename chat session: source '${oldId}' does not exist.`);
     }
 };
-
-export async function sendMessage(
-    message: string,
-    conversation: Conversation,
-    signal: AbortSignal,
-    onChunk: (chunk: string) => void,
-    onError: (error: string) => void,
-    history: ChatMessage[]
-): Promise<void> {
-    if (checkCooldown(onError)) return;
-    
-    try {
-        const model: GeminiModel = 'gemini-2.5-flash';
-        const chat = await getOrCreateChat(conversation, false, model, history);
-
-        const streamPromise = chat.sendMessageStream({ message });
-        const abortPromise = new Promise<never>((_, reject) => {
-            if (signal.aborted) return reject(new DOMException('Aborted', 'AbortError'));
-            signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
-        });
-
-        const stream = await Promise.race([streamPromise, abortPromise]);
-        if (signal.aborted) return;
-        
-        let fullResponse = '';
-        await Promise.race([
-            (async () => {
-                for await (const chunk of stream) {
-                    if (signal.aborted) break;
-                    fullResponse += chunk.text;
-                    onChunk(chunk.text);
-                }
-            })(),
-            abortPromise
-        ]);
-        
-        // Track AI response for learning
-        if (fullResponse) {
-            await trackAIResponse(conversation, message, fullResponse, false);
-        }
-        
-        handleSuccess();
-    } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') {
-            console.log("Stream was aborted by user.");
-        } else {
-            handleError(error, onError);
-        }
-    }
-}
 
 export const generateInitialProHint = async (
     prompt: string,
@@ -782,54 +791,56 @@ export const generateInsightWithSearch = async (
 
 
 export const generateInsightStream = async (
-    gameName: string,
-    genre: string,
-    progress: number,
-    insightInstruction: string,
-    insightTitle: string,
-    onChunk: (chunk: string) => void,
-    onError: (error: string) => void,
-    signal: AbortSignal
+  gameName: string,
+  genre: string,
+  progress: number,
+  instruction: string,
+  insightId: string,
+  onChunk: (chunk: string) => void,
+  onError: (error: string) => void,
+  signal: AbortSignal
 ): Promise<void> => {
-    if (checkCooldown(onError)) return;
+  if (checkCooldown(onError)) return;
 
-    const systemInstruction = getInsightSystemInstruction(gameName, genre, progress, insightInstruction, insightTitle);
-    const contentPrompt = `Generate the content for the "${insightTitle}" insight for the game ${gameName}, following the system instructions.`;
+  try {
+    const model = getOptimalModel('insight_generation');
     
-    try {
-        const streamPromise = ai.models.generateContentStream({
-            model: 'gemini-2.5-flash',
-            contents: contentPrompt,
-            config: { systemInstruction },
-        });
+    const systemInstruction = getInsightSystemInstruction(gameName, genre, progress, instruction, insightId);
+    const contentPrompt = `Generate the content for the "${insightId}" insight for the game ${gameName}, following the system instructions.`;
+    
+    const streamPromise = ai.models.generateContentStream({
+      model,
+      contents: contentPrompt,
+      config: { systemInstruction },
+    });
 
-        const abortPromise = new Promise<never>((_, reject) => {
-            if (signal.aborted) return reject(new DOMException('Aborted', 'AbortError'));
-            signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
-        });
-        
-        const stream = await Promise.race([streamPromise, abortPromise]);
-        
-        if (signal.aborted) return;
-        
-        await Promise.race([
-            (async () => {
-                for await (const chunk of stream) {
-                    if (signal.aborted) break;
-                    onChunk(chunk.text);
-                }
-            })(),
-            abortPromise
-        ]);
-
-        handleSuccess();
-    } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') {
-            console.log(`Insight generation for "${insightTitle}" was aborted.`);
-        } else {
-            handleError(error, onError);
+    const abortPromise = new Promise<never>((_, reject) => {
+      if (signal.aborted) return reject(new DOMException('Aborted', 'AbortError'));
+      signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
+    });
+    
+    const stream = await Promise.race([streamPromise, abortPromise]);
+    
+    if (signal.aborted) return;
+    
+    await Promise.race([
+      (async () => {
+        for await (const chunk of stream) {
+          if (signal.aborted) break;
+          onChunk(chunk.text);
         }
+      })(),
+      abortPromise
+    ]);
+
+    handleSuccess();
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      console.log(`Insight generation for "${insightId}" was aborted.`);
+    } else {
+      handleError(error, onError);
     }
+  }
 };
 
 export const generateUnifiedInsights = async (
