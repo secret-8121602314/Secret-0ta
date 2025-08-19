@@ -876,3 +876,4 @@ BEGIN
     RAISE NOTICE '🚀 Your database is now completely clean and v19-ready!';
     RAISE NOTICE '🔍 Check verification results above to confirm success.';
 END $$;
+ n
