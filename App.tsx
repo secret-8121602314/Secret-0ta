@@ -68,6 +68,7 @@ import { ProactiveInsightsPanel } from './components/ProactiveInsightsPanel';
 import { useEnhancedInsights } from './hooks/useEnhancedInsights';
 import { proactiveInsightService } from './services/proactiveInsightService';
 import { databaseService } from './services/databaseService';
+import { apiCostService } from './services/apiCostService';
 
 
 // A data URL for a 1-second silent WAV file. This prevents needing to host an asset
@@ -1575,6 +1576,35 @@ const AppComponent: React.FC = () => {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                             </svg>
                             <span className="hidden sm:inline">Insights</span>
+                        </button>
+                    )}
+                    
+                    {/* API Cost Monitor */}
+                    {authState.user && (
+                        <button
+                            onClick={() => {
+                                const summary = apiCostService.getCostSummary();
+                                const recommendations = apiCostService.getCostOptimizationRecommendations();
+                                console.log('💰 API Cost Summary:', summary);
+                                console.log('💡 Recommendations:', recommendations);
+                                
+                                // Show cost info in a simple alert for now
+                                alert(`API Cost Summary (Last 30 Days):
+Total Calls: ${summary.totalCalls}
+Total Cost: $${summary.totalCost.toFixed(6)}
+Flash Model: ${summary.callsByModel.flash}
+Pro Model: ${summary.callsByModel.pro}
+Estimated Monthly: $${summary.estimatedMonthlyCost.toFixed(6)}
+
+Top Recommendation: ${recommendations[0] || 'No recommendations'}`);
+                            }}
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-orange-600/20 text-orange-400 hover:bg-orange-600/30 transition-all duration-200"
+                            title="View API cost summary and optimization recommendations"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                            </svg>
+                            <span className="hidden sm:inline">Cost</span>
                         </button>
                     )}
                 </div>

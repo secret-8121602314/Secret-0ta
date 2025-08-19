@@ -4,6 +4,7 @@ import { profileService } from "./profileService";
 import { aiContextService } from "./aiContextService";
 import { unifiedUsageService } from "./unifiedUsageService";
 import { authService } from "./supabase";
+import { apiCostService } from "./apiCostService";
 
 const API_KEY = process.env.API_KEY;
 
@@ -761,43 +762,72 @@ ${insightInstruction}`;
 
 
 export const generateInsightWithSearch = async (
-    gameName: string,
-    genre: string,
-    progress: number,
-    insightInstruction: string,
-    insightTitle: string,
-    signal: AbortSignal
+    prompt: string,
+    model: 'flash' | 'pro' = 'flash',
+    signal?: AbortSignal
 ): Promise<string> => {
-    const systemInstruction = getInsightSystemInstruction(gameName, genre, progress, insightInstruction, insightTitle);
-    const contentPrompt = `Generate the content for the "${insightTitle}" insight for the game ${gameName}, following the system instructions.`;
+    // Determine which model to use based on the model parameter
+    const modelName = model === 'pro' ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
+    
+    // For cost optimization, always use Flash unless explicitly requested Pro
+    const finalModel = model === 'pro' ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
+    
+    console.log(`🔍 Generating insight with ${finalModel} model (requested: ${model})`);
 
     try {
         const generateContentPromise = ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: contentPrompt,
+            model: finalModel,
+            contents: prompt,
             config: {
-                systemInstruction: systemInstruction,
                 tools: [{ googleSearch: {} }],
             },
         });
 
-        const abortPromise = new Promise<never>((_, reject) => {
-            if (signal.aborted) return reject(new DOMException('Aborted', 'AbortError'));
-            signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
-        });
+        // Handle abort if signal is provided
+        if (signal) {
+            const abortPromise = new Promise<never>((_, reject) => {
+                if (signal.aborted) return reject(new DOMException('Aborted', 'AbortError'));
+                signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
+            });
 
-        const response = await Promise.race([generateContentPromise, abortPromise]);
-        if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
-        
+            const response = await Promise.race([generateContentPromise, abortPromise]);
+            if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+            
+            handleSuccess();
+            
+            // Track API cost
+            apiCostService.recordAPICall(
+                model,
+                'user_query', // Default purpose, can be overridden
+                'paid', // Default tier, can be overridden
+                1000, // Default token estimate
+                true
+            );
+            
+            return response.text;
+        } else {
+            // No signal provided, just generate content
+                    const response = await generateContentPromise;
         handleSuccess();
+        
+        // Track API cost
+        apiCostService.recordAPICall(
+            model,
+            'user_query', // Default purpose, can be overridden
+            'paid', // Default tier, can be overridden
+            1000, // Default token estimate
+            true
+        );
+        
         return response.text;
+        }
 
     } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {
-            console.log(`Insight generation for "${insightTitle}" was aborted.`);
+            console.log(`Insight generation was aborted.`);
             throw error;
         } else {
-            console.error(`Error in generateInsightWithSearch for "${insightTitle}":`, error);
+            console.error(`Error in generateInsightWithSearch with ${finalModel}:`, error);
             const errorMessage = error?.message || "An unknown error occurred.";
             // Re-throw a standardized error for the hook to catch
             throw new Error(isQuotaError(error) ? "QUOTA_EXCEEDED" : errorMessage);

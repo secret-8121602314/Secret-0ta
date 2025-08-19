@@ -5,275 +5,298 @@ import { playerProfileService } from '../services/playerProfileService';
 import { PlayerProfile, GameContext, EnhancedInsightTab } from '../services/types';
 
 export interface EnhancedInsight {
-    id: string;
+    tabId: string;
     title: string;
     content: string;
-    isProfileSpecific: boolean;
     priority: 'high' | 'medium' | 'low';
-    status: 'idle' | 'loading' | 'loaded' | 'error';
-    isPlaceholder: boolean;
+    isProfileSpecific: boolean;
+    generationModel: 'flash' | 'pro';
     lastUpdated: number;
-    generationAttempts: number;
-    isNew: boolean;
+    status: 'idle' | 'loading' | 'loaded' | 'error';
 }
 
 export interface UseEnhancedInsightsReturn {
     insights: Record<string, EnhancedInsight>;
     insightTabs: EnhancedInsightTab[];
     isLoading: boolean;
-    generateInsights: (gameName: string, genre: string, progress: number, conversationId: string) => Promise<void>;
-    updateInsightsForProfileChange: (gameName: string, genre: string, progress: number, conversationId: string) => Promise<void>;
-    retryInsight: (insightId: string, gameName: string, genre: string, progress: number, conversationId: string) => Promise<void>;
+    generateInsightsForNewGame: (gameName: string, genre: string, progress: number, conversationId: string, userTier: 'free' | 'paid') => Promise<void>;
+    updateInsightsForUserQuery: (gameName: string, genre: string, progress: number, conversationId: string, userTier: 'free' | 'paid') => Promise<void>;
+    retryInsight: (insightId: string, gameName: string, genre: string, progress: number, conversationId: string, userTier: 'free' | 'paid') => Promise<void>;
     shouldUpdateInsights: (lastUpdateTime: number) => boolean;
+    isNewGamePill: boolean;
+    needsProModel: boolean;
 }
 
 export const useEnhancedInsights = (
-    conversationId: string,
-    gameName?: string,
-    genre?: string,
+    conversationId: string, 
+    gameName?: string, 
+    genre?: string, 
     progress?: number
 ): UseEnhancedInsightsReturn => {
     const [insights, setInsights] = useState<Record<string, EnhancedInsight>>({});
     const [insightTabs, setInsightTabs] = useState<EnhancedInsightTab[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [isNewGamePill, setIsNewGamePill] = useState(false);
+    const [needsProModel, setNeedsProModel] = useState(false);
 
     // Get player profile and game context
     const profile = playerProfileService.getProfile();
     const gameContext = gameName ? playerProfileService.getGameContext(gameName) : null;
 
-    // Generate profile-aware insight tabs
+    // Initialize insights with placeholder tabs (no API calls)
     useEffect(() => {
         if (genre && profile && gameContext) {
-            const tabs = enhancedInsightService.generateProfileAwareTabs(
-                genre,
-                profile,
-                gameContext
+            const tabs = enhancedInsightService.generateProfileAwareTabsForNewGame(
+                genre, 
+                profile, 
+                gameContext, 
+                'paid' // Assume paid for structure generation
             );
-            setInsightTabs(tabs);
             
-            // Initialize insights with placeholders
+            const prioritizedTabs = enhancedInsightService.prioritizeTabsForProfile(tabs, profile);
+            setInsightTabs(prioritizedTabs);
+            
+            // Check if this is a new game pill that needs Pro model generation
+            const needsGeneration = enhancedInsightService.needsContentGeneration(prioritizedTabs);
+            setIsNewGamePill(needsGeneration);
+            
+            // Check if any tabs need Pro model (only for paid users with new game pills)
+            const proTabs = enhancedInsightService.getTabsForProModel(prioritizedTabs, 'paid');
+            setNeedsProModel(proTabs.length > 0);
+            
+            // Initialize insights with placeholders (no API calls)
             const initialInsights: Record<string, EnhancedInsight> = {};
-            tabs.forEach(tab => {
+            prioritizedTabs.forEach(tab => {
                 initialInsights[tab.id] = {
-                    id: tab.id,
+                    tabId: tab.id,
                     title: tab.title,
-                    content: `📋 **${tab.title}**\n\n✨ This insight will be generated with your personalized preferences!\n\n💡 **Click the tab to load profile-aware content**\n\n🎮 Based on your ${profile.playerFocus} focus and ${profile.hintStyle} hint style\n\n⏳ Progress: ${progress || 0}%`,
-                    isProfileSpecific: tab.isProfileSpecific,
+                    content: tab.content || 'Content will be generated when you ask for help.',
                     priority: tab.priority,
-                    status: 'idle',
-                    isPlaceholder: true,
-                    lastUpdated: Date.now(),
-                    generationAttempts: 0,
-                    isNew: false
+                    isProfileSpecific: tab.isProfileSpecific,
+                    generationModel: tab.generationModel || 'flash',
+                    lastUpdated: tab.lastUpdated || Date.now(),
+                    status: tab.content ? 'loaded' : 'idle'
                 };
             });
             setInsights(initialInsights);
         }
-    }, [genre, profile, gameContext, progress]);
+    }, [genre, profile, gameContext]);
 
-    // Generate insights progressively with profile awareness
-    const generateInsights = useCallback(async (
-        gameName: string,
-        genre: string,
-        progress: number,
-        conversationId: string
+    /**
+     * Generate insights for a NEW GAME PILL (ONLY when explicitly requested by user)
+     * This is the ONLY time we use Gemini 2.5 Pro for paid users
+     */
+    const generateInsightsForNewGame = useCallback(async (
+        gameName: string, 
+        genre: string, 
+        progress: number, 
+        conversationId: string,
+        userTier: 'free' | 'paid'
     ) => {
-        if (!profile || !gameContext) {
-            console.warn('No profile or game context available for enhanced insights');
-            return;
-        }
-
+        if (!gameName || !genre || !profile) return;
+        
         setIsLoading(true);
         
         try {
-            // Get priority-based generation order
-            const generationOrder = profileAwareInsightService.getInsightGenerationOrder(insightTabs);
+            console.log(`🚀 Generating insights for NEW GAME PILL: ${gameName} (${genre}) with ${userTier} tier`);
             
-            // Generate insights one by one with smart delays
-            for (let i = 0; i < generationOrder.length; i++) {
-                const tabId = generationOrder[i];
-                const tab = insightTabs.find(t => t.id === tabId);
-                
-                if (!tab) continue;
-                
-                // Skip if already generated
-                if (insights[tabId]?.status === 'loaded' && !insights[tabId]?.isPlaceholder) {
-                    continue;
-                }
-                
-                try {
-                    // Update status to loading
-                    setInsights(prev => ({
-                        ...prev,
-                        [tabId]: {
-                            ...prev[tabId],
-                            status: 'loading',
-                            content: '🔄 Generating personalized content...'
-                        }
-                    }));
-                    
-                    // Generate content using profile-aware service
-                    const result = await profileAwareInsightService.generateProfileAwareInsights(
-                        gameName,
-                        genre,
-                        progress,
-                        conversationId,
-                        (error) => console.error(`Error generating ${tab.title}:`, error)
-                    );
-                    
-                    // Find the generated content for this tab
-                    const generatedInsight = result.find(r => r.tabId === tabId);
-                    
-                    if (generatedInsight) {
-                        // Update with real content
-                        setInsights(prev => ({
-                            ...prev,
-                            [tabId]: {
-                                ...prev[tabId],
-                                content: generatedInsight.content,
-                                status: 'loaded',
-                                isPlaceholder: false,
-                                lastUpdated: generatedInsight.lastUpdated,
-                                isNew: true
-                            }
-                        }));
-                    }
-                    
-                    // Smart delay between generations based on priority
-                    if (i < generationOrder.length - 1) {
-                        const currentTab = insightTabs.find(t => t.id === tabId);
-                        const nextTab = insightTabs.find(t => t.id === generationOrder[i + 1]);
-                        
-                        let delay = 2000; // Default 2 seconds
-                        
-                        // High priority tabs get faster generation
-                        if (currentTab?.priority === 'high') {
-                            delay = 1000;
-                        } else if (currentTab?.priority === 'low') {
-                            delay = 3000;
-                        }
-                        
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                    }
-                    
-                } catch (error) {
-                    console.warn(`Failed to generate ${tab.title}:`, error);
-                    
-                    // Mark as failed but keep placeholder for retry
-                    setInsights(prev => ({
-                        ...prev,
-                        [tabId]: {
-                            ...prev[tabId],
-                            status: 'error',
-                            content: `❌ Failed to generate ${tab.title}\n\n💡 Click the tab to retry with your personalized preferences!`,
-                            generationAttempts: (prev[tabId]?.generationAttempts || 0) + 1
-                        }
-                    }));
-                }
-            }
+            const results = await profileAwareInsightService.generateInsightsForNewGamePill(
+                gameName, 
+                genre, 
+                progress, 
+                conversationId, 
+                userTier,
+                (error) => console.error('Insight generation error:', error)
+            );
+            
+            // Update insights with generated content
+            const updatedInsights: Record<string, EnhancedInsight> = {};
+            results.forEach(result => {
+                updatedInsights[result.tabId] = {
+                    ...result,
+                    status: 'loaded'
+                };
+            });
+            
+            setInsights(prev => ({ ...prev, ...updatedInsights }));
+            
+            // Mark as no longer a new game pill
+            setIsNewGamePill(false);
+            setNeedsProModel(false);
+            
+            console.log(`✅ Generated ${results.length} insights for new game pill`);
+            
         } catch (error) {
-            console.error('Enhanced insight generation failed:', error);
+            console.error('Error generating insights for new game pill:', error);
+            
+            // Mark insights as error
+            const errorInsights: Record<string, EnhancedInsight> = {};
+            insightTabs.forEach(tab => {
+                errorInsights[tab.id] = {
+                    tabId: tab.id,
+                    title: tab.title,
+                    content: `Error: Failed to generate content. Ask me about ${tab.title} for help.`,
+                    priority: tab.priority,
+                    isProfileSpecific: tab.isProfileSpecific,
+                    generationModel: 'flash',
+                    lastUpdated: Date.now(),
+                    status: 'error'
+                };
+            });
+            
+            setInsights(prev => ({ ...prev, ...errorInsights }));
         } finally {
             setIsLoading(false);
         }
-    }, [profile, gameContext, insightTabs, insights]);
+    }, [profile, insightTabs]);
 
-    // Update insights when profile changes
-    const updateInsightsForProfileChange = useCallback(async (
-        gameName: string,
-        genre: string,
-        progress: number,
-        conversationId: string
+    /**
+     * Update existing insights when user makes explicit queries
+     * Always uses Gemini 2.5 Flash for cost optimization
+     */
+    const updateInsightsForUserQuery = useCallback(async (
+        gameName: string, 
+        genre: string, 
+        progress: number, 
+        conversationId: string,
+        userTier: 'free' | 'paid'
     ) => {
-        console.log('Updating insights due to profile change');
+        if (!gameName || !genre || !profile || !insightTabs.length) return;
         
-        // Regenerate all insights with new profile
-        setInsights({}); // Clear existing insights
-        await generateInsights(gameName, genre, progress, conversationId);
-    }, [generateInsights]);
-
-    // Retry failed insight generation
-    const retryInsight = useCallback(async (
-        insightId: string,
-        gameName: string,
-        genre: string,
-        progress: number,
-        conversationId: string
-    ) => {
-        if (!profile || !gameContext) return;
-        
-        const tab = insightTabs.find(t => t.id === insightId);
-        if (!tab) return;
+        setIsLoading(true);
         
         try {
-            // Update status to loading
-            setInsights(prev => ({
-                ...prev,
-                [insightId]: {
-                    ...prev[insightId],
-                    status: 'loading',
-                    content: '🔄 Retrying with your personalized preferences...'
-                }
-            }));
+            console.log(`🔄 Updating insights for user query: ${gameName} (${genre}) with ${userTier} tier`);
             
-            // Generate content for this specific tab
-            const result = await profileAwareInsightService.generateProfileAwareInsights(
-                gameName,
-                genre,
-                progress,
+            const results = await profileAwareInsightService.updateInsightsForUserQuery(
+                gameName, 
+                genre, 
+                progress, 
                 conversationId,
-                (error) => console.error(`Error retrying ${tab.title}:`, error)
+                insightTabs,
+                userTier,
+                (error) => console.error('Insight update error:', error)
             );
             
-            const generatedInsight = result.find(r => r.tabId === insightId);
+            // Update insights with new content
+            const updatedInsights: Record<string, EnhancedInsight> = {};
+            results.forEach(result => {
+                updatedInsights[result.tabId] = {
+                    ...result,
+                    status: 'loaded'
+                };
+            });
             
-            if (generatedInsight) {
+            setInsights(prev => ({ ...prev, ...updatedInsights }));
+            
+            console.log(`✅ Updated ${results.length} insights for user query`);
+            
+        } catch (error) {
+            console.error('Error updating insights for user query:', error);
+            
+            // Mark failed updates as error but keep existing content
+            const errorInsights: Record<string, EnhancedInsight> = {};
+            insightTabs.forEach(tab => {
+                if (insights[tab.id]?.status === 'error') {
+                    errorInsights[tab.id] = {
+                        ...insights[tab.id],
+                        status: 'error',
+                        lastUpdated: Date.now()
+                    };
+                }
+            });
+            
+            setInsights(prev => ({ ...prev, ...errorInsights }));
+        } finally {
+            setIsLoading(false);
+        }
+    }, [profile, insightTabs, insights]);
+
+    /**
+     * Retry a specific insight (uses Flash model for cost optimization)
+     */
+    const retryInsight = useCallback(async (
+        insightId: string, 
+        gameName: string, 
+        genre: string, 
+        progress: number, 
+        conversationId: string,
+        userTier: 'free' | 'paid'
+    ) => {
+        if (!gameName || !genre || !profile) return;
+        
+        // Mark insight as loading
+        setInsights(prev => ({
+            ...prev,
+            [insightId]: {
+                ...prev[insightId],
+                status: 'loading'
+            }
+        }));
+        
+        try {
+            console.log(`🔄 Retrying insight: ${insightId} for ${gameName}`);
+            
+            // Find the specific tab to retry
+            const tabToRetry = insightTabs.find(tab => tab.id === insightId);
+            if (!tabToRetry) return;
+            
+            // Always use Flash model for retries (cost optimization)
+            const results = await profileAwareInsightService.updateInsightsForUserQuery(
+                gameName, 
+                genre, 
+                progress, 
+                conversationId,
+                [tabToRetry], // Only retry this specific tab
+                userTier,
+                (error) => console.error('Insight retry error:', error)
+            );
+            
+            if (results.length > 0) {
+                const result = results[0];
                 setInsights(prev => ({
                     ...prev,
                     [insightId]: {
-                        ...prev[insightId],
-                        content: generatedInsight.content,
-                        status: 'loaded',
-                        isPlaceholder: false,
-                        lastUpdated: generatedInsight.lastUpdated,
-                        isNew: true
+                        ...result,
+                        status: 'loaded'
                     }
                 }));
+                
+                console.log(`✅ Retried insight: ${insightId}`);
             }
             
         } catch (error) {
-            console.error(`Failed to retry ${insightId}:`, error);
+            console.error('Error retrying insight:', error);
             
+            // Mark as error
             setInsights(prev => ({
                 ...prev,
                 [insightId]: {
                     ...prev[insightId],
                     status: 'error',
-                    content: `❌ Failed to retry ${tab.title}\n\n💡 Please try again later!`,
-                    generationAttempts: (prev[insightId]?.generationAttempts || 0) + 1
+                    content: `Error: Failed to retry. Ask me about ${insights[insightId]?.title || 'this topic'} for help.`
                 }
             }));
         }
-    }, [profile, gameContext, insightTabs]);
+    }, [profile, insightTabs, insights]);
 
-    // Check if insights need updating
+    /**
+     * Check if insights should be updated (only for explicit user requests)
+     */
     const shouldUpdateInsights = useCallback((lastUpdateTime: number): boolean => {
-        if (!profile || !gameContext) return false;
-        
-        return profileAwareInsightService.shouldUpdateInsights(
-            profile,
-            gameContext,
-            lastUpdateTime
-        );
-    }, [profile, gameContext]);
+        // No automatic updates - only when user explicitly requests
+        return false;
+    }, []);
 
     return {
         insights,
         insightTabs,
         isLoading,
-        generateInsights,
-        updateInsightsForProfileChange,
+        generateInsightsForNewGame,
+        updateInsightsForUserQuery,
         retryInsight,
-        shouldUpdateInsights
+        shouldUpdateInsights,
+        isNewGamePill,
+        needsProModel
     };
 };

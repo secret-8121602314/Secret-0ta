@@ -946,12 +946,17 @@ export const useChat = (isHandsFreeMode: boolean) => {
         try {
             if (insightTabConfig.webSearch) {
                 // Use the non-streaming function for web search
+                const prompt = `Generate content for the "${insightTabConfig.title}" insight for the game ${conversation.title} (${conversation.genre}).
+                
+${insightTabConfig.instruction}
+
+Game: ${conversation.title}
+Genre: ${conversation.genre}
+Progress: ${conversation.progress}%`;
+
                 const fullContent = await generateInsightWithSearch(
-                    conversation.title,
-                    conversation.genre,
-                    conversation.progress,
-                    insightTabConfig.instruction,
-                    insightTabConfig.title,
+                    prompt,
+                    'flash', // Always use Flash for cost optimization
                     controller.signal
                 );
                 if (controller.signal.aborted) return;

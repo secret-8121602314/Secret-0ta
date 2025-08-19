@@ -7,8 +7,9 @@ export interface ProfileAwareInsightResult {
     tabId: string;
     title: string;
     content: string;
-    isProfileSpecific: boolean;
     priority: 'high' | 'medium' | 'low';
+    isProfileSpecific: boolean;
+    generationModel: 'flash' | 'pro';
     lastUpdated: number;
 }
 
@@ -25,13 +26,15 @@ class ProfileAwareInsightService {
     }
 
     /**
-     * Generate profile-aware insights for a game
+     * Generate insights for a NEW GAME PILL (ONLY when explicitly requested by user)
+     * This is the ONLY time we use Gemini 2.5 Pro for paid users
      */
-    async generateProfileAwareInsights(
-        gameName: string,
-        genre: string,
-        progress: number,
-        conversationId: string,
+    async generateInsightsForNewGamePill(
+        gameName: string, 
+        genre: string, 
+        progress: number, 
+        conversationId: string, 
+        userTier: 'free' | 'paid',
         onError: (error: string) => void
     ): Promise<ProfileAwareInsightResult[]> {
         try {
@@ -40,186 +43,276 @@ class ProfileAwareInsightService {
             const gameContext = playerProfileService.getGameContext(gameName);
             
             if (!profile) {
-                console.warn('No player profile found, using default insights');
-                return this.generateDefaultInsights(gameName, genre, progress, conversationId, onError);
+                onError('Player profile not found');
+                return [];
             }
 
-            // Generate profile-aware tabs
-            const profileTabs = enhancedInsightService.generateProfileAwareTabs(
-                genre,
-                profile,
-                gameContext
+            // Generate tabs based on user tier
+            const tabs = enhancedInsightService.generateProfileAwareTabsForNewGame(
+                genre, 
+                profile, 
+                gameContext || playerProfileService.getDefaultGameContext(),
+                userTier
             );
 
-            // Generate content for each tab
+            // For free users, return basic content without API calls
+            if (userTier === 'free') {
+                return tabs.map(tab => ({
+                    tabId: tab.id,
+                    title: tab.title,
+                    content: tab.content || 'Content will be generated when you ask for help.',
+                    priority: tab.priority,
+                    isProfileSpecific: tab.isProfileSpecific,
+                    generationModel: 'flash' as const,
+                    lastUpdated: Date.now()
+                }));
+            }
+
+            // For paid users, generate content with Gemini 2.5 Pro (only for new game pills)
             const results: ProfileAwareInsightResult[] = [];
             
-            for (const tab of profileTabs) {
-                try {
-                    const content = await this.generateTabContent(
-                        tab,
-                        gameName,
-                        genre,
-                        progress,
-                        profile,
-                        gameContext,
-                        onError
-                    );
-                    
-                    if (content) {
+            for (const tab of tabs) {
+                if (tab.isNewGamePill) {
+                    try {
+                        // Use Gemini 2.5 Pro for new game pill content
+                        const content = await this.generateContentWithProModel(
+                            tab, 
+                            gameName, 
+                            genre, 
+                            progress, 
+                            profile, 
+                            gameContext
+                        );
+                        
                         results.push({
                             tabId: tab.id,
                             title: tab.title,
                             content: content,
-                            isProfileSpecific: tab.isProfileSpecific,
                             priority: tab.priority,
+                            isProfileSpecific: tab.isProfileSpecific,
+                            generationModel: 'pro',
+                            lastUpdated: Date.now()
+                        });
+                    } catch (error) {
+                        console.error(`Error generating content for tab ${tab.id}:`, error);
+                        onError(`Failed to generate content for ${tab.title}`);
+                        
+                        // Fallback to basic content
+                        results.push({
+                            tabId: tab.id,
+                            title: tab.title,
+                            content: `Content generation failed. Ask me about ${tab.title} for personalized help.`,
+                            priority: tab.priority,
+                            isProfileSpecific: tab.isProfileSpecific,
+                            generationModel: 'flash',
                             lastUpdated: Date.now()
                         });
                     }
-                } catch (error) {
-                    console.error(`Error generating content for tab ${tab.id}:`, error);
-                    onError(`Failed to generate ${tab.title}: ${error}`);
                 }
             }
 
             return results;
             
         } catch (error) {
-            console.error('Error in generateProfileAwareInsights:', error);
-            onError(`Failed to generate profile-aware insights: ${error}`);
+            console.error('Error generating insights for new game pill:', error);
+            onError('Failed to generate game insights');
             return [];
         }
     }
 
     /**
-     * Generate content for a specific tab
+     * Update existing insights when user makes explicit queries
+     * Always uses Gemini 2.5 Flash for cost optimization
      */
-    private async generateTabContent(
+    async updateInsightsForUserQuery(
+        gameName: string, 
+        genre: string, 
+        progress: number, 
+        conversationId: string,
+        existingTabs: EnhancedInsightTab[],
+        userTier: 'free' | 'paid',
+        onError: (error: string) => void
+    ): Promise<ProfileAwareInsightResult[]> {
+        try {
+            // Only update if user explicitly requested it
+            if (!existingTabs || existingTabs.length === 0) {
+                return [];
+            }
+
+            const profile = playerProfileService.getProfile();
+            if (!profile) {
+                onError('Player profile not found');
+                return [];
+            }
+
+            // Mark tabs for Flash model updates
+            const updatedTabs = enhancedInsightService.updateExistingTabs(existingTabs, userTier);
+            
+            const results: ProfileAwareInsightResult[] = [];
+            
+            for (const tab of updatedTabs) {
+                try {
+                    // Always use Flash model for updates (cost optimization)
+                    const content = await this.generateContentWithFlashModel(
+                        tab, 
+                        gameName, 
+                        genre, 
+                        progress, 
+                        profile, 
+                        playerProfileService.getGameContext(gameName)
+                    );
+                    
+                    results.push({
+                        tabId: tab.id,
+                        title: tab.title,
+                        content: content,
+                        priority: tab.priority,
+                        isProfileSpecific: tab.isProfileSpecific,
+                        generationModel: 'flash',
+                        lastUpdated: Date.now()
+                    });
+                } catch (error) {
+                    console.error(`Error updating content for tab ${tab.id}:`, error);
+                    onError(`Failed to update ${tab.title}`);
+                    
+                    // Keep existing content if update fails
+                    if (tab.content) {
+                        results.push({
+                            tabId: tab.id,
+                            title: tab.title,
+                            content: tab.content,
+                            priority: tab.priority,
+                            isProfileSpecific: tab.isProfileSpecific,
+                            generationModel: 'flash',
+                            lastUpdated: tab.lastUpdated || Date.now()
+                        });
+                    }
+                }
+            }
+
+            return results;
+            
+        } catch (error) {
+            console.error('Error updating insights for user query:', error);
+            onError('Failed to update insights');
+            return [];
+        }
+    }
+
+    /**
+     * Generate content using Gemini 2.5 Pro (only for new game pills)
+     */
+    private async generateContentWithProModel(
         tab: EnhancedInsightTab,
         gameName: string,
         genre: string,
         progress: number,
         profile: PlayerProfile,
-        gameContext: GameContext,
-        onError: (error: string) => void
-    ): Promise<string | null> {
-        try {
-            // Generate custom instructions based on profile
-            const customInstructions = enhancedInsightService.generateContentInstructions(
-                tab,
-                profile,
-                gameContext
-            );
+        gameContext: GameContext | null
+    ): Promise<string> {
+        const instructions = enhancedInsightService.generateContentInstructions(tab, profile, gameContext || playerProfileService.getDefaultGameContext());
+        
+        // Use Gemini 2.5 Pro for new game pill content
+        const prompt = `Generate detailed content for the "${tab.title}" tab in ${gameName} (${genre}).
+        
+${instructions}
 
-            // Use the existing insight generation service with custom instructions
-            const result = await generateInsightWithSearch(
-                gameName,
-                genre,
-                progress,
-                customInstructions,
-                tab.title,
-                onError,
-                new AbortController().signal
-            );
+Game: ${gameName}
+Genre: ${genre}
+Progress: ${progress}%
+Player Focus: ${profile.playerFocus}
+Hint Style: ${profile.hintStyle}
+Preferred Tone: ${profile.preferredTone}
+Spoiler Tolerance: ${profile.spoilerTolerance}
 
-            return result || null;
-            
-        } catch (error) {
-            console.error(`Error generating content for tab ${tab.id}:`, error);
-            onError(`Failed to generate ${tab.title}: ${error}`);
-            return null;
-        }
+Generate comprehensive, engaging content that matches the player's preferences.`;
+
+        const content = await generateInsightWithSearch(prompt, 'pro'); // Use Pro model
+        return content || `Content for ${tab.title} will be generated when you ask for help.`;
     }
 
     /**
-     * Generate default insights when no profile is available
+     * Generate content using Gemini 2.5 Flash (for updates and cost optimization)
      */
-    private async generateDefaultInsights(
+    private async generateContentWithFlashModel(
+        tab: EnhancedInsightTab,
         gameName: string,
         genre: string,
         progress: number,
-        conversationId: string,
-        onError: (error: string) => void
-    ): Promise<ProfileAwareInsightResult[]> {
-        // Fallback to default insight generation
-        // This would integrate with the existing insight system
-        return [];
-    }
-
-    /**
-     * Update insights when player profile changes
-     */
-    async updateInsightsForProfileChange(
-        gameName: string,
-        genre: string,
-        progress: number,
-        conversationId: string,
-        onError: (error: string) => void
-    ): Promise<ProfileAwareInsightResult[]> {
-        console.log('Updating insights due to profile change');
-        return this.generateProfileAwareInsights(
-            gameName,
-            genre,
-            progress,
-            conversationId,
-            onError
-        );
-    }
-
-    /**
-     * Get insight tabs configuration for a specific profile
-     */
-    getInsightTabsForProfile(
-        genre: string,
         profile: PlayerProfile,
-        gameContext: GameContext
-    ): EnhancedInsightTab[] {
-        return enhancedInsightService.generateProfileAwareTabs(
-            genre,
-            profile,
-            gameContext
-        );
+        gameContext: GameContext | null
+    ): Promise<string> {
+        const instructions = enhancedInsightService.generateContentInstructions(tab, profile, gameContext || playerProfileService.getDefaultGameContext());
+        
+        // Use Gemini 2.5 Flash for updates (cost optimization)
+        const prompt = `Update content for the "${tab.title}" tab in ${gameName} (${genre}).
+        
+${instructions}
+
+Game: ${gameName}
+Genre: ${genre}
+Progress: ${progress}%
+Player Focus: ${profile.playerFocus}
+Hint Style: ${profile.hintStyle}
+Preferred Tone: ${profile.preferredTone}
+Spoiler Tolerance: ${profile.spoilerTolerance}
+
+Provide updated, relevant content that matches the player's current progress and preferences.`;
+
+        const content = await generateInsightWithSearch(prompt, 'flash'); // Use Flash model
+        return content || `Content for ${tab.title} will be updated when you ask for help.`;
     }
 
     /**
-     * Check if insights need updating based on profile or progress changes
+     * Get insight tabs for a profile (no API calls, just structure)
      */
-    shouldUpdateInsights(
-        currentProfile: PlayerProfile,
-        currentGameContext: GameContext,
-        lastUpdateTime: number
-    ): boolean {
-        const now = Date.now();
-        const timeSinceUpdate = now - lastUpdateTime;
+    getInsightTabsForProfile(genre: string, profile: PlayerProfile, gameContext: GameContext): EnhancedInsightTab[] {
+        const tabs = enhancedInsightService.generateProfileAwareTabsForNewGame(
+            genre, 
+            profile, 
+            gameContext, 
+            'paid' // Assume paid for structure generation
+        );
         
-        // Update if it's been more than 24 hours
-        if (timeSinceUpdate > 24 * 60 * 60 * 1000) {
-            return true;
-        }
-        
-        // Update if profile has changed significantly
-        if (currentProfile.lastUpdated > lastUpdateTime) {
-            return true;
-        }
-        
-        // Update if game progress has changed significantly
-        if (currentGameContext.lastSessionDate > lastUpdateTime) {
-            return true;
-        }
-        
-        return false;
+        return enhancedInsightService.prioritizeTabsForProfile(tabs, profile);
     }
 
     /**
-     * Get priority-based insight generation order
+     * Check if insights need updating (only for explicit user requests)
+     */
+    shouldUpdateInsights(currentProfile: PlayerProfile, currentGameContext: GameContext, lastUpdateTime: number): boolean {
+        // Only update when explicitly requested by user
+        return false; // No automatic updates
+    }
+
+    /**
+     * Get the order for generating insights (only when explicitly requested)
      */
     getInsightGenerationOrder(tabs: EnhancedInsightTab[]): string[] {
-        return tabs
-            .sort((a, b) => {
-                const priorityOrder = { 'high': 3, 'medium': 2, 'low': 1 };
-                return priorityOrder[b.priority] - priorityOrder[a.priority];
-            })
-            .map(tab => tab.id);
+        // Prioritize by importance and profile specificity
+        const sortedTabs = enhancedInsightService.prioritizeTabsForProfile(tabs, playerProfileService.getProfile() || playerProfileService.getDefaultProfile());
+        return sortedTabs.map(tab => tab.id);
+    }
+
+    /**
+     * Check if this is a new game pill that needs Pro model generation
+     */
+    isNewGamePill(tabs: EnhancedInsightTab[]): boolean {
+        return enhancedInsightService.needsContentGeneration(tabs);
+    }
+
+    /**
+     * Get tabs that should use Pro model (only new game pills for paid users)
+     */
+    getTabsForProModel(tabs: EnhancedInsightTab[], userTier: 'free' | 'paid'): EnhancedInsightTab[] {
+        return enhancedInsightService.getTabsForProModel(tabs, userTier);
+    }
+
+    /**
+     * Get tabs that should use Flash model (updates and free users)
+     */
+    getTabsForFlashModel(tabs: EnhancedInsightTab[]): EnhancedInsightTab[] {
+        return enhancedInsightService.getTabsForFlashModel(tabs);
     }
 }
 
