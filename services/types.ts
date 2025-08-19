@@ -263,3 +263,18 @@ export interface ConversationV19 extends Conversation {
   userId?: string;
   crossGameReferences?: string[]; // Other game IDs this user has played
 }
+
+// Enhanced Insight Types for v19
+export interface EnhancedInsightTab extends InsightTab {
+    priority: 'high' | 'medium' | 'low';
+    playerFocus: string[];
+    hintStyle: string[];
+    isProfileSpecific: boolean;
+    customInstruction?: string;
+}
+
+export interface ProfileAwareInsightConfig {
+    tabs: EnhancedInsightTab[];
+    contentInstructions: Record<string, string>;
+    responseFormatting: Record<string, any>;
+}
