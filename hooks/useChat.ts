@@ -21,6 +21,8 @@ import { unifiedUsageService } from '../services/unifiedUsageService';
 import { smartNotificationService } from '../services/smartNotificationService';
 import { gameAnalyticsService } from '../services/gameAnalyticsService';
 import { analyticsService } from '../services/analyticsService';
+import { playerProfileService } from '../services/playerProfileService';
+import { contextManagementService } from '../services/contextManagementService';
 
 const COOLDOWN_KEY = 'geminiCooldownEnd';
 const COOLDOWN_DURATION = 60 * 60 * 1000; // 1 hour
@@ -523,7 +525,36 @@ export const useChat = (isHandsFreeMode: boolean) => {
             
             // --- Context Injection for Companion AI ---
             let metaNotes = '';
+            
+            // Initialize conversation context
+            const context = contextManagementService.initializeConversationContext(
+                sourceConversation.id,
+                sourceConversation.id !== EVERYTHING_ELSE_ID ? sourceConversation.id : null
+            );
+            
+            // Add message to history
+            contextManagementService.addMessageToHistory(sourceConversation.id, text);
+            
+            // Add player profile context
+            const profileContext = playerProfileService.getProfileContext();
+            if (profileContext) {
+                metaNotes += `${profileContext}\n`;
+            }
+            
+            // Add conversation context
+            const conversationContext = contextManagementService.getContextForAI(sourceConversation.id);
+            if (conversationContext) {
+                metaNotes += `${conversationContext}\n`;
+            }
+            
             if(sourceConversation.id !== EVERYTHING_ELSE_ID) {
+                // Add game context
+                const gameContext = playerProfileService.getGameContextForAI(sourceConversation.id);
+                if (gameContext) {
+                    metaNotes += `${gameContext}\n`;
+                }
+                
+                // Existing context injection
                 if (sourceConversation.insights?.story_so_far?.content) {
                     metaNotes += `[META_STORY_SO_FAR: ${sourceConversation.insights.story_so_far.content}]\n`;
                 }

@@ -165,3 +165,101 @@ export const insightTabsConfig: Record<string, InsightTab[]> = {
         { id: 'disaster_prep', title: 'Disaster Prep', instruction: "Great endeavors are often tested. **Do not name the specific disaster or event.** Hint at a potential future challenge in a thematic way and suggest 2-3 concrete, preventative measures. For example: 'The markets are fickle; diversifying your income streams and building a cash reserve can weather any financial storm.' or 'The earth sometimes trembles. Ensuring your infrastructure is reinforced near fault lines could prevent a catastrophe.'" },
     ]
 };
+
+// Enhanced Types for Otakon AI v19
+export interface PlayerProfile {
+  hintStyle: 'Cryptic' | 'Balanced' | 'Direct';
+  playerFocus: 'Story-Driven' | 'Completionist' | 'Strategist';
+  preferredTone: 'Encouraging' | 'Professional' | 'Casual';
+  spoilerTolerance: 'Strict' | 'Moderate' | 'Relaxed';
+  isFirstTime: boolean;
+  createdAt: number;
+  lastUpdated: number;
+}
+
+export interface BuildSnapshot {
+  timestamp: number;
+  level: number;
+  stats: Record<string, number>;
+  equipment: string[];
+  skills: string[];
+  notes: string;
+}
+
+export interface SessionSummary {
+  date: number;
+  duration: number;
+  objectives: string[];
+  discoveries: string[];
+  summary: string;
+}
+
+export interface GameContext {
+  playthroughCount: number;
+  lastSessionDate: number;
+  totalPlayTime: number;
+  objectivesCompleted: string[];
+  secretsFound: string[];
+  buildHistory: BuildSnapshot[];
+  sessionSummaries: SessionSummary[];
+}
+
+export interface ProactiveInsight {
+  id: string;
+  type: 'build_optimization' | 'lore_summary' | 'mechanic_explanation' | 'session_summary';
+  trigger: 'objective_complete' | 'inventory_change' | 'area_discovery' | 'session_start';
+  content: string;
+  priority: 'low' | 'medium' | 'high';
+  timestamp: number;
+  isRead: boolean;
+}
+
+export interface ConversationContext {
+  conversationId: string;
+  gameId: string | null;
+  lastInteraction: number;
+  sessionStart: number;
+  messageHistory: string[];
+  userIntent: 'new_query' | 'clarification' | 'follow_up' | 'game_switch';
+  contextTags: Record<string, any>;
+}
+
+export interface StructuredResponse {
+  type: 'new_help' | 'follow_up' | 'game_switch' | 'session_continuation';
+  sections: ResponseSection[];
+  context: ResponseContext;
+  formatting: ResponseFormatting;
+}
+
+export interface ResponseSection {
+  id: string;
+  title: string;
+  content: string;
+  priority: 'high' | 'medium' | 'low';
+  isCollapsible?: boolean;
+}
+
+export interface ResponseContext {
+  gameId: string;
+  lastInteraction: number;
+  conversationHistory: string[];
+  userIntent: 'new_query' | 'clarification' | 'follow_up' | 'game_switch';
+  sessionDuration: number;
+}
+
+export interface ResponseFormatting {
+  useHeaders: boolean;
+  useBulletPoints: boolean;
+  useNumberedLists: boolean;
+  useCallouts: boolean;
+  useProgressIndicators: boolean;
+}
+
+// Enhanced Conversation interface extending current Conversation
+export interface ConversationV19 extends Conversation {
+  playerProfile?: PlayerProfile;
+  gameContext?: GameContext;
+  proactiveInsights?: ProactiveInsight[];
+  userId?: string;
+  crossGameReferences?: string[]; // Other game IDs this user has played
+}

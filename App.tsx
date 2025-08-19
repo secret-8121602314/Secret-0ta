@@ -62,6 +62,8 @@ import SessionContinuationModal from './components/SessionContinuationModal';
 import ProgressTrackingBar from './components/ProgressTrackingBar';
 import AchievementNotification from './components/AchievementNotification';
 import dailyEngagementService, { Achievement } from './services/dailyEngagementService';
+import { PlayerProfileSetupModal } from './components/PlayerProfileSetupModal';
+import { playerProfileService } from './services/playerProfileService';
 
 
 // A data URL for a 1-second silent WAV file. This prevents needing to host an asset
@@ -122,6 +124,10 @@ const AppComponent: React.FC = () => {
     const [showSessionContinuation, setShowSessionContinuation] = useState(false);
     const [currentAchievement, setCurrentAchievement] = useState<Achievement | null>(null);
     const [showProgressBar, setShowProgressBar] = useState(false);
+    
+    // Player Profile Setup State
+    const [showProfileSetup, setShowProfileSetup] = useState(false);
+    const [isFirstTime, setIsFirstTime] = useState(false);
     
     // Track processed batches to prevent duplicates
     const processedBatches = useRef(new Set<string>());
@@ -331,7 +337,7 @@ const AppComponent: React.FC = () => {
             // Check if we should show session continuation
             const shouldShowSession = dailyEngagementService.shouldShowSessionContinuation();
             console.log('Should show session continuation:', shouldShowSession);
-            if (shouldShowSession) {
+            if (shouldShowSession && !isFirstTime) {
                 console.log('Setting showSessionContinuation to true');
                 setShowSessionContinuation(true);
             }
@@ -342,7 +348,19 @@ const AppComponent: React.FC = () => {
                 setShowProgressBar(true);
             }
         }
-    }, [view, onboardingStatus, usage.tier]);
+    }, [view, onboardingStatus, usage.tier, isFirstTime]);
+
+    // Player Profile Setup Check
+    useEffect(() => {
+        if (view === 'app' && onboardingStatus === 'complete') {
+            // Check if user needs profile setup
+            const needsProfile = playerProfileService.needsProfileSetup();
+            if (needsProfile) {
+                setIsFirstTime(true);
+                setShowProfileSetup(true);
+            }
+        }
+    }, [view, onboardingStatus]);
 
     const {
         conversations,
@@ -1129,18 +1147,28 @@ const AppComponent: React.FC = () => {
     
     const handleGetStarted = useCallback(() => setView('app'), []);
     const handleLoginComplete = useCallback(() => {
-        // Check if user skipped login (for testing/development)
-        const authMethod = localStorage.getItem('otakonAuthMethod');
-        if (authMethod === 'skip') {
-            // Skip mode - go directly to app with tier switching enabled
-            setOnboardingStatus('complete');
-            setView('app');
-        } else {
-            // Normal login - go to initial splash screen
-            setOnboardingStatus('initial');
-        }
+        setOnboardingStatus('initial');
+        setView('app');
     }, []);
+
     const handleInitialSplashComplete = useCallback(() => setOnboardingStatus('features'), []);
+
+    // Player Profile Setup Handlers
+    const handleProfileSetupComplete = useCallback(async (profile: any) => {
+        await playerProfileService.saveProfile(profile);
+        playerProfileService.completeFirstTimeSetup();
+        setShowProfileSetup(false);
+        setIsFirstTime(false);
+    }, []);
+
+    const handleProfileSetupSkip = useCallback(() => {
+        // Set default profile
+        const defaultProfile = playerProfileService.getDefaultProfile();
+        playerProfileService.saveProfile(defaultProfile);
+        setShowProfileSetup(false);
+        setIsFirstTime(false);
+    }, []);
+
     const handleCloseUpgradeScreen = useCallback(() => setShowUpgradeScreen(false), []);
     const handleOpenConnectionModal = useCallback(() => setIsConnectionModalOpen(true), []);
     const handleCloseConnectionModal = useCallback(() => setIsConnectionModalOpen(false), []);
@@ -1521,6 +1549,15 @@ const AppComponent: React.FC = () => {
                 }}
                 autoDismiss={false}
                 dismissDelay={0}
+              />
+            )}
+
+            {/* Player Profile Setup Modal - Show instead of session continuation for first-time users */}
+            {showProfileSetup && (
+              <PlayerProfileSetupModal
+                isOpen={showProfileSetup}
+                onComplete={handleProfileSetupComplete}
+                onSkip={handleProfileSetupSkip}
               />
             )}
 
