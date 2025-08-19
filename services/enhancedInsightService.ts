@@ -156,7 +156,7 @@ class EnhancedInsightService {
                 { id: 'advanced-tactics', title: 'Advanced Tactics', priority: 'low', playerFocus: [], hintStyle: [], isProfileSpecific: false }
             ],
             'adventure': [
-                { id: 'getting-started', title: 'Getting Started', priority: 'high', playerFocus: [], hintStyle: [], hintStyle: [], isProfileSpecific: false },
+                { id: 'getting-started', title: 'Getting Started', priority: 'high', playerFocus: [], hintStyle: [], isProfileSpecific: false },
                 { id: 'exploration-tips', title: 'Exploration Tips', priority: 'high', playerFocus: [], hintStyle: [], isProfileSpecific: false },
                 { id: 'puzzle-solving', title: 'Puzzle Solving', priority: 'medium', playerFocus: [], hintStyle: [], isProfileSpecific: false },
                 { id: 'story-progression', title: 'Story Progression', priority: 'medium', playerFocus: [], hintStyle: [], isProfileSpecific: false },
