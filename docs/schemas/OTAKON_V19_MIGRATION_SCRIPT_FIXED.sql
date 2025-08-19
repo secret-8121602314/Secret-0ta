@@ -24,7 +24,34 @@ BEGIN
 END $$;
 
 -- =====================================================
--- STEP 3: PLAYER PROFILES TABLE (v19 NEW)
+-- STEP 3: USER PROFILES TABLE (v19 NEW)
+-- =====================================================
+
+-- Check if user_profiles exists, create if not
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'user_profiles') THEN
+        RAISE NOTICE 'Creating user_profiles table...';
+        
+        CREATE TABLE user_profiles (
+            id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+            display_name TEXT,
+            avatar_url TEXT,
+            email TEXT,
+            preferences JSONB DEFAULT '{}',
+            is_admin BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        );
+        
+        RAISE NOTICE '✅ user_profiles table created successfully';
+    ELSE
+        RAISE NOTICE 'ℹ️  user_profiles table already exists, skipping...';
+    END IF;
+END $$;
+
+-- =====================================================
+-- STEP 3.5: PLAYER PROFILES TABLE (v19 NEW)
 -- =====================================================
 
 -- Check if player_profiles exists, create if not
@@ -398,6 +425,7 @@ CREATE INDEX IF NOT EXISTS idx_proactive_insights_created ON proactive_insights(
 -- =====================================================
 
 -- Enable RLS on new tables (safe to run multiple times)
+ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE player_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE game_contexts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE build_snapshots ENABLE ROW LEVEL SECURITY;
@@ -411,6 +439,34 @@ ALTER TABLE proactive_insights ENABLE ROW LEVEL SECURITY;
 -- =====================================================
 -- STEP 14: CREATE RLS POLICIES (SAFE - IF NOT EXISTS)
 -- =====================================================
+
+-- User profiles RLS policies
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_policies WHERE tablename = 'user_profiles' AND policyname = 'Users can view own user profile') THEN
+        CREATE POLICY "Users can view own user profile" ON user_profiles
+            FOR SELECT USING (auth.uid() = id);
+        RAISE NOTICE '✅ Created user_profiles SELECT policy';
+    ELSE
+        RAISE NOTICE 'ℹ️  user_profiles SELECT policy already exists';
+    END IF;
+    
+    IF NOT EXISTS (SELECT FROM pg_policies WHERE tablename = 'user_profiles' AND policyname = 'Users can update own user profile') THEN
+        CREATE POLICY "Users can update own user profile" ON user_profiles
+            FOR UPDATE USING (auth.uid() = id);
+        RAISE NOTICE '✅ Created user_profiles UPDATE policy';
+    ELSE
+        RAISE NOTICE 'ℹ️  user_profiles UPDATE policy already exists';
+    END IF;
+    
+    IF NOT EXISTS (SELECT FROM pg_policies WHERE tablename = 'user_profiles' AND policyname = 'Users can insert own user profile') THEN
+        CREATE POLICY "Users can insert own user profile" ON user_profiles
+            FOR INSERT WITH CHECK (auth.uid() = id);
+        RAISE NOTICE '✅ Created user_profiles INSERT policy';
+    ELSE
+        RAISE NOTICE 'ℹ️  user_profiles INSERT policy already exists';
+    END IF;
+END $$;
 
 -- Player profiles RLS policies
 DO $$
