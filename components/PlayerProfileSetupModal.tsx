@@ -92,15 +92,15 @@ export const PlayerProfileSetupModal: React.FC<PlayerProfileSetupModalProps> = (
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+      <div className="bg-[#1C1C1C] rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden border-2 border-[#E53A3A]/30 shadow-2xl shadow-[#E53A3A]/20">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6">
+        <div className="bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-white">Welcome to Otakon!</h2>
-              <p className="text-blue-100 mt-1">Let's personalize your gaming experience</p>
+              <h2 className="text-2xl font-bold text-white">Welcome to Otakon! 🎮</h2>
+              <p className="text-white/90 mt-1">Let's personalize your gaming experience</p>
             </div>
-            <div className="text-white/80 text-sm">
+            <div className="text-white/90 text-sm font-medium">
               {currentStep + 1} of {steps.length}
             </div>
           </div>
@@ -108,7 +108,7 @@ export const PlayerProfileSetupModal: React.FC<PlayerProfileSetupModalProps> = (
           {/* Progress bar */}
           <div className="mt-4 bg-white/20 rounded-full h-2">
             <div 
-              className="bg-white rounded-full h-2 transition-all duration-300"
+              className="bg-white rounded-full h-2 transition-all duration-300 shadow-sm"
               style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
             />
           </div>
@@ -119,7 +119,7 @@ export const PlayerProfileSetupModal: React.FC<PlayerProfileSetupModalProps> = (
           <h3 className="text-xl font-semibold text-white mb-2">
             {currentStepData.title}
           </h3>
-          <p className="text-gray-400 mb-6">
+          <p className="text-[#A3A3A3] mb-6">
             {currentStepData.description}
           </p>
 
@@ -130,31 +130,31 @@ export const PlayerProfileSetupModal: React.FC<PlayerProfileSetupModalProps> = (
                 onClick={() => handleOptionSelect(option.value)}
                 className={`w-full p-4 rounded-lg border-2 text-left transition-all duration-200 ${
                   profile[currentStepData.field] === option.value
-                    ? 'border-blue-500 bg-blue-500/10 text-white'
-                    : 'border-gray-700 bg-gray-800/50 text-gray-300 hover:border-gray-600 hover:bg-gray-800'
+                    ? 'border-[#E53A3A] bg-gradient-to-r from-[#E53A3A]/20 to-[#D98C1F]/20 text-white shadow-lg shadow-[#E53A3A]/25'
+                    : 'border-[#424242]/40 bg-[#0A0A0A]/60 text-[#E5E5E5] hover:border-[#E53A3A]/60 hover:bg-gradient-to-r hover:from-[#E53A3A]/10 hover:to-[#D98C1F]/10'
                 }`}
               >
                 <div className="font-medium mb-1">{option.label}</div>
-                <div className="text-sm text-gray-400">{option.description}</div>
+                <div className="text-sm text-[#A3A3A3]">{option.description}</div>
               </button>
             ))}
           </div>
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-800 p-6 flex items-center justify-between">
+        <div className="border-t border-[#424242]/40 p-6 flex items-center justify-between bg-[#0A0A0A]/40">
           <div className="flex space-x-3">
             {currentStep > 0 && (
               <button
                 onClick={handleBack}
-                className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                className="px-4 py-2 text-[#A3A3A3] hover:text-white transition-colors hover:bg-[#424242]/20 rounded-lg px-4 py-2"
               >
-                Back
+                ← Back
               </button>
             )}
             <button
               onClick={onSkip}
-              className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+              className="px-4 py-2 text-[#A3A3A3] hover:text-white transition-colors hover:bg-[#424242]/20 rounded-lg"
             >
               Skip Setup
             </button>
@@ -163,9 +163,9 @@ export const PlayerProfileSetupModal: React.FC<PlayerProfileSetupModalProps> = (
           <button
             onClick={handleNext}
             disabled={!profile[currentStepData.field]}
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-400 text-white rounded-lg transition-colors"
+            className="px-6 py-2 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] hover:from-[#E53A3A]/90 hover:to-[#D98C1F]/90 disabled:from-[#424242] disabled:to-[#2E2E2E] disabled:text-[#6E6E6E] text-white rounded-lg transition-all duration-200 font-semibold shadow-lg hover:shadow-xl hover:shadow-[#E53A3A]/25 disabled:shadow-none"
           >
-            {isLastStep ? 'Complete Setup' : 'Next'}
+            {isLastStep ? 'Complete Setup' : 'Next →'}
           </button>
         </div>
       </div>
