@@ -868,7 +868,7 @@ WHERE n.nspname = 'public';
 DO $$
 BEGIN
     RAISE NOTICE '🎉 OTAKON V19 ULTIMATE MASTER SCHEMA COMPLETE!';
-    RAISE NOTICE '✅ All 25 tables deleted and recreated with v19 features!';
+    RAISE NOTICE '✅ All 27 tables deleted and recreated with v19 features!';
     RAISE NOTICE '✅ All functions have proper search_path and security!';
     RAISE NOTICE '✅ All RLS policies are clean and non-conflicting!';
     RAISE NOTICE '✅ No unused indexes!';
@@ -876,4 +876,3 @@ BEGIN
     RAISE NOTICE '🚀 Your database is now completely clean and v19-ready!';
     RAISE NOTICE '🔍 Check verification results above to confirm success.';
 END $$;
- n
