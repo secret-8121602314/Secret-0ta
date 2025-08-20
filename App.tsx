@@ -137,6 +137,7 @@ const AppComponent: React.FC = () => {
     const [showProactiveInsights, setShowProactiveInsights] = useState(false);
     const [databaseSyncStatus, setDatabaseSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
     const [lastDatabaseSync, setLastDatabaseSync] = useState<number>(Date.now());
+    const [lastSuggestedPromptsShown, setLastSuggestedPromptsShown] = useState<number>(0);
     
     // Track processed batches to prevent duplicates
     const processedBatches = useRef(new Set<string>());
@@ -217,6 +218,32 @@ const AppComponent: React.FC = () => {
             }
         }
     }, [pwaNavigationState, onboardingStatus]);
+
+    // Initialize suggested prompts cooldown from localStorage
+    useEffect(() => {
+        const stored = localStorage.getItem('lastSuggestedPromptsShown');
+        if (stored) {
+            setLastSuggestedPromptsShown(parseInt(stored, 10));
+        }
+    }, []);
+
+    // Check if suggested prompts should be shown based on 24-hour cooldown
+    const shouldShowSuggestedPrompts = useCallback((): boolean => {
+        const now = Date.now();
+        const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+        
+        // Show prompts if:
+        // 1. No messages in conversation (first time or cleared)
+        // 2. 24 hours have passed since last shown
+        return lastSuggestedPromptsShown === 0 || (now - lastSuggestedPromptsShown) >= TWENTY_FOUR_HOURS_MS;
+    }, [lastSuggestedPromptsShown]);
+
+    // Reset suggested prompts cooldown (useful for testing or manual reset)
+    const resetSuggestedPromptsCooldown = useCallback(() => {
+        setLastSuggestedPromptsShown(0);
+        localStorage.removeItem('lastSuggestedPromptsShown');
+        console.log('🔄 Reset suggested prompts cooldown - will show prompts again');
+    }, []);
 
     // PWA Post-install handler
     useEffect(() => {
@@ -1123,6 +1150,14 @@ const AppComponent: React.FC = () => {
     const handleHowToUseComplete = useCallback(() => completeOnboarding(), []);
     
     const handleSendMessage = useCallback(async (text: string, images?: ImageFile[], isFromPC: boolean = false) => {
+        // Record when suggested prompts are shown (for 24-hour cooldown)
+        if (activeConversation?.id === 'everything-else' && activeConversation.messages.length === 0) {
+            const now = Date.now();
+            setLastSuggestedPromptsShown(now);
+            localStorage.setItem('lastSuggestedPromptsShown', now.toString());
+            console.log('📝 Recorded suggested prompts shown timestamp for 24-hour cooldown');
+        }
+        
         setChatInputValue(''); // Clear controlled input on send
         setActiveSubView('chat');
         const result = await sendMessage(text, images, isFromPC);
@@ -1577,6 +1612,20 @@ const AppComponent: React.FC = () => {
                             <span className="hidden sm:inline">Insights</span>
                         </button>
                     )}
+
+                    {/* Debug: Reset Suggested Prompts Cooldown */}
+                    {process.env.NODE_ENV === 'development' && (
+                        <button
+                            onClick={resetSuggestedPromptsCooldown}
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 bg-orange-600/20 text-orange-400 hover:bg-orange-600/30"
+                            title="Reset suggested prompts cooldown (dev only)"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="hidden sm:inline">Reset Prompts</span>
+                        </button>
+                    )}
                     
 
                 </div>
@@ -1834,8 +1883,10 @@ const AppComponent: React.FC = () => {
                 />
             )}
 
-            {/* Suggested Prompts Above Chat Input for "Everything Else" tab - Only show when no messages */}
-            {activeConversation?.id === 'everything-else' && activeConversation.messages.length === 0 && (
+            {/* Suggested Prompts Above Chat Input for "Everything Else" tab - Show based on 24-hour cooldown */}
+            {activeConversation?.id === 'everything-else' && 
+             activeConversation.messages.length === 0 && 
+             shouldShowSuggestedPrompts() && (
                 <div className="flex-shrink-0 bg-black/40 backdrop-blur-sm border-t border-[#424242]/20 px-4 py-3">
                     <SuggestedPrompts 
                         onPromptClick={(prompt) => handleSendMessage(prompt)} 
