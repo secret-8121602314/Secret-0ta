@@ -1834,8 +1834,8 @@ const AppComponent: React.FC = () => {
                 />
             )}
 
-            {/* Suggested Prompts Above Chat Input for "Everything Else" tab */}
-            {activeConversation?.id === 'everything-else' && (
+            {/* Suggested Prompts Above Chat Input for "Everything Else" tab - Only show when no messages */}
+            {activeConversation?.id === 'everything-else' && activeConversation.messages.length === 0 && (
                 <div className="flex-shrink-0 bg-black/40 backdrop-blur-sm border-t border-[#424242]/20 px-4 py-3">
                     <SuggestedPrompts 
                         onPromptClick={(prompt) => handleSendMessage(prompt)} 
