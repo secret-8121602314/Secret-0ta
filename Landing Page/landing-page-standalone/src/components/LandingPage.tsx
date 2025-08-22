@@ -85,7 +85,7 @@ const FeatureIcon = ({ icon }: { icon: 'eye' | 'bookmark' | 'network' | 'mic' | 
 
     return (
         <div className="relative flex h-48 w-full items-center justify-center rounded-2xl p-6 group hover:scale-105 transition-all duration-500">
-            <div className="absolute inset-0 bg-gradient-to-r from-[#E53A3A]/20 to-[#D98C1F]/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-pulse-glow"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-[#E53A3A]/20 to-[#D98C1F]/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="80"
@@ -123,13 +123,7 @@ const Feature = React.memo(({ title, description, icon, reverse = false }: { tit
 ));
 
 const AppMockup = React.memo(() => (
-    <div className="relative mx-auto my-16 w-full max-w-2xl h-auto rounded-3xl bg-gradient-to-r from-[#1C1C1C]/60 to-[#0A0A0A]/60 backdrop-blur-xl p-2 shadow-2xl animate-fade-slide-up border-2 border-[#424242]/40 group hover:border-[#E53A3A]/60 transition-all duration-500 hover:shadow-2xl hover:shadow-[#E53A3A]/25">
-         <div 
-              className="absolute inset-0 -z-10 rounded-3xl bg-gradient-to-r from-[#E53A3A]/20 to-[#D98C1F]/20 opacity-0 transition-opacity duration-500 group-hover:opacity-100 animate-pulse-glow"
-              style={{
-                maskImage: 'radial-gradient(ellipse 80% 50% at 50% -20%, black 70%, transparent 100%)'
-              }}
-            ></div>
+    <div className="relative mx-auto my-16 w-full max-w-2xl h-auto rounded-3xl bg-black/60 backdrop-blur-xl p-2 shadow-2xl animate-fade-slide-up border-2 border-[#424242]/40 group hover:border-[#E53A3A]/60 transition-all duration-500 hover:shadow-2xl hover:shadow-[#E53A3A]/25">
         <div className="bg-transparent rounded-2xl p-6 space-y-6">
             {/* User Prompt */}
             <div className="flex justify-end">
@@ -179,12 +173,14 @@ const FeatureListItem = ({ children }: { children: React.ReactNode }) => (
 const VanguardFeatureListItem = ({ children, comingSoon = false }: { children: React.ReactNode, comingSoon?: boolean }) => (
     <li className="flex items-start gap-4">
         <StarIcon className="w-6 h-6 mt-1 text-[#FFAB40] flex-shrink-0" />
-        <span className="text-neutral-200 font-medium text-base leading-relaxed">
-            {children}
+        <div className="flex-1">
+            <span className="text-neutral-200 font-medium text-base leading-relaxed block">
+                {children}
+            </span>
             {comingSoon && (
-                 <span className="ml-3 text-xs font-semibold align-middle bg-gradient-to-r from-sky-500/20 to-blue-500/20 text-sky-300 border-2 border-sky-500/40 px-3 py-1 rounded-full uppercase">Coming Soon</span>
+                <span className="inline-block mt-2 text-xs font-semibold bg-gradient-to-r from-sky-500/20 to-blue-500/20 text-sky-300 border-2 border-sky-500/40 px-3 py-1 rounded-full uppercase">Coming Soon</span>
             )}
-        </span>
+        </div>
     </li>
 );
 
@@ -193,7 +189,7 @@ const PricingSection = ({ onCtaClick }: { onCtaClick: () => void }) => {
     const proFeatures = [
         '1,583 Text Queries/month',
         '328 Image Queries/month',
-        'Advanced AI Model (Smarter & Faster)',
+        'Access to Latest Advanced AI Models',
         'Batch Screenshot Capture',
         'Hands-Free Voice Response',
         'In-depth Insight Tabs',
@@ -214,9 +210,6 @@ const PricingSection = ({ onCtaClick }: { onCtaClick: () => void }) => {
                 <div className="text-center mb-16 md:mb-20 animate-fade-slide-up">
                     <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-white mb-6">Simple, Fair Pricing</h2>
                     <p className="text-xl text-neutral-300 mt-6 leading-relaxed">Start for free, upgrade when you're ready.</p>
-                    <div className="mt-6">
-                        <span className="text-base font-bold bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-300 border-2 border-yellow-500/40 px-6 py-3 rounded-full uppercase tracking-wider shadow-lg">Coming Soon</span>
-                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-stretch">
@@ -237,8 +230,13 @@ const PricingSection = ({ onCtaClick }: { onCtaClick: () => void }) => {
                             <FeatureListItem>Automatic Progress Tracking</FeatureListItem>
                         </ul>
                         <div className="mt-auto">
-                            <button onClick={onCtaClick} className="w-full bg-gradient-to-r from-neutral-700 to-neutral-600 hover:from-neutral-600 hover:to-neutral-500 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg">
-                                Get Started
+                            <button
+                                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                                className="w-full bg-gradient-to-r from-neutral-600 to-neutral-500 text-neutral-300 font-bold py-4 px-8 rounded-xl cursor-not-allowed opacity-50"
+                                disabled
+                                title="Coming Soon - Join the waitlist to be notified when pricing goes live!"
+                            >
+                                Coming Soon
                             </button>
                         </div>
                     </div>
@@ -270,7 +268,6 @@ const PricingSection = ({ onCtaClick }: { onCtaClick: () => void }) => {
                             >
                                 Coming Soon
                             </button>
-                            <p className="text-sm text-neutral-500 mt-4 text-center">Join the waitlist to be notified when pricing goes live!</p>
                         </div>
                     </div>
 
@@ -294,7 +291,6 @@ const PricingSection = ({ onCtaClick }: { onCtaClick: () => void }) => {
                             >
                                 Coming Soon
                             </button>
-                            <p className="text-sm text-neutral-500 mt-4 text-center">Join the waitlist to be notified when pricing goes live!</p>
                         </div>
                     </div>
                 </div>
@@ -305,7 +301,7 @@ const PricingSection = ({ onCtaClick }: { onCtaClick: () => void }) => {
 
 const CommunityChallengeSection = ({ onShareClick }: { onShareClick: () => void }) => {
     const proUserGoal = 3000;
-    const currentProUsers = 742; // This is a static value for now.
+    const currentProUsers = 137; // This is a static value for now.
     const progressPercentage = (currentProUsers / proUserGoal) * 100;
 
     return (
@@ -326,7 +322,7 @@ const CommunityChallengeSection = ({ onShareClick }: { onShareClick: () => void 
                         <div className="w-full h-4 bg-neutral-700/50 rounded-full overflow-hidden">
                             <div
                                 className="h-full bg-gradient-to-r from-[#5CBB7B] to-[#4CAF50] rounded-full transition-all duration-500"
-                                style={{ width: `${progressPercentage}%` }}
+                                style={{ width: `${Math.max(progressPercentage, 0.5)}%` }}
                             ></div>
                         </div>
                         <p className="text-right text-sm text-neutral-400 mt-2">
@@ -367,7 +363,7 @@ const CommunityChallengeSection = ({ onShareClick }: { onShareClick: () => void 
                     <div className="text-center">
                         <button 
                             onClick={onShareClick}
-                            className="bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-bold py-3 px-8 rounded-lg transition-transform transform hover:scale-105 hover:shadow-xl hover:shadow-[#E53A3A]/25 inline-flex items-center gap-2 animate-pulse-glow"
+                            className="bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-bold py-3 px-8 rounded-lg transition-transform transform hover:scale-105 hover:shadow-xl hover:shadow-[#E53A3A]/25 inline-flex items-center gap-2"
                         >
                             <ShareIcon className="w-5 h-5" />
                             Share the Challenge
@@ -439,64 +435,64 @@ const FounderSection = () => (
                 </p>
             </div>
             
-            {/* Founder Card */}
-            <div className="bg-gradient-to-br from-[#1C1C1C]/80 to-[#2A2A2A]/60 backdrop-blur-xl border-2 border-neutral-800/60 rounded-3xl p-8 md:p-12 animate-fade-slide-up hover:border-neutral-700/80 transition-all duration-500">
-                <div className="flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-12">
-                    {/* Founder Image */}
-                    <div className="flex-shrink-0">
-                        <FounderImage size="xl" />
+            {/* Hero-Style Layout */}
+            <div className="text-center animate-fade-slide-up">
+                {/* Founder Image - Centered */}
+                <div className="flex justify-center mb-8">
+                    <FounderImage size="xl" />
+                </div>
+                
+                {/* Decorative Gradient Line */}
+                <div className="w-24 h-1 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] mx-auto mb-8 rounded-full"></div>
+                
+                {/* Name and Title - Centered */}
+                <div className="space-y-3 mb-8">
+                    <h3 className="text-4xl md:text-5xl font-bold text-white">
+                        Amaan
+                    </h3>
+                    <p className="text-xl md:text-2xl text-neutral-300 font-medium">
+                        Founder & CEO
+                    </p>
+                </div>
+                
+                {/* Personal Quote - Centered */}
+                <div className="max-w-4xl mx-auto mb-12">
+                    <div className="bg-gradient-to-r from-[#0F0F0F]/60 to-[#1A1A1A]/60 border-2 border-neutral-700/60 rounded-2xl p-8 md:p-10 backdrop-blur-sm">
+                        <p className="text-[#CFCFCF] leading-relaxed text-lg md:text-xl italic">
+                            "Like you, I've spent my life passionate about games. From getting lost in the deep lore of modern RPGs 
+                            to the frustration of needing a small hint and getting a massive spoiler in return. That's why I built Otakon 
+                            - to preserve the magic of discovery while giving you just the nudge you need."
+                        </p>
                     </div>
+                </div>
+                
+                {/* Contact Buttons - Centered */}
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-6 md:gap-8">
+                    <a
+                        href="https://www.linkedin.com/in/readmetxt/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-3 bg-gradient-to-r from-[#0077B5] to-[#005885] hover:from-[#005885] hover:to-[#004066] text-white font-semibold py-4 px-8 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl hover:shadow-[#0077B5]/25"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+                            <rect x="2" y="9" width="4" height="12"></rect>
+                            <circle cx="4" cy="4" r="2"></circle>
+                        </svg>
+                        <span className="hidden sm:inline">Connect on LinkedIn</span>
+                        <span className="sm:hidden">LinkedIn</span>
+                    </a>
                     
-                    {/* Founder Content */}
-                    <div className="flex-1 text-center md:text-left space-y-8">
-                        {/* Name and Title */}
-                        <div className="space-y-3">
-                            <h3 className="text-3xl md:text-4xl font-bold text-white">
-                                Amaan
-                            </h3>
-                            <p className="text-xl text-neutral-300 font-medium">
-                                Founder & CEO
-                            </p>
-                        </div>
-                        
-                        {/* Personal Quote */}
-                        <div className="bg-gradient-to-r from-[#0F0F0F]/60 to-[#1A1A1A]/60 border-2 border-neutral-700/60 rounded-2xl p-6 md:p-8 backdrop-blur-sm">
-                            <p className="text-[#CFCFCF] leading-relaxed text-base md:text-lg italic">
-                                "Like you, I've spent my life passionate about games. From getting lost in the deep lore of modern RPGs 
-                                to the frustration of needing a small hint and getting a massive spoiler in return. That's why I built Otakon 
-                                - to preserve the magic of discovery while giving you just the nudge you need."
-                            </p>
-                        </div>
-                        
-                        {/* Contact Buttons */}
-                        <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-4 md:gap-6 pt-4">
-                            <a
-                                href="https://www.linkedin.com/in/readmetxt/"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center gap-3 bg-gradient-to-r from-[#0077B5] to-[#005885] hover:from-[#005885] hover:to-[#004066] text-white font-semibold py-4 px-8 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl hover:shadow-[#0077B5]/25"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
-                                    <rect x="2" y="9" width="4" height="12"></rect>
-                                    <circle cx="4" cy="4" r="2"></circle>
-                                </svg>
-                                <span className="hidden sm:inline">Connect on LinkedIn</span>
-                                <span className="sm:hidden">LinkedIn</span>
-                            </a>
-                            
-                            <a
-                                href="mailto:founder@otakon.ai"
-                                className="inline-flex items-center justify-center gap-3 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] hover:from-[#D42A2A] hover:to-[#C87A1A] text-white font-semibold py-4 px-8 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl hover:shadow-[#E53A3A]/25 animate-pulse-glow"
-                            >
-                                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                                </svg>
-                                <span className="hidden sm:inline">Email Amaan</span>
-                                <span className="sm:hidden">Email</span>
-                            </a>
-                        </div>
-                    </div>
+                    <a
+                        href="mailto:founder@otakon.ai"
+                        className="inline-flex items-center justify-center gap-3 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] hover:from-[#D42A2A] hover:to-[#C87A1A] text-white font-semibold py-4 px-8 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl hover:shadow-[#E53A3A]/25"
+                    >
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                        <span className="hidden sm:inline">Email Amaan</span>
+                        <span className="sm:hidden">Email</span>
+                    </a>
                 </div>
             </div>
         </div>
@@ -510,12 +506,21 @@ interface LandingPageProps {
   onOpenPrivacy: () => void;
   onOpenRefund: () => void;
   onOpenContact: () => void;
+  onDirectNavigation: (path: string) => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, onOpenPrivacy, onOpenRefund, onOpenContact }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, onOpenPrivacy, onOpenRefund, onOpenContact, onDirectNavigation }) => {
     const [email, setEmail] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitMessage, setSubmitMessage] = useState('');
+
+    // Handle direct URL navigation on component mount
+    useEffect(() => {
+        const path = window.location.pathname;
+        if (path !== '/' && path !== '') {
+            onDirectNavigation(path);
+        }
+    }, [onDirectNavigation]);
 
     const handleWaitlistSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -568,22 +573,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
     };
 
     return (
-        <div className="bg-black text-white font-inter animate-fade-in overflow-x-hidden relative">
+        <div className="text-white font-inter animate-fade-in overflow-x-hidden relative">
             {/* Background Glows */}
             <div
               className="absolute top-0 left-0 w-full h-full -z-10 pointer-events-none hero-glow-texture-top"
             ></div>
             <div className="absolute bottom-0 left-0 w-full h-1/2 -z-10 pointer-events-none hero-glow-texture-bottom"></div>
             
-            {/* Animated Glowing Orbs */}
-            <div className="absolute top-1/4 left-1/4 w-48 h-48 sm:w-72 sm:h-72 md:w-96 md:h-96 bg-gradient-to-r from-[#E53A3A]/20 to-[#FFAB40]/20 rounded-full blur-3xl animate-pulse-glow pointer-events-none"></div>
-            <div className="absolute top-3/4 right-1/4 w-40 h-40 sm:w-64 sm:h-64 md:w-80 md:h-80 bg-gradient-to-r from-[#FFAB40]/20 to-[#E53A3A]/20 rounded-full blur-3xl animate-pulse-glow pointer-events-none"></div>
-            <div className="absolute bottom-1/4 left-1/3 w-36 h-36 sm:w-56 sm:h-56 md:w-72 md:h-72 bg-gradient-to-r from-[#E53A3A]/15 to-[#D98C1F]/15 rounded-full blur-3xl animate-pulse-glow pointer-events-none"></div>
-            
-            {/* Floating Glow Particles */}
-            <div className="absolute top-1/3 right-1/3 w-2 h-2 sm:w-3 sm:h-3 md:w-4 md:h-4 bg-[#E53A3A] rounded-full blur-sm animate-pulse-glow pointer-events-none"></div>
-            <div className="absolute top-2/3 left-1/4 w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 bg-[#FFAB40] rounded-full blur-sm animate-pulse-glow pointer-events-none"></div>
-            <div className="absolute bottom-1/3 right-1/4 w-1 h-1 sm:w-1.5 sm:h-1.5 md:w-2 md:h-2 bg-[#E53A3A] rounded-full blur-sm animate-pulse-glow pointer-events-none"></div>
+
 
             {/* Main Content */}
             <main>
@@ -597,32 +594,17 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                       }}
                     ></div>
                     
-                    {/* Hero Section Glowing Background Effects */}
-                    <div className="absolute inset-0 -z-10 bg-gradient-radial-at-center from-[#E53A3A]/5 to-transparent animate-pulse-glow"></div>
-                    
-                    {/* Dramatic Glow Rings */}
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] sm:w-[500px] sm:h-[500px] md:w-[800px] md:h-[800px] border border-[#E53A3A]/20 rounded-full blur-3xl animate-pulse-glow pointer-events-none"></div>
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[200px] h-[200px] sm:w-[400px] sm:h-[400px] md:w-[600px] md:h-[600px] border border-[#FFAB40]/15 rounded-full blur-3xl animate-pulse-glow pointer-events-none"></div>
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[150px] h-[150px] sm:w-[300px] sm:h-[300px] md:w-[400px] md:h-[400px] border border-[#E53A3A]/10 rounded-full blur-3xl animate-pulse-glow pointer-events-none"></div>
-                    
-                    {/* Floating Glow Elements */}
-                    <div className="absolute top-1/4 left-1/4 w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 bg-gradient-to-r from-[#E53A3A]/30 to-[#FFAB40]/30 rounded-full blur-2xl animate-pulse-glow pointer-events-none"></div>
-                    <div className="absolute top-3/4 right-1/4 w-12 h-12 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-gradient-to-r from-[#FFAB40]/25 to-[#E53A3A]/25 rounded-full blur-2xl animate-pulse-glow pointer-events-none"></div>
+
                     
                     <div className="container mx-auto px-6 relative z-10">
-                        <div
-                            onClick={onGetStarted}
-                            className="flex flex-col items-center justify-center gap-4 mb-10 cursor-pointer group animate-fade-slide-down"
-                            role="button"
-                            aria-label="Launch Otakon"
-                        >
-                            <Logo className="h-32 w-32 transition-transform group-hover:scale-110 group-hover:drop-shadow-2xl group-hover:drop-shadow-[#E53A3A]/50" />
-                            <h1 className="text-6xl md:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] transition-opacity group-hover:opacity-80">
+                        <div className="flex flex-col items-center justify-center gap-4 mb-10 animate-fade-slide-down">
+                            <Logo className="h-32 w-32" />
+                            <h1 className="text-6xl md:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40]">
                                 Otakon
                             </h1>
                         </div>
 
-                        <h2 className="text-6xl md:text-7xl font-bold tracking-tight mb-8 bg-clip-text text-transparent bg-gradient-to-br from-white via-[#FFAB40] to-neutral-300 animate-fade-slide-up leading-tight">
+                        <h2 className="text-6xl md:text-7xl font-bold tracking-tight mb-8 text-white animate-fade-slide-up leading-tight">
                             Stuck In-Game?
                             <br/>
                             Get Instant, Spoiler-Free Hints
@@ -647,7 +629,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                             <button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-bold py-4 px-10 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl hover:shadow-[#E53A3A]/25 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-lg animate-pulse-glow"
+                                className="bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-bold py-4 px-10 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl hover:shadow-[#E53A3A]/25 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-lg"
                             >
                                 {isSubmitting ? (
                                     <div className="flex items-center justify-center">
@@ -655,7 +637,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                                         Joining...
                                     </div>
                                 ) : (
-                                    'Get Early Access'
+                                    'Join Waitlist'
                                 )}
                             </button>
                         </form>
@@ -670,11 +652,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
 
                 {/* Features Section */}
                 <section id="features" className="py-20 md:py-28 bg-transparent relative">
-                    {/* Features Background Glow */}
-                    <div className="absolute inset-0 -z-10">
-                        <div className="absolute top-1/2 left-1/4 w-48 h-48 sm:w-72 sm:h-72 md:w-96 md:h-96 bg-gradient-to-r from-[#E53A3A]/10 to-[#FFAB40]/10 rounded-full blur-3xl animate-pulse-glow pointer-events-none"></div>
-                        <div className="absolute bottom-1/4 right-1/4 w-40 h-40 sm:w-64 sm:h-64 md:w-80 md:h-80 bg-gradient-to-r from-[#FFAB40]/8 to-[#E53A3A]/8 rounded-full blur-3xl animate-pulse-glow pointer-events-none"></div>
-                    </div>
+
                     <div className="container mx-auto px-8 max-w-6xl relative z-10">
                         <div className="text-center mb-16 md:mb-20 animate-fade-slide-up">
                             <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-white mb-6">Ditch the Walkthroughs, Play Smarter</h2>
@@ -723,11 +701,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
 
                 {/* Testimonials Section */}
                 <section className="py-20 md:py-28 bg-transparent relative">
-                    {/* Testimonials Background Glow */}
-                    <div className="absolute inset-0 -z-10">
-                        <div className="absolute top-1/3 right-1/3 w-36 h-36 sm:w-56 sm:h-56 md:w-72 md:h-72 bg-gradient-to-r from-[#E53A3A]/8 to-[#FFAB40]/8 rounded-full blur-3xl animate-pulse-glow pointer-events-none"></div>
-                        <div className="absolute bottom-1/3 left-1/3 w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64 bg-gradient-to-r from-[#FFAB40]/6 to-[#E53A3A]/6 rounded-full blur-3xl animate-pulse-glow pointer-events-none"></div>
-                    </div>
+
                     <div className="container mx-auto px-8 max-w-6xl relative z-10">
                         <div className="text-center mb-16 md:mb-20 animate-fade-slide-up">
                             <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-white mb-6">Don't Just Take Our Word For It</h2>
@@ -741,7 +715,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                             />
                             <Testimonial
                                 quote="The PC-to-mobile sync is just magic. Press a key, get a hint on my phone, and I'm back in the action. No more alt-tabbing to a browser."
-                                author="Pliskin"
+                                author="Ash"
                                 title="PC Gamer"
                             />
                         </div>
@@ -755,10 +729,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                      <div className="container mx-auto px-6 text-center relative">
                           <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-white mb-10">Your Next Adventure Awaits, Unspoiled</h2>
                           <button
-                            onClick={handleScrollToTop}
-                            className="bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-bold py-4 px-10 rounded-lg transition-transform transform hover:scale-105 text-lg animate-pulse-glow"
+                            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                            className="bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-bold py-4 px-10 rounded-lg transition-transform transform hover:scale-105 text-lg"
                             >
-                            Get Early Access
+                            Join Waitlist
                           </button>
                      </div>
                 </section>
@@ -767,20 +741,20 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
             {/* Footer */}
             <footer className="bg-transparent border-t border-neutral-800/50">
                 <div className="container mx-auto px-6 py-8">
-                    <div className="flex flex-col-reverse md:flex-row justify-between items-center text-center md:text-left gap-6">
-                        <div className="flex flex-col items-center md:items-start">
-                            <button onClick={handleScrollToTop} className="flex items-center gap-3 transition-opacity hover:opacity-80">
+                    <div className="flex flex-col md:flex-row justify-between items-center text-center md:text-left gap-6">
+                        <div>
+                            <div className="flex items-center gap-3 mx-auto md:mx-0">
                                 <Logo className="h-8 w-8" />
                                 <span className="text-xl font-bold">Otakon</span>
-                            </button>
+                            </div>
                              <p className="text-neutral-400 mt-2 text-sm">&copy; {new Date().getFullYear()} Otakon. All rights reserved.</p>
                         </div>
-                        <div className="flex items-center gap-6 text-sm font-medium text-neutral-400 mb-4 md:mb-0">
+                        <div className="flex items-center gap-6 text-sm font-medium text-neutral-400">
                            <a href="#pricing" onClick={handleScrollTo('pricing')} className="hover:text-white transition-colors">Pricing</a>
-                           <button type="button" onClick={onOpenAbout} className="hover:text-white transition-colors">About</button>
-                           <button type="button" onClick={onOpenPrivacy} className="hover:text-white transition-colors">Privacy</button>
-                           <button type="button" onClick={onOpenRefund} className="hover:text-white transition-colors">Refund Policy</button>
-                           <button type="button" onClick={onOpenContact} className="hover:text-white transition-colors">Contact Us</button>
+                           <a href="/about" onClick={(e) => { e.preventDefault(); onDirectNavigation('/about'); }} className="hover:text-white transition-colors">About</a>
+                           <a href="/privacy" onClick={(e) => { e.preventDefault(); onDirectNavigation('/privacy'); }} className="hover:text-white transition-colors">Privacy</a>
+                           <a href="/refund" onClick={(e) => { e.preventDefault(); onDirectNavigation('/refund'); }} className="hover:text-white transition-colors">Refund Policy</a>
+                           <a href="/contact" onClick={(e) => { e.preventDefault(); onDirectNavigation('/contact'); }} className="hover:text-white transition-colors">Contact Us</a>
                         </div>
                     </div>
                 </div>

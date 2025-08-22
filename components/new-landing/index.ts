@@ -1,0 +1,9 @@
+export { default as LandingPage } from "./LandingPage";
+export { default as ContactUsModal } from "./ContactUsModal";
+export { default as AboutModal } from "./AboutModal";
+export { default as PrivacyPolicyModal } from "./PrivacyPolicyModal";
+export { default as RefundPolicyModal } from "./RefundPolicyModal";
+export { default as Logo } from "./Logo";
+export { default as CheckIcon } from "./CheckIcon";
+export { default as StarIcon } from "./StarIcon";
+export { default as FounderImage } from "./FounderImage";

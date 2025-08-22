@@ -14,7 +14,7 @@ import SuggestedPrompts from './components/SuggestedPrompts';
 import { useChat } from './hooks/useChat';
 import { useConnection } from './hooks/useConnection';
 import ConversationTabs from './components/ConversationTabs';
-import LandingPage from './components/LandingPage';
+import LandingPage from './components/NewLandingPage';
 import ContactUsModal from './components/ContactUsModal';
 import HandsFreeToggle from './components/HandsFreeToggle';
 import { ttsService } from './services/ttsService';
