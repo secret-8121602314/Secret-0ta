@@ -60,8 +60,14 @@ export const useEnhancedInsights = (
         if (profile) {
             (async () => {
                 try {
-                    const tabs = enhancedInsightService.getTabsForGenre(genre);
-                    const prioritizedTabs = enhancedInsightService.prioritizeTabsForProfile(tabs, await profile);
+                    const tabs = enhancedInsightService.getTabsForGenre(genre || 'default');
+                    let prioritizedTabs = tabs;
+                    if (profile) {
+                        const resolvedProfile = await profile;
+                        if (resolvedProfile) {
+                            prioritizedTabs = enhancedInsightService.prioritizeTabsForProfile(tabs, resolvedProfile);
+                        }
+                    }
                     setInsightTabs(prioritizedTabs);
                 
                     // Check if this is a new game pill that needs Pro model generation
@@ -124,12 +130,16 @@ export const useEnhancedInsights = (
         try {
             console.log(`🚀 Generating insights for NEW GAME PILL: ${gameName} (${genre}) with ${userTier} tier`);
             
+            if (!profile) return;
+            const resolvedProfile = await profile;
+            if (!resolvedProfile) return;
+            if (!gameContext) return;
             const results = await profileAwareInsightService.generateInsightsForNewGamePill(
                 gameName, 
                 genre, 
                 progress, 
                 'paid', // Fix userTier type
-                profile, // Add profile parameter
+                Promise.resolve(resolvedProfile), // Add profile parameter
                 await gameContext, // Await gameContext
                 (error) => console.error('Insight generation error:', error)
             );
@@ -193,6 +203,9 @@ export const useEnhancedInsights = (
         try {
             console.log(`🔄 Updating insights for user query: ${gameName} (${genre}) with ${userTier} tier`);
             
+            if (!profile) return;
+            const resolvedProfile = await profile;
+            if (!resolvedProfile) return;
             const results = await profileAwareInsightService.updateInsightsForUserQuery(
                 gameName, 
                 genre, 
@@ -200,7 +213,7 @@ export const useEnhancedInsights = (
                 conversationId,
                 insightTabs,
                 'paid', // Fix userTier type
-                profile, // Add profile parameter
+                Promise.resolve(resolvedProfile), // Add profile parameter
                 (error) => console.error('Insight update error:', error)
             );
             
@@ -267,6 +280,9 @@ export const useEnhancedInsights = (
             const tabToRetry = insightTabs.find(tab => tab.id === insightId);
             if (!tabToRetry) return;
             
+            if (!profile) return;
+            const resolvedProfile = await profile;
+            if (!resolvedProfile) return;
             // Always use Flash model for retries (cost optimization)
             const results = await profileAwareInsightService.updateInsightsForUserQuery(
                 gameName, 
@@ -275,7 +291,7 @@ export const useEnhancedInsights = (
                 conversationId,
                 [tabToRetry], // Only retry this specific tab
                 'paid', // Fix userTier type
-                profile, // Add profile parameter
+                Promise.resolve(resolvedProfile), // Add profile parameter
                 (error) => console.error('Insight retry error:', error)
             );
             

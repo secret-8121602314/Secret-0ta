@@ -23,7 +23,7 @@ export const MigrationStatus: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to check status:', error);
-      setStatus({ error: error.message });
+      setStatus({ error: error instanceof Error ? error.message : String(error) });
     } finally {
       setLoading(false);
     }

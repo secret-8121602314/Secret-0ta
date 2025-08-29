@@ -94,7 +94,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
             }
         } catch (error) {
             console.error('Auth error:', error);
-            trackOnboardingDropOff('login', 1, 'auth_error', { error: error.toString() });
+            trackOnboardingDropOff('login', 1, 'auth_error', { error: error instanceof Error ? error.message : String(error) });
             setButtonAnimations(prev => ({ ...prev, [method]: false }));
         }
     };
@@ -118,7 +118,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
             }
         } catch (error) {
             setErrorMessage('An unexpected error occurred. Please try again.');
-            trackOnboardingDropOff('login', 1, 'email_signin_error', { error: error.toString() });
+            trackOnboardingDropOff('login', 1, 'email_signin_error', { error: error instanceof Error ? error.message : String(error) });
         } finally {
             setIsLoading(false);
         }

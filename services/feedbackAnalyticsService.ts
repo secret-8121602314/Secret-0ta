@@ -61,10 +61,11 @@ export class FeedbackAnalyticsService {
       const report = {
         summary: {
           totalFeedback: allFeedback.length,
-          positiveRate: ((allFeedback.length - trends.negativeFeedback) / allFeedback.length * 100).toFixed(1),
+          negativeFeedback: trends.negativeFeedback,
+          positiveRate: Number(((allFeedback.length - trends.negativeFeedback) / allFeedback.length * 100).toFixed(1)),
+          commonIssues: trends.commonIssues,
           improvementAreas: trends.improvementAreas,
-          successRate: trends.successRate,
-          ...trends
+          successRate: trends.successRate
         },
         trends: {
           daily: await this.getDailyFeedbackTrends(timeframe),

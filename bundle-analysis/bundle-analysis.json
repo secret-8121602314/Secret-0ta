@@ -1,13 +1,13 @@
 {
-  "timestamp": "2025-08-27T17:34:04.504Z",
+  "timestamp": "2025-08-29T16:22:34.010Z",
   "bundleInfo": {
-    "totalSize": 1858096,
+    "totalSize": 1917906,
     "fileCount": 16,
     "largestFiles": [
       {
-        "path": "assets/chunk-CgYf95-6.js",
-        "size": 718668,
-        "sizeFormatted": "701.82 KB"
+        "path": "assets/chunk-DMoTlmZA.js",
+        "size": 724086,
+        "sizeFormatted": "707.12 KB"
       },
       {
         "path": "assets/chunk-7J4LelS0.js",
@@ -15,55 +15,55 @@
         "sizeFormatted": "225.83 KB"
       },
       {
-        "path": "assets/chunk-DduAmwEu.js",
-        "size": 206048,
-        "sizeFormatted": "201.22 KB"
+        "path": "assets/chunk-BjIQ4jMe.js",
+        "size": 225208,
+        "sizeFormatted": "219.93 KB"
       },
       {
-        "path": "assets/chunk-D4WZp8Rd.js",
+        "path": "assets/chunk-B-FY7SeN.js",
         "size": 163454,
         "sizeFormatted": "159.62 KB"
       },
       {
-        "path": "assets/chunk-r1PYVhUZ.js",
+        "path": "assets/chunk-1XRmXACX.js",
+        "size": 143295,
+        "sizeFormatted": "139.94 KB"
+      },
+      {
+        "path": "assets/chunk-ZDHtPeSP.js",
         "size": 123933,
         "sizeFormatted": "121.03 KB"
       },
       {
-        "path": "assets/chunk-DAscfu2G.js",
-        "size": 119726,
-        "sizeFormatted": "116.92 KB"
+        "path": "assets/index-C6vGsv6W.js",
+        "size": 86591,
+        "sizeFormatted": "84.56 KB"
       },
       {
-        "path": "assets/index-BBTLzvbW.js",
-        "size": 81918,
-        "sizeFormatted": "80 KB"
+        "path": "assets/chunk-DmGeDtNv.js",
+        "size": 85147,
+        "sizeFormatted": "83.15 KB"
       },
       {
-        "path": "assets/chunk-B23-wmeL.js",
-        "size": 77298,
-        "sizeFormatted": "75.49 KB"
-      },
-      {
-        "path": "assets/chunk--FHOvp7l.js",
+        "path": "assets/chunk-CL6Cbj7a.js",
         "size": 47335,
         "sizeFormatted": "46.23 KB"
       },
       {
-        "path": "assets/chunk-NzCmqK8Y.js",
+        "path": "assets/chunk-D_8sBfSo.js",
         "size": 27737,
         "sizeFormatted": "27.09 KB"
       }
     ],
     "fileTypes": {
       ".md": 6298,
-      ".js": 1819319,
+      ".js": 1879988,
       ".css": 15683,
-      ".html": 13771,
+      ".html": 12912,
       ".xml": 3025
     },
     "totalGzipped": 0,
-    "totalSizeFormatted": "1.77 MB"
+    "totalSizeFormatted": "1.83 MB"
   },
   "dependencyInfo": {
     "packages": {

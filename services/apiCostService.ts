@@ -239,9 +239,15 @@ class APICostService {
 
         records.forEach(record => {
             const data = record.data;
-            callsByModel[data.model]++;
-            callsByPurpose[data.purpose] = (callsByPurpose[data.purpose] || 0) + 1;
-            callsByTier[data.user_tier]++;
+            if (data.model === 'flash' || data.model === 'pro') {
+                callsByModel[data.model as 'flash' | 'pro']++;
+            }
+            if (typeof data.purpose === 'string') {
+                callsByPurpose[data.purpose] = (callsByPurpose[data.purpose] || 0) + 1;
+            }
+            if (data.user_tier === 'free' || data.user_tier === 'paid') {
+                callsByTier[data.user_tier as 'free' | 'paid']++;
+            }
             totalCost += parseFloat(data.estimated_cost);
         });
 
@@ -277,9 +283,13 @@ class APICostService {
         let totalCost = 0;
 
         recentRecords.forEach(record => {
-            callsByModel[record.model]++;
+            if (record.model === 'flash' || record.model === 'pro') {
+                callsByModel[record.model]++;
+            }
             callsByPurpose[record.purpose] = (callsByPurpose[record.purpose] || 0) + 1;
-            callsByTier[record.userTier]++;
+            if (record.userTier === 'free' || record.userTier === 'paid') {
+                callsByTier[record.userTier]++;
+            }
             totalCost += record.cost;
         });
 

@@ -382,7 +382,7 @@ export const useChat = (isHandsFreeMode: boolean) => {
                 targetId: insightId,
                 feedbackType: vote === 'up' ? 'up' : 'down',
                 feedbackText: `${vote} on insight`,
-                aiResponseContext: null,
+                aiResponseContext: undefined,
                 metadata: { 
                     insightTitle: oldInsight.title,
                     insightContent: oldInsight.content,
@@ -990,7 +990,7 @@ Progress: ${conversation.progress}%`;
                     conversation.title,
                     conversation.genre,
                     conversation.progress,
-                    insightTabConfig.instruction,
+                    insightTabConfig.instruction || '',
                     insightTabConfig.title,
                     (chunk) => {
                         if (controller.signal.aborted) return;
@@ -1186,8 +1186,8 @@ Progress: ${conversation.progress}%`;
         // Mark progress-dependent insights as needing updates (user must click to regenerate)
         const tabs = insightTabsConfig[conversation.genre] || insightTabsConfig.default;
         const progressDependentTabs = tabs.filter(tab => 
-            tab.instruction.includes('progress') || 
-            tab.instruction.includes('current') ||
+            (tab.instruction && tab.instruction.includes('progress')) || 
+            (tab.instruction && tab.instruction.includes('current')) ||
             tab.id === 'story_so_far' ||
             tab.id === 'current_objectives'
         );

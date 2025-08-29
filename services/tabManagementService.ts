@@ -25,7 +25,7 @@ export class TabManagementService {
         return {
           action: 'add',
           title,
-          content: this.extractContent(text)
+          content: this.extractContent(text) || undefined
         };
       }
     }
@@ -39,7 +39,7 @@ export class TabManagementService {
           action: 'modify',
           tabId,
           title,
-          content: this.extractContent(text)
+          content: this.extractContent(text) || undefined
         };
       }
     }

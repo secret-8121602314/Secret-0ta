@@ -77,9 +77,15 @@ class PlayerProfileService {
 
       const existing = await this.getProfile();
       const newProfile: PlayerProfile = {
-        ...existing,
-        ...profile,
+        hintStyle: 'Balanced',
+        playerFocus: 'Story-Driven',
+        preferredTone: 'Encouraging',
+        spoilerTolerance: 'Moderate',
+        isFirstTime: false,
+        createdAt: Date.now(),
         lastUpdated: Date.now(),
+        ...(existing || {}),
+        ...profile,
       };
 
       if (!existing) {
@@ -94,15 +100,15 @@ class PlayerProfileService {
           auth_user_id: user.id,
           email: user.email || '',
           display_name: newProfile.playerFocus || 'Player',
-          profile_data: {
-            hint_style: newProfile.hintStyle,
-            player_focus: newProfile.playerFocus,
-            preferred_tone: newProfile.preferredTone,
-            spoiler_tolerance: newProfile.spoilerTolerance,
-            created_at: newProfile.createdAt,
-            last_updated: newProfile.lastUpdated,
-            is_first_time: newProfile.isFirstTime
-          }
+                  profile_data: {
+          hint_style: newProfile.hintStyle || 'Balanced',
+          player_focus: newProfile.playerFocus || 'Story-Driven',
+          preferred_tone: newProfile.preferredTone || 'Encouraging',
+          spoiler_tolerance: newProfile.spoilerTolerance || 'Moderate',
+          created_at: newProfile.createdAt,
+          last_updated: newProfile.lastUpdated,
+          is_first_time: newProfile.isFirstTime
+        }
         });
 
       if (error) throw error;

@@ -86,6 +86,10 @@ class ProfileAwareInsightService {
                         if (userTier === 'paid') {
                             // PAID USERS: Use Pro model for new game pill insights (ONLY time Pro is used)
                             console.log(`💰 Using Gemini 2.5 Pro for new game pill insight: ${tab.title}`);
+                            if (!gameContext) {
+                                onError?.(`Game context not found for ${gameName}`);
+                                continue;
+                            }
                             content = await this.generateContentWithProModel(
                                 tab, 
                                 gameName, 
@@ -97,6 +101,10 @@ class ProfileAwareInsightService {
                         } else {
                             // FREE USERS: Use Flash model for new game pill insights
                             console.log(`🆓 Using Gemini 2.5 Flash for new game pill insight: ${tab.title}`);
+                            if (!gameContext) {
+                                onError?.(`Game context not found for ${gameName}`);
+                                continue;
+                            }
                             content = await this.generateContentWithFlashModel(
                                 tab, 
                                 gameName, 

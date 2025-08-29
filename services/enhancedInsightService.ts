@@ -264,7 +264,7 @@ class EnhancedInsightService {
             'Balanced': 'Discuss narrative elements with moderate detail, balancing spoiler avoidance',
             'Direct': 'Explain story themes clearly while maintaining appropriate spoiler warnings'
         };
-        return instructions[hintStyle] || instructions['Balanced'];
+        return instructions[hintStyle as keyof typeof instructions] || instructions['Balanced'];
     }
 
     private getSecretHuntingInstruction(hintStyle: string): string {
@@ -273,7 +273,7 @@ class EnhancedInsightService {
             'Balanced': 'Provide clear directions to secrets with some exploration challenge',
             'Direct': 'Give precise locations and requirements for finding secrets'
         };
-        return instructions[hintStyle] || instructions['Balanced'];
+        return instructions[hintStyle as keyof typeof instructions] || instructions['Balanced'];
     }
 
     private getOptimizationInstruction(hintStyle: string): string {
@@ -282,7 +282,7 @@ class EnhancedInsightService {
             'Balanced': 'Provide balanced optimization advice with clear explanations',
             'Direct': 'Give specific optimization recommendations with detailed steps'
         };
-        return instructions[hintStyle] || instructions['Direct'];
+        return instructions[hintStyle as keyof typeof instructions] || instructions['Direct'];
     }
 
     private getPlaythroughComparisonInstruction(profile: PlayerProfile): string {

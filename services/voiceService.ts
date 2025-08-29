@@ -35,7 +35,7 @@ class VoiceService {
       this.recognition.lang = 'en-US';
       this.recognition.maxAlternatives = 3;
 
-      this.recognition.onresult = (event) => {
+      this.recognition.onresult = (event: any) => {
         const result = event.results[0];
         if (result.isFinal) {
           const command: VoiceCommand = {
@@ -48,7 +48,7 @@ class VoiceService {
         }
       };
 
-      this.recognition.onerror = (event) => {
+      this.recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
         this.onErrorCallback?.(event.error);
         this.isListening = false;

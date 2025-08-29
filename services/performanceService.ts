@@ -172,7 +172,7 @@ class PerformanceService {
     } catch (error) {
       const duration = performance.now() - startTime;
       this.recordMetric(`${name}_duration`, duration, 'ms', metadata);
-      this.recordInteraction(name, false, duration, { ...metadata, error: error.message });
+      this.recordInteraction(name, false, duration, { ...metadata, error: error instanceof Error ? error.message : String(error) });
       throw error;
     }
   }
@@ -188,7 +188,7 @@ class PerformanceService {
     } catch (error) {
       const duration = performance.now() - startTime;
       this.recordMetric(`${name}_duration`, duration, 'ms', metadata);
-      this.recordInteraction(name, false, duration, { ...metadata, error: error.message });
+      this.recordInteraction(name, false, duration, { ...metadata, error: error instanceof Error ? error.message : String(error) });
       throw error;
     }
   }

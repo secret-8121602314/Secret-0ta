@@ -88,16 +88,6 @@ export function useIntersectionObserver(
 }
 
 /**
- * HOC for preventing unnecessary re-renders
- */
-export function withMemo<T extends React.ComponentType<any>>(
-  Component: T,
-  propsAreEqual?: (prevProps: React.ComponentProps<T>, nextProps: React.ComponentProps<T>) => boolean
-): React.MemoExoticComponent<T> {
-  return React.memo(Component, propsAreEqual);
-}
-
-/**
  * Performance monitoring utilities
  */
 export const performanceUtils = {
@@ -149,6 +139,5 @@ export default {
   useThrottle,
   useMemoizedValue,
   useIntersectionObserver,
-  withMemo,
   performanceUtils
 };

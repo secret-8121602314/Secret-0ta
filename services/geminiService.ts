@@ -8,6 +8,7 @@ import { authService } from "./supabase";
 import { apiCostService } from "./apiCostService";
 import { feedbackLearningEngine } from "./feedbackLearningEngine";
 import { supabaseDataService } from './supabaseDataService';
+import { progressTrackingService } from './progressTrackingService';
 
 const API_KEY = process.env.API_KEY;
 
@@ -45,7 +46,8 @@ const getSystemInstruction = async (conversation: Conversation, hasImages: boole
   // Get feedback-based improvements for AI learning
   let feedbackImprovements = '';
   try {
-    feedbackImprovements = await feedbackLearningEngine.getFeedbackBasedImprovements(conversation.id);
+    // Get general progress detection improvements
+    feedbackImprovements = (await feedbackLearningEngine.getProgressDetectionImprovements('universal', 'base_game')).join('\n');
   } catch (error) {
     console.warn('Failed to get feedback-based improvements:', error);
   }
@@ -470,7 +472,9 @@ Provide a summary of the latest gaming news from the past week. Your response mu
             localStorage.setItem(NEWS_CACHE_KEY, JSON.stringify(newCacheData));
         }
 
-        onUpdate(newNews);
+        if (newNews) {
+            onUpdate(newNews);
+        }
         handleSuccess();
     } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {
@@ -509,7 +513,9 @@ const makeFocusedApiCall = async (
 
         if (signal.aborted) return;
         
-        onUpdate(response.text);
+        if (response.text) {
+            onUpdate(response.text);
+        }
         handleSuccess();
     } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {
@@ -657,28 +663,31 @@ export async function sendMessage(
             (async () => {
                 for await (const chunk of stream) {
                     if (signal.aborted) break;
-                    fullResponse += chunk.text;
-                    onChunk(chunk.text);
+                    if (chunk.text) {
+                        fullResponse += chunk.text;
+                        onChunk(chunk.text);
+                    }
                 }
             })(),
             abortPromise
         ]);
         
-        // Validate response with feedback before tracking
+        // Track validation issues (placeholder for future feedback validation)
         let validationIssues: string[] = [];
-        try {
-            const validation = await feedbackLearningEngine.validateResponseWithFeedback(fullResponse, conversation.id);
-            if (!validation.isValid) {
-                console.warn('Response validation failed:', validation.issues);
-                validationIssues = validation.issues;
-            }
-        } catch (error) {
-            console.warn('Failed to validate response with feedback:', error);
-        }
 
         // Track AI response for learning
         if (fullResponse) {
             await trackAIResponse(conversation, message, fullResponse, false, validationIssues);
+            
+            // Detect progress from user message
+            try {
+                const userId = authService.getAuthState().user?.id;
+                if (userId) {
+                    await detectProgressFromResponse(conversation, message, fullResponse, userId);
+                }
+            } catch (error) {
+                console.warn('Progress detection failed:', error);
+            }
         }
         
         handleSuccess();
@@ -728,28 +737,31 @@ export async function sendMessageWithImages(
             (async () => {
                 for await (const chunk of stream) {
                     if (signal.aborted) break;
-                    fullResponse += chunk.text;
-                    onChunk(chunk.text);
+                    if (chunk.text) {
+                        fullResponse += chunk.text;
+                        onChunk(chunk.text);
+                    }
                 }
             })(),
             abortPromise
         ]);
         
-        // Validate response with feedback before tracking
+        // Track validation issues (placeholder for future feedback validation)
         let validationIssues: string[] = [];
-        try {
-            const validation = await feedbackLearningEngine.validateResponseWithFeedback(fullResponse, conversation.id);
-            if (!validation.isValid) {
-                console.warn('Response validation failed:', validation.issues);
-                validationIssues = validation.issues;
-            }
-        } catch (error) {
-            console.warn('Failed to validate response with feedback:', error);
-        }
 
         // Track AI response for learning
         if (fullResponse) {
             await trackAIResponse(conversation, prompt, fullResponse, true, validationIssues);
+            
+            // Detect progress from user message
+            try {
+                const userId = authService.getAuthState().user?.id;
+                if (userId) {
+                    await detectProgressFromResponse(conversation, prompt, fullResponse, userId);
+                }
+            } catch (error) {
+                console.warn('Progress detection failed:', error);
+            }
         }
         
         handleSuccess();
@@ -867,7 +879,7 @@ export const generateInitialProHint = async (
     try {
         const modelToUse: GeminiModel = 'gemini-2.5-flash';
         
-        const systemInstruction = await getSystemInstruction(conversation, hasImages);
+        const systemInstruction = await getSystemInstruction(conversation, hasImages || false);
         
         const generateContentPromise = ai.models.generateContent({
             model: modelToUse,
@@ -888,7 +900,7 @@ export const generateInitialProHint = async (
         if (signal.aborted) return null;
 
         handleSuccess();
-        return response.text;
+        return response.text || '';
 
     } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {
@@ -973,7 +985,7 @@ export const generateInsightWithSearch = async (
                 true
             ).catch(error => console.error('Error tracking API cost:', error));
             
-            return response.text;
+            return response.text || '';
         } else {
             // No signal provided, just generate content
                     const response = await generateContentPromise;
@@ -988,7 +1000,7 @@ export const generateInsightWithSearch = async (
             true
         ).catch(error => console.error('Error tracking API cost:', error));
         
-        return response.text;
+        return response.text || '';
         }
 
     } catch (error) {
@@ -997,7 +1009,7 @@ export const generateInsightWithSearch = async (
             throw error;
         } else {
             console.error(`Error in generateInsightWithSearch with ${finalModel}:`, error);
-            const errorMessage = error?.message || "An unknown error occurred.";
+            const errorMessage = error instanceof Error ? error.message : String(error);
             // Re-throw a standardized error for the hook to catch
             throw new Error(isQuotaError(error) ? "QUOTA_EXCEEDED" : errorMessage);
         }
@@ -1042,7 +1054,9 @@ export const generateInsightStream = async (
       (async () => {
         for await (const chunk of stream) {
           if (signal.aborted) break;
-          onChunk(chunk.text);
+          if (chunk.text) {
+            onChunk(chunk.text);
+          }
         }
       })(),
       abortPromise
@@ -1140,6 +1154,7 @@ Do not use web search for this task. The output MUST be a valid JSON object matc
 
         if (signal.aborted) return null;
 
+        if (!response.text) return null;
         const jsonText = response.text.trim();
         const parsedJson = JSON.parse(jsonText);
 
@@ -1154,5 +1169,58 @@ Do not use web search for this task. The output MUST be a valid JSON object matc
             handleError(error, onError);
         }
         return null;
+    }
+};
+
+// Progress detection from AI responses
+export const detectProgressFromResponse = async (
+    conversation: Conversation,
+    userMessage: string,
+    aiResponse: string,
+    userId: string
+): Promise<void> => {
+    console.log('🤖 Gemini AI: Analyzing message for progress detection', {
+        conversationTitle: conversation.title,
+        userMessage,
+        userId
+    });
+    
+    try {
+        // Simple progress detection based on common gaming phrases
+        const progressIndicators = [
+            { phrase: 'defeated', eventType: 'boss_defeat', confidence: 0.7 },
+            { phrase: 'completed', eventType: 'quest_completion', confidence: 0.8 },
+            { phrase: 'found', eventType: 'item_acquisition', confidence: 0.6 },
+            { phrase: 'discovered', eventType: 'location_discovery', confidence: 0.7 },
+            { phrase: 'reached', eventType: 'story_progression', confidence: 0.6 },
+            { phrase: 'unlocked', eventType: 'story_progression', confidence: 0.8 }
+        ];
+
+        for (const indicator of progressIndicators) {
+            if (userMessage.toLowerCase().includes(indicator.phrase.toLowerCase())) {
+                // Extract game ID from conversation title or context
+                const gameId = conversation.title.toLowerCase().includes('elden ring') ? 'elden_ring' :
+                              conversation.title.toLowerCase().includes('cyberpunk') ? 'cyberpunk_2077' :
+                              conversation.title.toLowerCase().includes('zelda') ? 'zelda_tears_kingdom' :
+                              conversation.title.toLowerCase().includes('baldurs') ? 'baldurs_gate_3' : 'unknown';
+
+                if (gameId !== 'unknown') {
+                    await progressTrackingService.updateProgressForAnyGame(
+                        userId,
+                        gameId,
+                        indicator.eventType,
+                        `AI-detected ${indicator.eventType} from user message`,
+                        3, // Default progress level
+                        'base_game',
+                        indicator.confidence,
+                        'Progress detected from user message',
+                        [userMessage]
+                    );
+                }
+                break; // Only detect one progress event per message
+            }
+        }
+    } catch (error) {
+        console.warn('Progress detection failed:', error);
     }
 };

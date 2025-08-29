@@ -11,3 +11,18 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
   <App />
 );
+
+// Service Worker Registration for PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    // Use relative path for better compatibility across different deployment scenarios
+    const swPath = import.meta.env.PROD ? './sw.js' : '/sw.js';
+    navigator.serviceWorker.register(swPath)
+      .then((registration) => {
+        console.log('✅ Service Worker registered successfully:', registration);
+      })
+      .catch((error) => {
+        console.log('❌ Service Worker registration failed:', error);
+      });
+  });
+}

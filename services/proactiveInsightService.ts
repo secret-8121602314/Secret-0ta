@@ -55,8 +55,11 @@ class ProactiveInsightService {
             // Store trigger in history
             await this.storeTrigger(trigger);
             
+            if (!profile) return [];
+            const resolvedProfile = await profile;
+            if (!resolvedProfile) return [];
             // Generate insights based on trigger type and profile
-            const insights = await this.generateInsightsForTrigger(trigger, await profile, await gameContext);
+            const insights = await this.generateInsightsForTrigger(trigger, resolvedProfile, await gameContext);
             
             // Store generated insights
             this.storeProactiveInsights(insights);

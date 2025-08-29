@@ -53,8 +53,8 @@ export function useAdvancedCache<T = any>(options: UseAdvancedCacheOptions<T>): 
     lastUpdated: new Date()
   });
 
-  const refreshTimeoutRef = useRef<NodeJS.Timeout>();
-  const predictionTimeoutRef = useRef<NodeJS.Timeout>();
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const predictionTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // ===== CACHE OPERATIONS =====
 

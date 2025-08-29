@@ -154,14 +154,14 @@ interface ChatInputProps {
     onChange: (value: string) => void;
     onSendMessage: (text: string, images?: ImageFile[]) => void;
     isCooldownActive: boolean;
-    onImageProcessingError: (string) => void;
+    onImageProcessingError: (error: string) => void;
     usage: Usage;
     imagesForReview: ImageFile[];
     onImagesReviewed: () => void;
     isManualUploadMode: boolean;
     onToggleManualUploadMode: () => void;
     connectionStatus: ConnectionStatus;
-    textareaRef: React.RefObject<HTMLTextAreaElement>;
+    textareaRef: React.RefObject<HTMLTextAreaElement | null>;
     onBatchUploadAttempt: () => void;
     hasInsights: boolean;
     activeConversation: Conversation | undefined;

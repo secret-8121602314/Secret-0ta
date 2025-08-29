@@ -150,6 +150,8 @@ class CharacterDetectionService {
     // Try to detect from recent messages
     const characterName = this.extractCharacterNameFromMessages(messages);
     if (characterName) {
+      if (!gameId) return null;
+      
       const characterInfo: CharacterInfo = {
         id: Date.now().toString(), // Simple unique ID
         name: characterName,
@@ -309,6 +311,8 @@ class CharacterDetectionService {
       const match = text.match(pattern);
       if (match && match[1]) {
         const characterName = match[1].trim();
+        if (!gameId) return null;
+        
         const characterInfo: CharacterInfo = {
           id: Date.now().toString(), // Simple unique ID
           name: characterName,
@@ -456,7 +460,7 @@ class CharacterDetectionService {
       modern: ['Esteemed', 'Respected', 'Honorable']
     };
     
-    const titleList = titles[profile.languageStyle] || titles.modern;
+    const titleList = titles[profile.languageStyle as keyof typeof titles] || titles.modern;
     const title = titleList[Math.floor(Math.random() * titleList.length)];
     return `${title} ${characterName}`;
   }
@@ -469,7 +473,7 @@ class CharacterDetectionService {
       fantasy: ['Traveler', 'Wanderer', 'Seeker', 'Adventurer']
     };
     
-    const nicknameList = nicknames[profile.languageStyle] || nicknames.modern;
+    const nicknameList = nicknames[profile.languageStyle as keyof typeof nicknames] || nicknames.modern;
     const nickname = nicknameList[Math.floor(Math.random() * nicknameList.length)];
     return `${nickname} ${characterName}`;
   }
@@ -482,7 +486,7 @@ class CharacterDetectionService {
       action: ['Warrior', 'Fighter', 'Guardian', 'Defender']
     };
     
-    const roleList = roles[profile.genre] || roles.rpg;
+    const roleList = roles[profile.genre as keyof typeof roles] || roles.rpg;
     const role = roleList[Math.floor(Math.random() * roleList.length)];
     return `${role} ${characterName}`;
   }
@@ -529,7 +533,7 @@ class CharacterDetectionService {
       }
     };
     
-    return patterns[profile.languageStyle] || this.getDefaultLanguagePatterns();
+    return patterns[profile.languageStyle as keyof typeof patterns] || this.getDefaultLanguagePatterns();
   }
 
   // Get default language patterns

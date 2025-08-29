@@ -452,7 +452,7 @@ class AIContextService {
       const hasImages = feedback.ai_response_context.has_images || false;
 
       patterns.push({
-        learning_type: 'response_pattern',
+        learning_type: 'response_pattern' as const,
         pattern_data: {
           response_length: responseLength,
           has_code: hasCode,
@@ -470,7 +470,7 @@ class AIContextService {
       const severity = feedback.ai_response_context.severity || 'medium';
       
       patterns.push({
-        learning_type: 'error_correction',
+        learning_type: 'error_correction' as const,
         pattern_data: {
           feedback_category: feedbackCategory,
           severity: severity,
@@ -489,7 +489,7 @@ class AIContextService {
       const userProgress = feedback.user_context.user_progress;
 
       patterns.push({
-        learning_type: 'user_preference',
+        learning_type: 'user_preference' as const,
         pattern_data: {
           userTier,
           gameGenre,
@@ -506,7 +506,7 @@ class AIContextService {
     // Success pattern analysis (for thumbs up)
     if (feedback.feedback_type === 'up') {
       patterns.push({
-        learning_type: 'success_pattern',
+        learning_type: 'success_pattern' as const,
         pattern_data: {
           response_type: 'positive_feedback',
           user_satisfaction: 'high',

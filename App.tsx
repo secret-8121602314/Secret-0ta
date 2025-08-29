@@ -2579,11 +2579,15 @@ const AppComponent: React.FC = () => {
                     currentTitle={activeConversation?.insights?.[pendingModification.id]?.title || 'Insight'}
                     suggestion={pendingModification}
                     onOverwrite={() => {
-                        overwriteInsight(activeConversationId, pendingModification.id, pendingModification.title, pendingModification.content);
+                        if (pendingModification.id && pendingModification.title && pendingModification.content) {
+                            overwriteInsight(activeConversationId, pendingModification.id, pendingModification.title, pendingModification.content);
+                        }
                         setPendingModification(null);
                     }}
                     onCreateNew={() => {
-                        createNewInsight(activeConversationId, pendingModification.title, pendingModification.content);
+                        if (pendingModification.title && pendingModification.content) {
+                            createNewInsight(activeConversationId, pendingModification.title, pendingModification.content);
+                        }
                         setPendingModification(null);
                     }}
                     onCancel={() => setPendingModification(null)}

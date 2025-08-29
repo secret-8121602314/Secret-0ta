@@ -6,9 +6,9 @@ import path from 'path'
 const spaFallbackPlugin = () => {
   return {
     name: 'spa-fallback',
-    configureServer(server) {
+    configureServer(server: any) {
       // Handle SPA routing - serve index.html for all routes except assets
-      server.middlewares.use((req, res, next) => {
+      server.middlewares.use((req: any, res: any, next: any) => {
         const url = req.url || ''
         
         // Skip for asset requests
@@ -102,6 +102,7 @@ export default defineConfig(({ mode }) => {
           },
           // Optimize asset naming
           assetFileNames: (assetInfo) => {
+            if (!assetInfo.name) return 'assets/[name]-[hash].[ext]';
             const info = assetInfo.name.split('.');
             const ext = info[info.length - 1];
             if (/\.(css)$/.test(assetInfo.name)) {

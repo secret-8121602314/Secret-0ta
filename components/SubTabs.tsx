@@ -160,7 +160,7 @@ const SubTabs: React.FC<SubTabsProps> = ({
     }, []);
 
     const handleDragEnd = useCallback(() => {
-        if (draggedItem.current !== null && dragOverItem !== null && draggedItem.current !== dragOverItem) {
+        if (draggedItem.current !== null && dragOverItem !== null && draggedItem.current !== dragOverItem && activeConversation) {
             onReorder(activeConversation.id, draggedItem.current, dragOverItem);
         }
         draggedItem.current = null;

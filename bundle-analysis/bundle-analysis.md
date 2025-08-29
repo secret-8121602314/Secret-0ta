@@ -1,26 +1,26 @@
 # 🚀 Otakon Bundle Analysis Report
 
-Generated: 8/27/2025, 11:04:04 PM
+Generated: 8/29/2025, 9:52:34 PM
 
 ## 📊 Bundle Overview
 
-- **Total Size**: 1.77 MB
+- **Total Size**: 1.83 MB
 - **File Count**: 16
 
 ## 📁 Largest Files
 
 | File | Size |
 |------|------|
-| assets/chunk-CgYf95-6.js | 701.82 KB |
+| assets/chunk-DMoTlmZA.js | 707.12 KB |
 | assets/chunk-7J4LelS0.js | 225.83 KB |
-| assets/chunk-DduAmwEu.js | 201.22 KB |
-| assets/chunk-D4WZp8Rd.js | 159.62 KB |
-| assets/chunk-r1PYVhUZ.js | 121.03 KB |
-| assets/chunk-DAscfu2G.js | 116.92 KB |
-| assets/index-BBTLzvbW.js | 80 KB |
-| assets/chunk-B23-wmeL.js | 75.49 KB |
-| assets/chunk--FHOvp7l.js | 46.23 KB |
-| assets/chunk-NzCmqK8Y.js | 27.09 KB |
+| assets/chunk-BjIQ4jMe.js | 219.93 KB |
+| assets/chunk-B-FY7SeN.js | 159.62 KB |
+| assets/chunk-1XRmXACX.js | 139.94 KB |
+| assets/chunk-ZDHtPeSP.js | 121.03 KB |
+| assets/index-C6vGsv6W.js | 84.56 KB |
+| assets/chunk-DmGeDtNv.js | 83.15 KB |
+| assets/chunk-CL6Cbj7a.js | 46.23 KB |
+| assets/chunk-D_8sBfSo.js | 27.09 KB |
 
 ## 💡 Optimization Suggestions
 
