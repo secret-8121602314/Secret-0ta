@@ -28,16 +28,7 @@ export interface Achievement {
   reward?: string;
 }
 
-export interface SessionProgress {
-  gameId: string;
-  gameTitle: string;
-  progress: number;
-  lastLocation: string;
-  lastSession: string;
-  newInsights: number;
-  screenshotsToday: number;
-  questionsToday: number;
-}
+
 
 export class DailyEngagementService {
   private static instance: DailyEngagementService;
@@ -214,34 +205,7 @@ export class DailyEngagementService {
     return diffDays === 1;
   }
 
-  /**
-   * Get session progress for a specific game
-   */
-  getSessionProgress(gameId: string): SessionProgress | null {
-    const stored = localStorage.getItem(`sessionProgress_${gameId}`);
-    return stored ? JSON.parse(stored) : null;
-  }
 
-  /**
-   * Update session progress
-   */
-  updateSessionProgress(gameId: string, gameTitle: string, progress: number, location: string): void {
-    const existing = this.getSessionProgress(gameId);
-    const today = new Date().toDateString();
-    
-    const sessionProgress: SessionProgress = {
-      gameId,
-      gameTitle,
-      progress,
-      lastLocation: location,
-      lastSession: new Date().toISOString(),
-      newInsights: existing?.newInsights || 0,
-      screenshotsToday: existing?.screenshotsToday || 0,
-      questionsToday: existing?.questionsToday || 0
-    };
-
-    localStorage.setItem(`sessionProgress_${gameId}`, JSON.stringify(sessionProgress));
-  }
 
   /**
    * Get weekly progress summary
@@ -262,12 +226,7 @@ export class DailyEngagementService {
     let achievements = 0;
     
     // Count from localStorage (simplified for now)
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key?.startsWith('sessionProgress_')) {
-        gamesPlayed++;
-      }
-    }
+    // Session progress tracking removed
     
     const streaks = this.getUserStreaks();
     
@@ -297,19 +256,7 @@ export class DailyEngagementService {
     localStorage.setItem(`dailyCheckin_${today}`, 'true');
   }
 
-  /**
-   * Check if user should see session continuation
-   */
-  shouldShowSessionContinuation(): boolean {
-    const lastSession = localStorage.getItem('lastSessionTime');
-    if (!lastSession) return false;
-    
-    const last = new Date(lastSession);
-    const now = new Date();
-    const hoursSince = (now.getTime() - last.getTime()) / (1000 * 60 * 60);
-    
-    return hoursSince < 24; // Show if within 24 hours
-  }
+
 
   /**
    * Update last session time

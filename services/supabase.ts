@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { tierService } from './tierService';
+import { LocalStorageReplacer } from './silentMigrationService';
 
 // Environment variables for Supabase
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -17,6 +18,9 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
     detectSessionInUrl: true,
   },
 });
+
+// Initialize silent migration service
+export const localStorageReplacer = new LocalStorageReplacer(supabase);
 
 // Auth types
 export interface AuthState {
@@ -65,6 +69,12 @@ export class AuthService {
         loading: false 
       });
 
+      // If user already has a session, start migration
+      if (session?.user) {
+        console.log('Existing session found, checking if migration is needed...');
+        // The migration service will automatically check and migrate if needed
+      }
+
       // Listen for auth changes
       supabase.auth.onAuthStateChange(async (event, session) => {
         this.updateAuthState({ 
@@ -77,6 +87,9 @@ export class AuthService {
         if (event === 'SIGNED_IN' && session?.user) {
           try {
             await tierService.assignFreeTier(session.user.id);
+            
+            // Start silent migration of localStorage data to Supabase
+            console.log('Starting silent migration of localStorage data...');
           } catch (error) {
             console.error('Error assigning free tier:', error);
           }

@@ -6,6 +6,7 @@ import DiscordIcon from './DiscordIcon';
 import { authService } from '../services/supabase';
 import Button from './ui/Button';
 import { useAnalytics } from '../hooks/useAnalytics';
+import PWAInstallBanner from './PWAInstallBanner';
 
 interface LoginSplashScreenProps {
     onComplete: () => void;
@@ -23,6 +24,8 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
     const [emailMode, setEmailMode] = useState<EmailMode>('options');
     const [errorMessage, setErrorMessage] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
+    const [showDeveloperPassword, setShowDeveloperPassword] = useState(false);
+    const [developerPassword, setDeveloperPassword] = useState('');
     
     // Animation states for buttons
     const [buttonAnimations, setButtonAnimations] = useState({
@@ -188,17 +191,24 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
         setConfirmPassword('');
         setErrorMessage('');
         setSuccessMessage('');
+        setShowDeveloperPassword(false);
+        setDeveloperPassword('');
     };
 
     const handleSkip = () => {
-        onComplete();
+        if (developerPassword === 'zircon123') {
+            onComplete();
+        } else {
+            setErrorMessage('Incorrect developer password.');
+            setDeveloperPassword(''); // Clear password on error
+        }
     };
 
     const renderEmailForm = () => {
         switch (emailMode) {
             case 'signin':
                 return (
-                    <form onSubmit={handleEmailSignIn} className="w-full space-y-4">
+                    <form onSubmit={handleEmailSignIn} className="w-full space-y-6">
                         <div className="text-center mb-8">
                             <h2 className="text-3xl font-bold text-white mb-3 bg-clip-text text-transparent bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40]">Sign In</h2>
                             <p className="text-[#A3A3A3] text-lg">Welcome back! Sign in to your account</p>
@@ -216,8 +226,8 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
                             </div>
                         )}
                         
-                        <div className="space-y-2">
-                            <label className="block text-sm font-medium text-[#CFCFCF]">Email Address</label>
+                        <div className="space-y-3">
+                            <label className="block text-left text-sm font-medium text-[#CFCFCF]">Email Address</label>
                             <input
                                 type="email"
                                 value={email}
@@ -228,8 +238,17 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
                                 className="w-full bg-gradient-to-r from-[#2E2E2E] to-[#1A1A1A] border-2 border-[#424242]/60 rounded-xl py-3 px-4 text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FFAB40] focus:border-[#FFAB40]/60 transition-all duration-300 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
                             />
                         </div>
-                        <div className="space-y-2">
-                            <label className="block text-sm font-medium text-[#CFCFCF]">Password</label>
+                        <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                                <label className="block text-left text-sm font-medium text-[#CFCFCF]">Password</label>
+                                <button
+                                    type="button"
+                                    onClick={() => setEmailMode('forgot-password')}
+                                    className="text-sm text-[#FFAB40] hover:text-[#FFAB40]/80 transition-colors underline"
+                                >
+                                    Forgot your password?
+                                </button>
+                            </div>
                             <input
                                 type="password"
                                 value={password}
@@ -265,14 +284,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
                             </button>
                         </div>
                         
-                        <div className="text-center space-y-2">
-                            <button
-                                type="button"
-                                onClick={() => setEmailMode('forgot-password')}
-                                className="text-sm text-[#FFAB40] hover:text-[#FFAB40]/80 transition-colors underline"
-                            >
-                                Forgot your password?
-                            </button>
+                        <div className="text-center mt-8">
                             <div className="text-sm text-[#A3A3A3]">
                                 Don't have an account?{' '}
                                 <button
@@ -289,8 +301,8 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
 
             case 'signup':
                 return (
-                    <form onSubmit={handleEmailSignUp} className="w-full space-y-4">
-                        <div className="text-center mb-8">
+                    <form onSubmit={handleEmailSignUp} className="w-full space-y-6">
+                        <div className="text-left mb-8">
                             <h2 className="text-3xl font-bold text-white mb-3 bg-clip-text text-transparent bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40]">Create Account</h2>
                             <p className="text-[#A3A3A3] text-lg">Join Otakon AI and start your gaming journey</p>
                         </div>
@@ -307,8 +319,8 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
                             </div>
                         )}
                         
-                        <div className="space-y-2">
-                            <label className="block text-sm font-medium text-[#CFCFCF]">Email Address</label>
+                        <div className="space-y-3">
+                            <label className="block text-left text-sm font-medium text-[#CFCFCF]">Email Address</label>
                             <input
                                 type="email"
                                 value={email}
@@ -319,8 +331,8 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
                                 className="w-full bg-gradient-to-r from-[#2E2E2E] to-[#1A1A1A] border-2 border-[#424242]/60 rounded-xl py-3 px-4 text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FFAB40] focus:border-[#FFAB40]/60 transition-all duration-300 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
                             />
                         </div>
-                        <div className="space-y-2">
-                            <label className="block text-sm font-medium text-[#CFCFCF]">Password</label>
+                        <div className="space-y-3">
+                            <label className="block text-left text-sm font-medium text-[#CFCFCF]">Password</label>
                             <input
                                 type="password"
                                 value={password}
@@ -331,8 +343,8 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
                                 className="w-full bg-gradient-to-r from-[#2E2E2E] to-[#1A1A1A] border-2 border-[#424242]/60 rounded-xl py-3 px-4 text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FFAB40] focus:border-[#FFAB40]/60 transition-all duration-300 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
                             />
                         </div>
-                        <div className="space-y-2">
-                            <label className="block text-sm font-medium text-[#CFCFCF]">Confirm Password</label>
+                        <div className="space-y-3">
+                            <label className="block text-left text-sm font-medium text-[#CFCFCF]">Confirm Password</label>
                             <input
                                 type="password"
                                 value={confirmPassword}
@@ -368,7 +380,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
                             </button>
                         </div>
                         
-                        <div className="text-center text-sm text-[#A3A3A3]">
+                        <div className="text-center mt-8 text-sm text-[#A3A3A3]">
                             Already have an account?{' '}
                             <button
                                 type="button"
@@ -383,8 +395,8 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
 
             case 'forgot-password':
                 return (
-                    <form onSubmit={handleForgotPassword} className="w-full space-y-4">
-                        <div className="text-center mb-8">
+                    <form onSubmit={handleForgotPassword} className="w-full space-y-6">
+                        <div className="text-left mb-8">
                             <h2 className="text-3xl font-bold text-white mb-3 bg-clip-text text-transparent bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40]">Reset Password</h2>
                             <p className="text-[#A3A3A3] text-lg">Enter your email to receive a password reset link</p>
                         </div>
@@ -401,8 +413,8 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
                             </div>
                         )}
                         
-                        <div className="space-y-2">
-                            <label className="block text-sm font-medium text-[#CFCFCF]">Email Address</label>
+                        <div className="space-y-3">
+                            <label className="block text-left text-sm font-medium text-[#CFCFCF]">Email Address</label>
                             <input
                                 type="email"
                                 value={email}
@@ -490,8 +502,10 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
                         disabled={isLoading}
                         className={`w-full flex items-center justify-center gap-3 bg-gradient-to-r from-white to-gray-100 hover:from-gray-100 hover:to-gray-200 text-gray-800 font-bold py-4 sm:py-5 px-6 sm:px-8 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-base sm:text-lg ${buttonAnimations.google ? 'animate-pulse-glow' : ''}`}
                     >
-                        <GoogleIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-                        Continue with Google
+                        <div className="flex items-center gap-3 w-full justify-start">
+                            <GoogleIcon className="w-6 h-6" />
+                            <span className="text-left">Continue with Google</span>
+                        </div>
                     </button>
                     
                     <button
@@ -499,8 +513,10 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
                         disabled={isLoading}
                         className={`w-full flex items-center justify-center gap-3 bg-gradient-to-r from-[#5865F2] to-[#4752C4] hover:from-[#4752C4] hover:to-[#3C45A5] text-white font-bold py-4 sm:py-5 px-6 sm:px-8 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#5865F2]/25 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-base sm:text-lg ${buttonAnimations.discord ? 'animate-pulse-glow' : ''}`}
                     >
-                        <DiscordIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-                        Continue with Discord
+                        <div className="flex items-center gap-3 w-full justify-start">
+                            <DiscordIcon className="w-6 h-6" />
+                            <span className="text-left">Continue with Discord</span>
+                        </div>
                     </button>
                     
                     <button
@@ -508,23 +524,46 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
                         disabled={isLoading}
                         className={`w-full flex items-center justify-center gap-3 bg-gradient-to-r from-neutral-700 to-neutral-600 hover:from-neutral-600 hover:to-neutral-500 text-white font-bold py-4 sm:py-5 px-6 sm:px-8 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-base sm:text-lg ${buttonAnimations.email ? 'animate-pulse-glow' : ''}`}
                     >
-                        <EmailIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-                        Continue with Email
+                        <div className="flex items-center gap-3 w-full justify-start">
+                            <EmailIcon className="w-6 h-6" />
+                            <span className="text-left">Continue with Email</span>
+                        </div>
                     </button>
 
-                                            <button
-                            onClick={handleSkip}
-                            className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-neutral-700 to-neutral-600 hover:from-neutral-600 hover:to-neutral-500 text-white font-bold py-4 sm:py-5 px-6 sm:px-8 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg text-base sm:text-lg"
-                        >
-                            Enter Guest Mode
-                        </button>
-
-                        <button
-                            onClick={() => window.history.back()}
-                            className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-neutral-600 to-neutral-500 hover:from-neutral-500 hover:to-neutral-400 text-neutral-200 font-medium py-4 sm:py-5 px-6 sm:px-8 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg text-base sm:text-lg"
-                        >
-                            Go Back
-                        </button>
+                        {!showDeveloperPassword ? (
+                            <button
+                                onClick={() => setShowDeveloperPassword(true)}
+                                className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-neutral-700 to-neutral-600 hover:from-neutral-600 hover:to-neutral-500 text-white font-bold py-4 sm:py-5 px-6 sm:px-8 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg text-base sm:text-lg border border-[#424242]/60"
+                            >
+                                <div className="flex items-center gap-3 w-full justify-start">
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                                    </svg>
+                                    <span className="text-left">Developer Mode</span>
+                                </div>
+                            </button>
+                        ) : (
+                            <div className="w-full bg-gradient-to-r from-neutral-700 to-neutral-600 border border-[#424242]/60 rounded-xl p-2 sm:p-3 flex items-center gap-3 animate-fade-slide-up">
+                                <input
+                                    type="password"
+                                    placeholder="Enter developer password"
+                                    value={developerPassword}
+                                    onChange={(e) => setDeveloperPassword(e.target.value)}
+                                    className="flex-1 px-4 py-3 bg-[#2E2E2E] border border-[#424242] rounded-lg text-white placeholder-[#6E6E6E] focus:outline-none focus:border-[#FFAB40] transition-colors"
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            handleSkip();
+                                        }
+                                    }}
+                                />
+                                <button
+                                    onClick={handleSkip}
+                                    className="px-4 py-3 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] hover:from-[#D98C1F] hover:to-[#E53A3A] text-white font-bold rounded-lg transition-all duration-300 hover:scale-105 hover:shadow-lg text-sm"
+                                >
+                                    Enter
+                                </button>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <div 
@@ -564,6 +603,9 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
                     .
                 </p>
             </div>
+            
+            {/* PWA Install Banner */}
+            <PWAInstallBanner />
         </div>
     );
 };

@@ -10,18 +10,28 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "analyze": "node scripts/analyze-bundle.cjs",
+    "analyze:build": "npm run build && npm run analyze",
+    "optimize": "npm run analyze:build",
+    "performance:check": "npm run analyze",
+    "bundle:size": "npm run analyze",
+  "optimize:images": "node scripts/optimize-images.cjs",
+  "optimize:all": "npm run optimize:images && npm run analyze:build"
   },
   "dependencies": {
     "@google/genai": "^1.12.0",
     "@heroicons/react": "^2.2.0",
+    "@lottiefiles/dotlottie-react": "^0.15.1",
     "@supabase/supabase-js": "^2.55.0",
     "clsx": "^2.1.1",
+    "lottie-react": "^2.4.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-markdown": "^9.0.1",
     "remark-gfm": "^4.0.0",
-    "tailwind-merge": "^3.3.1"
+    "tailwind-merge": "^3.3.1",
+    "web-vitals": "^3.5.2"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.7.0",

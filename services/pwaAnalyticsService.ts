@@ -1,3 +1,5 @@
+import { supabaseDataService } from './supabaseDataService';
+
 export interface PWAInstallEvent {
   timestamp: number;
   success: boolean;
@@ -63,7 +65,8 @@ class PWAAnalyticsServiceImpl implements PWAAnalyticsService {
       existingData.splice(0, existingData.length - 100);
     }
 
-    localStorage.setItem(this.STORAGE_KEY_INSTALLS, JSON.stringify(existingData));
+    // Update in Supabase with localStorage fallback
+    this.updatePWAAnalytics('installs', existingData);
     
     console.log('PWA Install tracked:', installEvent);
   }
@@ -83,13 +86,18 @@ class PWAAnalyticsServiceImpl implements PWAAnalyticsService {
       existingData.splice(0, existingData.length - 500);
     }
 
-    localStorage.setItem(this.STORAGE_KEY_ENGAGEMENT, JSON.stringify(existingData));
+    // Update in Supabase with localStorage fallback
+    this.updatePWAAnalytics('engagement', existingData);
     
     console.log('PWA Engagement tracked:', engagementEvent);
   }
 
   getInstallStats(): PWAInstallEvent[] {
     try {
+      // Try to get from Supabase first
+      this.loadPWAAnalyticsFromSupabase();
+      
+      // Fallback to localStorage
       const data = localStorage.getItem(this.STORAGE_KEY_INSTALLS);
       return data ? JSON.parse(data) : [];
     } catch (error) {
@@ -100,6 +108,10 @@ class PWAAnalyticsServiceImpl implements PWAAnalyticsService {
 
   getEngagementStats(): PWAEngagementEvent[] {
     try {
+      // Try to get from Supabase first
+      this.loadPWAAnalyticsFromSupabase();
+      
+      // Fallback to localStorage
       const data = localStorage.getItem(this.STORAGE_KEY_ENGAGEMENT);
       return data ? JSON.parse(data) : [];
     } catch (error) {
@@ -154,6 +166,50 @@ class PWAAnalyticsServiceImpl implements PWAAnalyticsService {
       totalEngagementEvents: engagement.length,
       lastEvent: engagement.length > 0 ? new Date(engagement[engagement.length - 1].timestamp).toISOString() : 'None'
     };
+  }
+
+  private async updatePWAAnalytics(type: 'installs' | 'engagement', data: any[]): Promise<void> {
+    try {
+      // Update in Supabase
+      await supabaseDataService.updateUserAppState('pwaAnalytics', {
+        [type]: data,
+        lastUpdated: Date.now()
+      });
+      
+      // Also update localStorage as backup
+      if (type === 'installs') {
+        localStorage.setItem(this.STORAGE_KEY_INSTALLS, JSON.stringify(data));
+      } else {
+        localStorage.setItem(this.STORAGE_KEY_ENGAGEMENT, JSON.stringify(data));
+      }
+    } catch (error) {
+      console.warn('Failed to update PWA analytics in Supabase, using localStorage only:', error);
+      
+      // Fallback to localStorage only
+      if (type === 'installs') {
+        localStorage.setItem(this.STORAGE_KEY_INSTALLS, JSON.stringify(data));
+      } else {
+        localStorage.setItem(this.STORAGE_KEY_ENGAGEMENT, JSON.stringify(data));
+      }
+    }
+  }
+
+  private async loadPWAAnalyticsFromSupabase(): Promise<void> {
+    try {
+      const appState = await supabaseDataService.getUserAppState();
+      const pwaAnalytics = appState.pwaAnalytics || {};
+      
+      if (pwaAnalytics.installs) {
+        localStorage.setItem(this.STORAGE_KEY_INSTALLS, JSON.stringify(pwaAnalytics.installs));
+      }
+      
+      if (pwaAnalytics.engagement) {
+        localStorage.setItem(this.STORAGE_KEY_ENGAGEMENT, JSON.stringify(pwaAnalytics.engagement));
+      }
+    } catch (error) {
+      console.warn('Failed to load PWA analytics from Supabase:', error);
+      // Continue with localStorage data
+    }
   }
 
   // Track session start

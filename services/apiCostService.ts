@@ -8,6 +8,7 @@
  */
 
 import { supabase } from './supabase';
+import { supabaseDataService } from './supabaseDataService';
 
 export interface APICallRecord {
     timestamp: number;
@@ -139,22 +140,26 @@ class APICostService {
             }
 
             const { error } = await supabase
-                .from('api_cost_tracking')
+                .from('analytics_new')
                 .insert({
                     user_id: user.id,
-                    timestamp: new Date(record.timestamp).toISOString(),
-                    model: record.model,
-                    purpose: record.purpose,
-                    user_tier: record.userTier,
-                    estimated_tokens: record.estimatedTokens || 1000,
-                    estimated_cost: record.cost,
-                    success: record.success,
-                    error_message: record.errorMessage,
-                    conversation_id: record.conversationId,
-                    game_name: record.gameName,
-                    genre: record.genre,
-                    progress: record.progress,
-                    metadata: record.metadata || {}
+                    category: 'api_costs',
+                    event_type: 'api_call',
+                    data: {
+                        timestamp: new Date(record.timestamp).toISOString(),
+                        model: record.model,
+                        purpose: record.purpose,
+                        user_tier: record.userTier,
+                        estimated_tokens: 1000, // Default estimate since not in record
+                        estimated_cost: record.cost,
+                        success: record.success,
+                        error_message: record.errorMessage,
+                        conversation_id: record.conversationId,
+                        game_name: record.gameName,
+                        genre: record.genre,
+                        progress: record.progress,
+                        metadata: record.metadata || {}
+                    }
                 });
 
             if (error) {
@@ -190,12 +195,12 @@ class APICostService {
 
             // Check if user is admin
             const { data: profile } = await supabase
-                .from('user_profiles')
-                .select('is_admin')
-                .eq('user_id', user.id)
+                .from('users_new')
+                .select('profile_data')
+                .eq('auth_user_id', user.id)
                 .single();
 
-            if (!profile?.is_admin) {
+            if (!profile?.profile_data?.is_admin) {
                 throw new Error('Admin access required for cost summary');
             }
 
@@ -204,10 +209,11 @@ class APICostService {
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
             const { data: records, error } = await supabase
-                .from('api_cost_tracking')
+                .from('analytics_new')
                 .select('*')
-                .gte('timestamp', thirtyDaysAgo.toISOString())
-                .order('timestamp', { ascending: false });
+                .eq('category', 'api_costs')
+                .gte('created_at', thirtyDaysAgo.toISOString())
+                .order('created_at', { ascending: false });
 
             if (error) {
                 throw error;
@@ -232,10 +238,11 @@ class APICostService {
         let totalCost = 0;
 
         records.forEach(record => {
-            callsByModel[record.model]++;
-            callsByPurpose[record.purpose] = (callsByPurpose[record.purpose] || 0) + 1;
-            callsByTier[record.user_tier]++;
-            totalCost += parseFloat(record.estimated_cost);
+            const data = record.data;
+            callsByModel[data.model]++;
+            callsByPurpose[data.purpose] = (callsByPurpose[data.purpose] || 0) + 1;
+            callsByTier[data.user_tier]++;
+            totalCost += parseFloat(data.estimated_cost);
         });
 
         // Estimate monthly cost based on 30-day average
@@ -247,7 +254,7 @@ class APICostService {
             callsByModel,
             callsByPurpose,
             callsByTier,
-            lastCall: records.length > 0 ? new Date(records[0].timestamp).getTime() : 0,
+            lastCall: records.length > 0 ? new Date(records[0].created_at).getTime() : 0,
             estimatedMonthlyCost
         };
     }
@@ -458,6 +465,45 @@ class APICostService {
             console.log('🔄 API cost tracking reset');
         } catch (error) {
             console.error('Error resetting cost tracking:', error);
+        }
+    }
+
+    // Get cost records from Supabase with localStorage fallback
+    private async getCostRecords(): Promise<any[]> {
+        try {
+            // Try to get from Supabase first
+            const appState = await supabaseDataService.getUserAppState();
+            const costRecords = appState.apiCostRecords;
+            
+            if (costRecords && Array.isArray(costRecords)) {
+                return costRecords;
+            }
+            
+            // Fallback to localStorage
+            const localRecords = localStorage.getItem(this.COST_KEY);
+            return localRecords ? JSON.parse(localRecords) : [];
+        } catch (error) {
+            console.warn('Failed to get cost records from Supabase, using localStorage fallback:', error);
+            
+            // Fallback to localStorage only
+            const localRecords = localStorage.getItem(this.COST_KEY);
+            return localRecords ? JSON.parse(localRecords) : [];
+        }
+    }
+
+    // Set cost records in Supabase with localStorage fallback
+    private async setCostRecords(records: any[]): Promise<void> {
+        try {
+            // Update in Supabase
+            await supabaseDataService.updateUserAppState('apiCostRecords', records);
+            
+            // Also update localStorage as backup
+            localStorage.setItem(this.COST_KEY, JSON.stringify(records));
+        } catch (error) {
+            console.warn('Failed to update cost records in Supabase, using localStorage only:', error);
+            
+            // Fallback to localStorage only
+            localStorage.setItem(this.COST_KEY, JSON.stringify(records));
         }
     }
 }

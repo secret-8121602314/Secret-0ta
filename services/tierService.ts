@@ -61,28 +61,24 @@ export class TierService {
    */
   async assignFreeTier(userId: string): Promise<boolean> {
     try {
-      // Check if user already has a usage record
-      const { data: existingUsage } = await supabase
-        .from('usage')
-        .select('id')
-        .eq('user_id', userId)
+      // Check if user already has a tier assigned in users table
+      const { data: existingUser } = await supabase
+        .from('users_new')
+        .select('tier')
+        .eq('auth_user_id', userId)
         .single();
 
-      if (existingUsage) {
-        console.log('User already has usage record, skipping tier assignment');
+      if (existingUser?.tier) {
+        console.log('User already has tier assigned:', existingUser.tier);
         return true;
       }
 
-      // Create new usage record with free tier
+      // Update user tier in new consolidated users table
       const { error } = await supabase
-        .from('usage')
-        .insert({
-          user_id: userId,
-          text_count: 0,
-          image_count: 0,
-          text_limit: this.TIER_LIMITS.free.text,
-          image_limit: this.TIER_LIMITS.free.image,
-          tier: 'free',
+        .from('users_new')
+        .upsert({
+          auth_user_id: userId,
+          tier: 'free'
         });
 
       if (error) {
@@ -104,16 +100,11 @@ export class TierService {
   async upgradeToPro(userId: string): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('usage')
+        .from('users_new')
         .update({
-          tier: 'pro',
-          text_limit: this.TIER_LIMITS.pro.text,
-          image_limit: this.TIER_LIMITS.pro.image,
-          text_count: 0, // Reset counts for new limits
-          image_count: 0,
-          updated_at: new Date().toISOString(),
+          tier: 'pro'
         })
-        .eq('user_id', userId);
+        .eq('auth_user_id', userId);
 
       if (error) {
         console.error('Error upgrading to Pro:', error);
@@ -134,16 +125,11 @@ export class TierService {
   async upgradeToVanguardPro(userId: string): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('usage')
+        .from('users_new')
         .update({
-          tier: 'vanguard_pro',
-          text_limit: this.TIER_LIMITS.vanguard_pro.text,
-          image_limit: this.TIER_LIMITS.vanguard_pro.image,
-          text_count: 0, // Reset counts for new limits
-          image_count: 0,
-          updated_at: new Date().toISOString(),
+          tier: 'vanguard_pro'
         })
-        .eq('user_id', userId);
+        .eq('auth_user_id', userId);
 
       if (error) {
         console.error('Error upgrading to Vanguard Pro:', error);
@@ -164,9 +150,9 @@ export class TierService {
   async getUserTier(userId: string): Promise<TierInfo | null> {
     try {
       const { data, error } = await supabase
-        .from('usage')
+        .from('users_new')
         .select('tier')
-        .eq('user_id', userId)
+        .eq('auth_user_id', userId)
         .single();
 
       if (error) {

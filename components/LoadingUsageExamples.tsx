@@ -82,14 +82,14 @@ const LoadingUsageExamples: React.FC = () => {
                 <Skeleton variant="avatar" />
                 <div className="flex-1 space-y-2">
                   <Skeleton variant="text" />
-                  <Skeleton variant="text" style={{ width: '60%' }} />
+                  <Skeleton variant="text" width="60%" />
                 </div>
               </div>
               <Skeleton variant="rectangular" height="120px" />
               <div className="space-y-2">
                 <Skeleton variant="text" />
-                <Skeleton variant="text" style={{ width: '80%' }} />
-                <Skeleton variant="text" style={{ width: '90%' }} />
+                <Skeleton variant="text" lines={2} />
+                <Skeleton variant="text" lines={1} />
               </div>
             </div>
           ) : (

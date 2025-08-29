@@ -578,10 +578,10 @@ export const useChat = (isHandsFreeMode: boolean) => {
                 const displayText = rawTextResponse.replace(tagCleanupRegex, '').replace(/^[\s`"\]\}]*/, '').trim();
                 updateMessageInConversation(activeConversationId, modelMessageId, msg => ({ ...msg, text: displayText }));
                 
-                // Real-time insight updates during AI response streaming
+                // 🚫 REMOVED: Real-time insight updates to prevent unauthorized API calls
+                // Insights are now only updated when user explicitly requests them
                 if (isProUser && chunk.length > 0) {
-                    // Use sourceConvoId for now, will be updated to finalTargetConvoId later
-                    updateInsightsInRealTime(chunk, sourceConversation, sourceConvoId);
+                    console.log('🚫 Real-time insight updates disabled - insights only updated on user request');
                 }
             };
 
@@ -753,8 +753,26 @@ export const useChat = (isHandsFreeMode: boolean) => {
                                 generationAttempts: 0
                             };
                         });
+                        
+                        // 🔥 CRITICAL INTEGRATION: Add Otaku Diary tab for ALL users (free, pro, vanguard)
+                        const otakuDiaryInsight: Insight = {
+                            id: 'otaku-diary',
+                            title: '📖 Otaku Diary',
+                            content: '📝 **Your Personal Game Diary**\n\n✨ Track your tasks and favorite moments\n\n🎯 **Features:**\n• Create and manage to-do lists\n• Save favorite AI responses and insights\n• Track your gaming progress\n• Organize your thoughts and discoveries\n\n🚀 **Available for all users!**',
+                            status: 'loaded' as any,
+                            isPlaceholder: false,
+                            lastUpdated: Date.now(),
+                            generationAttempts: 0
+                        };
+                        
+                        // Add Otaku Diary to insights and order
+                        instantInsights['otaku-diary'] = otakuDiaryInsight;
+                        insightsOrder.unshift('otaku-diary'); // Put Otaku Diary first
+                        
                         targetConvoForUpdate.insights = instantInsights;
                         targetConvoForUpdate.insightsOrder = insightsOrder;
+                        
+                        console.log(`🔄 Created Otaku Diary tab for game: ${identifiedGameName}`);
                         
                         // Generate all insights in one API call for better performance
                         if (gameProgress !== null) {
@@ -796,9 +814,9 @@ export const useChat = (isHandsFreeMode: boolean) => {
                 }
             }
 
-            // Update insights with final AI response information
+            // 🔥 NEW: Consolidated insight update function that only runs on user queries
             if (isProUser && finalTargetConvoId !== EVERYTHING_ELSE_ID) {
-                updateInsightsWithFinalResponse(finalCleanedText, finalTargetConvoId, identifiedGameName, gameGenre, gameProgress);
+                updateInsightsOnUserQuery(finalCleanedText, finalTargetConvoId, identifiedGameName, gameGenre, gameProgress, text.trim());
             }
 
             // Note: Insights are now generated in one unified API call for better performance
@@ -1103,99 +1121,50 @@ Progress: ${conversation.progress}%`;
                 
                 console.log(`Successfully generated all insights for ${gameName} in one API call`);
             } else {
-                // Fallback to progressive generation if unified approach fails
-                console.warn('Unified insight generation failed, falling back to progressive generation');
-                generateInsightsInBackground(gameName, genre, progress, conversationId);
+                // 🚫 REMOVED: Fallback to progressive generation to prevent unauthorized API calls
+                console.warn('🚫 Progressive insight generation disabled - insights only generated on user request');
             }
             
         } catch (error) {
-            console.error('Unified insight generation failed:', error);
-            
-            // Fallback to progressive generation
-            generateInsightsInBackground(gameName, genre, progress, conversationId);
+            console.error('🚫 Unified insight generation failed:', error);
+            console.warn('🚫 Progressive insight generation disabled - insights only generated on user request');
         }
     };
 
-    // Generate insights progressively in background for better performance (fallback method)
+    // 🚨 REMOVED: Automatic background insight generation to prevent unauthorized API calls
+    // Insights are now only generated when user explicitly requests them
     const generateInsightsInBackground = async (
         gameName: string,
         genre: string,
         progress: number,
         conversationId: string
     ) => {
-        try {
-            const tabs = insightTabsConfig[genre] || insightTabsConfig.default;
+        console.log('🚫 Background insight generation disabled - insights only generated on user request');
+        
+        // Set all insights to placeholder status - they will be generated when user clicks
+        const tabs = insightTabsConfig[genre] || insightTabsConfig.default;
+        
+        updateConversation(conversationId, convo => {
+            if (!convo.insights) return convo;
             
-            // Generate insights one by one with delays to avoid overwhelming the API
-            for (let i = 0; i < tabs.length; i++) {
-                const tab = tabs[i];
-                
-                // Skip if already generated or if user navigated away
-                const currentConvo = conversations[conversationId];
-                if (!currentConvo?.insights?.[tab.id]?.isPlaceholder) {
-                    continue;
+            const updatedInsights = { ...convo.insights };
+            tabs.forEach(tab => {
+                if (updatedInsights[tab.id]?.isPlaceholder) {
+                    updatedInsights[tab.id] = {
+                        ...updatedInsights[tab.id],
+                        status: 'placeholder',
+                        content: `💡 Click to generate ${tab.title} content\n\nThis insight will be generated when you request it.`,
+                        isPlaceholder: true
+                    };
                 }
-                
-                try {
-                    // Update status to loading
-                    updateConversation(conversationId, convo => {
-                        if (convo.insights?.[tab.id]) {
-                            convo.insights[tab.id].status = 'loading';
-                            convo.insights[tab.id].content = '🔄 Generating...';
-                        }
-                        return convo;
-                    });
-                    
-                    // Generate content using the unified service for this specific tab
-                    const result = await generateUnifiedInsights(
-                        gameName,
-                        genre,
-                        progress,
-                        `Generate insight for ${tab.title}`,
-                        (error) => console.error(`Error generating ${tab.title}:`, error),
-                        new AbortController().signal
-                    );
-                    
-                    if (result && result.insights && result.insights[tab.id]) {
-                        // Update with real content
-                        updateConversation(conversationId, convo => {
-                            if (convo.insights?.[tab.id]) {
-                                convo.insights[tab.id].content = result.insights[tab.id].content;
-                                convo.insights[tab.id].title = result.insights[tab.id].title;
-                                convo.insights[tab.id].status = 'loaded';
-                                convo.insights[tab.id].isPlaceholder = false;
-                                convo.insights[tab.id].lastUpdated = Date.now();
-                                convo.insights[tab.id].isNew = true;
-                            }
-                            return convo;
-                        });
-                    }
-                    
-                    // Small delay between generations to avoid overwhelming the API
-                    if (i < tabs.length - 1) {
-                        await new Promise(resolve => setTimeout(resolve, 2000));
-                    }
-                    
-                } catch (error) {
-                    console.warn(`Failed to generate ${tab.title}:`, error);
-                    
-                    // Mark as failed but keep placeholder for retry
-                    updateConversation(conversationId, convo => {
-                        if (convo.insights?.[tab.id]) {
-                            convo.insights[tab.id].status = 'error';
-                            convo.insights[tab.id].content = `❌ Failed to generate ${tab.title}\n\n💡 Click the tab to retry!`;
-                            convo.insights[tab.id].generationAttempts = (convo.insights[tab.id].generationAttempts || 0) + 1;
-                        }
-                        return convo;
-                    });
-                }
-            }
-        } catch (error) {
-            console.error('Background insight generation failed:', error);
-        }
+            });
+            
+            return { ...convo, insights: updatedInsights };
+        });
     };
 
-    // Update insights dynamically when game progress changes significantly
+    // 🚨 REMOVED: Automatic insight updates to prevent unauthorized API calls
+    // Insights are now only updated when user explicitly requests them
     const updateInsightsForProgress = useCallback(async (conversationId: string, newProgress: number) => {
         const conversation = conversations[conversationId];
         if (!conversation?.insights || !conversation.genre) return;
@@ -1206,15 +1175,15 @@ Progress: ${conversation.progress}%`;
         // Only update if progress changed significantly (more than 10%)
         if (progressDifference < 10) return;
 
-        console.log(`Progress changed from ${currentProgress}% to ${newProgress}%, updating insights...`);
+        console.log(`Progress changed from ${currentProgress}% to ${newProgress}%, updating progress only...`);
 
-        // Update progress in conversation
+        // Update progress in conversation (no automatic insight updates)
         updateConversation(conversationId, convo => ({
             ...convo,
             progress: newProgress
         }));
 
-        // Regenerate insights that are progress-dependent
+        // Mark progress-dependent insights as needing updates (user must click to regenerate)
         const tabs = insightTabsConfig[conversation.genre] || insightTabsConfig.default;
         const progressDependentTabs = tabs.filter(tab => 
             tab.instruction.includes('progress') || 
@@ -1223,87 +1192,34 @@ Progress: ${conversation.progress}%`;
             tab.id === 'current_objectives'
         );
 
-        for (const tab of progressDependentTabs) {
-            try {
-                const insight = conversation.insights[tab.id];
-                if (insight && !insight.isPlaceholder) {
-                    // Mark for regeneration
-                    updateConversation(conversationId, convo => {
-                        if (convo.insights?.[tab.id]) {
-                            convo.insights[tab.id].content = '🔄 Updating for new progress...';
-                            convo.insights[tab.id].status = 'loading';
-                            convo.insights[tab.id].isNew = false;
-                        }
-                        return convo;
-                    });
-
-                    // Generate new content using unified service
-                    const result = await generateUnifiedInsights(
-                        conversation.title,
-                        conversation.genre,
-                        newProgress,
-                        `Update ${tab.title} for new progress`,
-                        (error) => console.error(`Error updating ${tab.title}:`, error),
-                        new AbortController().signal
-                    );
-
-                    if (result && result.insights && result.insights[tab.id]) {
-                        updateConversation(conversationId, convo => {
-                            if (convo.insights?.[tab.id]) {
-                                convo.insights[tab.id].content = result.insights[tab.id].content;
-                                convo.insights[tab.id].title = result.insights[tab.id].title;
-                                convo.insights[tab.id].status = 'loaded';
-                                convo.insights[tab.id].isNew = true;
-                                convo.insights[tab.id].lastUpdated = Date.now();
-                            }
-                            return convo;
-                        });
-                    }
+        updateConversation(conversationId, convo => {
+            if (!convo.insights) return convo;
+            
+            const updatedInsights = { ...convo.insights };
+            progressDependentTabs.forEach(tab => {
+                if (updatedInsights[tab.id] && !updatedInsights[tab.id].isPlaceholder) {
+                    updatedInsights[tab.id] = {
+                        ...updatedInsights[tab.id],
+                        content: `🔄 Progress updated to ${newProgress}%\n\n💡 Click to regenerate ${tab.title} with current progress`,
+                        status: 'placeholder',
+                        isNew: true,
+                        lastUpdated: Date.now()
+                    };
                 }
-            } catch (error) {
-                console.warn(`Failed to update ${tab.title} for new progress:`, error);
-            }
-        }
+            });
+            
+            return { ...convo, insights: updatedInsights };
+        });
+
+        console.log('🚫 Automatic insight updates disabled - insights only updated on user request');
     }, [conversations, updateConversation]);
 
-    // Update insights in real-time during AI response streaming
+    // 🚨 REMOVED: Real-time insight updates to prevent unauthorized API calls
+    // Insights are now only updated when user explicitly requests them
     const updateInsightsInRealTime = useCallback(async (chunk: string, sourceConversation: Conversation, targetConvoId: string) => {
-        if (!sourceConversation?.insights || !sourceConversation.genre) return;
-        
-        try {
-            // Extract any new information from the chunk that might be relevant to insights
-            const newInfo = extractRelevantInfoFromChunk(chunk);
-            
-            if (newInfo.hasRelevantContent) {
-                // Update relevant insights with new information
-                const tabs = insightTabsConfig[sourceConversation.genre] || insightTabsConfig.default;
-                
-                for (const tab of tabs) {
-                    const insight = sourceConversation.insights[tab.id];
-                    if (insight && !insight.isPlaceholder && insight.status === 'loaded') {
-                        
-                        // Check if this chunk contains information relevant to this insight tab
-                        if (isChunkRelevantToInsight(chunk, tab, newInfo)) {
-                            // Update the insight with new information
-                            updateConversation(targetConvoId, convo => {
-                                if (convo.insights?.[tab.id]) {
-                                    const currentContent = convo.insights[tab.id].content;
-                                    const newContent = currentContent + '\n\n🆕 **New Information:**\n' + chunk;
-                                    
-                                    convo.insights[tab.id].content = newContent;
-                                    convo.insights[tab.id].isNew = true;
-                                    convo.insights[tab.id].lastUpdated = Date.now();
-                                }
-                                return convo;
-                            });
-                        }
-                    }
-                }
-            }
-        } catch (error) {
-            console.warn('Error updating insights in real-time:', error);
-        }
-    }, [updateConversation]);
+        // No automatic updates - insights only change when user requests them
+        console.log('🚫 Real-time insight updates disabled - insights only updated on user request');
+    }, []);
 
     // Helper function to extract relevant information from streaming chunks
     const extractRelevantInfoFromChunk = (chunk: string) => {
@@ -1342,82 +1258,128 @@ Progress: ${conversation.progress}%`;
         }
     };
 
-    // Update insights with final AI response information
-    const updateInsightsWithFinalResponse = useCallback(async (
-        finalResponse: string, 
-        conversationId: string, 
-        gameName: string | null, 
-        genre: string | null, 
-        progress: number | null
+    // 🔥 NEW: Consolidated insight update function that only runs on user queries
+    const updateInsightsOnUserQuery = useCallback(async (
+        finalResponse: string,
+        conversationId: string,
+        gameName: string | null,
+        genre: string | null,
+        progress: number | null,
+        userQuery: string
     ) => {
-        if (!gameName || !genre || progress === null) return;
-        
+        if (!gameName || !genre || progress === null || conversationId === EVERYTHING_ELSE_ID) {
+            return;
+        }
+
         try {
-            // Extract key information from the final response
+            console.log(`🔄 Updating insights for user query: "${userQuery}"`);
+            
+            // Extract all relevant information from the AI response
             const extractedInfo = {
                 story: extractStoryInfo(finalResponse),
                 objectives: extractObjectiveInfo(finalResponse),
                 characters: extractCharacterInfo(finalResponse),
                 lore: extractLoreInfo(finalResponse),
                 tips: extractTipInfo(finalResponse),
-                inventory: extractInventoryInfo(finalResponse)
+                inventory: extractInventoryInfo(finalResponse),
+                progress: progress,
+                userQuery: userQuery
             };
-            
-            // Update each insight tab with relevant information
+
+            // Get insight tabs for this genre
             const tabs = insightTabsConfig[genre] || insightTabsConfig.default;
             
+            // Update each insight tab with new information from this query/response
             for (const tab of tabs) {
                 const insight = conversations[conversationId]?.insights?.[tab.id];
-                if (insight && !insight.isPlaceholder) {
+                if (insight && tab.id !== 'otaku-diary') { // Skip Otaku Diary
                     
                     let newContent = '';
+                    let shouldUpdate = false;
+                    
+                    // Determine if this insight should be updated based on the response content
                     switch (tab.id) {
                         case 'story_so_far':
                             if (extractedInfo.story) {
-                                newContent = `📖 **Story Update**\n\n${extractedInfo.story}\n\n---\n\n${insight.content}`;
+                                newContent = `📖 **Story Update from Query**\n\n**Your Question:** ${userQuery}\n\n**New Information:** ${extractedInfo.story}\n\n---\n\n${insight.content}`;
+                                shouldUpdate = true;
                             }
                             break;
+                            
                         case 'current_objectives':
                             if (extractedInfo.objectives) {
-                                newContent = `🎯 **New Objective Information**\n\n${extractedInfo.objectives}\n\n---\n\n${insight.content}`;
+                                newContent = `🎯 **Objective Update from Query**\n\n**Your Question:** ${userQuery}\n\n**New Information:** ${extractedInfo.objectives}\n\n---\n\n${insight.content}`;
+                                shouldUpdate = true;
                             }
                             break;
+                            
                         case 'character_insights':
                             if (extractedInfo.characters) {
-                                newContent = `👤 **Character Update**\n\n${extractedInfo.characters}\n\n---\n\n${insight.content}`;
+                                newContent = `👤 **Character Update from Query**\n\n**Your Question:** ${userQuery}\n\n**New Information:** ${extractedInfo.characters}\n\n---\n\n${insight.content}`;
+                                shouldUpdate = true;
                             }
                             break;
+                            
                         case 'world_lore':
                             if (extractedInfo.lore) {
-                                newContent = `🌍 **Lore Update**\n\n${extractedInfo.lore}\n\n---\n\n${insight.content}`;
+                                newContent = `🌍 **Lore Update from Query**\n\n**Your Question:** ${userQuery}\n\n**New Information:** ${extractedInfo.lore}\n\n---\n\n${insight.content}`;
+                                shouldUpdate = true;
                             }
                             break;
+                            
                         case 'gameplay_tips':
                             if (extractedInfo.tips) {
-                                newContent = `💡 **New Tips**\n\n${extractedInfo.tips}\n\n---\n\n${insight.content}`;
+                                newContent = `💡 **Tips Update from Query**\n\n**Your Question:** ${userQuery}\n\n**New Information:** ${extractedInfo.tips}\n\n---\n\n${insight.content}`;
+                                shouldUpdate = true;
                             }
                             break;
+                            
                         case 'inventory_analysis':
                             if (extractedInfo.inventory) {
-                                newContent = `🎒 **Inventory Update**\n\n${extractedInfo.inventory}\n\n---\n\n${insight.content}`;
+                                newContent = `🎒 **Inventory Update from Query**\n\n**Your Question:** ${userQuery}\n\n**New Information:** ${extractedInfo.inventory}\n\n---\n\n${insight.content}`;
+                                shouldUpdate = true;
                             }
                             break;
                     }
                     
-                    if (newContent) {
+                    // Update the insight if new content was found
+                    if (shouldUpdate && newContent) {
                         updateConversation(conversationId, convo => {
-                            if (convo.insights?.[tab.id]) {
-                                convo.insights[tab.id].content = newContent;
-                                convo.insights[tab.id].isNew = true;
-                                convo.insights[tab.id].lastUpdated = Date.now();
-                            }
-                            return convo;
+                            if (!convo.insights?.[tab.id]) return convo;
+                            
+                            return {
+                                ...convo,
+                                insights: {
+                                    ...convo.insights,
+                                    [tab.id]: {
+                                        ...convo.insights[tab.id],
+                                        content: newContent,
+                                        status: 'loaded',
+                                        isNew: true,
+                                        lastUpdated: Date.now(),
+                                        lastUpdatedFromQuery: userQuery
+                                    }
+                                }
+                            };
                         });
+                        
+                        console.log(`✅ Updated ${tab.title} with new information from user query`);
                     }
                 }
             }
+            
+            // Update progress if it changed
+            const currentProgress = conversations[conversationId]?.progress || 0;
+            if (Math.abs(progress - currentProgress) >= 5) { // Lower threshold for more responsive updates
+                updateConversation(conversationId, convo => ({
+                    ...convo,
+                    progress: progress
+                }));
+                console.log(`📊 Progress updated to ${progress}% from user query`);
+            }
+            
         } catch (error) {
-            console.warn('Error updating insights with final response:', error);
+            console.error('Error updating insights on user query:', error);
         }
     }, [conversations, updateConversation]);
 
@@ -1530,8 +1492,11 @@ Progress: ${conversation.progress}%`;
         updateMessageFeedback,
         updateInsightFeedback,
         retryMessage,
+        updateConversation, // 🔥 ADDED: For enhanced insights integration
 
         updateInsightsForProgress,
+        updateInsightsOnUserQuery, // 🔥 NEW: Consolidated insight updates on user queries
         handleTabManagementCommand,
     };
 };
+

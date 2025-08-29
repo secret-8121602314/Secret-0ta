@@ -21,6 +21,8 @@ const GuestTierSwitcher: React.FC<GuestTierSwitcherProps> = ({ currentTier, onSw
     const nextIndex = (currentIndex + 1) % tiers.length;
     const nextTier = tiers[nextIndex];
 
+    console.log(`🔄 Switching from ${currentTier} to ${nextTier}`);
+
     if (nextTier === 'free') {
       unifiedUsageService.switchToFree();
     } else if (nextTier === 'pro') {
@@ -28,6 +30,8 @@ const GuestTierSwitcher: React.FC<GuestTierSwitcherProps> = ({ currentTier, onSw
     } else if (nextTier === 'vanguard_pro') {
       unifiedUsageService.switchToVanguard();
     }
+    
+    // Force immediate UI update
     onSwitch();
   };
 

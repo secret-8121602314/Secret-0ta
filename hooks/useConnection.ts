@@ -12,8 +12,7 @@ export const useConnection = (onMessage: MessageHandler) => {
     const [connectionCode, setConnectionCode] = useState<string | null>(() => {
         return localStorage.getItem('lastConnectionCode');
     });
-    const [isAutoConnecting, setIsAutoConnecting] = useState(false);
-    const [autoConnectAttempts, setAutoConnectAttempts] = useState(0);
+
     const [lastSuccessfulConnection, setLastSuccessfulConnection] = useState<number | null>(() => {
         const saved = localStorage.getItem('lastSuccessfulConnection');
         return saved ? parseInt(saved) : null;
@@ -30,8 +29,6 @@ export const useConnection = (onMessage: MessageHandler) => {
     }, [status]);
 
     const connectionTimeoutRef = useRef<number | null>(null);
-    const autoConnectTimeoutRef = useRef<number | null>(null);
-
     const clearConnectionTimeout = () => {
         if (connectionTimeoutRef.current) {
             clearTimeout(connectionTimeoutRef.current);
@@ -39,28 +36,16 @@ export const useConnection = (onMessage: MessageHandler) => {
         }
     };
 
-    const clearAutoConnectTimeout = () => {
-        if (autoConnectTimeoutRef.current) {
-            clearTimeout(autoConnectTimeoutRef.current);
-            autoConnectTimeoutRef.current = null;
-        }
-    };
-
     const saveSuccessfulConnection = (code: string) => {
         localStorage.setItem('lastConnectionCode', code);
         localStorage.setItem('lastSuccessfulConnection', Date.now().toString());
         setLastSuccessfulConnection(Date.now());
-        setAutoConnectAttempts(0); // Reset attempts on successful connection
+
     };
 
-    const connect = useCallback((code: string, isAutoConnect: boolean = false) => {
+    const connect = useCallback((code: string) => {
         if (statusRef.current === ConnectionStatus.CONNECTING || statusRef.current === ConnectionStatus.CONNECTED) {
             return;
-        }
-
-        if (isAutoConnect) {
-            setIsAutoConnecting(true);
-            setAutoConnectAttempts(prev => prev + 1);
         }
 
         setStatus(ConnectionStatus.CONNECTING);
@@ -73,23 +58,6 @@ export const useConnection = (onMessage: MessageHandler) => {
                 wsDisconnect(); // Close the WebSocket connection attempt
                 setStatus(ConnectionStatus.ERROR);
                 setError("Connection timed out. Please check your code and ensure the PC client is running.");
-                
-                if (isAutoConnect) {
-                    setIsAutoConnecting(false);
-                    // Schedule next auto-connect attempt with exponential backoff
-                    const nextAttemptDelay = Math.min(5000 * Math.pow(2, autoConnectAttempts), 30000); // Max 30 seconds
-                    autoConnectTimeoutRef.current = window.setTimeout(() => {
-                        if (autoConnectAttempts < 3) { // Max 3 auto-connect attempts
-                            const savedCode = localStorage.getItem('lastConnectionCode');
-                            if (savedCode) {
-                                connect(savedCode, true);
-                            }
-                        } else {
-                            setIsAutoConnecting(false);
-                            console.log("Max auto-connect attempts reached. User must manually connect.");
-                        }
-                    }, nextAttemptDelay);
-                }
             }
         }, 10000); // 10 seconds
 
@@ -107,7 +75,7 @@ export const useConnection = (onMessage: MessageHandler) => {
                         clearConnectionTimeout();
                         setStatus(ConnectionStatus.CONNECTED);
                         setError(null);
-                        setIsAutoConnecting(false);
+
                         saveSuccessfulConnection(code);
                     }
                 } else if (data.type === 'partner_disconnected') {
@@ -141,10 +109,6 @@ export const useConnection = (onMessage: MessageHandler) => {
                 clearConnectionTimeout();
                 setStatus(ConnectionStatus.ERROR);
                 setError(err);
-                
-                if (isAutoConnect) {
-                    setIsAutoConnecting(false);
-                }
             },
             () => { // onClose
                 clearConnectionTimeout();
@@ -156,23 +120,18 @@ export const useConnection = (onMessage: MessageHandler) => {
                 } else if (statusRef.current !== ConnectionStatus.ERROR) {
                     setStatus(ConnectionStatus.DISCONNECTED);
                 }
-                
-                if (isAutoConnect) {
-                    setIsAutoConnecting(false);
-                }
             }
         );
-    }, [autoConnectAttempts]);
+    }, []);
 
     const disconnect = useCallback(() => {
         clearConnectionTimeout();
-        clearAutoConnectTimeout();
+
         wsDisconnect();
         setStatus(ConnectionStatus.DISCONNECTED);
         setError(null);
         setConnectionCode(null);
-        setIsAutoConnecting(false);
-        setAutoConnectAttempts(0);
+
         localStorage.removeItem('lastConnectionCode');
         localStorage.removeItem('lastSuccessfulConnection');
     }, []);
@@ -183,61 +142,68 @@ export const useConnection = (onMessage: MessageHandler) => {
             disconnect();
             // Small delay to ensure cleanup is complete
             setTimeout(() => {
-                connect(savedCode, false);
+                connect(savedCode);
             }, 100);
         }
     }, [connect, disconnect]);
 
-    // Auto-connect logic with improved timing and user feedback
+    // Auto-reconnect when app starts or comes into focus
     useEffect(() => {
         const savedCode = localStorage.getItem('lastConnectionCode');
-        const lastConnection = localStorage.getItem('lastSuccessfulConnection');
         
-        if (savedCode && status === ConnectionStatus.DISCONNECTED && !isAutoConnecting) {
-            // Only auto-connect if:
-            // 1. We have a saved code
-            // 2. We're not currently connected
-            // 3. We're not already trying to auto-connect
-            
-            console.log("Attempting to auto-reconnect with saved code:", savedCode);
+        // Only auto-reconnect if we're not already connected and have a saved code
+        if (savedCode && status === ConnectionStatus.DISCONNECTED) {
+            console.log("🔗 Auto-connecting with saved code on app start:", savedCode);
             // Small delay to ensure app is fully initialized
             const autoConnectDelay = setTimeout(() => {
-                connect(savedCode, true);
-            }, 1000); // Reduced to 1 second delay
+                // Double-check we're still disconnected before attempting connection
+                if (status === ConnectionStatus.DISCONNECTED) {
+                    connect(savedCode);
+                }
+            }, 1000);
             
             return () => clearTimeout(autoConnectDelay);
         }
-    }, [connect, status, isAutoConnecting]);
+    }, [connect, status]);
 
-    // Additional auto-reconnect on error status
+    // Auto-reconnect when app comes into focus
     useEffect(() => {
-        const savedCode = localStorage.getItem('lastConnectionCode');
-        
-        if (savedCode && status === ConnectionStatus.ERROR && !isAutoConnecting) {
-            console.log("Connection error detected, attempting auto-reconnect...");
-            const errorReconnectDelay = setTimeout(() => {
-                connect(savedCode, true);
-            }, 3000); // 3 second delay after error
-            
-            return () => clearTimeout(errorReconnectDelay);
-        }
-    }, [connect, status, isAutoConnecting]);
-
-    // Persistent connection check - keep trying to reconnect if disconnected
-    useEffect(() => {
-        const savedCode = localStorage.getItem('lastConnectionCode');
-        
-        if (savedCode && status === ConnectionStatus.DISCONNECTED && !isAutoConnecting) {
-            const persistentReconnect = setInterval(() => {
-                if (status === ConnectionStatus.DISCONNECTED && !isAutoConnecting) {
-                    console.log("Persistent reconnection attempt...");
-                    connect(savedCode, true);
+        const handleVisibilityChange = () => {
+            // Only reconnect if we're not already connected and have a saved code
+            if (!document.hidden && status === ConnectionStatus.DISCONNECTED) {
+                const savedCode = localStorage.getItem('lastConnectionCode');
+                if (savedCode) {
+                    console.log("🔗 Auto-reconnecting on app focus:", savedCode);
+                    // Double-check we're still disconnected before attempting connection
+                    if (status === ConnectionStatus.DISCONNECTED) {
+                        connect(savedCode);
+                    }
                 }
-            }, 10000); // Try every 10 seconds
-            
-            return () => clearInterval(persistentReconnect);
-        }
-    }, [connect, status, isAutoConnecting]);
+            }
+        };
+
+        const handleFocus = () => {
+            // Only reconnect if we're not already connected and have a saved code
+            if (status === ConnectionStatus.DISCONNECTED) {
+                const savedCode = localStorage.getItem('lastConnectionCode');
+                if (savedCode) {
+                    console.log("🔗 Auto-reconnecting on window focus:", savedCode);
+                    // Double-check we're still disconnected before attempting connection
+                    if (status === ConnectionStatus.DISCONNECTED) {
+                        connect(savedCode);
+                    }
+                }
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('focus', handleFocus);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('focus', handleFocus);
+        };
+    }, [connect, status]);
 
     const send = useCallback((data: object) => {
         wsSend(data);
@@ -250,8 +216,6 @@ export const useConnection = (onMessage: MessageHandler) => {
         disconnect, 
         connectionCode, 
         send,
-        isAutoConnecting,
-        autoConnectAttempts,
         lastSuccessfulConnection,
         forceReconnect
     };

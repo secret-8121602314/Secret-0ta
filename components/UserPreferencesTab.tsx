@@ -30,7 +30,7 @@ const UserPreferencesTab: React.FC<UserPreferencesTabProps> = ({ onPreferencesUp
     try {
       setIsLoading(true);
       setError(null);
-      const prefs = await userPreferencesService.getUserPreferences();
+      const prefs = await userPreferencesService.getPreferences();
       
       if (prefs) {
         setPreferences(prefs);

@@ -635,78 +635,23 @@
     line-height: 1.2 !important;
   }
   
-    .pro-features-mobile .feature-card {
+  .pro-features-mobile .feature-card {
     padding: 0.75rem !important;
     margin-bottom: 0.75rem !important;
   }
   
-  /* Background Patterns */
-html, body {
-  background-color: #111111 !important;
-  opacity: 1;
-  background-image:
-    radial-gradient(rgba(255, 77, 77, 0.25) 2px, transparent 2px),
-    radial-gradient(rgba(255, 77, 77, 0.25) 2px, #111111 2px);
-  background-size: 80px 80px;
-  background-position: 0 0, 40px 40px;
-  min-height: 100vh;
-}
-
-/* Hero Glow Textures */
-.hero-glow-texture-top {
-  background: radial-gradient(ellipse 800px 400px at 50% 0%, rgba(255, 77, 77, 0.15) 0%, transparent 70%);
-}
-
-.hero-glow-texture-bottom {
-  background: radial-gradient(ellipse 800px 400px at 50% 100%, rgba(255, 171, 64, 0.1) 0%, transparent 70%);
-}
-
-/* Animations */
-@keyframes fade-slide-up {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
+  /* Ensure sticky footer works properly */
+  .pro-features-mobile footer {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 20 !important;
+    background: linear-gradient(to bottom, transparent, rgba(10, 10, 10, 0.8), rgba(10, 10, 10, 0.95)) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fade-slide-down {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.animate-fade-slide-up {
-  animation: fade-slide-up 0.8s ease-out forwards;
-}
-
-.animate-fade-slide-down {
-  animation: fade-slide-down 0.8s ease-out forwards;
-}
-
-.animate-fade-in {
-  animation: fade-in 0.8s ease-out forwards;
-}
-
-/* Credit Indicator Button with Transparent Content and Gradient Border */
-.credit-indicator-button {
+  
+  /* Credit Indicator Button with Transparent Content and Gradient Border */
+  .credit-indicator-button {
     position: relative !important;
     z-index: 50 !important;
     border-radius: 12px !important;
@@ -736,23 +681,45 @@ html, body {
 
 /* HowToUseSplashScreen specific scrollbar styles */
 .how-to-use-scrollbar::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
 }
 
 .how-to-use-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(66, 66, 66, 0.2);
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .how-to-use-scrollbar::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #525252, #404040);
-  border-radius: 4px;
+  background: linear-gradient(135deg, #E53A3A, #D98C1F);
+  border-radius: 5px;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .how-to-use-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #6b6b6b, #525252);
+  background: linear-gradient(135deg, #D98C1F, #E53A3A);
+  box-shadow: 0 4px 8px rgba(229, 58, 58, 0.4);
+  transform: scaleY(1.1);
 }
 
 .how-to-use-scrollbar::-webkit-scrollbar-thumb:active {
-  background: linear-gradient(135deg, #7a7a7a, #6b6b6b);
+  background: linear-gradient(135deg, #FF4D4D, #FFAB40);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Firefox scrollbar support */
+.how-to-use-scrollbar {
+  scrollbar-width: auto;
+  scrollbar-color: #E53A3A rgba(66, 66, 66, 0.2);
+}
+
+/* Global focus-visible outlines for a11y */
+button:focus-visible, a:focus-visible, [role="button"]:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid rgba(229, 58, 58, 0.8);
+  outline-offset: 3px;
+}
+/* Reduced outline when using mouse */
+:focus:not(:focus-visible) {
+  outline: none;
 }

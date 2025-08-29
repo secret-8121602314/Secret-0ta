@@ -41,20 +41,26 @@ const ProFeaturesSplashScreen: React.FC<ProFeaturesSplashScreenProps> = ({ onCom
     const [activeTab, setActiveTab] = useState<'pro' | 'vanguard'>('pro');
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#111111] to-[#0A0A0A] text-[#F5F5F5] flex flex-col font-inter animate-fade-in pro-features-mobile">
-            <main className="flex-1 flex flex-col items-center justify-center overflow-y-auto px-4 sm:px-6 md:px-8 pt-8 sm:pt-12 md:pt-16 pb-8 sm:pb-12 md:pb-16 text-center">
-                <div className="max-w-2xl w-full">
+        <div className="h-screen bg-gradient-to-br from-[#111111] to-[#0A0A0A] text-[#F5F5F5] flex flex-col font-inter animate-fade-in pro-features-mobile">
+            {/* Sticky Header */}
+            <header className="sticky top-0 bg-gradient-to-b from-[#111111]/95 to-[#0A0A0A]/95 backdrop-blur-sm border-b border-[#424242]/20 px-4 sm:px-6 md:px-8 pt-8 sm:pt-12 md:pt-16 pb-4 sm:pb-6 md:pb-8 text-center z-10">
+                <div className="max-w-2xl w-full mx-auto">
                     <div className="flex justify-center mb-3 sm:mb-4 md:mb-6 animate-fade-slide-up">
                         <StarIcon className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 text-[#FFAB40]" />
                     </div>
                     <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] mb-3 sm:mb-4 md:mb-6 animate-fade-slide-up leading-tight">Supercharge with Otakon Pro</h1>
                     <p className="text-base sm:text-lg md:text-xl text-neutral-300 mb-6 sm:mb-8 md:mb-10 leading-relaxed animate-fade-slide-up">Unlock exclusive features for the ultimate gaming companion.</p>
 
-                    <div className="w-full max-w-md mx-auto p-1 bg-gradient-to-r from-[#2E2E2E]/60 to-[#1A1A1A]/60 backdrop-blur-sm rounded-2xl flex items-center gap-1 mb-6 sm:mb-8 md:mb-10 animate-fade-slide-up">
+                    <div className="w-full max-w-md mx-auto p-1 bg-gradient-to-r from-[#2E2E2E]/60 to-[#1A1A1A]/60 backdrop-blur-sm rounded-2xl flex items-center gap-1 mb-4 sm:mb-6 animate-fade-slide-up">
                         <button onClick={() => setActiveTab('pro')} className={`w-1/2 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base font-bold rounded-xl transition-all duration-300 ${activeTab === 'pro' ? 'bg-gradient-to-r from-[#424242] to-[#2A2A2A] text-white shadow-lg' : 'text-neutral-300 hover:bg-neutral-700/50'}`}>Pro</button>
                         <button onClick={() => setActiveTab('vanguard')} className={`w-1/2 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base font-bold rounded-xl transition-all duration-300 ${activeTab === 'vanguard' ? 'bg-gradient-to-r from-[#424242] to-[#2A2A2A] text-white shadow-lg' : 'text-neutral-300 hover:bg-neutral-700/50'}`}>Pro Vanguard</button>
                     </div>
+                </div>
+            </header>
 
+            {/* Scrollable Content */}
+            <main className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-8 pb-[calc(env(safe-area-inset-bottom)+96px)] sm:pb-[calc(env(safe-area-inset-bottom)+128px)] md:pb-[calc(env(safe-area-inset-bottom)+160px)]">
+                <div className="max-w-2xl w-full mx-auto pt-4 sm:pt-6 md:pt-8">
                     <div className="space-y-3 sm:space-y-4 md:space-y-6 text-left animate-fade-slide-up">
                        {activeTab === 'pro' && proFeatures.map(f => <ProFeature key={f.title} title={f.title} description={f.description}>{f.icon}</ProFeature>)}
                        {activeTab === 'vanguard' && (
@@ -69,7 +75,7 @@ const ProFeaturesSplashScreen: React.FC<ProFeaturesSplashScreenProps> = ({ onCom
                 </div>
             </main>
 
-            <footer className="flex-shrink-0 px-4 sm:px-6 md:px-8 pt-4 sm:pt-6 md:pt-8 pb-4 sm:pb-6 md:pb-8">
+            <footer className="flex-shrink-0 w-full sticky bottom-0 bg-gradient-to-b from-transparent via-[#0A0A0A]/80 to-[#0A0A0A]/95 backdrop-blur-md border-t border-[#424242]/30 px-4 sm:px-6 md:px-8 pt-4 sm:pt-6 md:pt-8 pb-[calc(env(safe-area-inset-bottom)+16px)] sm:pb-[calc(env(safe-area-inset-bottom)+24px)] md:pb-[calc(env(safe-area-inset-bottom)+32px)] z-20 shadow-2xl shadow-black/50">
                 <div className="w-full max-w-lg mx-auto space-y-2 sm:space-y-3 md:space-y-4">
                     <button
                         onClick={activeTab === 'pro' ? onUpgrade : onUpgradeToVanguard}

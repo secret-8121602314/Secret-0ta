@@ -18,6 +18,24 @@ export interface UserPreferences {
   };
   created_at?: string;
   updated_at?: string;
+  tts_preferences?: {
+    voice: string;
+    pitch: number;
+    rate: number;
+  };
+  pwa_preferences?: {
+    enable_notifications: boolean;
+    enable_push_notifications: boolean;
+  };
+  onboarding_preferences?: {
+    completed_steps: string[];
+    last_step: string;
+  };
+  general_preferences?: {
+    language: string;
+    theme: string;
+    auto_dark_mode: boolean;
+  };
 }
 
 export type GameGenre = 
@@ -44,7 +62,7 @@ export type SkillLevel =
 class UserPreferencesService {
   private cache: Map<string, UserPreferences> = new Map();
 
-  async getUserPreferences(): Promise<UserPreferences | null> {
+  async getPreferences(): Promise<UserPreferences | null> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
@@ -54,29 +72,54 @@ class UserPreferencesService {
         return this.cache.get(user.id)!;
       }
 
-      // Try to get preferences from database
+      // Try to get preferences from new consolidated users table
       try {
         const { data, error } = await supabase
-          .from('user_preferences')
-          .select('*')
-          .eq('user_id', user.id)
+          .from('users_new')
+          .select('preferences')
+          .eq('auth_user_id', user.id)
           .single();
 
         if (error) {
           if (error.code === 'PGRST116') {
-            // No preferences found, create default ones
+            // No user found, create default ones
             return this.createDefaultPreferences(user.id);
           }
           throw error;
         }
 
+        // Convert from new structure to old interface for backward compatibility
+        const userPreferences: UserPreferences = {
+          user_id: user.id,
+          game_genre: data.preferences?.game_genre || 'rpg',
+          hint_style: data.preferences?.hint_style || 'subtle',
+          detail_level: data.preferences?.detail_level || 'concise',
+          spoiler_sensitivity: data.preferences?.spoiler_sensitivity || 'moderate',
+          ai_personality: data.preferences?.ai_personality || 'encouraging',
+          preferred_response_format: data.preferences?.preferred_response_format || 'text_with_bullets',
+          skill_level: data.preferences?.skill_level || 'intermediate',
+          gaming_patterns: data.preferences?.gaming_patterns || {
+            preferred_play_time: ['evening'],
+            session_duration: '1-2 hours',
+            frequency: 'daily',
+            multiplayer_preference: false,
+            completionist_tendency: false
+          },
+          tts_preferences: data.preferences?.tts || {},
+          pwa_preferences: data.preferences?.pwa || {},
+          onboarding_preferences: data.preferences?.onboarding || {},
+          general_preferences: data.preferences?.general || {},
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+
         // Cache the result
-        this.cache.set(user.id, data);
-        return data;
+        this.cache.set(user.id, userPreferences);
+        return userPreferences;
       } catch (tableError: any) {
         // If the table doesn't exist (PGRST116) or other table-related errors,
         // return default preferences without trying to save to database
-        console.warn('User preferences table not available, using defaults:', tableError.message);
+        console.warn('Users table not available, using defaults:', tableError.message);
         return this.getDefaultPreferences(user.id);
       }
     } catch (error) {
@@ -90,28 +133,42 @@ class UserPreferencesService {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return false;
 
-      // Try to update in database
+      // Try to update in new consolidated users table
       try {
+        // Get current preferences to merge with updates
+        const current = await this.getPreferences();
+        if (!current) return false;
+
+        // Convert updates to new structure
+        const newPreferences = {
+          tts: { ...current.tts_preferences, ...updates.tts_preferences },
+          pwa: { ...current.pwa_preferences, ...updates.pwa_preferences },
+          onboarding: { ...current.onboarding_preferences, ...updates.onboarding_preferences },
+          general: { ...current.general_preferences, ...updates.general_preferences }
+        };
+
         const { error } = await supabase
-          .from('user_preferences')
+          .from('users_new')
           .upsert({
-            user_id: user.id,
-            ...updates,
-            updated_at: new Date().toISOString()
+            auth_user_id: user.id,
+            email: user.email || '',
+            preferences: newPreferences
           });
 
         if (error) throw error;
 
         // Update cache
-        const current = this.cache.get(user.id);
-        if (current) {
-          this.cache.set(user.id, { ...current, ...updates });
-        }
+        const updatedPrefs: UserPreferences = {
+          ...current,
+          ...updates,
+          updated_at: new Date().toISOString()
+        };
+        this.cache.set(user.id, updatedPrefs);
 
         return true;
       } catch (tableError: any) {
         // If the table doesn't exist, just update the cache
-        console.warn('User preferences table not available, updating cache only:', tableError.message);
+        console.warn('Users table not available, updating cache only:', tableError.message);
         
         const current = this.cache.get(user.id);
         if (current) {
@@ -130,17 +187,55 @@ class UserPreferencesService {
     const defaultPrefs = this.getDefaultPreferences(userId);
 
     try {
+      // Create user with default preferences in new consolidated users table
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
       const { data, error } = await supabase
-        .from('user_preferences')
-        .insert(defaultPrefs)
-        .select()
+        .from('users_new')
+        .insert({
+          auth_user_id: user.id,
+          email: user.email || '',
+          preferences: {
+            tts: defaultPrefs.tts_preferences,
+            pwa: defaultPrefs.pwa_preferences,
+            onboarding: defaultPrefs.onboarding_preferences,
+            general: defaultPrefs.general_preferences
+          }
+        })
+        .select('preferences')
         .single();
 
       if (error) throw error;
 
+      // Convert back to old interface for backward compatibility
+      const userPreferences: UserPreferences = {
+        user_id: userId,
+        game_genre: data.preferences?.game_genre || 'rpg',
+        hint_style: data.preferences?.hint_style || 'subtle',
+        detail_level: data.preferences?.detail_level || 'concise',
+        spoiler_sensitivity: data.preferences?.spoiler_sensitivity || 'moderate',
+        ai_personality: data.preferences?.ai_personality || 'encouraging',
+        preferred_response_format: data.preferences?.preferred_response_format || 'text_with_bullets',
+        skill_level: data.preferences?.skill_level || 'intermediate',
+        gaming_patterns: data.preferences?.gaming_patterns || {
+          preferred_play_time: ['evening'],
+          session_duration: '1-2 hours',
+          frequency: 'daily',
+          multiplayer_preference: false,
+          completionist_tendency: false
+        },
+        tts_preferences: data.preferences?.tts || {},
+        pwa_preferences: data.preferences?.pwa || {},
+        onboarding_preferences: data.preferences?.onboarding || {},
+        general_preferences: data.preferences?.general || {},
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
       // Cache the result
-      this.cache.set(userId, data);
-      return data;
+      this.cache.set(userId, userPreferences);
+      return userPreferences;
     } catch (error) {
       console.error('Error creating default preferences in database:', error);
       // Return default preferences without saving to database

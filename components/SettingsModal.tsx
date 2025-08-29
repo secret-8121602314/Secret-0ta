@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Usage, UserTier } from '../services/types';
 import UserCircleIcon from './UserCircleIcon';
 import CreditCardIcon from './CreditCardIcon';
@@ -8,7 +8,8 @@ import GeneralSettingsTab from './GeneralSettingsTab';
 import SubscriptionSettingsTab from './SubscriptionSettingsTab';
 import HelpGuideTab from './HelpGuideTab';
 import UserPreferencesTab from './UserPreferencesTab';
-
+import SupabaseMigrationStatus from './SupabaseMigrationStatus';
+import { PerformanceDashboard } from './PerformanceDashboard';
 
 import { apiCostService } from '../services/apiCostService';
 import { APICostSummary } from '../services/apiCostService';
@@ -27,7 +28,7 @@ interface SettingsModalProps {
   userEmail?: string;
 }
 
-type ActiveTab = 'general' | 'preferences' | 'subscription' | 'help' | 'admin';
+type ActiveTab = 'general' | 'preferences' | 'subscription' | 'help' | 'admin' | 'migration' | 'performance';
 
 // Admin Tab Content Component
 const AdminTabContent: React.FC = () => {
@@ -189,30 +190,96 @@ const AdminTabContent: React.FC = () => {
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, usage, onShowUpgrade, onShowVanguardUpgrade, onLogout, onResetApp, onShowHowToUse, userEmail }) => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('general');
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Reset active tab when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab('general');
+    }
+  }, [isOpen]);
 
   if (!isOpen) {
     return null;
   }
 
-  const TabButton: React.FC<{ id: ActiveTab; label: string; icon: React.ReactNode }> = ({ id, label, icon }) => (
-    <button
-      onClick={() => setActiveTab(id)}
-      className={`w-full flex items-center justify-center md:justify-start gap-4 px-4 py-3 text-base font-medium rounded-xl transition-all duration-300 ${
-        activeTab === id
-          ? 'bg-gradient-to-r from-[#E53A3A]/20 to-[#D98C1F]/20 text-white border-2 border-[#E53A3A]/40 shadow-lg shadow-[#E53A3A]/10'
-          : 'text-neutral-400 hover:bg-gradient-to-r hover:from-neutral-700/50 hover:to-neutral-600/50 hover:text-white hover:scale-105'
-      }`}
-    >
-      {icon}
-      <span className="hidden md:inline">{label}</span>
-    </button>
-  );
+  useEffect(() => {
+    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onEsc);
+    return () => document.removeEventListener('keydown', onEsc);
+  }, [onClose]);
+
+  // Initial focus and focus trap
+  useEffect(() => {
+    if (!isOpen) return;
+    const container = modalRef.current;
+    if (!container) return;
+    const focusable = Array.from(container.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])'
+    ));
+    if (focusable.length > 0) {
+      // Focus the first interactive element
+      focusable[0].focus();
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      const elements = Array.from(container.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])'
+      ));
+      if (elements.length === 0) return;
+      const firstEl = elements[0];
+      const lastEl = elements[elements.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (!e.shiftKey) {
+        // Tab forward
+        if (active === lastEl) {
+          e.preventDefault();
+          firstEl.focus();
+        }
+      } else {
+        // Shift+Tab backward
+        if (active === firstEl) {
+          e.preventDefault();
+          lastEl.focus();
+        }
+      }
+    };
+
+    container.addEventListener('keydown', handleKeyDown);
+    return () => container.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
+  // Memoized tab change handler to prevent unnecessary re-renders
+  const handleTabChange = (tabId: ActiveTab) => {
+    setActiveTab(tabId);
+  };
+
+  // Memoized TabButton component to prevent recreation on every render
+  const TabButton = React.useCallback(({ id, label, icon }: { id: ActiveTab; label: string; icon: React.ReactNode }) => {
+    const isActive = activeTab === id;
+    
+    return (
+      <button
+        onClick={() => handleTabChange(id)}
+        className={`w-full flex items-center justify-center md:justify-start gap-4 px-4 py-3 text-base font-medium rounded-xl transition-all duration-300 ${
+          isActive
+            ? 'bg-gradient-to-r from-[#E53A3A]/20 to-[#D98C1F]/20 text-white border-2 border-[#E53A3A]/40 shadow-lg shadow-[#E53A3A]/10'
+            : 'text-neutral-400 hover:bg-gradient-to-r hover:from-neutral-700/50 hover:to-neutral-600/50 hover:text-white hover:scale-105'
+        }`}
+      >
+        {icon}
+        <span className="hidden md:inline">{label}</span>
+      </button>
+    );
+  }, [activeTab, handleTabChange]);
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-black/80 to-[#0A0A0A]/80 backdrop-blur-xl flex items-center justify-center z-50 animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 bg-gradient-to-br from-black/80 to-[#0A0A0A]/80 backdrop-blur-xl flex items-center justify-center z-50 animate-fade-in" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="settings-title">
       <div
         className="bg-gradient-to-r from-[#1C1C1C]/95 to-[#0A0A0A]/95 backdrop-blur-xl border-2 border-[#424242]/60 rounded-3xl shadow-2xl w-full max-w-5xl m-6 relative animate-scale-in flex flex-col max-h-[90vh] h-auto md:h-[75vh] hover:border-[#424242]/80 transition-all duration-500"
         onClick={(e) => e.stopPropagation()}
+        ref={modalRef}
       >
         <button
           onClick={onClose}
@@ -225,7 +292,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, usage, o
         <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
             <nav className="flex-shrink-0 w-full md:w-64 p-6 border-b-2 md:border-b-0 md:border-r-2 border-neutral-800/60 flex flex-row md:flex-col justify-between">
                 <div>
-                    <h2 className="text-xl font-bold text-white mb-6 px-2 hidden md:block leading-tight">Settings</h2>
+                    <h2 id="settings-title" className="text-xl font-bold text-white mb-6 px-2 hidden md:block leading-tight">Settings</h2>
                     <ul className="flex flex-row md:flex-col gap-2 w-full">
                         <li className="flex-1 md:flex-none"><TabButton id="general" label="General" icon={<UserCircleIcon className="w-6 h-6" />} /></li>
                         <li className="flex-1 md:flex-none"><TabButton id="preferences" label="AI Preferences" icon={<StarIcon className="w-6 h-6" />} /></li>
@@ -239,11 +306,26 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, usage, o
                                 </svg>
                             } />
                         </li>
+                        <li className="flex-1 md:flex-none">
+                            <TabButton id="migration" label="Migration" icon={
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                </svg>
+                            } />
+                        </li>
+                        <li className="flex-1 md:flex-none">
+                            <TabButton id="performance" label="Performance" icon={
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                            } />
+                        </li>
                     </ul>
                 </div>
             </nav>
 
             <main className="flex-1 overflow-y-auto p-8 sm:p-10">
+                
                 {activeTab === 'general' && (
                     <GeneralSettingsTab
                         usage={usage}
@@ -264,6 +346,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, usage, o
                         <AdminTabContent />
                     </div>
                 )}
+                {activeTab === 'migration' && (
+                    <div>
+                        <h2 className="text-xl font-bold text-white mb-4">🚀 Supabase Migration</h2>
+                        <SupabaseMigrationStatus />
+                    </div>
+                )}
+                {activeTab === 'performance' && (
+                    <div>
+                        <h2 className="text-xl font-bold text-white mb-4">⚡ Performance Dashboard</h2>
+                        <PerformanceDashboard />
+                    </div>
+                )}
             </main>
         </div>
       </div>
@@ -271,4 +365,4 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, usage, o
   );
 };
 
-export default SettingsModal;
+export default React.memo(SettingsModal);

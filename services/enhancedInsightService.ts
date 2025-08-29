@@ -99,6 +99,13 @@ class EnhancedInsightService {
     }
 
     /**
+     * Get tabs for a specific genre
+     */
+    getTabsForGenre(genre: string): EnhancedInsightTab[] {
+        return this.getBaseTabsForGenre(genre);
+    }
+
+    /**
      * Generate basic tabs for free users (no API calls)
      */
     private getBasicTabsForGenre(genre: string): EnhancedInsightTab[] {
@@ -130,9 +137,28 @@ class EnhancedInsightService {
     }
 
     /**
+     * Get basic content for a tab
+     */
+    public getDefaultContentForTab(tabTitle: string, genre?: string): string {
+        const genreContext = genre ? ` in ${genre} games` : '';
+        return `This ${tabTitle.toLowerCase()} tab will provide personalized guidance${genreContext}. Ask me specific questions to get detailed, tailored advice.`;
+    }
+
+    /**
      * Get base tabs for any genre (no API calls)
      */
     private getBaseTabsForGenre(genre: string): EnhancedInsightTab[] {
+        // Otaku Diary is always the first tab for all games
+        const otakuDiaryTab: EnhancedInsightTab = {
+            id: 'otaku-diary',
+            title: '📖 Otaku Diary',
+            priority: 'high',
+            playerFocus: [],
+            hintStyle: [],
+            isProfileSpecific: false,
+            customInstruction: 'This is your personal game diary for tracking tasks and favorites. No AI content generation needed.'
+        };
+
         const genreSpecificTabs: Record<string, EnhancedInsightTab[]> = {
             'rpg': [
                 { id: 'getting-started', title: 'Getting Started', priority: 'high', playerFocus: [], hintStyle: [], isProfileSpecific: false },
@@ -164,7 +190,10 @@ class EnhancedInsightService {
             ]
         };
 
-        return genreSpecificTabs[genre] || genreSpecificTabs['rpg'];
+        const genreTabs = genreSpecificTabs[genre] || genreSpecificTabs['rpg'];
+        
+        // Always return Otaku Diary first, then genre-specific tabs
+        return [otakuDiaryTab, ...genreTabs];
     }
 
     /**

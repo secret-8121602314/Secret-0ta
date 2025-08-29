@@ -13,7 +13,7 @@ interface ConversationTabsProps {
     onReorder: (sourceIndex: number, destIndex: number) => void;
 }
 
-const ConversationTabs: React.FC<ConversationTabsProps> = ({ conversations, conversationsOrder, activeConversation, activeConversationId, onSwitchConversation, onContextMenu, onReorder }) => {
+const ConversationTabs: React.FC<ConversationTabsProps> = React.memo(({ conversations, conversationsOrder, activeConversation, activeConversationId, onSwitchConversation, onContextMenu, onReorder }) => {
     const activeTabRef = useRef<HTMLButtonElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const draggedItem = useRef<number | null>(null);
@@ -152,6 +152,6 @@ const ConversationTabs: React.FC<ConversationTabsProps> = ({ conversations, conv
             )}
         </div>
     );
-};
+});
 
-export default React.memo(ConversationTabs);
+export default ConversationTabs;

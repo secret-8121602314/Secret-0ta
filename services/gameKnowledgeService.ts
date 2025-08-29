@@ -21,6 +21,18 @@ export interface Game {
   knowledge_confidence_score?: number;
   last_updated?: string;
   created_at?: string;
+  // New consolidated structure
+  game_data?: {
+    objectives?: GameObjective[];
+    solutions?: GameSolution[];
+    knowledge_patterns?: KnowledgePattern[];
+    metadata?: Record<string, any>;
+  };
+  session_data?: {
+    progress?: PlayerProgress;
+    user_context?: any;
+    game_state?: any;
+  };
 }
 
 export interface GameObjective {
@@ -166,7 +178,7 @@ export class GameKnowledgeService {
   async registerGame(gameData: Partial<Game>): Promise<Game> {
     try {
       const { data, error } = await supabase
-        .from('games')
+        .from('games_new')
         .insert([gameData])
         .select()
         .single();
@@ -185,7 +197,7 @@ export class GameKnowledgeService {
   async getGame(identifier: string): Promise<Game | null> {
     try {
       const { data, error } = await supabase
-        .from('games')
+        .from('games_new')
         .select('*')
         .or(`id.eq.${identifier},title.ilike.%${identifier}%`)
         .single();
@@ -204,7 +216,7 @@ export class GameKnowledgeService {
   async updateGame(gameId: string, updates: Partial<Game>): Promise<Game> {
     try {
       const { data, error } = await supabase
-        .from('games')
+        .from('games_new')
         .update(updates)
         .eq('id', gameId)
         .select()
@@ -228,7 +240,7 @@ export class GameKnowledgeService {
     minKnowledgeScore?: number;
   }): Promise<Game[]> {
     try {
-      let query = supabase.from('games').select('*');
+      let query = supabase.from('games_new').select('*');
 
       if (filters?.genre) {
         query = query.eq('genre', filters.genre);
@@ -261,14 +273,33 @@ export class GameKnowledgeService {
    */
   async addObjective(objectiveData: Partial<GameObjective>): Promise<GameObjective> {
     try {
+      // Store objectives in the game's game_data JSONB column
+      const game = await this.getGame(objectiveData.game_id!);
+      if (!game) throw new Error('Game not found');
+
+      const objectives = game.game_data?.objectives || [];
+      const newObjective: GameObjective = {
+        id: crypto.randomUUID(),
+        game_id: objectiveData.game_id!,
+        objective_name: objectiveData.objective_name || 'New Objective',
+        objective_type: objectiveData.objective_type || 'main_quest',
+        spoiler_level: objectiveData.spoiler_level || 'none',
+        ...objectiveData,
+        created_at: new Date().toISOString()
+      };
+      objectives.push(newObjective);
+
       const { data, error } = await supabase
-        .from('game_objectives')
-        .insert([objectiveData])
+        .from('games_new')
+        .update({
+          game_data: { ...game.game_data, objectives }
+        })
+        .eq('id', objectiveData.game_id!)
         .select()
         .single();
 
       if (error) throw error;
-      return data;
+      return newObjective as GameObjective;
     } catch (error) {
       console.error('Error adding objective:', error);
       throw error;
@@ -280,18 +311,16 @@ export class GameKnowledgeService {
    */
   async getGameObjectives(gameId: string, type?: string): Promise<GameObjective[]> {
     try {
-      let query = supabase
-        .from('game_objectives')
-        .select('*')
-        .eq('game_id', gameId);
+      const game = await this.getGame(gameId);
+      if (!game) return [];
 
+      const objectives = game.game_data?.objectives || [];
+      
       if (type) {
-        query = query.eq('objective_type', type);
+        return objectives.filter(obj => obj.objective_type === type);
       }
-
-      const { data, error } = await query.order('difficulty_rating', { ascending: true });
-      if (error) throw error;
-      return data || [];
+      
+      return objectives;
     } catch (error) {
       console.error('Error getting game objectives:', error);
       return [];
@@ -303,15 +332,31 @@ export class GameKnowledgeService {
    */
   async updateObjective(objectiveId: string, updates: Partial<GameObjective>): Promise<GameObjective> {
     try {
-      const { data, error } = await supabase
-        .from('game_objectives')
-        .update(updates)
-        .eq('id', objectiveId)
-        .select()
-        .single();
+      // Find the game containing this objective
+      const games = await this.getGames();
+      for (const game of games) {
+        const objectives = game.game_data?.objectives || [];
+        const objectiveIndex = objectives.findIndex(obj => obj.id === objectiveId);
+        
+        if (objectiveIndex !== -1) {
+          // Update the objective
+          objectives[objectiveIndex] = { ...objectives[objectiveIndex], ...updates };
+          
+          const { data, error } = await supabase
+            .from('games_new')
+            .update({
+              game_data: { ...game.game_data, objectives }
+            })
+            .eq('id', game.id)
+            .select()
+            .single();
 
-      if (error) throw error;
-      return data;
+          if (error) throw error;
+          return objectives[objectiveIndex] as GameObjective;
+        }
+      }
+      
+      throw new Error('Objective not found');
     } catch (error) {
       console.error('Error updating objective:', error);
       throw error;
@@ -330,39 +375,28 @@ export class GameKnowledgeService {
       const userId = await authService.getCurrentUserId();
       if (!userId) throw new Error('User not authenticated');
 
-      // Check if progress record exists
-      const existingProgress = await this.getPlayerProgress(userId, progressData.game_id!);
-      
-      if (existingProgress) {
-        // Update existing progress
-        const { data, error } = await supabase
-          .from('player_progress')
-          .update({
-            ...progressData,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', existingProgress.id)
-          .select()
-          .single();
+      // Store progress in the game's session_data JSONB column
+      const game = await this.getGame(progressData.game_id!);
+      if (!game) throw new Error('Game not found');
 
-        if (error) throw error;
-        return data;
-      } else {
-        // Create new progress record
-        const { data, error } = await supabase
-          .from('player_progress')
-          .insert([{
-            ...progressData,
-            user_id: userId,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          }])
-          .select()
-          .single();
+      const progress = game.session_data?.progress || {};
+      const updatedProgress = {
+        ...progress,
+        ...progressData,
+        updated_at: new Date().toISOString()
+      };
 
-        if (error) throw error;
-        return data;
-      }
+      const { data, error } = await supabase
+        .from('games_new')
+        .update({
+          session_data: { ...game.session_data, progress: updatedProgress }
+        })
+        .eq('id', progressData.game_id!)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return updatedProgress as PlayerProgress;
     } catch (error) {
       console.error('Error tracking progress:', error);
       throw error;
@@ -773,7 +807,7 @@ export class GameKnowledgeService {
   async getKnowledgeConfidenceScores(): Promise<{ gameId: string; title: string; score: number }[]> {
     try {
       const { data, error } = await supabase
-        .from('games')
+        .from('games_new')
         .select('id, title, knowledge_confidence_score')
         .order('knowledge_confidence_score', { ascending: false });
 

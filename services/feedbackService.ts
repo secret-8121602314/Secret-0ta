@@ -70,7 +70,7 @@ export const addFeedback = async (feedback: Omit<Feedback, 'id' | 'timestamp'>) 
 };
 
 // Enhanced feedback analysis for AI learning
-const categorizeFeedback = (feedbackText: string): string => {
+export const categorizeFeedback = (feedbackText: string): string => {
   const text = feedbackText.toLowerCase();
   
   if (text.includes('spoiler') || text.includes('ruined') || text.includes('reveal')) {
@@ -95,7 +95,7 @@ const categorizeFeedback = (feedbackText: string): string => {
   return 'general_feedback';
 };
 
-const analyzeFeedbackSeverity = (feedbackText: string): 'low' | 'medium' | 'high' => {
+export const analyzeFeedbackSeverity = (feedbackText: string): 'low' | 'medium' | 'high' => {
   const text = feedbackText.toLowerCase();
   
   // High severity indicators

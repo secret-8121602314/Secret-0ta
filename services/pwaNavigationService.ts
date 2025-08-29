@@ -1,4 +1,5 @@
 import { authService, AuthState } from './supabase';
+import { supabaseDataService } from './supabaseDataService';
 
 export interface PWANavigationState {
   isPWAInstalled: boolean;
@@ -93,14 +94,38 @@ class PWANavigationService {
     this.checkPWAMode();
   }
 
-  private checkHandsFreePreference() {
+  private async checkHandsFreePreference() {
     // Check if hands-free was enabled in the app
-    const handsFreeEnabled = localStorage.getItem('otakonHandsFreeEnabled') === 'true';
-    this.navigationState.isHandsFreeEnabled = handsFreeEnabled;
-    
-    if (handsFreeEnabled && this.navigationState.isRunningInPWA) {
-      console.log('PWA Navigation: Hands-free enabled in PWA mode');
-      this.enableHandsFreeInBackground();
+    try {
+      // Try to get from Supabase first
+      const preferences = await supabaseDataService.getUserPreferences();
+      const pwaPrefs = preferences.pwa || {};
+      const handsFreeEnabled = pwaPrefs.handsFreeEnabled === true;
+      
+      // Fallback to localStorage
+      let finalHandsFreeEnabled = handsFreeEnabled;
+      if (handsFreeEnabled === undefined) {
+        const localHandsFreeEnabled = localStorage.getItem('otakonHandsFreeEnabled') === 'true';
+        finalHandsFreeEnabled = localHandsFreeEnabled;
+      }
+      
+      this.navigationState.isHandsFreeEnabled = finalHandsFreeEnabled;
+      
+      if (finalHandsFreeEnabled && this.navigationState.isRunningInPWA) {
+        console.log('PWA Navigation: Hands-free enabled in PWA mode');
+        this.enableHandsFreeInBackground();
+      }
+    } catch (error) {
+      console.warn('Failed to get hands-free preference from Supabase, using localStorage fallback:', error);
+      
+      // Fallback to localStorage
+      const localHandsFreeEnabled = localStorage.getItem('otakonHandsFreeEnabled') === 'true';
+      this.navigationState.isHandsFreeEnabled = localHandsFreeEnabled;
+      
+      if (localHandsFreeEnabled && this.navigationState.isRunningInPWA) {
+        console.log('PWA Navigation: Hands-free enabled in PWA mode');
+        this.enableHandsFreeInBackground();
+      }
     }
   }
 
@@ -169,8 +194,20 @@ class PWANavigationService {
   }
 
   // Set hands-free preference
-  setHandsFreePreference(enabled: boolean) {
-    localStorage.setItem('otakonHandsFreeEnabled', enabled.toString());
+  async setHandsFreePreference(enabled: boolean) {
+    try {
+      // Update in Supabase
+      await supabaseDataService.updateUserPreferences('pwa', { handsFreeEnabled: enabled });
+      
+      // Also update localStorage as backup
+      localStorage.setItem('otakonHandsFreeEnabled', enabled.toString());
+    } catch (error) {
+      console.warn('Failed to update hands-free preference in Supabase, using localStorage only:', error);
+      
+      // Fallback to localStorage only
+      localStorage.setItem('otakonHandsFreeEnabled', enabled.toString());
+    }
+    
     this.navigationState.isHandsFreeEnabled = enabled;
     
     if (enabled && this.navigationState.isRunningInPWA) {

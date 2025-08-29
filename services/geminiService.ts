@@ -2,9 +2,12 @@ import { GoogleGenAI, GenerateContentResponse, Part, Content, Chat, Type } from 
 import { ChatMessage, Conversation, GeminiModel, insightTabsConfig } from "./types";
 import { profileService } from "./profileService";
 import { aiContextService } from "./aiContextService";
+import { characterDetectionService } from "./characterDetectionService";
 import { unifiedUsageService } from "./unifiedUsageService";
 import { authService } from "./supabase";
 import { apiCostService } from "./apiCostService";
+import { feedbackLearningEngine } from "./feedbackLearningEngine";
+import { supabaseDataService } from './supabaseDataService';
 
 const API_KEY = process.env.API_KEY;
 
@@ -34,9 +37,17 @@ const getSystemInstruction = async (conversation: Conversation, hasImages: boole
   // Get user context for AI personalization
   let userContextString = '';
   try {
-    userContextString = await aiContextService.generateUserContextForAI();
+    userContextString = await aiContextService.generateUserContextForAI(conversation);
   } catch (error) {
     console.warn('Failed to get user context for AI:', error);
+  }
+
+  // Get feedback-based improvements for AI learning
+  let feedbackImprovements = '';
+  try {
+    feedbackImprovements = await feedbackLearningEngine.getFeedbackBasedImprovements(conversation.id);
+  } catch (error) {
+    console.warn('Failed to get feedback-based improvements:', error);
   }
 
   const contextAwareDirective = userContextString 
@@ -44,6 +55,12 @@ const getSystemInstruction = async (conversation: Conversation, hasImages: boole
 ${userContextString}
 - **ADAPT TO USER:** Use the above context to tailor your responses to this specific user's preferences, behavior patterns, and learning from global feedback.
 - **CONTEXT-AWARE RESPONSES:** Adjust your response style, detail level, and approach based on the user's tier, past interactions, and successful patterns.`
+    : '';
+
+  const feedbackDirective = feedbackImprovements 
+    ? `\n**FEEDBACK-DRIVEN IMPROVEMENTS (Based on recent user feedback):**
+${feedbackImprovements}
+- **LEARN FROM FEEDBACK:** Apply these improvements to provide better responses and avoid common issues reported by users.`
     : '';
 
   const baseDirectives = `**0. THE CORE DIRECTIVES (Non-negotiable)**
@@ -54,7 +71,7 @@ ${userContextString}
 - **SAFETY FIRST:** For any request involving inappropriate content, your ONLY response is: "This request violates safety policies. I cannot fulfill it."
 - **INFORMATION INTEGRITY:** You MUST NOT invent game-specific details (e.g., item names, quest objectives). If you are not confident about the game's name or a specific detail, you MUST state your uncertainty in the narrative (e.g., "I'm not completely sure, but this appears to be..."). An honest "I don't know" is better than a fabricated, incorrect answer.
 - **USER PROGRESS RESPECT:** Always consider the user's current progress and never reveal information that would spoil their experience. Guide them with hints and suggestions rather than direct solutions.
-${personalizationDirective}${contextAwareDirective}`;
+${personalizationDirective}${contextAwareDirective}${feedbackDirective}`;
 
   const formattingRules = `**1. RESPONSE STRUCTURE AND FORMATTING (ABSOLUTE, CRITICAL RULE)**
 Your response is parsed by a machine. It MUST be perfectly structured.
@@ -127,6 +144,12 @@ ${hintFormattingRule}
 *   **Game Progress Line (Conditional):** ONLY if you included the \`[OTAKON_GAME_PROGRESS: ...]\` tag, you **MUST** also add this line before suggestions: \`Game Progress: <number>%\`.
 
 *   **SPOILER-FREE GUIDANCE:** Always provide hints that encourage exploration and discovery. Never reveal solutions, hidden paths, or future story elements. Instead, guide users to look for environmental clues, examine their surroundings, or try different approaches.
+
+*   **CHARACTER IMMERSION & GAME-SPECIFIC LANGUAGE:**
+    *   **Character Address:** If character information is provided in [CHARACTER_INFO], address the user by their character name using the appropriate style from [GAME_LANGUAGE_PROFILE].
+    *   **Game-Specific Language:** Use the immersive language patterns from [IMMERSIVE_LANGUAGE_PATTERNS] to match the game's atmosphere and tone.
+    *   **Immersive Analysis:** Frame your screenshot analysis using language that feels natural to the game world, not generic gaming advice.
+    *   **Lore Integration:** Weave game lore and world-building elements into your analysis naturally.
 ${suggestionsRule}`;
   }
   
@@ -139,6 +162,12 @@ ${baseDirectives}
 - You are now in "Companion Mode" for the game: **${conversation.title}**.
 - Your tone should be knowledgeable, encouraging, and personal. Refer to past events from the user's journey where relevant.
 - You are their guide until completion. You hold the full context of their unique playthrough.
+
+**CHARACTER IMMERSION & GAME-SPECIFIC LANGUAGE (CRITICAL):**
+- **Character Address:** If character information is provided in [CHARACTER_INFO], address the user by their character name using the appropriate style from [GAME_LANGUAGE_PROFILE].
+- **Game-Specific Language:** Use the immersive language patterns from [IMMERSIVE_LANGUAGE_PATTERNS] to match the game's atmosphere and tone.
+- **Language Adaptation:** Adjust your vocabulary, sentence structure, and tone to match the game's genre (fantasy, sci-fi, medieval, modern, etc.).
+- **Immersive Hints:** Frame your hints and guidance using language that feels natural to the game world, not generic gaming advice.
 
 ${formattingRules}
 ${hintFormattingRule}
@@ -165,6 +194,12 @@ ${hintFormattingRule}
     *   Use environmental storytelling and lore to guide them toward solutions.
     *   Encourage exploration and experimentation rather than providing direct answers.
     *   Reference past discoveries to help them make connections without spoiling new content.
+
+*   **IMMERSIVE CHARACTER INTERACTION:**
+    *   **Character Address:** Begin your response with an appropriate greeting using the character's name and game-specific language style.
+    *   **Game Atmosphere:** Use vocabulary and phrasing that matches the game's setting and genre.
+    *   **Lore Integration:** Weave game lore and world-building elements into your hints naturally.
+    *   **Character Progression:** Acknowledge the character's journey and growth in the game world.
 
 *   **Insight Management:** You must respond to user commands for managing insight tabs.
     *   Update: \`@<tab_name> <instruction>\` -> \`[OTAKON_INSIGHT_UPDATE: {"id": "<tab_id>", "content": "..."}]\`
@@ -203,6 +238,12 @@ ${hintFormattingRule}
 
 
 **SPOILER-FREE PRINCIPLE:** Always guide users toward discovery rather than revealing solutions. Encourage exploration, experimentation, and learning from the game world itself.
+
+**CHARACTER IMMERSION & GAME-SPECIFIC LANGUAGE:**
+- **Character Address:** If character information is provided in [CHARACTER_INFO], address the user by their character name using the appropriate style from [GAME_LANGUAGE_PROFILE].
+- **Game-Specific Language:** Use the immersive language patterns from [IMMERSIVE_LANGUAGE_PATTERNS] to match the game's atmosphere and tone.
+- **Language Adaptation:** Adjust your vocabulary, sentence structure, and tone to match the game's genre (fantasy, sci-fi, medieval, modern, etc.).
+- **Immersive Responses:** Frame your responses using language that feels natural to the game world when discussing specific games.
 ${suggestionsRule}`;
 };
 
@@ -218,11 +259,26 @@ const getOptimalModel = (task: string): GeminiModel => {
 };
 
 // ... (existing code: handleError, checkCooldown, etc.)
-const handleSuccess = () => {
-    const cooldownEnd = localStorage.getItem(COOLDOWN_KEY);
-    if (cooldownEnd) {
-        console.log("API call successful, clearing cooldown.");
-        localStorage.removeItem(COOLDOWN_KEY);
+const handleSuccess = async () => {
+    try {
+        // Clear cooldown in Supabase
+        await supabaseDataService.setAppCache('geminiCooldown', null, new Date(0).toISOString());
+        
+        // Also clear localStorage as backup
+        const cooldownEnd = localStorage.getItem(COOLDOWN_KEY);
+        if (cooldownEnd) {
+            console.log("API call successful, clearing cooldown.");
+            localStorage.removeItem(COOLDOWN_KEY);
+        }
+    } catch (error) {
+        console.warn('Failed to clear cooldown in Supabase, using localStorage only:', error);
+        
+        // Fallback to localStorage only
+        const cooldownEnd = localStorage.getItem(COOLDOWN_KEY);
+        if (cooldownEnd) {
+            console.log("API call successful, clearing cooldown (localStorage fallback).");
+            localStorage.removeItem(COOLDOWN_KEY);
+        }
     }
 };
 
@@ -260,14 +316,38 @@ const handleError = (error: any, onError: (error: string) => void) => {
     onError(message);
 };
 
-const checkCooldown = (onError: (error: string) => void): boolean => {
-    const cooldownEnd = localStorage.getItem(COOLDOWN_KEY);
-    if (cooldownEnd && Date.now() < parseInt(cooldownEnd, 10)) {
-        const timeRemaining = Math.ceil((parseInt(cooldownEnd, 10) - Date.now()) / (1000 * 60));
-        onError(`The AI is currently resting due to high traffic. Please try again in about ${timeRemaining} minute(s).`);
-        return true;
+const checkCooldown = async (onError: (error: string) => void): Promise<boolean> => {
+    try {
+        // Try to get cooldown from Supabase first
+        const cooldownCache = await supabaseDataService.getAppCache('geminiCooldown');
+        if (cooldownCache && cooldownCache.expiresAt && new Date(cooldownCache.expiresAt) > new Date()) {
+            const timeRemaining = Math.ceil((new Date(cooldownCache.expiresAt).getTime() - Date.now()) / (1000 * 60));
+            onError(`The AI is currently resting due to high traffic. Please try again in about ${timeRemaining} minute(s).`);
+            return true;
+        }
+        
+        // Fallback to localStorage
+        const cooldownEnd = localStorage.getItem(COOLDOWN_KEY);
+        if (cooldownEnd && Date.now() < parseInt(cooldownEnd, 10)) {
+            const timeRemaining = Math.ceil((parseInt(cooldownEnd, 10) - Date.now()) / (1000 * 60));
+            onError(`The AI is currently resting due to high traffic. Please try again in about ${timeRemaining} minute(s).`);
+            return true;
+        }
+        
+        return false;
+    } catch (error) {
+        console.warn('Failed to check cooldown in Supabase, using localStorage fallback:', error);
+        
+        // Fallback to localStorage only
+        const cooldownEnd = localStorage.getItem(COOLDOWN_KEY);
+        if (cooldownEnd && Date.now() < parseInt(cooldownEnd, 10)) {
+            const timeRemaining = Math.ceil((parseInt(cooldownEnd, 10) - Date.now()) / (1000 * 60));
+            onError(`The AI is currently resting due to high traffic. Please try again in about ${timeRemaining} minute(s).`);
+            return true;
+        }
+        
+        return false;
     }
-    return false;
 };
 
 // ... (existing code for news, trailers, reviews)
@@ -276,22 +356,55 @@ export const getGameNews = async (
   onError: (error: string) => void,
   signal: AbortSignal
 ) => {
-    if (checkCooldown(onError)) return;
+    if (await checkCooldown(onError)) return;
 
     const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
-    const cachedNewsData = localStorage.getItem(NEWS_CACHE_KEY);
-
-    if (cachedNewsData) {
-        try {
-            const { date, news } = JSON.parse(cachedNewsData);
+    
+    try {
+        // Try to get from Supabase first
+        const cachedNewsData = await supabaseDataService.getAppCache('gameNews');
+        
+        if (cachedNewsData && cachedNewsData.cacheData) {
+            const { date, news } = cachedNewsData.cacheData;
             if (date === today && news) {
-                console.log("Loading game news from today's cache.");
+                console.log("Loading game news from today's cache (Supabase).");
                 onUpdate(news);
                 return;
             }
-        } catch (e) {
-            console.error("Failed to parse cached news, fetching new data.", e);
-            localStorage.removeItem(NEWS_CACHE_KEY);
+        }
+        
+        // Fallback to localStorage
+        const localCachedNewsData = localStorage.getItem(NEWS_CACHE_KEY);
+        if (localCachedNewsData) {
+            try {
+                const { date, news } = JSON.parse(localCachedNewsData);
+                if (date === today && news) {
+                    console.log("Loading game news from today's cache (localStorage fallback).");
+                    onUpdate(news);
+                    return;
+                }
+            } catch (e) {
+                console.error("Failed to parse cached news, fetching new data.", e);
+                localStorage.removeItem(NEWS_CACHE_KEY);
+            }
+        }
+    } catch (error) {
+        console.warn('Failed to get news cache from Supabase, using localStorage fallback:', error);
+        
+        // Fallback to localStorage only
+        const localCachedNewsData = localStorage.getItem(NEWS_CACHE_KEY);
+        if (localCachedNewsData) {
+            try {
+                const { date, news } = JSON.parse(localCachedNewsData);
+                if (date === today && news) {
+                    console.log("Loading game news from today's cache (localStorage fallback).");
+                    onUpdate(news);
+                    return;
+                }
+            } catch (e) {
+                console.error("Failed to parse cached news, fetching new data.", e);
+                localStorage.removeItem(NEWS_CACHE_KEY);
+            }
         }
     }
     
@@ -340,11 +453,22 @@ Provide a summary of the latest gaming news from the past week. Your response mu
         
         const newNews = response.text;
         
-        const newCacheData = {
-            date: today,
-            news: newNews
-        };
-        localStorage.setItem(NEWS_CACHE_KEY, JSON.stringify(newCacheData));
+        // Cache the news data
+        const newCacheData = { date: today, news: newNews };
+        
+        try {
+            // Cache in Supabase (24-hour expiration)
+            const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+            await supabaseDataService.setAppCache('gameNews', newCacheData, expiresAt);
+            
+            // Also cache in localStorage as backup
+            localStorage.setItem(NEWS_CACHE_KEY, JSON.stringify(newCacheData));
+        } catch (error) {
+            console.warn('Failed to cache news in Supabase, using localStorage only:', error);
+            
+            // Fallback to localStorage only
+            localStorage.setItem(NEWS_CACHE_KEY, JSON.stringify(newCacheData));
+        }
 
         onUpdate(newNews);
         handleSuccess();
@@ -364,7 +488,7 @@ const makeFocusedApiCall = async (
     onError: (error: string) => void,
     signal: AbortSignal
 ) => {
-    if (checkCooldown(onError)) return;
+    if (await checkCooldown(onError)) return;
 
     try {
         console.log("Fetching new focused data from API.");
@@ -513,7 +637,7 @@ export async function sendMessage(
     onError: (error: string) => void,
     history: ChatMessage[]
 ): Promise<void> {
-    if (checkCooldown(onError)) return;
+    if (await checkCooldown(onError)) return;
     
     try {
         const model = getOptimalModel('chat');
@@ -540,9 +664,21 @@ export async function sendMessage(
             abortPromise
         ]);
         
+        // Validate response with feedback before tracking
+        let validationIssues: string[] = [];
+        try {
+            const validation = await feedbackLearningEngine.validateResponseWithFeedback(fullResponse, conversation.id);
+            if (!validation.isValid) {
+                console.warn('Response validation failed:', validation.issues);
+                validationIssues = validation.issues;
+            }
+        } catch (error) {
+            console.warn('Failed to validate response with feedback:', error);
+        }
+
         // Track AI response for learning
         if (fullResponse) {
-            await trackAIResponse(conversation, message, fullResponse, false);
+            await trackAIResponse(conversation, message, fullResponse, false, validationIssues);
         }
         
         handleSuccess();
@@ -564,7 +700,7 @@ export async function sendMessageWithImages(
     onError: (error: string) => void,
     history: ChatMessage[]
 ): Promise<void> {
-    if (checkCooldown(onError)) return;
+    if (await checkCooldown(onError)) return;
     
     try {
         const model = getOptimalModel('chat_with_images');
@@ -599,9 +735,21 @@ export async function sendMessageWithImages(
             abortPromise
         ]);
         
+        // Validate response with feedback before tracking
+        let validationIssues: string[] = [];
+        try {
+            const validation = await feedbackLearningEngine.validateResponseWithFeedback(fullResponse, conversation.id);
+            if (!validation.isValid) {
+                console.warn('Response validation failed:', validation.issues);
+                validationIssues = validation.issues;
+            }
+        } catch (error) {
+            console.warn('Failed to validate response with feedback:', error);
+        }
+
         // Track AI response for learning
         if (fullResponse) {
-            await trackAIResponse(conversation, prompt, fullResponse, true);
+            await trackAIResponse(conversation, prompt, fullResponse, true, validationIssues);
         }
         
         handleSuccess();
@@ -619,7 +767,8 @@ const trackAIResponse = async (
     conversation: Conversation,
     userMessage: string,
     aiResponse: string,
-    hasImages: boolean = false
+    hasImages: boolean = false,
+    validationIssues: string[] = []
 ): Promise<void> => {
     try {
         const userId = authService.getAuthState().user?.id;
@@ -633,7 +782,9 @@ const trackAIResponse = async (
             response_type: hasImages ? 'image_analysis' : 'text_response',
             conversation_id: conversation.id,
             game_genre: conversation.genre,
-            user_progress: conversation.progress
+            user_progress: conversation.progress,
+            validation_issues: validationIssues,
+            has_validation_issues: validationIssues.length > 0
         };
 
         // Get user context
@@ -700,7 +851,7 @@ export const generateInitialProHint = async (
     onError: (error: string) => void,
     signal: AbortSignal
 ): Promise<string | null> => {
-    if (checkCooldown(onError)) return null;
+    if (await checkCooldown(onError)) return null;
 
     const parts: Part[] = [];
     const hasImages = images && images.length > 0;
@@ -864,7 +1015,7 @@ export const generateInsightStream = async (
   onError: (error: string) => void,
   signal: AbortSignal
 ): Promise<void> => {
-  if (checkCooldown(onError)) return;
+  if (await checkCooldown(onError)) return;
 
   try {
     const model = getOptimalModel('insight_generation');
@@ -915,7 +1066,7 @@ export const generateUnifiedInsights = async (
     onError: (error: string) => void,
     signal: AbortSignal
 ): Promise<{ insights: Record<string, { title: string; content: string }> } | null> => {
-    if (checkCooldown(onError)) return null;
+    if (await checkCooldown(onError)) return null;
 
     // Filter out tabs that require web search, as they cannot be used with JSON response mode.
     // They will be loaded individually on-demand by the user.

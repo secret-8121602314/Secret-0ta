@@ -42,18 +42,28 @@ export class ContactService {
         source: 'landing_page'
       };
 
-      const { data, error } = await supabase
-        .from('contact_submissions')
-        .insert(submission)
-        .select('id')
-        .single();
+      // Store contact submission in new consolidated system table
+      const { error } = await supabase
+        .from('system_new')
+        .insert({
+          category: 'contact_submissions',
+          event_type: 'contact_form',
+          data: {
+            name: submission.name,
+            email: submission.email,
+            subject: submission.subject,
+            message: submission.message,
+            timestamp: new Date().toISOString(),
+            status: 'pending'
+          }
+        });
 
       if (error) {
         console.error('Error submitting contact form:', error);
         return { success: false, error: 'Failed to submit contact form' };
       }
 
-      return { success: true, id: data.id };
+      return { success: true, id: crypto.randomUUID() }; // Generate new ID for new structure
     } catch (error) {
       console.error('Contact service error:', error);
       return { success: false, error: 'An unexpected error occurred' };
@@ -71,9 +81,10 @@ export class ContactService {
       }
 
       const { data, error } = await supabase
-        .from('contact_submissions')
+        .from('system_new')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('category', 'contact_submissions')
+        .eq('event_type', 'contact_form')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -81,7 +92,21 @@ export class ContactService {
         return { error: 'Failed to fetch contact submissions' };
       }
 
-      return { data };
+      // Transform data back to ContactFormSubmission format
+      const submissions = data?.map(item => ({
+        id: item.id,
+        user_id: user.id,
+        name: item.data.name,
+        email: item.data.email,
+        subject: item.data.subject,
+        message: item.data.message,
+        status: item.data.status,
+        priority: item.data.priority || 'medium',
+        created_at: item.created_at,
+        updated_at: item.updated_at
+      })) || [];
+
+      return { data: submissions };
     } catch (error) {
       console.error('Error getting user contact submissions:', error);
       return { error: 'An unexpected error occurred' };
@@ -93,17 +118,19 @@ export class ContactService {
    */
   async updateContactStatus(id: string, status: ContactFormSubmission['status'], priority?: ContactFormSubmission['priority']): Promise<{ success: boolean; error?: string }> {
     try {
-      const updates: Partial<ContactFormSubmission> = {
-        status,
-        updated_at: new Date().toISOString()
+      const updates: any = {
+        data: {
+          status,
+          updated_at: new Date().toISOString()
+        }
       };
 
       if (priority) {
-        updates.priority = priority;
+        updates.data.priority = priority;
       }
 
       const { error } = await supabase
-        .from('contact_submissions')
+        .from('system_new')
         .update(updates)
         .eq('id', id);
 
@@ -125,9 +152,10 @@ export class ContactService {
   async getContactSubmission(id: string): Promise<{ data?: ContactFormSubmission; error?: string }> {
     try {
       const { data, error } = await supabase
-        .from('contact_submissions')
+        .from('system_new')
         .select('*')
         .eq('id', id)
+        .eq('category', 'contact_submissions')
         .single();
 
       if (error) {
@@ -135,7 +163,21 @@ export class ContactService {
         return { error: 'Failed to fetch contact submission' };
       }
 
-      return { data };
+      // Transform data back to ContactFormSubmission format
+      const submission: ContactFormSubmission = {
+        id: data.id,
+        user_id: data.user_id || 'unknown',
+        name: data.data.name,
+        email: data.data.email,
+        subject: data.data.subject,
+        message: data.data.message,
+        status: data.data.status,
+        priority: data.data.priority || 'medium',
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      };
+
+      return { data: submission };
     } catch (error) {
       console.error('Error getting contact submission:', error);
       return { error: 'An unexpected error occurred' };

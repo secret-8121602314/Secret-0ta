@@ -143,7 +143,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
                   <div className="text-center pb-4">
                       <button
                         onClick={() => {
-                          const downloadUrl = 'https://github.com/readmet3xt/readmet3xt.github.io/releases/download/Otakon-connector/Otakon.Connector.Setup.1.0.0.exe';
+                          const downloadUrl = 'https://github.com/readmet3xt/readmet3xt.github.io/releases/tag/Otakon-connector';
                           window.open(downloadUrl, '_blank');
                         }}
                         className="text-base font-medium text-[#FF4D4D] hover:text-[#FF4D4D] hover:underline transition-all duration-300 hover:scale-105"

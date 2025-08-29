@@ -1,26 +1,17 @@
 
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { ChatMessage as ChatMessageType, ChatMessageFeedback } from '../services/types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { ChatMessage as ChatMessageType } from '../services/types';
-import Logo from './Logo';
-import UserAvatar from './UserAvatar';
+import ActionButtons from './ActionButtons';
 import TypingIndicator from './TypingIndicator';
 import StarIcon from './StarIcon';
-import FeedbackButtons from './FeedbackButtons';
 import DownloadIcon from './DownloadIcon';
+import Logo from './Logo';
+import UserAvatar from './UserAvatar';
 
-interface ChatMessageProps {
-    message: ChatMessageType;
-    isLoading: boolean;
-    onStop: () => void;
-    onPromptClick: (prompt: string) => void;
-    onUpgradeClick: () => void;
-    onFeedback: (vote: 'up' | 'down') => void;
-    onRetry?: () => void;
-}
-
+// Simple inline Confetti component
 const Confetti: React.FC = () => {
     const confettiCount = 50;
     const colors = ['#FF4D4D', '#FFAB40', '#5CBB7B', '#5B99E3', '#F5F5F5'];
@@ -44,9 +35,135 @@ const Confetti: React.FC = () => {
     );
   };
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLoading, onStop, onPromptClick, onUpgradeClick, onFeedback, onRetry }) => {
+interface ChatMessageProps {
+    message: ChatMessageType;
+    isLoading: boolean;
+    onStop: () => void;
+    onPromptClick: (prompt: string) => void;
+    onUpgradeClick: () => void;
+    onFeedback: (vote: 'up' | 'down') => void;
+    onRetry?: () => void;
+    conversationId?: string;
+    isEverythingElse?: boolean;
+}
+
+const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLoading, onStop, onPromptClick, onUpgradeClick, onFeedback, onRetry, conversationId, isEverythingElse }) => {
     const { id, role, text, images, suggestions, isFromPC, triumph, showUpgradeButton, feedback } = message;
     const [showConfetti, setShowConfetti] = useState(false);
+    const [isInWishlist, setIsInWishlist] = useState(false);
+
+    // Check if this message is about an unreleased game (simple heuristic)
+    const isAboutUnreleasedGame = () => {
+        if (!text || !isEverythingElse) return false;
+        
+        const unreleasedKeywords = [
+            'unreleased', 'upcoming', 'announced', 'teased', 'in development',
+            'coming soon', 'release date', 'launch date', 'pre-order',
+            'beta', 'alpha', 'early access', 'demo', 'trailer'
+        ];
+        
+        const textLower = text.toLowerCase();
+        const hasUnreleasedKeywords = unreleasedKeywords.some(keyword => textLower.includes(keyword));
+        
+        if (!hasUnreleasedKeywords) return false;
+        
+        // Check if this is about a single game (not multiple games)
+        // Look for patterns that suggest multiple games
+        const multipleGamePatterns = [
+            /multiple games?/i,
+            /several games?/i,
+            /various games?/i,
+            /different games?/i,
+            /games? like/i,
+            /similar games?/i,
+            /other games?/i,
+            /more games?/i,
+            /additionally/i,
+            /furthermore/i,
+            /moreover/i,
+            /also/i,
+            /as well/i,
+            /in addition/i
+        ];
+        
+        // If we detect multiple game patterns, don't show wishlist button
+        const hasMultipleGamePatterns = multipleGamePatterns.some(pattern => pattern.test(text));
+        if (hasMultipleGamePatterns) return false;
+        
+        // Check for list-like structures (numbered lists, bullet points)
+        const hasListStructure = /\d+\.|•|\*|\-/.test(text);
+        if (hasListStructure) return false;
+        
+        // Check for multiple game names (look for multiple bold text or quoted text)
+        const boldMatches = text.match(/\*\*(.*?)\*\*/g);
+        const quoteMatches = text.match(/[""](.*?)[""]/g);
+        
+        // If we have multiple bold or quoted items, it's likely multiple games
+        if ((boldMatches && boldMatches.length > 1) || (quoteMatches && quoteMatches.length > 1)) {
+            return false;
+        }
+        
+        // Check for conjunction words that suggest multiple items
+        const conjunctionWords = ['and', 'or', 'but', 'however', 'while', 'whereas'];
+        const hasConjunctions = conjunctionWords.some(word => {
+            const regex = new RegExp(`\\b${word}\\b`, 'i');
+            return regex.test(text);
+        });
+        
+        // If we have conjunctions, be more careful - only show if it's clearly about one main game
+        if (hasConjunctions) {
+            // Look for clear single game focus
+            const singleGamePatterns = [
+                /the game/i,
+                /this game/i,
+                /that game/i,
+                /a game/i,
+                /an upcoming game/i,
+                /the upcoming/i,
+                /this upcoming/i
+            ];
+            
+            return singleGamePatterns.some(pattern => pattern.test(text));
+        }
+        
+        return true;
+    };
+
+    // Add to wishlist function
+    const handleAddToWishlist = async () => {
+        try {
+            // Extract game name from the message (simple heuristic)
+            const gameName = extractGameName(text);
+            if (gameName) {
+                // Import wishlistService dynamically to avoid circular dependencies
+                const { wishlistService } = await import('../services/wishlistService');
+                await wishlistService.addToWishlist({
+                    gameName,
+                    gameId: 'everything-else',
+                    source: 'ai_response',
+                    sourceMessageId: id
+                });
+                setIsInWishlist(true);
+                console.log('✅ Added to wishlist:', gameName);
+            }
+        } catch (error) {
+            console.error('Failed to add to wishlist:', error);
+        }
+    };
+
+    // Simple game name extraction
+    const extractGameName = (text: string): string | null => {
+        // This is a simple heuristic - in production you might want more sophisticated parsing
+        const lines = text.split('\n');
+        for (const line of lines) {
+            if (line.includes('**') && line.includes('**')) {
+                // Look for bold text which often indicates game names
+                const match = line.match(/\*\*(.*?)\*\*/);
+                if (match) return match[1].trim();
+            }
+        }
+        return null;
+    };
 
     // Function to download image in high quality
     const downloadImage = (imageSrc: string, index: number) => {
@@ -369,7 +486,36 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLoading, onStop, o
 
                     {!isLoading && text.trim() && !showUpgradeButton && !isFailedResponse && (
                          <div className="pl-2 pt-2">
-                            <FeedbackButtons onFeedback={onFeedback} feedbackState={feedback} />
+                            {/* Show ActionButtons only for game conversations, not Everything Else */}
+                            {!isEverythingElse && (
+                                <ActionButtons
+                                    content={text}
+                                    messageId={id}
+                                    gameId={conversationId || 'unknown'}
+                                    onThumbsUp={() => onFeedback('up')}
+                                    onThumbsDown={() => onFeedback('down')}
+                                    thumbsUpActive={feedback === 'up'}
+                                    thumbsDownActive={feedback === 'down'}
+                                />
+                            )}
+                            
+                            {/* Show Wishlist button for Everything Else conversation when about unreleased games */}
+                            {isEverythingElse && isAboutUnreleasedGame() && (
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={handleAddToWishlist}
+                                        disabled={isInWishlist}
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-200 ${
+                                            isInWishlist
+                                                ? 'bg-[#5CBB7B] text-white cursor-not-allowed'
+                                                : 'bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white hover:from-[#D98C1F] hover:to-[#E53A3A] hover:scale-105'
+                                        }`}
+                                    >
+                                        <span className="text-lg">🎮</span>
+                                        {isInWishlist ? 'Added to Wishlist' : 'Add to Wishlist'}
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
 

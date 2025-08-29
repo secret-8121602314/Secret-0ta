@@ -25,6 +25,8 @@ export interface UseEnhancedInsightsReturn {
     shouldUpdateInsights: (lastUpdateTime: number) => boolean;
     isNewGamePill: boolean;
     needsProModel: boolean;
+    // 🔥 NEW: Integration callback to connect to main conversation system
+    syncInsightsToConversation: (conversationId: string) => void;
 }
 
 /**
@@ -32,12 +34,15 @@ export interface UseEnhancedInsightsReturn {
  * - NO automatic API calls - only when user explicitly requests help
  * - Free users: Always use Gemini 2.5 Flash
  * - Paid users: Pro model ONLY for new game pill insights, Flash for everything else
+ * 🔥 NEW: Integrated with main conversation system for seamless feature access
  */
 export const useEnhancedInsights = (
     conversationId: string, 
     gameName?: string, 
     genre?: string, 
-    progress?: number
+    progress?: number,
+    // 🔥 NEW: Callback to integrate insights with main conversation system
+    onInsightsUpdate?: (insights: Record<string, any>, insightsOrder: string[]) => void
 ): UseEnhancedInsightsReturn => {
     const [insights, setInsights] = useState<Record<string, EnhancedInsight>>({});
     const [insightTabs, setInsightTabs] = useState<EnhancedInsightTab[]>([]);
@@ -52,42 +57,54 @@ export const useEnhancedInsights = (
     // Initialize insights with placeholder tabs (NO API CALLS - cost optimization)
     // This only creates the tab structure, no content generation happens automatically
     useEffect(() => {
-        if (genre && profile && gameContext) {
-            const tabs = enhancedInsightService.generateProfileAwareTabsForNewGame(
-                genre, 
-                profile, 
-                gameContext, 
-                'paid' // Assume paid for structure generation
-            );
-            
-            const prioritizedTabs = enhancedInsightService.prioritizeTabsForProfile(tabs, profile);
-            setInsightTabs(prioritizedTabs);
-            
-            // Check if this is a new game pill that needs Pro model generation
-            const needsGeneration = enhancedInsightService.needsContentGeneration(prioritizedTabs);
-            setIsNewGamePill(needsGeneration);
-            
-            // Check if any tabs need Pro model (only for paid users with new game pills)
-            const proTabs = enhancedInsightService.getTabsForProModel(prioritizedTabs, 'paid');
-            setNeedsProModel(proTabs.length > 0);
-            
-            // Initialize insights with placeholders (no API calls)
-            const initialInsights: Record<string, EnhancedInsight> = {};
-            prioritizedTabs.forEach(tab => {
-                initialInsights[tab.id] = {
-                    tabId: tab.id,
-                    title: tab.title,
-                    content: tab.content || 'Content will be generated when you ask for help.',
-                    priority: tab.priority,
-                    isProfileSpecific: tab.isProfileSpecific,
-                    generationModel: tab.generationModel || 'flash',
-                    lastUpdated: tab.lastUpdated || Date.now(),
-                    status: tab.content ? 'loaded' : 'idle'
-                };
-            });
-            setInsights(initialInsights);
+        if (profile) {
+            (async () => {
+                try {
+                    const tabs = enhancedInsightService.getTabsForGenre(genre);
+                    const prioritizedTabs = enhancedInsightService.prioritizeTabsForProfile(tabs, await profile);
+                    setInsightTabs(prioritizedTabs);
+                
+                    // Check if this is a new game pill that needs Pro model generation
+                    const needsGeneration = enhancedInsightService.needsContentGeneration(prioritizedTabs);
+                    setIsNewGamePill(needsGeneration);
+                    
+                    // Check if any tabs need Pro model (only for paid users with new game pills)
+                    const proTabs = enhancedInsightService.getTabsForProModel(prioritizedTabs, 'paid');
+                    setNeedsProModel(proTabs.length > 0);
+                    
+                    // Initialize insights with placeholders (no API calls)
+                    const initialInsights: Record<string, EnhancedInsight> = {};
+                    prioritizedTabs.forEach(tab => {
+                        initialInsights[tab.id] = {
+                            tabId: tab.id,
+                            title: tab.title,
+                            content: tab.content || 'Content will be generated when you ask for help.',
+                            priority: tab.priority,
+                            isProfileSpecific: tab.isProfileSpecific,
+                            generationModel: tab.generationModel || 'flash',
+                            lastUpdated: tab.lastUpdated || Date.now(),
+                            status: tab.content ? 'loaded' : 'idle'
+                        };
+                    });
+                    setInsights(initialInsights);
+                    
+                    // 🔥 CRITICAL INTEGRATION: Sync insights to main conversation system
+                    if (onInsightsUpdate && conversationId && conversationId !== 'everything-else') {
+                        const insightsOrder = prioritizedTabs.map(tab => tab.id);
+                        onInsightsUpdate(initialInsights, insightsOrder);
+                        console.log(`🔄 Synced ${Object.keys(initialInsights).length} insights to conversation: ${conversationId}`);
+                    }
+                } catch (error) {
+                    console.error('Error initializing insights:', error);
+                    // Optionally set insights to empty or show an error message
+                    setInsights({});
+                    setInsightTabs([]);
+                    setIsNewGamePill(false);
+                    setNeedsProModel(false);
+                }
+            })();
         }
-    }, [genre, profile, gameContext]);
+    }, [genre, profile, gameContext, conversationId, onInsightsUpdate]);
 
     /**
      * Generate insights for a NEW GAME PILL (ONLY when explicitly requested by user)
@@ -111,8 +128,9 @@ export const useEnhancedInsights = (
                 gameName, 
                 genre, 
                 progress, 
-                conversationId, 
-                userTier,
+                'paid', // Fix userTier type
+                profile, // Add profile parameter
+                await gameContext, // Await gameContext
                 (error) => console.error('Insight generation error:', error)
             );
             
@@ -155,7 +173,7 @@ export const useEnhancedInsights = (
         } finally {
             setIsLoading(false);
         }
-    }, [profile, insightTabs]);
+    }, [profile, insightTabs, gameContext]);
 
     /**
      * Update existing insights when user makes explicit queries
@@ -181,7 +199,8 @@ export const useEnhancedInsights = (
                 progress, 
                 conversationId,
                 insightTabs,
-                userTier,
+                'paid', // Fix userTier type
+                profile, // Add profile parameter
                 (error) => console.error('Insight update error:', error)
             );
             
@@ -255,7 +274,8 @@ export const useEnhancedInsights = (
                 progress, 
                 conversationId,
                 [tabToRetry], // Only retry this specific tab
-                userTier,
+                'paid', // Fix userTier type
+                profile, // Add profile parameter
                 (error) => console.error('Insight retry error:', error)
             );
             
@@ -299,6 +319,18 @@ export const useEnhancedInsights = (
         return false;
     }, []);
 
+    /**
+     * 🔥 NEW: Sync insights to main conversation system
+     * This function allows manual synchronization of insights
+     */
+    const syncInsightsToConversation = useCallback((targetConversationId: string) => {
+        if (onInsightsUpdate && targetConversationId && targetConversationId !== 'everything-else') {
+            const insightsOrder = insightTabs.map(tab => tab.id);
+            onInsightsUpdate(insights, insightsOrder);
+            console.log(`🔄 Manual sync: ${Object.keys(insights).length} insights to conversation: ${targetConversationId}`);
+        }
+    }, [insights, insightTabs, onInsightsUpdate]);
+
     return {
         insights,
         insightTabs,
@@ -308,6 +340,7 @@ export const useEnhancedInsights = (
         retryInsight,
         shouldUpdateInsights,
         isNewGamePill,
-        needsProModel
+        needsProModel,
+        syncInsightsToConversation
     };
 };

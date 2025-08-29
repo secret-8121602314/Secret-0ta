@@ -9,7 +9,7 @@ export type ChatMessageFeedback = 'up' | 'down' | 'submitted';
 
 export type ChatMessage = {
   id: string;
-  role: 'user' | 'model';
+  role: 'user' | 'model' | 'system';
   text: string;
   images?: string[]; // data URLs for displaying images in chat
   isFromPC?: boolean;
@@ -30,7 +30,7 @@ export type Usage = {
   tier: UserTier;
 };
 
-export type InsightStatus = 'loading' | 'streaming' | 'loaded' | 'error';
+export type InsightStatus = 'loading' | 'streaming' | 'loaded' | 'error' | 'placeholder';
 
 export type Insight = {
   id: string;
@@ -119,13 +119,6 @@ export const newsPrompts = [
     "What are the latest game reviews?",
     "Show me the hottest new game trailers.",
 ];
-
-type InsightTab = {
-    id: string;
-    title: string;
-    instruction: string;
-    webSearch?: boolean;
-};
 
 const storySoFarTab: InsightTab = { id: 'story_so_far', title: 'Story So Far', instruction: "Provide a concise summary of the main plot events that have occurred strictly up to the estimated game progress. Do not mention, hint at, or allude to any future events, characters, or plot twists. The summary should read like a journal entry of what has *already happened*." };
 
@@ -265,16 +258,67 @@ export interface ConversationV19 extends Conversation {
 }
 
 // Enhanced Insight Types for v19
+export interface InsightTab {
+  id: string;
+  title: string;
+  content?: string;
+  instruction?: string;
+  conversationId?: string;
+  tabId?: string;
+  tabTitle?: string;
+  tabType?: 'objective' | 'inventory' | 'progress' | 'suggestions' | 'custom';
+  isPinned?: boolean;
+  orderIndex?: number;
+  metadata?: Record<string, any>;
+  webSearch?: boolean; // Add webSearch property
+}
+
 export interface EnhancedInsightTab extends InsightTab {
     priority: 'high' | 'medium' | 'low';
     playerFocus: string[];
     hintStyle: string[];
     isProfileSpecific: boolean;
     customInstruction?: string;
+    isNewGamePill?: boolean;
 }
 
 export interface ProfileAwareInsightConfig {
     tabs: EnhancedInsightTab[];
     contentInstructions: Record<string, string>;
     responseFormatting: Record<string, any>;
+}
+
+// Otaku Diary System Interfaces
+export interface DiaryTask {
+  id: string;
+  title: string;
+  description: string;
+  type: 'user_created' | 'ai_suggested';
+  status: 'pending' | 'completed' | 'need_help';
+  category: 'quest' | 'boss' | 'exploration' | 'item' | 'character' | 'custom';
+  createdAt: number;
+  completedAt?: number;
+  gameId: string;
+  source?: string; // AI response or user input
+  priority?: 'low' | 'medium' | 'high';
+  sourceMessageId?: string; // Link to original message/insight
+}
+
+export interface DiaryFavorite {
+  id: string;
+  content: string;
+  type: 'ai_response' | 'insight' | 'lore';
+  gameId: string;
+  createdAt: number;
+  context?: string;
+  sourceMessageId?: string;
+  sourceInsightId?: string;
+}
+
+export interface DetectedTask {
+  title: string;
+  description: string;
+  category: 'quest' | 'boss' | 'exploration' | 'item' | 'character' | 'custom';
+  confidence: number;
+  source: string;
 }

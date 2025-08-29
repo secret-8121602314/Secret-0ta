@@ -24,6 +24,9 @@ class PWAInstallService {
     window.addEventListener('appinstalled', () => {
       console.log('PWA was installed');
       this.deferredPrompt = null;
+      // Mark as installed globally - this will hide banner on all screens
+      localStorage.setItem('otakonPWAInstalled', 'true');
+      localStorage.setItem('otakonGlobalPWAInstalled', 'true');
       this.notifyListeners(null);
     });
 
@@ -43,8 +46,19 @@ class PWAInstallService {
     // Check for iOS Safari standalone mode
     const isIOSStandalone = (window.navigator as any).standalone === true;
     
-    if (isStandalone || isIOSStandalone) {
-      console.log('PWA is already installed');
+    // Check for other PWA indicators
+    const hasInstalledPWA = localStorage.getItem('otakonPWAInstalled') === 'true';
+    const hasGlobalInstallFlag = localStorage.getItem('otakonGlobalPWAInstalled') === 'true';
+    const isInAppBrowser = this.isInAppBrowser();
+    
+    if (isStandalone || isIOSStandalone || hasInstalledPWA || hasGlobalInstallFlag) {
+      console.log('PWA is already installed or marked as installed globally');
+      this.notifyListeners(null);
+    }
+    
+    // Additional check for app-like behavior
+    if (this.isAppLike()) {
+      console.log('App-like behavior detected, treating as installed');
       this.notifyListeners(null);
     }
   }
@@ -67,7 +81,12 @@ class PWAInstallService {
   isInstalled(): boolean {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
     const isIOSStandalone = (window.navigator as any).standalone === true;
-    return isStandalone || isIOSStandalone;
+    const hasInstalledPWA = localStorage.getItem('otakonPWAInstalled') === 'true';
+    const hasGlobalInstallFlag = localStorage.getItem('otakonGlobalPWAInstalled') === 'true';
+    const isInAppBrowser = this.isInAppBrowser();
+    const isAppLike = this.isAppLike();
+    
+    return isStandalone || isIOSStandalone || hasInstalledPWA || hasGlobalInstallFlag || isInAppBrowser || isAppLike;
   }
 
   // Check if running on mobile
@@ -83,6 +102,29 @@ class PWAInstallService {
   // Check if running on iOS
   isIOS(): boolean {
     return /iPad|iPhone|iPod/.test(navigator.userAgent);
+  }
+
+  // Check if running in an in-app browser (social media, etc.)
+  isInAppBrowser(): boolean {
+    const userAgent = navigator.userAgent.toLowerCase();
+    return userAgent.includes('instagram') || 
+           userAgent.includes('fbav') || 
+           userAgent.includes('fban') || 
+           userAgent.includes('twitter') ||
+           userAgent.includes('linkedin') ||
+           userAgent.includes('whatsapp');
+  }
+
+  // Check if the app behaves like a native app
+  isAppLike(): boolean {
+    // Check for app-like features
+    const hasServiceWorker = 'serviceWorker' in navigator;
+    const hasPushManager = 'PushManager' in window;
+    const hasNotification = 'Notification' in window;
+    const hasInstallPrompt = this.deferredPrompt !== null;
+    
+    // If we have most PWA features, treat as app-like
+    return hasServiceWorker && (hasPushManager || hasNotification || hasInstallPrompt);
   }
 
   // Show the install prompt
@@ -148,6 +190,23 @@ class PWAInstallService {
     const criteria = this.getInstallCriteria();
     console.log('PWA Install Criteria:', criteria);
     return criteria;
+  }
+
+  // Manually mark PWA as installed (useful for testing)
+  markAsInstalled() {
+    localStorage.setItem('otakonPWAInstalled', 'true');
+    localStorage.setItem('otakonGlobalPWAInstalled', 'true');
+    this.notifyListeners(null);
+    console.log('PWA manually marked as installed');
+  }
+
+  // Reset installation status (useful for testing)
+  resetInstallationStatus() {
+    localStorage.removeItem('otakonPWAInstalled');
+    localStorage.removeItem('otakonGlobalPWAInstalled');
+    localStorage.removeItem('otakonInstallDismissed');
+    this.notifyListeners(this.deferredPrompt);
+    console.log('PWA installation status reset');
   }
 }
 

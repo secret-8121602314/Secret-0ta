@@ -47,7 +47,6 @@
     <meta name="msapplication-navbutton-color" content="#E53A3A" />
     
     <!-- Preconnect for Performance -->
-    <link rel="preconnect" href="https://esm.sh" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     
@@ -86,136 +85,161 @@
     </script>
     
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
-    <script type="importmap">
-    {
-      "imports": {
-        "react": "https://esm.sh/react@^19.1.1",
-        "react-dom/": "https://esm.sh/react-dom@^19.1.1/",
-        "react/": "https://esm.sh/react@^19.1.1/",
-        "@google/genai": "https://esm.sh/@google/genai@^1.12.0",
-        "react-markdown": "https://esm.sh/react-markdown@^9.0.1",
-        "remark-gfm": "https://esm.sh/remark-gfm@^4.0.0",
-        "vite": "https://esm.sh/vite@^7.1.2",
-        "path": "https://esm.sh/path@^0.12.7",
-        "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.55.0",
-        "@supabase/auth-ui-react": "https://esm.sh/@supabase/auth-ui-react@^0.4.7",
-        "@supabase/auth-ui-shared": "https://esm.sh/@supabase/auth-ui-shared@^0.1.8"
-      }
-    }
-    </script>
     
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Development: Let Vite handle imports -->
+    <!-- Production: CDN imports will be handled by build process -->
     
     <style>
+      /* Critical CSS for initial render */
       body {
-        font-family: 'Inter', sans-serif;
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
-        -ms-overflow-style: none;
-        scrollbar-width: none;
+        background-color: #000000;
+        color: #ffffff;
+        overflow-x: hidden;
       }
 
-      ::-webkit-scrollbar {
-        display: none;
+      #root {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
       }
 
-      @keyframes dot-bounce {
-        0%, 80%, 100% { transform: scale(0); }
-        40% { transform: scale(1.0); }
-      }
-
-      .typing-dot {
+      /* Loading animation */
+      .loading-spinner {
         display: inline-block;
-        width: 8px;
-        height: 8px;
-        background-color: currentColor;
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
         border-radius: 50%;
-        animation: dot-bounce 1.4s infinite ease-in-out both;
-      }
-      
-      @keyframes pulse-glow {
-        0%, 100% {
-            box-shadow: 0 0 0 0 rgba(229, 58, 58, 0.3);
-        }
-        50% {
-            box-shadow: 0 0 20px 10px rgba(229, 58, 58, 0);
-        }
+        border-top-color: #E53A3A;
+        animation: spin 1s ease-in-out infinite;
       }
 
-      .animate-pulse-glow {
-        animation: pulse-glow 3s infinite cubic-bezier(0.4, 0, 0.6, 1);
+      @keyframes spin {
+        to { transform: rotate(360deg); }
       }
 
-      /* Enhanced background glow animations */
-      @keyframes float-glow {
-        0%, 100% {
-          transform: translateY(0px) scale(1);
-          opacity: 0.3;
-        }
-        50% {
-          transform: translateY(-20px) scale(1.1);
-          opacity: 0.6;
-        }
+      /* Initial fade-in */
+      .fade-in {
+        opacity: 0;
+        animation: fadeIn 0.5s ease-in forwards;
       }
 
-      @keyframes rotate-glow {
-        0% {
-          transform: rotate(0deg) scale(1);
-        }
-        50% {
-          transform: rotate(180deg) scale(1.2);
-        }
-        100% {
-          transform: rotate(360deg) scale(1);
-        }
-      }
-
-      .animate-float-glow {
-        animation: float-glow 6s ease-in-out infinite;
-      }
-
-      .animate-rotate-glow {
-        animation: rotate-glow 20s linear infinite;
-      }
-
-      @keyframes fade-in {
-        from { opacity: 0; }
+      @keyframes fadeIn {
         to { opacity: 1; }
       }
 
-      @keyframes fade-slide-up {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-      
-      @keyframes fade-slide-down {
-        from { opacity: 0; transform: translateY(-20px); }
-        to { opacity: 1; transform: translateY(0); }
+      /* Responsive design */
+      @media (max-width: 768px) {
+        .mobile-optimized {
+          padding: 1rem;
+        }
       }
 
-      @keyframes scale-in {
-        from { transform: scale(0.95); opacity: 0; }
-        to { transform: scale(1); opacity: 1; }
+      /* Dark theme optimizations */
+      @media (prefers-color-scheme: dark) {
+        body {
+          background-color: #000000;
+          color: #ffffff;
+        }
       }
-      
-      @keyframes hero-glow {
-        0% {
-          background-position: 0% 50%;
+
+      /* High contrast mode support */
+      @media (prefers-contrast: high) {
+        .high-contrast {
+          border: 2px solid #ffffff;
+        }
+      }
+
+      /* Reduced motion support */
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+
+      /* Custom scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: #1a1a1a;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: #E53A3A;
+        border-radius: 4px;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: #c53030;
+      }
+
+      /* Focus indicators for accessibility */
+      *:focus {
+        outline: 2px solid #E53A3A;
+        outline-offset: 2px;
+      }
+
+      /* Loading state */
+      .app-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+      }
+
+      .loading-logo {
+        width: 80px;
+        height: 80px;
+        margin-bottom: 2rem;
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+
+      @keyframes pulse {
+        0%, 100% {
+          opacity: 1;
         }
         50% {
-          background-position: 100% 50%;
-        }
-        100% {
-          background-position: 0% 50%;
+          opacity: .5;
         }
       }
-      
-      @keyframes slide-in-bottom {
-        0% {
-          transform: translateY(100%);
+
+      .loading-text {
+        color: #E53A3A;
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+      }
+
+      .loading-subtext {
+        color: #888888;
+        font-size: 1rem;
+        text-align: center;
+        max-width: 300px;
+        line-height: 1.5;
+      }
+
+      /* Animation classes */
+      .animate-slide-in-top {
+        animation: slide-in-top 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+      }
+
+      @keyframes slide-in-top {
+        from {
+          transform: translateY(-100%);
           opacity: 0;
         }
-        100% {
+        to {
           transform: translateY(0);
           opacity: 1;
         }
@@ -223,6 +247,17 @@
 
       .animate-slide-in-bottom {
         animation: slide-in-bottom 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+      }
+
+      @keyframes slide-in-bottom {
+        from {
+          transform: translateY(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
       }
 
       .animate-fade-in {
@@ -293,8 +328,8 @@
       
       .hero-glow-texture-bottom {
         background:
-          url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='160' height='80' viewBox='0 0 160 80'%3e%3cg stroke='rgba(255,255,255,0.06)' fill='none' stroke-width='1'%3e%3crect x='56' y='16' width='8' height='8' rx='1'/%3e%3cpath d='M136 16 L144 24 M144 16 L136 24'/%3e%3ccircle cx='40' cy='60' r='4'/%3e%3cpath d='M120 56 L116 64 L124 64 Z'/%3e%3c/g%3e%3cg fill='rgba(255,255,255,0.06)' font-family='monospace' font-size='10' font-weight='bold' text-anchor='middle' alignment-baseline='middle'%3e%3ctext x='20' y='20'%3eA%3c/text%3e%3ctext x='100' y='20'%3eX%3c/text%3e%3ctext x='80' y='60'%3eB%3c/text%3e%3ctext x='160' y='60'%3eY%3c/text%3e%3ctext x='0' y='60'%3eY%3c/text%3e%3c/g%3e%3c/svg%3e"),
-          radial-gradient(circle at 50% 100%, rgba(229, 58, 58, 0.2) 0%, rgba(229, 58, 58, 0) 50%);
+          url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='160' height='80' viewBox='0 0 160 80'%3e%3cg stroke='rgba(255,255,255,0.06)' fill='none' stroke-width='1'%3e%3crect x='56' y='16' width='8' height='8' rx='1'/%3e%3cpath d='M120 56 L116 64 L124 64 Z'/%3e%3c/g%3e%3cg fill='rgba(255,255,255,0.06)' font-family='monospace' font-size='10' font-weight='bold' text-anchor='middle' alignment-baseline='middle'%3e%3ctext x='20' y='20'%3eA%3c/text%3e%3ctext x='100' y='20'%3eX%3c/text%3e%3ctext x='80' y='60'%3eB%3c/text%3e%3ctext x='160' y='60'%3eY%3c/text%3e%3ctext x='0' y='60'%3eY%3c/text%3e%3c/g%3e%3c/svg%3e"),
+          radial-gradient(circle at 100%, rgba(229, 58, 58, 0.2) 0%, rgba(229, 58, 58, 0) 50%);
         background-size: 200px 100px, 100% 100%;
         background-repeat: repeat, no-repeat;
       }
@@ -315,7 +350,22 @@
     </script>
   </head>
   <body class="bg-black">
-    <div id="root"></div>
+    <!-- Loading state while app initializes -->
+    <div id="root">
+      <div class="app-loading">
+        <div class="loading-logo">
+          <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="50" r="45" stroke="#E53A3A" stroke-width="8" fill="none"/>
+            <path d="M30 50 L45 65 L70 35" stroke="#E53A3A" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="loading-text">Otakon AI</div>
+        <div class="loading-subtext">Your intelligent gaming companion is loading...</div>
+        <div class="loading-spinner"></div>
+      </div>
+    </div>
+    
+    <!-- Development: Vite will handle the entry point -->
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>

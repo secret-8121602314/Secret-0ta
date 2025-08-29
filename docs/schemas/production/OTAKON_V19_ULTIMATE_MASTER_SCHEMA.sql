@@ -62,6 +62,7 @@ DROP TABLE IF EXISTS ai_learning CASCADE;
 DROP TABLE IF EXISTS ai_feedback CASCADE;
 DROP TABLE IF EXISTS ai_context CASCADE;
 DROP TABLE IF EXISTS waitlist CASCADE;
+DROP TABLE IF EXISTS wishlist CASCADE;
 DROP TABLE IF EXISTS user_preferences CASCADE;
 DROP TABLE IF EXISTS usage CASCADE;
 DROP TABLE IF EXISTS user_profiles CASCADE;
@@ -469,6 +470,24 @@ CREATE TABLE api_cost_tracking (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- 18. V19 NEW TABLES: Wishlist (for unreleased games)
+CREATE TABLE wishlist (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    game_name TEXT NOT NULL,
+    release_date DATE,
+    platform TEXT,
+    genre TEXT,
+    description TEXT,
+    game_id TEXT NOT NULL DEFAULT 'everything-else',
+    source TEXT CHECK (source IN ('ai_response', 'user_input')) DEFAULT 'user_input',
+    source_message_id TEXT,
+    is_released BOOLEAN DEFAULT FALSE,
+    release_notification_shown BOOLEAN DEFAULT FALSE,
+    last_checked TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- =====================================================
 -- STEP 7: CREATE CLEAN INDEXES (NO UNUSED INDEXES)
 -- =====================================================
@@ -509,11 +528,12 @@ CREATE INDEX IF NOT EXISTS idx_api_cost_tracking_user_tier ON api_cost_tracking(
 CREATE INDEX IF NOT EXISTS idx_api_cost_tracking_success ON api_cost_tracking(success);
 CREATE INDEX IF NOT EXISTS idx_api_cost_tracking_created ON api_cost_tracking(created_at);
 
--- Other essential indexes
-CREATE INDEX IF NOT EXISTS idx_insight_tabs_user_conversation ON insight_tabs(user_id, conversation_id);
-CREATE INDEX IF NOT EXISTS idx_contact_submissions_status_priority ON contact_submissions(status, priority);
-CREATE INDEX IF NOT EXISTS idx_user_behavior_user_timestamp ON user_behavior(user_id, timestamp);
-CREATE INDEX IF NOT EXISTS idx_global_content_cache_expires ON global_content_cache(expires_at);
+-- Wishlist indexes
+CREATE INDEX IF NOT EXISTS idx_wishlist_user_id ON wishlist(user_id);
+CREATE INDEX IF NOT EXISTS idx_wishlist_game_name ON wishlist(game_name);
+CREATE INDEX IF NOT EXISTS idx_wishlist_release_date ON wishlist(release_date);
+CREATE INDEX IF NOT EXISTS idx_wishlist_is_released ON wishlist(is_released);
+CREATE INDEX IF NOT EXISTS idx_wishlist_notification ON wishlist(is_released, release_notification_shown);
 
 -- =====================================================
 -- STEP 8: ENABLE RLS ON ALL TABLES
@@ -525,6 +545,7 @@ ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
 ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE usage ENABLE ROW LEVEL SECURITY;
 ALTER TABLE waitlist ENABLE ROW LEVEL SECURITY;
+ALTER TABLE wishlist ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_context ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_feedback ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_learning ENABLE ROW LEVEL SECURITY;
@@ -729,6 +750,12 @@ CREATE POLICY "Users can insert own API cost records" ON api_cost_tracking FOR I
 CREATE POLICY "Admins can view all API cost records" ON api_cost_tracking FOR SELECT USING (
     EXISTS (SELECT 1 FROM user_profiles WHERE user_profiles.id = auth.uid() AND user_profiles.is_admin = true)
 );
+
+-- Wishlist - Users can manage own wishlist
+CREATE POLICY "Users can view own wishlist" ON wishlist FOR SELECT USING ((select auth.uid()) = user_id);
+CREATE POLICY "Users can insert own wishlist" ON wishlist FOR INSERT WITH CHECK ((select auth.uid()) = user_id);
+CREATE POLICY "Users can update own wishlist" ON wishlist FOR UPDATE USING ((select auth.uid()) = user_id);
+CREATE POLICY "Users can delete own wishlist" ON wishlist FOR DELETE USING ((select auth.uid()) = user_id);
 
 -- =====================================================
 -- STEP 10: CREATE TRIGGERS AND FUNCTIONS

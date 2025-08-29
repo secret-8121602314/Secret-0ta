@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Logo from './Logo';
 import CheckIcon from './CheckIcon';
 import StarIcon from './StarIcon';
-import { waitlistService } from '../services/waitlistService';
+import { waitlistService } from '../../services/waitlistService';
 import FounderImage from './FounderImage';
 import ContactUsModal from './ContactUsModal';
 

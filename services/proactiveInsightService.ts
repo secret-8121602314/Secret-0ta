@@ -1,6 +1,7 @@
 import { ProactiveInsight, PlayerProfile, GameContext, ConversationContext } from './types';
 import { playerProfileService } from './playerProfileService';
 import { contextManagementService } from './contextManagementService';
+import { supabaseDataService } from './supabaseDataService';
 
 export interface ProactiveTrigger {
     type: 'objective_complete' | 'inventory_change' | 'area_discovery' | 'session_start' | 'session_end' | 'progress_milestone' | 'difficulty_spike' | 'exploration_pattern';
@@ -52,10 +53,10 @@ class ProactiveInsightService {
             }
 
             // Store trigger in history
-            this.storeTrigger(trigger);
+            await this.storeTrigger(trigger);
             
             // Generate insights based on trigger type and profile
-            const insights = await this.generateInsightsForTrigger(trigger, profile, gameContext);
+            const insights = await this.generateInsightsForTrigger(trigger, await profile, await gameContext);
             
             // Store generated insights
             this.storeProactiveInsights(insights);
@@ -71,7 +72,7 @@ class ProactiveInsightService {
     /**
      * Generate insights based on trigger type and player profile
      */
-    private async generateInsightsForTrigger(
+    public async generateInsightsForTrigger(
         trigger: ProactiveTrigger,
         profile: PlayerProfile,
         gameContext: GameContext
@@ -522,10 +523,9 @@ class ProactiveInsightService {
     /**
      * Store trigger history
      */
-    private storeTrigger(trigger: ProactiveTrigger): void {
+    private async storeTrigger(trigger: ProactiveTrigger): Promise<void> {
         try {
-            const stored = localStorage.getItem(this.TRIGGER_HISTORY_KEY);
-            const history = stored ? JSON.parse(stored) : [];
+            const history = await this.getTriggerHistory();
             history.push(trigger);
             
             // Keep only last 100 triggers
@@ -533,9 +533,37 @@ class ProactiveInsightService {
                 history.splice(0, history.length - 100);
             }
             
-            localStorage.setItem(this.TRIGGER_HISTORY_KEY, JSON.stringify(history));
+            await this.setTriggerHistory(history);
         } catch (error) {
             console.error('Error storing trigger history:', error);
+        }
+    }
+
+    /**
+     * Set trigger history in Supabase with localStorage fallback
+     */
+    private async setTriggerHistory(history: any): Promise<void> {
+        try {
+            // Get existing data
+            const appState = await supabaseDataService.getUserAppState();
+            const existingData = appState.proactiveInsights || {};
+            
+            // Update with new history
+            const updatedData = {
+                ...existingData,
+                triggerHistory: history
+            };
+            
+            // Update in Supabase
+            await supabaseDataService.updateUserAppState('proactiveInsights', updatedData);
+            
+            // Also update localStorage as backup
+            localStorage.setItem(this.TRIGGER_HISTORY_KEY, JSON.stringify(history));
+        } catch (error) {
+            console.warn('Failed to update trigger history in Supabase, using localStorage only:', error);
+            
+            // Fallback to localStorage only
+            localStorage.setItem(this.TRIGGER_HISTORY_KEY, JSON.stringify(history));
         }
     }
 

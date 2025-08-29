@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { EnvelopeIcon, PhoneIcon, MapPinIcon } from '@heroicons/react/24/outline';
-import { contactService } from '../services/contactService';
+import { contactService } from '../../services/contactService';
 import Modal from './Modal';
 
 interface ContactUsModalProps {

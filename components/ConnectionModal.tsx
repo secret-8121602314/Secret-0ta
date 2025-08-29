@@ -27,49 +27,52 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
   onShowHowToUse
 }) => {
   const [code, setCode] = useState(connectionCode || '');
-  const [isAutoConnecting, setIsAutoConnecting] = useState(false);
-  const [autoConnectAttempts, setAutoConnectAttempts] = useState(0);
+
+  const [wasManuallyOpened, setWasManuallyOpened] = useState(false);
 
   const isConnecting = status === ConnectionStatus.CONNECTING;
   const isConnected = status === ConnectionStatus.CONNECTED;
 
-  // Check if this is the first time connecting
+  // Detect when modal is manually opened (not from auto-connection)
   useEffect(() => {
-    if (isConnected && onShowHowToUse) {
-      const hasConnectedBefore = localStorage.getItem('otakonHasConnectedBefore') === 'true';
-      if (!hasConnectedBefore) {
-        localStorage.setItem('otakonHasConnectedBefore', 'true');
-        // Show the "How to Use" guide
-        setTimeout(() => {
-          onShowHowToUse();
-        }, 1000); // Small delay to show the success message first
-      }
+    if (isOpen && isConnected && !wasManuallyOpened) {
+      // Modal was opened while already connected - mark as manually opened
+      setWasManuallyOpened(true);
+      console.log('🔍 Connection modal manually opened while connected - will not auto-close');
     }
-  }, [isConnected, onShowHowToUse]);
+  }, [isOpen, isConnected, wasManuallyOpened]);
 
+  // Reset manual open flag when connection status changes
   useEffect(() => {
-    if (connectionCode && !isConnected && !isConnecting) {
-      setIsAutoConnecting(true);
-      setAutoConnectAttempts(1);
-      
-      // Auto-connect with saved code
-      const attemptAutoConnect = async () => {
-        try {
-          await onConnect(connectionCode);
-        } catch (error) {
-          console.error('Auto-connect failed:', error);
-          if (autoConnectAttempts < 3) {
-            setAutoConnectAttempts(prev => prev + 1);
-            setTimeout(attemptAutoConnect, 2000); // Retry after 2 seconds
-          } else {
-            setIsAutoConnecting(false);
-          }
-        }
-      };
-      
-      attemptAutoConnect();
+    if (!isConnected) {
+      setWasManuallyOpened(false);
     }
-  }, [connectionCode, isConnected, isConnecting, onConnect, autoConnectAttempts]);
+  }, [isConnected]);
+
+  // Auto-close modal after successful connection
+  useEffect(() => {
+    if (isConnected && !wasManuallyOpened) {
+      const hasConnectedBefore = localStorage.getItem('otakonHasConnectedBefore') === 'true';
+      
+      if (!hasConnectedBefore) {
+        // First time connecting - let App.tsx handle onboarding progression
+        console.log('🎉 First connection - App.tsx will handle onboarding progression');
+        setTimeout(() => {
+          onClose();
+        }, 1000); // Small delay to show the success message first
+      } else {
+        // Returning user - auto-close modal and show chat screen
+        console.log('🔄 Returning user connected - will auto-close modal');
+        setTimeout(() => {
+          onClose();
+        }, 1500); // Show success message for 1.5 seconds then close
+      }
+    } else if (isConnected && wasManuallyOpened) {
+      console.log('🔍 Modal manually opened - will not auto-close');
+    }
+  }, [isConnected, onClose, wasManuallyOpened]);
+
+  // Removed auto-connection logic - manual connection only
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,22 +112,10 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
           <p className="text-[#A3A3A3] mb-6 text-lg leading-relaxed">Sync with the PC client to send screenshots directly from your game.</p>
           
           {/* Auto-connection status */}
-          {isAutoConnecting && (
-            <div className="mb-6 p-4 bg-gradient-to-r from-blue-600/20 to-blue-500/20 border-2 border-blue-600/40 rounded-2xl backdrop-blur-sm">
-              <div className="flex items-center gap-3 text-blue-400">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-400"></div>
-                <span className="text-base font-medium">
-                  Auto-connecting... (Attempt {autoConnectAttempts}/3)
-                </span>
-              </div>
-              <p className="text-sm text-blue-300 mt-2">
-                Using saved connection code: {connectionCode}
-              </p>
-            </div>
-          )}
+
 
           {/* Saved connection info */}
-          {connectionCode && !isAutoConnecting && (
+          {connectionCode && (
             <div className="mb-6 p-4 bg-gradient-to-r from-[#2E2E2E]/60 to-[#1A1A1A]/60 border-2 border-[#424242]/60 rounded-2xl backdrop-blur-sm">
               <div className="text-base text-[#A3A3A3]">
                 <span className="font-medium text-[#F5F5F5]">Saved connection:</span> {connectionCode}
@@ -150,17 +141,14 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
                 <p className="text-base text-[#A3A3A3] leading-relaxed">
                   Enhanced connector with 6-digit codes and batch screenshots
                 </p>
-                <div className="text-sm text-[#6E6E6E] space-y-2">
-                  <div>✓ 6-digit connection codes</div>
-                  <div>✓ Batch screenshot capture (5 screenshots)</div>
-                  <div>✓ Configurable processing modes</div>
-                  <div>✓ Enhanced hotkey support</div>
+                <div className="text-sm text-[#6E6E6E]">
+                  Download and install to get started
                 </div>
               </div>
               
               <button
                 onClick={() => {
-                  const downloadUrl = 'https://github.com/readmet3xt/readmet3xt.github.io/releases/download/Otakon-connector/Otakon.Connector.Setup.1.0.0.exe';
+                  const downloadUrl = 'https://github.com/readmet3xt/readmet3xt.github.io/releases/tag/Otakon-connector';
                   window.open(downloadUrl, '_blank');
                 }}
                 className="w-full bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white px-6 py-3 rounded-xl font-medium hover:from-[#D42A2A] hover:to-[#C87A1A] transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#E53A3A]/25"
@@ -178,10 +166,8 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
                   <span className="text-green-400">✓</span>
                   <span>Enhanced 6-digit connection code detected</span>
                 </div>
-                <div className="text-sm mt-2 text-green-300 space-y-1">
-                  <div>✓ Batch screenshot support (up to 5 screenshots)</div>
-                  <div>✓ Configurable processing modes</div>
-                  <div>✓ Enhanced hotkey support (F1/F2 for single/multi-shot)</div>
+                <div className="text-sm mt-2 text-green-300">
+                  Ready to connect with enhanced features
                 </div>
               </div>
             )}
@@ -217,10 +203,30 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
                       <span className="w-3 h-3 bg-green-400 rounded-full"></span>
                       Enhanced connector connected
                     </div>
-                    <div>• Batch screenshot support (up to 5 screenshots)</div>
-                    <div>• Configurable processing modes</div>
-                    <div>• Enhanced hotkey support (F1/F2 for single/multi-shot)</div>
+                    <div>• Ready for screenshots and AI analysis</div>
+                    <div>• Use F1 for single shot, F2 for batch capture</div>
+                    <div>• All features unlocked and ready to use</div>
                   </div>
+                  
+                  {/* Auto-close indicator */}
+                  {localStorage.getItem('otakonHasConnectedBefore') === 'true' && !wasManuallyOpened && (
+                    <div className="mt-3 pt-3 border-t border-green-600/30">
+                      <div className="flex items-center gap-2 text-xs text-green-300">
+                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                        Modal will close automatically in a moment...
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Manual open indicator */}
+                  {wasManuallyOpened && (
+                    <div className="mt-3 pt-3 border-t border-green-600/30">
+                      <div className="flex items-center gap-2 text-xs text-green-300">
+                        <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                        Modal will stay open - you can close it manually
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
                 {/* First-time user message */}

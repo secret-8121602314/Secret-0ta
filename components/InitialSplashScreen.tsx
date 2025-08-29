@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Logo from './Logo';
+import PWAInstallBanner from './PWAInstallBanner';
 
 interface InitialSplashScreenProps {
   onComplete: () => void;
@@ -9,8 +10,8 @@ interface InitialSplashScreenProps {
 
 const InitialSplashScreen: React.FC<InitialSplashScreenProps> = ({ onComplete }) => {
   const handleDownloadPCClient = () => {
-    // Hardcoded download URL for the specific file
-    const downloadUrl = 'https://github.com/readmet3xt/readmet3xt.github.io/releases/download/Otakon-connector/Otakon.Connector.Setup.1.0.0.exe';
+    // Download PC Client from GitHub releases
+    const downloadUrl = 'https://github.com/readmet3xt/readmet3xt.github.io/releases/tag/Otakon-connector';
     window.open(downloadUrl, '_blank');
   };
 
@@ -51,6 +52,9 @@ const InitialSplashScreen: React.FC<InitialSplashScreenProps> = ({ onComplete })
           Download PC Client
         </button>
       </div>
+      
+      {/* PWA Install Banner */}
+      <PWAInstallBanner />
     </div>
   );
 };

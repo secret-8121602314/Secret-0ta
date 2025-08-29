@@ -2,229 +2,164 @@ import React, { useState } from 'react';
 import TypingIndicator from './TypingIndicator';
 import Skeleton from './Skeleton';
 import CircularProgress from './CircularProgress';
+import LottieLoader from './LottieLoader';
 
 const LoadingAnimationDemo: React.FC = () => {
-  const [selectedVariant, setSelectedVariant] = useState<'dots' | 'skeleton' | 'wave' | 'circular'>('dots');
+  const [selectedVariant, setSelectedVariant] = useState<'dots' | 'skeleton' | 'wave' | 'circular' | 'lottie'>('lottie');
   const [selectedSkeleton, setSelectedSkeleton] = useState<'text' | 'circular' | 'rectangular' | 'avatar' | 'card'>('text');
   const [selectedProgress, setSelectedProgress] = useState<'indeterminate' | 'determinate'>('indeterminate');
   const [progressValue, setProgressValue] = useState(45);
+  const [selectedLottieVariant, setSelectedLottieVariant] = useState<'ai-thinking' | 'loading' | 'success' | 'error' | 'connecting'>('ai-thinking');
+  const [selectedLottieSize, setSelectedLottieSize] = useState<'sm' | 'md' | 'lg' | 'xl'>('md');
 
   return (
     <div className="p-6 space-y-8 bg-[#1C1C1C] text-[#F5F5F5]">
       <h2 className="text-2xl font-bold text-center mb-8">🎨 Loading Animation Showcase</h2>
       
+      {/* Lottie Loader Variants */}
+      <div className="space-y-4">
+        <h3 className="text-xl font-semibold text-[#FF4D4D]">Lottie Animations</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-[#A3A3A3] mb-2">Variant:</label>
+            <select 
+              value={selectedLottieVariant} 
+              onChange={(e) => setSelectedLottieVariant(e.target.value as any)}
+              className="w-full p-2 bg-[#2E2E2E] border border-[#424242] rounded-lg text-[#F5F5F5]"
+            >
+              <option value="ai-thinking">AI Thinking</option>
+              <option value="loading">Loading</option>
+              <option value="success">Success</option>
+              <option value="error">Error</option>
+              <option value="connecting">Connecting</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[#A3A3A3] mb-2">Size:</label>
+            <select 
+              value={selectedLottieSize} 
+              onChange={(e) => setSelectedLottieSize(e.target.value as any)}
+              className="w-full p-2 bg-[#2E2E2E] border border-[#424242] rounded-lg text-[#F5F5F5]"
+            >
+              <option value="sm">Small (24px)</option>
+              <option value="md">Medium (32px)</option>
+              <option value="lg">Large (48px)</option>
+              <option value="xl">Extra Large (64px)</option>
+            </select>
+          </div>
+        </div>
+        <div className="p-4 bg-[#2E2E2E]/30 rounded-lg border border-[#424242]/30">
+          <LottieLoader 
+            variant={selectedLottieVariant} 
+            size={selectedLottieSize}
+            showText={true}
+          />
+        </div>
+      </div>
+
       {/* TypingIndicator Variants */}
       <div className="space-y-4">
         <h3 className="text-xl font-semibold text-[#FF4D4D]">TypingIndicator Variants</h3>
-        <div className="flex flex-wrap gap-4">
-          <button
-            onClick={() => setSelectedVariant('dots')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              selectedVariant === 'dots' 
-                ? 'bg-[#FF4D4D] text-white' 
-                : 'bg-[#2E2E2E] text-[#CFCFCF] hover:bg-[#424242]'
-            }`}
-          >
-            Dots
-          </button>
-          <button
-            onClick={() => setSelectedVariant('skeleton')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              selectedVariant === 'skeleton' 
-                ? 'bg-[#FF4D4D] text-white' 
-                : 'bg-[#2E2E2E] text-[#CFCFCF] hover:bg-[#424242]'
-            }`}
-          >
-            Skeleton
-          </button>
-          <button
-            onClick={() => setSelectedVariant('wave')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              selectedVariant === 'wave' 
-                ? 'bg-[#FF4D4D] text-white' 
-                : 'bg-[#2E2E2E] text-[#CFCFCF] hover:bg-[#424242]'
-            }`}
-          >
-            Wave
-          </button>
-          <button
-            onClick={() => setSelectedVariant('circular')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              selectedVariant === 'circular' 
-                ? 'bg-[#FF4D4D] text-white' 
-                : 'bg-[#2E2E2E] text-[#CFCFCF] hover:bg-[#424242]'
-            }`}
-          >
-            Circular
-          </button>
+        <div className="flex flex-wrap gap-4 mb-4">
+          {(['dots', 'skeleton', 'wave', 'circular', 'lottie'] as const).map(variant => (
+            <button
+              key={variant}
+              onClick={() => setSelectedVariant(variant)}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                selectedVariant === variant 
+                  ? 'bg-[#FF4D4D] text-white' 
+                  : 'bg-[#424242] text-[#A3A3A3] hover:bg-[#5A5A5A]'
+              }`}
+            >
+              {variant.charAt(0).toUpperCase() + variant.slice(1)}
+            </button>
+          ))}
         </div>
-        
         <div className="p-4 bg-[#2E2E2E]/30 rounded-lg border border-[#424242]/30">
-          <TypingIndicator variant={selectedVariant} />
+          <TypingIndicator variant={selectedVariant} showText={true} />
         </div>
       </div>
 
       {/* Skeleton Variants */}
       <div className="space-y-4">
-        <h3 className="text-xl font-semibold text-[#FFAB40]">Skeleton Variants</h3>
-        <div className="flex flex-wrap gap-4">
-          <button
-            onClick={() => setSelectedSkeleton('text')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              selectedSkeleton === 'text' 
-                ? 'bg-[#FFAB40] text-white' 
-                : 'bg-[#2E2E2E] text-[#CFCFCF] hover:bg-[#424242]'
-            }`}
-          >
-            Text
-          </button>
-          <button
-            onClick={() => setSelectedSkeleton('circular')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              selectedSkeleton === 'circular' 
-                ? 'bg-[#FFAB40] text-white' 
-                : 'bg-[#2E2E2E] text-[#CFCFCF] hover:bg-[#424242]'
-            }`}
-          >
-            Circular
-          </button>
-          <button
-            onClick={() => setSelectedSkeleton('rectangular')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              selectedSkeleton === 'rectangular' 
-                ? 'bg-[#FFAB40] text-white' 
-                : 'bg-[#2E2E2E] text-[#CFCFCF] hover:bg-[#424242]'
-            }`}
-          >
-            Rectangular
-          </button>
-          <button
-            onClick={() => setSelectedSkeleton('avatar')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              selectedSkeleton === 'avatar' 
-                ? 'bg-[#FFAB40] text-white' 
-                : 'bg-[#2E2E2E] text-[#CFCFCF] hover:bg-[#424242]'
-            }`}
-          >
-            Avatar
-          </button>
-          <button
-            onClick={() => setSelectedSkeleton('card')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              selectedSkeleton === 'card' 
-                ? 'bg-[#FFAB40] text-white' 
-                : 'bg-[#2E2E2E] text-[#CFCFCF] hover:bg-[#424242]'
-            }`}
-          >
-            Card
-          </button>
+        <h3 className="text-xl font-semibold text-[#FF4D4D]">Skeleton Variants</h3>
+        <div className="flex flex-wrap gap-4 mb-4">
+          {(['text', 'circular', 'rectangular', 'avatar', 'card'] as const).map(variant => (
+            <button
+              key={variant}
+              onClick={() => setSelectedSkeleton(variant)}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                selectedSkeleton === variant 
+                  ? 'bg-[#FF4D4D] text-white' 
+                  : 'bg-[#424242] text-[#A3A3A3] hover:bg-[#5A5A5A]'
+              }`}
+            >
+              {variant.charAt(0).toUpperCase() + variant.slice(1)}
+            </button>
+          ))}
         </div>
-        
         <div className="p-4 bg-[#2E2E2E]/30 rounded-lg border border-[#424242]/30">
-          {selectedSkeleton === 'text' && <Skeleton variant="text" lines={3} />}
-          {selectedSkeleton === 'circular' && <Skeleton variant="circular" size="large" />}
-          {selectedSkeleton === 'rectangular' && <Skeleton variant="rectangular" height="120px" />}
-          {selectedSkeleton === 'avatar' && <Skeleton variant="avatar" />}
-          {selectedSkeleton === 'card' && <Skeleton variant="card" />}
+          <Skeleton variant={selectedSkeleton} animation="pulse" />
         </div>
       </div>
 
-      {/* CircularProgress Variants */}
+      {/* Circular Progress Variants */}
       <div className="space-y-4">
-        <h3 className="text-xl font-semibold text-[#5CBB7B]">CircularProgress Variants</h3>
-        <div className="flex flex-wrap gap-4">
-          <button
-            onClick={() => setSelectedProgress('indeterminate')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              selectedProgress === 'indeterminate' 
-                ? 'bg-[#5CBB7B] text-white' 
-                : 'bg-[#2E2E2E] text-[#CFCFCF] hover:bg-[#424242]'
-            }`}
-          >
-            Indeterminate
-          </button>
-          <button
-            onClick={() => setSelectedProgress('determinate')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              selectedProgress === 'determinate' 
-                ? 'bg-[#5CBB7B] text-white' 
-                : 'bg-[#2E2E2E] text-[#CFCFCF] hover:bg-[#424242]'
-            }`}
-          >
-            Determinate
-          </button>
+        <h3 className="text-xl font-semibold text-[#FF4D4D]">Circular Progress Variants</h3>
+        <div className="flex flex-wrap gap-4 mb-4">
+          {(['indeterminate', 'determinate'] as const).map(variant => (
+            <button
+              key={variant}
+              onClick={() => setSelectedProgress(variant)}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                selectedProgress === variant 
+                  ? 'bg-[#FF4D4D] text-white' 
+                  : 'bg-[#424242] text-[#A3A3A3] hover:bg-[#5A5A5A]'
+              }`}
+            >
+              {variant.charAt(0).toUpperCase() + variant.slice(1)}
+            </button>
+          ))}
         </div>
-        
-        {selectedProgress === 'determinate' && (
-          <div className="flex items-center gap-4">
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={progressValue}
-              onChange={(e) => setProgressValue(parseInt(e.target.value))}
-              className="flex-1 h-2 bg-[#424242] rounded-lg appearance-none cursor-pointer slider"
-            />
-            <span className="text-sm text-[#CFCFCF] w-12">{progressValue}%</span>
-          </div>
-        )}
-        
-        <div className="flex items-center gap-8 p-4 bg-[#2E2E2E]/30 rounded-lg border border-[#424242]/30">
-          <div className="text-center">
-            <CircularProgress 
-              variant={selectedProgress} 
-              value={selectedProgress === 'determinate' ? progressValue : undefined}
-              size="small"
-              showLabel={selectedProgress === 'determinate'}
-            />
-            <p className="text-xs text-[#A3A3A3] mt-2">Small</p>
-          </div>
-          
-          <div className="text-center">
-            <CircularProgress 
-              variant={selectedProgress} 
-              value={selectedProgress === 'determinate' ? progressValue : undefined}
-              size="medium"
-              showLabel={selectedProgress === 'determinate'}
-            />
-            <p className="text-xs text-[#A3A3A3] mt-2">Medium</p>
-          </div>
-          
-          <div className="text-center">
+        <div className="p-4 bg-[#2E2E2E]/30 rounded-lg border border-[#424242]/30">
+          <div className="flex items-center gap-8">
             <CircularProgress 
               variant={selectedProgress} 
               value={selectedProgress === 'determinate' ? progressValue : undefined}
               size="large"
-              showLabel={selectedProgress === 'determinate'}
             />
-            <p className="text-xs text-[#A3A3A3] mt-2">Large</p>
+            {selectedProgress === 'determinate' && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-[#A3A3A3]">Progress: {progressValue}%</label>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={progressValue}
+                  onChange={(e) => setProgressValue(parseInt(e.target.value))}
+                  className="w-32"
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Color Variants */}
+      {/* Animation Speed Examples */}
       <div className="space-y-4">
-        <h3 className="text-xl font-semibold text-[#FF4D4D]">Color Variants</h3>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <div className="text-center">
-            <CircularProgress color="primary" size="medium" />
-            <p className="text-xs text-[#A3A3A3] mt-2">Primary</p>
+        <h3 className="text-xl font-semibold text-[#FF4D4D]">Animation Speed Examples</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-4 bg-[#2E2E2E]/30 rounded-lg border border-[#424242]/30 text-center">
+            <div className="w-4 h-4 bg-[#FF4D4D] rounded-full animate-pulse-fast mx-auto mb-2"></div>
+            <span className="text-sm text-[#A3A3A3]">Fast Pulse</span>
           </div>
-          <div className="text-center">
-            <CircularProgress color="secondary" size="medium" />
-            <p className="text-xs text-[#A3A3A3] mt-2">Secondary</p>
+          <div className="p-4 bg-[#2E2E2E]/30 rounded-lg border border-[#424242]/30 text-center">
+            <div className="w-4 h-4 bg-[#FFAB40] rounded-full animate-pulse mx-auto mb-2"></div>
+            <span className="text-sm text-[#A3A3A3]">Normal Pulse</span>
           </div>
-          <div className="text-center">
-            <CircularProgress color="success" size="medium" />
-            <p className="text-xs text-[#A3A3A3] mt-2">Success</p>
-          </div>
-          <div className="text-center">
-            <CircularProgress color="warning" size="medium" />
-            <p className="text-xs text-[#A3A3A3] mt-2">Warning</p>
-          </div>
-          <div className="text-center">
-            <CircularProgress color="error" size="medium" />
-            <p className="text-xs text-[#A3A3A3] mt-2">Error</p>
+          <div className="p-4 bg-[#2E2E2E]/30 rounded-lg border border-[#424242]/30 text-center">
+            <div className="w-4 h-4 bg-[#5CBB7B] rounded-full animate-pulse-slow mx-auto mb-2"></div>
+            <span className="text-sm text-[#A3A3A3]">Slow Pulse</span>
           </div>
         </div>
       </div>

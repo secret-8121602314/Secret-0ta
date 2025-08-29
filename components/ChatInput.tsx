@@ -167,7 +167,7 @@ interface ChatInputProps {
     activeConversation: Conversation | undefined;
 }
 
-const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSendMessage, isCooldownActive, onImageProcessingError, usage, imagesForReview, onImagesReviewed, isManualUploadMode, onToggleManualUploadMode, connectionStatus, textareaRef, onBatchUploadAttempt, hasInsights, activeConversation }) => {
+const ChatInput: React.FC<ChatInputProps> = React.memo(({ value, onChange, onSendMessage, isCooldownActive, onImageProcessingError, usage, imagesForReview, onImagesReviewed, isManualUploadMode, onToggleManualUploadMode, connectionStatus, textareaRef, onBatchUploadAttempt, hasInsights, activeConversation }) => {
     const [selectedImages, setSelectedImages] = useState<ImageFile[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -385,7 +385,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSendMessage, i
     const maxImages = usage.tier !== 'free' ? 5 : 1;
 
     return (
-        <div className="pt-3 sm:pt-4 pb-4 sm:pb-6 px-4 sm:px-6">
+        <div className="pt-3 sm:pt-4 px-4 sm:px-6 pb-[calc(env(safe-area-inset-bottom)+16px)] sm:pb-[calc(env(safe-area-inset-bottom)+24px)]">
             <form onSubmit={handleSubmit} className="w-full max-w-4xl sm:max-w-5xl mx-auto flex flex-col gap-3 sm:gap-4">
                 {selectedImages.length > 0 && (
                      <div className="flex overflow-x-auto space-x-2 sm:space-x-3 p-2 sm:p-3 scroll-smooth bg-[#1C1C1C]/40 rounded-2xl border border-[#424242]/30">
@@ -460,6 +460,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSendMessage, i
                                     onToggle={onToggleManualUploadMode}
                                 />
                             )}
+                            
                             <button
                                 type="submit"
                                 disabled={!canSubmit}
@@ -478,6 +479,6 @@ const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSendMessage, i
             </form>
         </div>
     );
-};
+});
 
-export default React.memo(ChatInput);
+export default ChatInput;

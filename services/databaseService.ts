@@ -533,6 +533,104 @@ class DatabaseService {
             return false;
         }
     }
+
+    /**
+     * Load conversations from database
+     */
+    async loadConversations(userId: string): Promise<any[]> {
+        try {
+            const { data, error } = await supabase
+                .from('conversations')
+                .select('*')
+                .eq('user_id', userId)
+                .order('updated_at', { ascending: false });
+
+            if (error) {
+                console.error('Error loading conversations:', error);
+                return [];
+            }
+
+            return data || [];
+        } catch (error) {
+            console.error('Error in loadConversations:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Migrate data from localStorage to database
+     */
+    async migrateFromLocalStorage(userId: string): Promise<boolean> {
+        try {
+            // This is a placeholder - actual migration logic would go here
+            console.log('Migration from localStorage initiated for user:', userId);
+            return true;
+        } catch (error) {
+            console.error('Error in migrateFromLocalStorage:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Clean up localStorage after migration
+     */
+    async cleanupLocalStorage(): Promise<boolean> {
+        try {
+            // This is a placeholder - actual cleanup logic would go here
+            console.log('LocalStorage cleanup initiated');
+            return true;
+        } catch (error) {
+            console.error('Error in cleanupLocalStorage:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Save usage data to database
+     */
+    async saveUsage(usage: any, userId: string): Promise<boolean> {
+        try {
+            const { error } = await supabase
+                .from('users_new')
+                .upsert({
+                    auth_user_id: userId,
+                    usage_data: usage
+                });
+
+            if (error) {
+                console.error('Error saving usage:', error);
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Error in saveUsage:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Load usage data from database
+     */
+    async loadUsage(userId: string): Promise<any> {
+        try {
+            const { data, error } = await supabase
+                .from('users_new')
+                .select('usage_data')
+                .eq('auth_user_id', userId)
+                .single();
+
+            if (error) {
+                console.error('Error loading usage:', error);
+                return null;
+            }
+
+            return data?.usage_data || null;
+        } catch (error) {
+            console.error('Error in loadUsage:', error);
+            return null;
+        }
+    }
 }
 
 export const databaseService = DatabaseService.getInstance();

@@ -2,6 +2,7 @@ import { Usage, UserTier } from './types';
 import { usageService } from './usageService';
 import { databaseService } from './databaseService';
 import { authService } from './supabase';
+import { supabaseDataService } from './supabaseDataService';
 
 const TIER_KEY = 'otakonUserTier';
 const TEXT_COUNT_KEY = 'otakonTextQueryCount';
@@ -83,39 +84,56 @@ const getDaysUntilReset = (): number => {
 };
 
 const upgradeToPro = async () => {
-    localStorage.setItem(TIER_KEY, 'pro');
-    console.log('User upgraded to Pro tier. Resetting counts for new limits.');
-    // Reset counts so user gets full pro limits immediately
-    localStorage.setItem(TEXT_COUNT_KEY, '0');
-    localStorage.setItem(IMAGE_COUNT_KEY, '0');
-    localStorage.setItem(DATE_KEY, getThisMonth());
-
-    // Sync to Supabase if user is authenticated
     try {
-        const authState = authService.getAuthState();
-        if (authState.user) {
-            await databaseService.saveUsage(getUsage(), authState.user.id);
-        }
+        // Update in Supabase
+        await supabaseDataService.updateUserUsage('tier', 'pro');
+        await supabaseDataService.updateUserUsage('textCount', 0);
+        await supabaseDataService.updateUserUsage('imageCount', 0);
+        await supabaseDataService.updateUserUsage('lastMonth', getThisMonth());
+        
+        // Also update localStorage as backup
+        localStorage.setItem(TIER_KEY, 'pro');
+        localStorage.setItem(TEXT_COUNT_KEY, '0');
+        localStorage.setItem(TEXT_COUNT_KEY, '0');
+        localStorage.setItem(DATE_KEY, getThisMonth());
+        
+        console.log('User upgraded to Pro tier. Resetting counts for new limits.');
     } catch (error) {
-        console.error('Error syncing upgrade to Supabase:', error);
+        console.warn('Failed to upgrade to Pro in Supabase, using localStorage only:', error);
+        
+        // Fallback to localStorage only
+        localStorage.setItem(TIER_KEY, 'pro');
+        localStorage.setItem(TEXT_COUNT_KEY, '0');
+        localStorage.setItem(IMAGE_COUNT_KEY, '0');
+        localStorage.setItem(DATE_KEY, getThisMonth());
+        console.log('User upgraded to Pro tier (localStorage fallback). Resetting counts for new limits.');
     }
 };
 
 const upgradeToVanguard = async () => {
-    localStorage.setItem(TIER_KEY, 'vanguard_pro');
-    console.log('User upgraded to Vanguard Pro tier.');
-    localStorage.setItem(TEXT_COUNT_KEY, '0');
-    localStorage.setItem(IMAGE_COUNT_KEY, '0');
-    localStorage.setItem(DATE_KEY, getThisMonth());
-
-    // Sync to Supabase if user is authenticated
     try {
-        const authState = authService.getAuthState();
-        if (authState.user) {
-            await databaseService.saveUsage(getUsage(), authState.user.id);
-        }
+        // Update in Supabase
+        await supabaseDataService.updateUserUsage('tier', 'vanguard_pro');
+        await supabaseDataService.updateUserUsage('textCount', 0);
+        await supabaseDataService.updateUserUsage('imageCount', 0);
+        await supabaseDataService.updateUserUsage('lastMonth', getThisMonth());
+        
+        // Also update localStorage as backup
+        localStorage.setItem(TIER_KEY, 'vanguard_pro');
+        localStorage.setItem(TEXT_COUNT_KEY, '0');
+        localStorage.setItem(IMAGE_COUNT_KEY, '0');
+        localStorage.setItem(DATE_KEY, getThisMonth());
+        
+        console.log('User upgraded to Vanguard Pro tier.');
     } catch (error) {
-        console.error('Error syncing upgrade to Supabase:', error);
+        console.warn('Failed to upgrade to Vanguard in Supabase, using localStorage only:', error);
+        
+        // Fallback to localStorage only
+        localStorage.setItem(TIER_KEY, 'vanguard_pro');
+        localStorage.setItem(TEXT_COUNT_KEY, '0');
+        localStorage.setItem(IMAGE_COUNT_KEY, '0');
+        localStorage.setItem(DATE_KEY, getThisMonth());
+        console.log('User upgraded to Vanguard Pro tier (localStorage fallback).');
     }
 };
 

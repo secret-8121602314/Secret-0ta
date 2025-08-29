@@ -65,7 +65,7 @@ const CreditIndicator: React.FC<CreditIndicatorProps> = ({ usage, onClick }) => 
             borderRadius: '10px'
           }}>
         {/* Mobile View: Circular Bars */}
-        <div className="sm:hidden w-8 h-8 flex items-center justify-center bg-neutral-900/50 rounded-full p-1 border border-neutral-700/30">
+        <div className="sm:hidden w-8 h-8 flex items-center justify-center bg-neutral-900/50 rounded-full p-0.5">
            <svg className="w-full h-full" viewBox="0 0 32 32" fill="none">
               <defs>
                 <linearGradient id="sky-gradient" x1="0" y1="0" x2="1" y2="1">

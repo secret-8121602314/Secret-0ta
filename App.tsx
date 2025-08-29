@@ -14,7 +14,6 @@ import SuggestedPrompts from './components/SuggestedPrompts';
 import { useChat } from './hooks/useChat';
 import { useConnection } from './hooks/useConnection';
 import ConversationTabs from './components/ConversationTabs';
-import LandingPage from './components/NewLandingPage';
 import ContactUsModal from './components/ContactUsModal';
 import HandsFreeToggle from './components/HandsFreeToggle';
 import { ttsService } from './services/ttsService';
@@ -24,6 +23,7 @@ import UpgradeSplashScreen from './components/UpgradeSplashScreen';
 import ProFeaturesSplashScreen from './components/ProFeaturesSplashScreen';
 import SubTabs from './components/SubTabs';
 import MainViewContainer from './components/MainViewContainer';
+
 import CreditIndicator from './components/CreditIndicator';
 import CreditModal from './components/CreditModal';
 import ContextMenu from './components/ContextMenu';
@@ -56,11 +56,12 @@ import { pwaAnalyticsService } from './services/pwaAnalyticsService';
 import { offlineStorageService } from './services/offlineStorageService';
 import { pushNotificationService } from './services/pushNotificationService';
 import { appShortcutsService } from './services/appShortcutsService';
+import { performanceMonitoringService } from './services/performanceMonitoringService';
 
-import AutoConnectionNotification from './components/AutoConnectionNotification';
+
 import DailyCheckinBanner from './components/DailyCheckinBanner';
-import SessionContinuationModal from './components/SessionContinuationModal';
-import ProgressTrackingBar from './components/ProgressTrackingBar';
+
+
 import AchievementNotification from './components/AchievementNotification';
 import dailyEngagementService, { Achievement } from './services/dailyEngagementService';
 import { PlayerProfileSetupModal } from './components/PlayerProfileSetupModal';
@@ -69,7 +70,12 @@ import { ProactiveInsightsPanel } from './components/ProactiveInsightsPanel';
 import { useEnhancedInsights } from './hooks/useEnhancedInsights';
 import { proactiveInsightService } from './services/proactiveInsightService';
 import { databaseService } from './services/databaseService';
-
+import { supabaseDataService } from './services/supabaseDataService';
+import ScreenshotButton from './components/ScreenshotButton';
+import CharacterImmersionTest from './components/CharacterImmersionTest';
+import OtakuDiaryModal from './components/OtakuDiaryModal';
+import WishlistModal from './components/WishlistModal';
+import CachePerformanceDashboard from './components/CachePerformanceDashboard';
 
 // A data URL for a 1-second silent WAV file. This prevents needing to host an asset
 // and is used to keep the app process alive in the background for TTS.
@@ -86,13 +92,14 @@ type ActiveModal = 'about' | 'privacy' | 'refund' | 'contact' | null;
 
 
 const AppComponent: React.FC = () => {
-    const [view, setView] = useState<'landing' | 'app'>('landing');
+    const [view, setView] = useState<'landing' | 'app'>('app');
     const [onboardingStatus, setOnboardingStatus] = useState<'login' | 'initial' | 'features' | 'pro-features' | 'how-to-use' | 'tier-splash' | 'complete'>(() => {
         const hasCompletedOnboarding = localStorage.getItem('otakonOnboardingComplete');
         return hasCompletedOnboarding ? 'complete' : 'login';
     });
     const [isConnectionModalOpen, setIsConnectionModalOpen] = useState(false);
     const [isHandsFreeModalOpen, setIsHandsFreeModalOpen] = useState(false);
+    const [isCacheDashboardOpen, setIsCacheDashboardOpen] = useState(false);
     const [isCreditModalOpen, setIsCreditModalOpen] = useState(false);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [hasRestored, setHasRestored] = useState(false);
@@ -126,19 +133,24 @@ const AppComponent: React.FC = () => {
 
     // Daily Engagement State
     const [showDailyCheckin, setShowDailyCheckin] = useState(false);
-    const [showSessionContinuation, setShowSessionContinuation] = useState(false);
+
     const [currentAchievement, setCurrentAchievement] = useState<Achievement | null>(null);
-    const [showProgressBar, setShowProgressBar] = useState(false);
+
     
     // Player Profile Setup State
     const [showProfileSetup, setShowProfileSetup] = useState(false);
     const [isFirstTime, setIsFirstTime] = useState(false);
+    const [isOtakuDiaryModalOpen, setIsOtakuDiaryModalOpen] = useState(false);
+    const [otakuDiaryGameInfo, setOtakuDiaryGameInfo] = useState<{ id: string; title: string } | null>(null);
     
     // Enhanced Features State
     const [showProactiveInsights, setShowProactiveInsights] = useState(false);
     const [databaseSyncStatus, setDatabaseSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
     const [lastDatabaseSync, setLastDatabaseSync] = useState<number>(Date.now());
     const [lastSuggestedPromptsShown, setLastSuggestedPromptsShown] = useState<number>(0);
+    
+    // Wishlist modal state
+    const [isWishlistModalOpen, setIsWishlistModalOpen] = useState(false);
     
     // Track processed batches to prevent duplicates
     const processedBatches = useRef(new Set<string>());
@@ -186,7 +198,21 @@ const AppComponent: React.FC = () => {
 
     const chatInputRef = useRef<HTMLTextAreaElement>(null);
     const chatEndRef = useRef<HTMLDivElement>(null);
+    const chatContainerRef = useRef<HTMLDivElement>(null);
     const silentAudioRef = useRef<HTMLAudioElement>(null);
+    const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+
+    // Function to check current localStorage state (for debugging)
+    const checkLocalStorageState = useCallback(() => {
+        console.log('🔍 Current localStorage state:', {
+            otakon_profile_setup_completed: localStorage.getItem('otakon_profile_setup_completed'),
+            otakon_welcome_message_shown: localStorage.getItem('otakon_welcome_message_shown'),
+            otakon_last_session_date: localStorage.getItem('otakon_last_session_date'),
+            otakonOnboardingComplete: localStorage.getItem('otakonOnboardingComplete'),
+            view,
+            onboardingStatus
+        });
+    }, [view, onboardingStatus]);
 
     const refreshUsage = useCallback(async () => {
         const syncedUsage = await unifiedUsageService.getUsageWithSync();
@@ -201,6 +227,35 @@ const AppComponent: React.FC = () => {
                 unsubscribe();
             }
         };
+    }, []);
+
+    // Auto-migrate localStorage data to Supabase on app start
+    useEffect(() => {
+        const autoMigrateData = async () => {
+            try {
+                // Wait for app to be fully ready
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // Check if user needs migration
+                const needsMigration = await supabaseDataService.checkMigrationStatus();
+                if (needsMigration) {
+                    console.log('🔄 Auto-migrating localStorage data to Supabase...');
+                    
+                    await supabaseDataService.migrateAllLocalStorageData();
+                    
+                    console.log('✅ Auto-migration complete!');
+                } else {
+                    console.log('✅ No migration needed - data already synced');
+                }
+            } catch (error) {
+                console.warn('Auto-migration failed, continuing with localStorage:', error);
+            }
+        };
+        
+        // Run auto-migration after a short delay to ensure app is ready
+        const migrationTimer = setTimeout(autoMigrateData, 500);
+        
+        return () => clearTimeout(migrationTimer);
     }, []);
     
     // PWA Navigation effect - handle post-install navigation
@@ -226,6 +281,70 @@ const AppComponent: React.FC = () => {
         if (stored) {
             setLastSuggestedPromptsShown(parseInt(stored, 10));
         }
+        
+        // Debug: Check localStorage state on mount
+        if (import.meta.env.DEV) {
+            setTimeout(() => {
+                checkLocalStorageState();
+            }, 1000);
+        }
+    }, [checkLocalStorageState]);
+    
+    // Handle app visibility changes to track when user returns after 12+ hours
+    useEffect(() => {
+        const handleVisibilityChange = async () => {
+            if (!document.hidden) {
+                // App became visible - check if we should show welcome message
+                const lastWelcomeTime = localStorage.getItem('otakon_last_welcome_time');
+                const appClosedTime = localStorage.getItem('otakon_app_closed_time');
+                
+                if (lastWelcomeTime || appClosedTime) {
+                    const timeSinceLastWelcome = lastWelcomeTime ? Date.now() - parseInt(lastWelcomeTime, 10) : 0;
+                    const timeSinceAppClosed = appClosedTime ? Date.now() - parseInt(appClosedTime, 10) : 0;
+                    const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
+                    
+                    if (timeSinceLastWelcome >= TWELVE_HOURS_MS || timeSinceAppClosed >= TWELVE_HOURS_MS) {
+                        // Reset welcome message tracking to show it again
+                        localStorage.removeItem('otakon_welcome_message_shown');
+                        console.log('🔄 App returned after 12+ hours - welcome message will show again');
+                    }
+                }
+                
+                // Check if user has completed first run experience (created game conversations)
+                if (!localStorage.getItem('otakon_first_run_completed')) {
+                    const hasGameConversations = Object.values(conversations).some(conv => 
+                        conv.id !== 'everything-else' && conv.title && conv.title !== 'New Game'
+                    );
+                    
+                    if (hasGameConversations) {
+                        localStorage.setItem('otakon_first_run_completed', 'true');
+                        
+                        // Also mark in Supabase if possible
+                        try {
+                            await playerProfileService.markFirstRunCompleted();
+                            console.log('🎮 First run experience completed - marked in both localStorage and Supabase');
+                        } catch (error) {
+                            console.warn('Failed to mark first run completed in Supabase:', error);
+                            console.log('🎮 First run experience completed - marked in localStorage only');
+                        }
+                    }
+                }
+            }
+        };
+        
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        
+        // Track when user closes the app
+        const handleBeforeUnload = () => {
+            localStorage.setItem('otakon_app_closed_time', Date.now().toString());
+        };
+        
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
     }, []);
 
 
@@ -251,6 +370,12 @@ const AppComponent: React.FC = () => {
         }
     }, [pwaNavigationState.isPWAInstalled, pwaNavigationState.isRunningInPWA, authState.user, authState.loading]);
     
+    // Initialize performance monitoring
+    useEffect(() => {
+        performanceMonitoringService.initialize();
+        console.log('🚀 Performance monitoring initialized');
+    }, []);
+
     // Check for OAuth callback on component mount
     useEffect(() => {
         const checkOAuthCallback = async () => {
@@ -345,11 +470,11 @@ const AppComponent: React.FC = () => {
     useEffect(() => {
         console.log('Daily Engagement Effect - view:', view, 'onboardingStatus:', onboardingStatus, 'usage.tier:', usage.tier);
         
-        // Show daily engagement for both onboarding and main app
-        if (view === 'app' && onboardingStatus !== 'complete') {
+        // Show daily engagement during app usage
+        if (view === 'app') {
             console.log('Checking daily engagement conditions...');
             
-            // Check if we should show daily check-in
+            // Check if we should show daily check-in (unchanged behavior)
             const shouldShowCheckin = dailyEngagementService.shouldShowDailyCheckin();
             console.log('Should show daily checkin:', shouldShowCheckin);
             if (shouldShowCheckin) {
@@ -357,30 +482,35 @@ const AppComponent: React.FC = () => {
                 setShowDailyCheckin(true);
             }
             
-            // Check if we should show session continuation
-            const shouldShowSession = dailyEngagementService.shouldShowSessionContinuation();
-            console.log('Should show session continuation:', shouldShowSession);
-            if (shouldShowSession && !isFirstTime) {
-                console.log('Setting showSessionContinuation to true');
-                setShowSessionContinuation(true);
-            }
+            // Session continuation is handled after conversations are available
             
-            // Show progress bar for pro users
-            if (usage.tier !== 'free') {
-                console.log('Setting showProgressBar to true for tier:', usage.tier);
-                setShowProgressBar(true);
-            }
-        }
-    }, [view, onboardingStatus, usage.tier, isFirstTime]);
 
-    // Player Profile Setup Check
+        }
+    }, [view, onboardingStatus, usage.tier]);
+
+    // Player Profile Setup Check - Only run once per session
     useEffect(() => {
         if (view === 'app' && onboardingStatus === 'complete') {
-            // Check if user needs profile setup
-            const needsProfile = playerProfileService.needsProfileSetup();
-            if (needsProfile) {
-                setIsFirstTime(true);
-                setShowProfileSetup(true);
+            // Check if user has already completed profile setup in this session
+            const hasCompletedProfileSetup = localStorage.getItem('otakon_profile_setup_completed') === 'true';
+            const hasCheckedThisSession = sessionStorage.getItem('otakon_profile_checked_this_session') === 'true';
+            
+            if (!hasCompletedProfileSetup && !hasCheckedThisSession) {
+                // Mark that we've checked this session to prevent repeated checks
+                sessionStorage.setItem('otakon_profile_checked_this_session', 'true');
+                
+                // Check if user needs profile setup
+                const checkProfileSetup = async () => {
+                    const needsProfile = await playerProfileService.needsProfileSetup();
+                    if (needsProfile) {
+                        setIsFirstTime(true);
+                        setShowProfileSetup(true);
+                    } else {
+                        // User doesn't need profile setup, mark as completed
+                        localStorage.setItem('otakon_profile_setup_completed', 'true');
+                    }
+                };
+                checkProfileSetup();
             }
         }
     }, [view, onboardingStatus]);
@@ -413,6 +543,7 @@ const AppComponent: React.FC = () => {
         updateMessageFeedback,
         updateInsightFeedback,
         retryMessage,
+        updateConversation, // 🔥 ADDED: For enhanced insights integration
 
     } = useChat(isHandsFreeMode);
     
@@ -421,11 +552,180 @@ const AppComponent: React.FC = () => {
         activeConversationId,
         activeConversation?.id,
         activeConversation?.genre,
-        activeConversation?.progress
+        activeConversation?.progress,
+        // 🔥 CRITICAL INTEGRATION: Connect enhanced insights to main conversation system
+        (newInsights, newInsightsOrder) => {
+            if (activeConversation && activeConversation.id !== 'everything-else') {
+                console.log('🔄 Enhanced insights callback triggered for conversation:', activeConversation.id);
+                console.log('🔄 New insights received:', newInsights);
+                console.log('🔄 New insights order:', newInsightsOrder);
+                
+                // Always ensure Otaku Diary tab exists and is preserved
+                const otakuDiaryInsight = {
+                    id: 'otaku-diary',
+                    title: '📖 Otaku Diary',
+                    content: '📝 **Your Personal Game Diary**\n\n✨ Track your tasks and favorite moments\n\n🎯 **Features:**\n• Create and manage to-do lists\n• Save favorite AI responses and insights\n• Track your gaming progress\n• Organize your thoughts and discoveries\n\n🚀 **Available for all users!**',
+                    status: 'loaded' as const,
+                    isNew: false,
+                    lastUpdated: Date.now()
+                };
+                
+                // Start with existing insights to preserve Otaku Diary
+                const existingInsights = activeConversation.insights || {};
+                
+                // Add enhanced insights, but ensure Otaku Diary is preserved
+                const updatedInsights = { 
+                    ...existingInsights,  // Keep existing insights (including Otaku Diary)
+                    ...newInsights,       // Add enhanced insights
+                    'otaku-diary': otakuDiaryInsight // Always ensure Otaku Diary exists
+                };
+                
+                // Create insights order with Otaku Diary first, then existing insights, then enhanced insights
+                const existingOrder = activeConversation.insightsOrder || [];
+                const enhancedOrder = newInsightsOrder.filter(id => id !== 'otaku-diary'); // Remove Otaku Diary from enhanced order
+                const updatedInsightsOrder = ['otaku-diary', ...existingOrder.filter(id => id !== 'otaku-diary'), ...enhancedOrder];
+                
+                // Remove duplicates from insightsOrder
+                const uniqueInsightsOrder = [...new Set(updatedInsightsOrder)];
+                
+                console.log('🔄 Final updated insights:', updatedInsights);
+                console.log('🔄 Final updated insights order:', uniqueInsightsOrder);
+                
+                // Update the conversation with new insights
+                updateConversation(activeConversation.id, (convo) => ({
+                    ...convo,
+                    insights: updatedInsights,
+                    insightsOrder: uniqueInsightsOrder
+                }));
+                
+                console.log(`🔄 Integrated ${Object.keys(newInsights).length} enhanced insights to conversation: ${activeConversation.id} (Otaku Diary preserved and prioritized)`);
+            }
+        }
     );
+    
+    // 🔥 CRITICAL INTEGRATION: Ensure all game conversations have Otaku Diary tab
+    useEffect(() => {
+        if (activeConversation && activeConversation.id !== 'everything-else') {
+            // Add a safeguard to prevent running this effect too many times for the same conversation
+            const hasRunKey = `otaku-diary-check-${activeConversation.id}`;
+            if (sessionStorage.getItem(hasRunKey)) {
+                console.log(`✅ Otaku Diary check already completed for conversation: ${activeConversation.id}`);
+                return;
+            }
+            
+            console.log(`🔍 Checking Otaku Diary for conversation: ${activeConversation.id}`);
+            console.log(`🔍 Current insights:`, activeConversation.insights);
+            console.log(`🔍 Current insightsOrder:`, activeConversation.insightsOrder);
+            console.log(`🔍 Current activeSubView:`, activeSubView);
+            
+            const hasOtakuDiary = activeConversation.insights?.['otaku-diary'];
+            
+            if (!hasOtakuDiary) {
+                console.log(`🔄 Adding missing Otaku Diary tab to conversation: ${activeConversation.id}`);
+                
+                // Create Otaku Diary tab
+                const otakuDiaryInsight = {
+                    id: 'otaku-diary',
+                    title: '📖 Otaku Diary',
+                    content: '📝 **Your Personal Game Diary**\n\n✨ Track your tasks and favorite moments\n\n🎯 **Features:**\n• Create and manage to-do lists\n• Save favorite AI responses and insights\n• Track your gaming progress\n• Organize your thoughts and discoveries\n\n🚀 **Available for all users!**',
+                    status: 'loaded' as const,
+                    isNew: false,
+                    lastUpdated: Date.now()
+                };
+                
+                // Update conversation with Otaku Diary tab
+                const updatedInsights = { ...(activeConversation.insights || {}), 'otaku-diary': otakuDiaryInsight };
+                const updatedInsightsOrder = ['otaku-diary', ...(activeConversation.insightsOrder || []).filter(id => id !== 'otaku-diary')];
+                
+                // Remove duplicates from insightsOrder
+                const uniqueInsightsOrder = [...new Set(updatedInsightsOrder)];
+                
+                updateConversation(activeConversation.id, (convo) => ({
+                    ...convo,
+                    insights: updatedInsights,
+                    insightsOrder: uniqueInsightsOrder
+                }));
+                
+                console.log(`✅ Added Otaku Diary tab to conversation: ${activeConversation.id}`);
+                console.log(`✅ Updated insights:`, updatedInsights);
+                console.log(`✅ Updated insightsOrder:`, uniqueInsightsOrder);
+            } else {
+                console.log(`✅ Otaku Diary tab already exists for conversation: ${activeConversation.id}`);
+            }
+            
+            // Mark this check as completed
+            sessionStorage.setItem(hasRunKey, 'true');
+        }
+    }, [activeConversation?.id]); // Only depend on the ID, not the entire object or updateConversation
+    
+    // 🔥 AGGRESSIVE INTEGRATION: Force Otaku Diary tab creation for all game conversations
+    useEffect(() => {
+        // Only run this effect once when conversations are first loaded, not on every change
+        if (Object.keys(conversations).length === 0) return;
+        
+        // Add a safeguard to prevent running this effect too many times
+        const hasRunKey = `otaku-diary-integration-${Object.keys(conversations).length}`;
+        if (sessionStorage.getItem(hasRunKey)) {
+            console.log('✅ Otaku Diary integration already completed for current conversation set');
+            return;
+        }
+        
+        // Get all game conversations (excluding 'everything-else')
+        const gameConversations = Object.values(conversations).filter(conv => conv.id !== 'everything-else');
+        
+        // Check if any conversations need Otaku Diary tabs
+        const conversationsNeedingOtakuDiary = gameConversations.filter(conversation => 
+            !conversation.insights?.['otaku-diary']
+        );
+        
+        if (conversationsNeedingOtakuDiary.length === 0) {
+            console.log('✅ All game conversations already have Otaku Diary tabs');
+            sessionStorage.setItem(hasRunKey, 'true');
+            return;
+        }
+        
+        console.log(`🔄 Adding Otaku Diary tabs to ${conversationsNeedingOtakuDiary.length} conversations`);
+        
+        conversationsNeedingOtakuDiary.forEach(conversation => {
+            console.log(`🔄 Force-adding Otaku Diary tab to conversation: ${conversation.id}`);
+            
+            // Create Otaku Diary tab
+            const otakuDiaryInsight = {
+                id: 'otaku-diary',
+                title: '📖 Otaku Diary',
+                content: '📝 **Your Personal Game Diary**\n\n✨ Track your tasks and favorite moments\n\n🎯 **Features:**\n• Create and manage to-do lists\n• Save favorite AI responses and insights\n• Track your gaming progress\n• Organize your thoughts and discoveries\n\n🚀 **Available for all users!**',
+                status: 'loaded' as const,
+                isNew: false,
+                lastUpdated: Date.now()
+            };
+            
+            // Update conversation with Otaku Diary tab
+            const updatedInsights = { ...(conversation.insights || {}), 'otaku-diary': otakuDiaryInsight };
+            const updatedInsightsOrder = ['otaku-diary', ...(conversation.insightsOrder || []).filter(id => id !== 'otaku-diary')];
+            
+            // Remove duplicates from insightsOrder
+            const uniqueInsightsOrder = [...new Set(updatedInsightsOrder)];
+            
+            updateConversation(conversation.id, (convo) => ({
+                ...convo,
+                insights: updatedInsights,
+                insightsOrder: uniqueInsightsOrder
+            }));
+            
+            console.log(`✅ Force-added Otaku Diary tab to conversation: ${conversation.id}`);
+        });
+        
+        // Mark this integration as completed
+        sessionStorage.setItem(hasRunKey, 'true');
+    }, [conversations]); // Remove updateConversation dependency to prevent infinite loop
     
     // Enhanced suggested prompts logic that can access conversations
     const shouldShowSuggestedPromptsEnhanced = useCallback((): boolean => {
+        // In development mode, always show suggested prompts for easier testing
+        if (process.env.NODE_ENV === 'development') {
+            return true;
+        }
+        
         // Show prompts if:
         // 1. First run experience (isFirstTime is true)
         // 2. No messages in conversation (first time or cleared)
@@ -440,6 +740,16 @@ const AppComponent: React.FC = () => {
                (!hasInteractedWithChat && !hasGamePill);
     }, [lastSuggestedPromptsShown, isFirstTime, conversations]);
     
+    // Function to reset interaction state for testing purposes
+    const resetInteractionState = useCallback(() => {
+        localStorage.removeItem('otakon_has_interacted_with_chat');
+        localStorage.removeItem('otakon_profile_setup_completed');
+        localStorage.removeItem('otakon_welcome_message_shown');
+        localStorage.removeItem('otakon_last_session_date');
+        setLastSuggestedPromptsShown(0);
+        console.log('🔄 Interaction state reset - suggested prompts will be visible again');
+    }, []);
+    
     // Database synchronization function
     const syncToDatabase = useCallback(async () => {
         if (!authState.user) return;
@@ -448,15 +758,17 @@ const AppComponent: React.FC = () => {
             setDatabaseSyncStatus('syncing');
             
             // Sync player profile
-            const profile = playerProfileService.getProfile();
+            const profile = await playerProfileService.getProfile();
             if (profile) {
                 await databaseService.syncPlayerProfile(profile);
             }
             
             // Sync game contexts for all conversations
-            for (const [conversationId, conversation] of Object.entries(conversations)) {
+            // Use current conversations state directly to avoid circular dependency
+            const currentConversations = conversations;
+            for (const [conversationId, conversation] of Object.entries(currentConversations)) {
                 if (conversation.id !== 'everything-else') {
-                    const gameContext = playerProfileService.getGameContext(conversation.id);
+                    const gameContext = await playerProfileService.getGameContext(conversation.id);
                     if (gameContext) {
                         await databaseService.syncGameContext(conversation.id, gameContext);
                     }
@@ -476,7 +788,7 @@ const AppComponent: React.FC = () => {
             // Reset status after 5 seconds
             setTimeout(() => setDatabaseSyncStatus('idle'), 5000);
         }
-    }, [authState.user, conversations]);
+    }, [authState.user]); // Remove conversations dependency to prevent circular dependency
     
     // Auto-sync to database when user is authenticated
     useEffect(() => {
@@ -975,8 +1287,7 @@ const AppComponent: React.FC = () => {
         disconnect,
         connectionCode,
         send,
-        isAutoConnecting,
-        autoConnectAttempts,
+
         lastSuccessfulConnection,
         forceReconnect,
     } = useConnection(handleScreenshotReceived);
@@ -1013,19 +1324,66 @@ const AppComponent: React.FC = () => {
     const messages = activeConversation?.messages ?? [];
     
     useEffect(() => {
-        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        // Only scroll to bottom if the last message is from user (to show input area)
+        // Don't scroll for AI responses so users can read from the start
+        if (messages.length > 0) {
+            const lastMessage = messages[messages.length - 1];
+            if (lastMessage.role === 'user') {
+                chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            } else if (lastMessage.role === 'model') {
+                // No-op: do not show new message indicator
+            }
+        }
     }, [messages, loadingMessages]);
     
+    // Handle scroll detection to show/hide scroll to bottom button
+    useEffect(() => {
+        const chatContainer = chatContainerRef.current;
+        if (!chatContainer) return;
+
+        const handleScroll = () => {
+            const { scrollTop, scrollHeight, clientHeight } = chatContainer;
+            const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10; // 10px threshold
+            setShowScrollToBottom(!isAtBottom);
+        };
+
+        chatContainer.addEventListener('scroll', handleScroll);
+        return () => chatContainer.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    const scrollToBottom = () => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
 
     useEffect(() => {
         const hasConnectedBefore = localStorage.getItem('otakonHasConnectedBefore') === 'true';
 
-        if (connectionStatus === ConnectionStatus.CONNECTED && !hasConnectedBefore) {
-            localStorage.setItem('otakonHasConnectedBefore', 'true');
-            // Always show "How to Use" screen after first connection, regardless of onboarding status
-            setIsConnectionModalOpen(false);
-            setOnboardingStatus('how-to-use');
-            console.log('🎉 First PC connection! Showing "How to Use" splash screen');
+        if (connectionStatus === ConnectionStatus.CONNECTED) {
+            if (!hasConnectedBefore) {
+                // First time connecting - show proper splash screen progression
+                localStorage.setItem('otakonHasConnectedBefore', 'true');
+                setIsConnectionModalOpen(false);
+                
+                // Check current onboarding status to determine next screen
+                if (onboardingStatus === 'features') {
+                    // If we're in features screen, go to pro-features next
+                    setOnboardingStatus('pro-features');
+                    console.log('🎉 First PC connection! Showing "Pro Features" splash screen');
+                } else if (onboardingStatus === 'initial') {
+                    // If we're in initial screen, go to pro-features
+                    setOnboardingStatus('pro-features');
+                    console.log('🎉 First PC connection! Showing "Pro Features" splash screen');
+                } else {
+                    // Default case - show pro-features
+                    setOnboardingStatus('pro-features');
+                    console.log('🎉 First PC connection! Showing "Pro Features" splash screen');
+                }
+            } else {
+                // Returning user - automatically show chat screen
+                setIsConnectionModalOpen(false);
+                setView('app');
+                console.log('🔄 Returning user connected! Showing chat screen');
+            }
         }
     }, [connectionStatus, onboardingStatus]);
     
@@ -1063,7 +1421,7 @@ const AppComponent: React.FC = () => {
         setOnboardingStatus('login');
         setIsHandsFreeMode(false);
         setIsConnectionModalOpen(false);
-        setView('landing');
+        setView('app');
     }, [send, disconnect, resetConversations]);
     
     const handleLogout = useCallback(async () => {
@@ -1092,11 +1450,24 @@ const AppComponent: React.FC = () => {
                     localStorage.removeItem('otakonAuthMethod');
                     localStorage.removeItem('otakonInstallDismissed');
                     
+                    // Reset welcome message tracking so it shows again on next login
+                    localStorage.removeItem('otakon_welcome_message_shown');
+                    localStorage.removeItem('otakon_last_welcome_time');
+                    localStorage.removeItem('otakon_app_closed_time');
+                    localStorage.removeItem('otakon_first_run_completed');
+                    
+                    // Also reset in Supabase if possible
+                    try {
+                        await playerProfileService.resetWelcomeMessageTracking();
+                    } catch (error) {
+                        console.warn('Failed to reset welcome message tracking in Supabase:', error);
+                    }
+                    
                     // Reset app state
                     setOnboardingStatus('login');
                     setIsHandsFreeMode(false);
                     setIsConnectionModalOpen(false);
-                    setView('landing');
+                    setView('app');
                     
                     console.log('User logged out successfully');
                 } catch (error) {
@@ -1149,14 +1520,36 @@ const AppComponent: React.FC = () => {
             setOnboardingStatus('pro-features');
         }
     }, [connectionStatus]);
-    const handleProFeaturesComplete = useCallback(() => completeOnboarding(), [completeOnboarding]);
-    const handleHowToUseComplete = useCallback(() => completeOnboarding(), []);
+    const handleProFeaturesComplete = useCallback(() => {
+        // After pro features, show "How to Use" screen for connected users
+        if (connectionStatus === ConnectionStatus.CONNECTED) {
+            setOnboardingStatus('how-to-use');
+            console.log('📱 Pro Features complete! Showing "How to Use" screen');
+        } else {
+            // If not connected, complete onboarding
+            completeOnboarding();
+            console.log('📱 Pro Features complete! Completing onboarding');
+        }
+    }, [connectionStatus, completeOnboarding]);
+    const handleHowToUseComplete = useCallback(() => {
+        console.log('📚 "How to Use" complete! Completing onboarding');
+        completeOnboarding();
+    }, [completeOnboarding]);
     
     const handleSendMessage = useCallback(async (text: string, images?: ImageFile[], isFromPC: boolean = false) => {
-        // Record when user interacts with chat (any text query or image upload)
-        if (activeConversation?.id === 'everything-else' && !isFirstTime) {
+        const startTime = performance.now();
+        
+        // Track user action
+        performanceMonitoringService.trackUserAction('send_message', { 
+            hasText: text.trim().length > 0, 
+            imageCount: images?.length || 0, 
+            isFromPC 
+        });
+        
+        // Record when user interacts with chat (any text query, image upload, or PC screenshot)
+        if (activeConversation?.id === 'everything-else') {
             // Check if this is any kind of user interaction
-            if (text.trim().length > 0 || (images && images.length > 0)) {
+            if (text.trim().length > 0 || (images && images.length > 0) || isFromPC) {
                 // User has interacted with chat - hide suggested prompts
                 localStorage.setItem('otakon_has_interacted_with_chat', 'true');
                 console.log('📝 User interacted with chat - hiding suggested prompts');
@@ -1167,6 +1560,24 @@ const AppComponent: React.FC = () => {
         setActiveSubView('chat');
         const result = await sendMessage(text, images, isFromPC);
         refreshUsage();
+
+        // Check wishlist release status when user submits a query
+        if (activeConversation?.id === 'everything-else') {
+            try {
+                // Import wishlistService dynamically to avoid circular dependencies
+                const { wishlistService } = await import('./services/wishlistService');
+                
+                // Check all wishlist items for release status
+                const wishlistItems = await wishlistService.getWishlist();
+                for (const item of wishlistItems) {
+                    if (item.releaseDate && !item.isReleased) {
+                        await wishlistService.checkGameReleaseStatus(item.gameName);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to check wishlist release status:', error);
+            }
+        }
 
         if (result?.success) {
             // Check if a new game pill was created (conversation switched from everything-else to a game)
@@ -1191,14 +1602,7 @@ const AppComponent: React.FC = () => {
                     dailyEngagementService.updateGoalProgress('help_others', 1);
                 }
                 
-                // Update session progress
-                const gameProgress = activeConversation.progress || 0;
-                dailyEngagementService.updateSessionProgress(
-                    activeConversation.id,
-                    activeConversation.id,
-                    gameProgress,
-                    'Chat interaction'
-                );
+
                 
                 // Check for achievements
                 const goals = dailyEngagementService.getDailyGoals();
@@ -1220,7 +1624,14 @@ const AppComponent: React.FC = () => {
         } else if (result?.reason === 'limit_reached') {
             setShowUpgradeScreen(true);
         }
-    }, [sendMessage, activeConversation, activeConversationId, isFirstTime, setChatInputValue, setActiveSubView, refreshUsage, dailyEngagementService, setCurrentAchievement, setShowUpgradeScreen]);
+        
+        // Track performance
+        const endTime = performance.now();
+        performanceMonitoringService.trackPerformanceEvent('message_send', endTime - startTime, {
+            success: result?.success,
+            reason: result?.reason
+        });
+    }, [sendMessage, activeConversation, activeConversationId, setChatInputValue, setActiveSubView, refreshUsage, dailyEngagementService, setCurrentAchievement, setShowUpgradeScreen]);
     
     const clearImagesForReview = useCallback(() => {
         setImagesForReview([]);
@@ -1261,7 +1672,6 @@ const AppComponent: React.FC = () => {
         setIsHandsFreeMode(prev => !prev);
     }, []);
     
-    const handleGetStarted = useCallback(() => setView('app'), []);
     const handleLoginComplete = useCallback(() => {
         setOnboardingStatus('initial');
         setView('app');
@@ -1279,35 +1689,42 @@ const AppComponent: React.FC = () => {
         // Mark profile setup as completed
         localStorage.setItem('otakon_profile_setup_completed', 'true');
         
+        // Mark onboarding as complete
+        localStorage.setItem('otakonOnboardingComplete', 'true');
+        
+        // Mark first run completed in Supabase with localStorage fallback
+        await playerProfileService.markFirstRunCompleted();
+        
         // Add welcome message immediately for first-time users
         const timeGreeting = getTimeGreeting();
         addSystemMessage(
-            `${timeGreeting}Welcome to Otakon! I'm here to be your spoiler-free guide through any game. To get started, you can upload a screenshot from a game you're currently playing, or just tell me about a game that's on your mind. What have you been playing lately?`,
+            `${timeGreeting}Welcome to Otakon! 🎮\n\n✨ **Profile Setup Complete!** Your gaming experience is now personalized.\n\n🚀 **Next Steps:**\n• Upload a screenshot from a game you're playing\n• Tell me about a game you want help with\n• I'll create a dedicated conversation tab for each game\n• Get spoiler-free guidance tailored to your progress\n\nWhat game would you like to start with today?`,
             'everything-else',
             false
         );
-        localStorage.setItem('otakon_welcome_message_shown', 'true');
-        localStorage.setItem('otakon_last_session_date', new Date().toDateString());
+        
+        // Update welcome message tracking in Supabase with localStorage fallback
+        await playerProfileService.updateWelcomeMessageShown('profile_setup');
     }, [addSystemMessage]);
 
-    const handleProfileSetupSkip = useCallback(() => {
+    const handleProfileSetupSkip = useCallback(async () => {
         // Set default profile
         const defaultProfile = playerProfileService.getDefaultProfile();
-        playerProfileService.saveProfile(defaultProfile);
+        await playerProfileService.saveProfile(defaultProfile);
         setShowProfileSetup(false);
         setIsFirstTime(false);
         
         // Mark profile setup as completed (even when skipped)
         localStorage.setItem('otakon_profile_setup_completed', 'true');
-    }, [addSystemMessage]);
+        
+        // Mark onboarding as complete
+        localStorage.setItem('otakonOnboardingComplete', 'true');
+        
+        // Mark first run completed in Supabase with localStorage fallback
+        await playerProfileService.markFirstRunCompleted();
+    }, []);
 
     const handleCloseUpgradeScreen = useCallback(() => setShowUpgradeScreen(false), []);
-    
-    // Function to reset welcome message tracking (useful for testing or user preference)
-    const resetWelcomeMessageTracking = useCallback(() => {
-        localStorage.removeItem('otakon_welcome_message_shown');
-        localStorage.removeItem('otakon_last_session_date');
-    }, []);
     
     // Helper function to get time-based greeting
     const getTimeGreeting = useCallback(() => {
@@ -1320,6 +1737,27 @@ const AppComponent: React.FC = () => {
             return 'Good evening! ';
         }
     }, []);
+    
+    // Function to reset welcome message tracking (useful for testing or user preference)
+    const resetWelcomeMessageTracking = useCallback(async () => {
+        // Reset in localStorage
+        localStorage.removeItem('otakon_profile_setup_completed');
+        localStorage.removeItem('otakon_welcome_message_shown');
+        localStorage.removeItem('otakon_last_session_date');
+        localStorage.removeItem('otakon_last_welcome_time');
+        localStorage.removeItem('otakon_app_closed_time');
+        localStorage.removeItem('otakon_first_run_completed');
+        
+        // Also reset in Supabase if possible
+        try {
+            await playerProfileService.resetWelcomeMessageTracking();
+            console.log('🔄 Welcome message tracking reset in both localStorage and Supabase');
+        } catch (error) {
+            console.warn('Failed to reset in Supabase, localStorage reset successful:', error);
+            console.log('🔄 Welcome message tracking reset in localStorage only');
+        }
+    }, []);
+    
     const handleOpenConnectionModal = useCallback(() => setIsConnectionModalOpen(true), []);
     const handleCloseConnectionModal = useCallback(() => setIsConnectionModalOpen(false), []);
     const handleCloseHandsFreeModal = useCallback(() => setIsHandsFreeModalOpen(false), []);
@@ -1329,18 +1767,40 @@ const AppComponent: React.FC = () => {
     // Authentication handlers
     const handleAuthSuccess = useCallback(() => {
         setIsAuthModalOpen(false);
-        // After successful login, take user to the first splash screen
-        setOnboardingStatus('initial');
-        setView('app');
+        
+        // Check if user has already completed onboarding
+        const hasCompletedOnboarding = localStorage.getItem('otakonOnboardingComplete');
+        const hasCompletedProfileSetup = localStorage.getItem('otakon_profile_setup_completed');
+        
+        if (hasCompletedOnboarding && hasCompletedProfileSetup) {
+            // Returning user - skip to complete status to allow profile setup check and welcome message
+            setOnboardingStatus('complete');
+            setView('app');
+        } else {
+            // New user - go through onboarding flow
+            setOnboardingStatus('initial');
+            setView('app');
+        }
     }, []);
 
     const handleOpenAuthModal = useCallback(() => setIsAuthModalOpen(true), []);
     
     const handleMigrationSuccess = useCallback(() => {
         setIsMigrationModalOpen(false);
-        // After successful migration, go to the first splash screen
-        setOnboardingStatus('initial');
-        setView('app');
+        
+        // Check if user has already completed onboarding
+        const hasCompletedOnboarding = localStorage.getItem('otakonOnboardingComplete');
+        const hasCompletedProfileSetup = localStorage.getItem('otakon_profile_setup_completed');
+        
+        if (hasCompletedOnboarding && hasCompletedProfileSetup) {
+            // Returning user - skip to complete status to allow profile setup check and welcome message
+            setOnboardingStatus('complete');
+            setView('app');
+        } else {
+            // New user - go through onboarding flow
+            setOnboardingStatus('initial');
+            setView('app');
+        }
     }, []);
 
     const handleBatchUploadAttempt = useCallback(() => {
@@ -1349,7 +1809,24 @@ const AppComponent: React.FC = () => {
     }, [addSystemMessage, activeConversationId]);
 
     const handleSubTabClick = useCallback((id: string) => {
+        // Special handling for Otaku Diary tab - open modal instead of switching views
+        if (id === 'otaku-diary' && activeConversation) {
+            setOtakuDiaryGameInfo({
+                id: activeConversation.id,
+                title: activeConversation.title
+            });
+            setIsOtakuDiaryModalOpen(true);
+            return;
+        }
+        
+        // Special handling for Wishlist tab - open modal instead of switching views
+        if (id === 'wishlist' && activeConversation?.id === 'everything-else') {
+            setIsWishlistModalOpen(true);
+            return;
+        }
+        
         setActiveSubView(id);
+        
         if (activeConversation) {
             if (id !== 'chat') {
                 markInsightAsRead(activeConversation.id, id);
@@ -1359,7 +1836,7 @@ const AppComponent: React.FC = () => {
                 }
             }
         }
-    }, [activeConversation, fetchInsightContent, markInsightAsRead]);
+    }, [activeConversation, fetchInsightContent, markInsightAsRead, activeSubView]);
 
 
     const handleSwitchConversation = useCallback((id: string) => {
@@ -1438,6 +1915,12 @@ const AppComponent: React.FC = () => {
                 icon: SettingsIcon,
                 action: () => setIsSettingsModalOpen(true),
             },
+            {
+                label: 'Cache Performance',
+                icon: SettingsIcon, // You can create a custom icon for this
+                action: () => setIsCacheDashboardOpen(true),
+            },
+
             // Add Sign In option for unauthenticated users
             ...(!authState.user ? [{
                 label: 'Sign In',
@@ -1491,19 +1974,65 @@ const AppComponent: React.FC = () => {
         setFeedbackModalState(null);
     };
 
+    // Helper function to check if welcome message should be shown after 12+ hours of inactivity
+    const shouldShowWelcomeAfterTimeout = (): boolean => {
+        const lastWelcomeTime = localStorage.getItem('otakon_last_welcome_time');
+        if (!lastWelcomeTime) return true;
+        
+        const timeSinceLastWelcome = Date.now() - parseInt(lastWelcomeTime, 10);
+        const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
+        
+        return timeSinceLastWelcome >= TWELVE_HOURS_MS;
+    };
+    
+    // Helper function to check if user has completed first run experience
+    const hasCompletedFirstRunExperience = async (): Promise<boolean> => {
+        try {
+            const hasCompletedFirstRun = await supabaseDataService.getUserAppState().then(state => state.appSettings?.firstRunCompleted) || localStorage.getItem('otakon_first_run_completed') === 'true';
+            if (hasCompletedFirstRun === 'true') return true;
+            
+            // Check if user has created any game conversations
+            const hasGameConversations = Object.values(conversations).some(conv => 
+                conv.id !== 'everything-else' && conv.title && conv.title !== 'New Game'
+            );
+            
+            if (hasGameConversations) {
+                localStorage.setItem('otakon_first_run_completed', 'true');
+                return true;
+            }
+            
+            return false;
+        } catch (error) {
+            console.warn('Error checking first run experience, falling back to localStorage:', error);
+            return localStorage.getItem('otakon_first_run_completed') === 'true';
+        }
+    };
+
     // Centralized welcome message system that prevents duplicates and adapts to user queries
     useEffect(() => {
+        console.log('🔍 Welcome message useEffect triggered:', { view, onboardingStatus });
+        
         if (view === 'app' && onboardingStatus === 'complete') {
-            const hasSeenWelcome = localStorage.getItem('otakon_welcome_message_shown');
-            const hasCompletedProfileSetup = localStorage.getItem('otakon_profile_setup_completed');
-            const lastSessionDate = localStorage.getItem('otakon_last_session_date');
-            const currentDate = new Date().toDateString();
-            
-            // Show welcome message if:
-            // 1. User has completed profile setup
-            // 2. User hasn't seen welcome message OR it's a new day
-            // 3. User is in the main app view
-            if (hasCompletedProfileSetup && (!hasSeenWelcome || lastSessionDate !== currentDate)) {
+            // Use Supabase with localStorage fallback
+            const checkWelcomeMessage = async () => {
+                try {
+                    const shouldShow = await supabaseDataService.shouldShowWelcomeMessage();
+                    const hasCompletedProfileSetup = await supabaseDataService.getUserAppState().then(state => state.appSettings?.profileSetupCompleted) || localStorage.getItem('otakon_profile_setup_completed') === 'true';
+                    
+                    console.log('🔍 Welcome message check:', {
+                        view,
+                        onboardingStatus,
+                        shouldShow,
+                        hasCompletedProfileSetup,
+                        conversationsCount: Object.keys(conversations).length
+                    });
+                    
+                    // Show welcome message if:
+                    // 1. User has completed profile setup
+                    // 2. Supabase/localStorage indicates welcome should be shown
+                    if (hasCompletedProfileSetup && shouldShow) {
+                console.log('✅ Showing welcome message - conditions met');
+                
                 // Get current time for time-based greetings
                 const currentHour = new Date().getHours();
                 let timeGreeting = '';
@@ -1515,58 +2044,85 @@ const AppComponent: React.FC = () => {
                 } else {
                     timeGreeting = 'Good evening! ';
                 }
-                // Check if user has previous conversations to determine message type
-                const hasPreviousConversations = Object.values(conversations).some(conv => 
-                    conv.id !== 'everything-else' && conv.messages && conv.messages.length > 1
-                );
                 
-                let welcomeMessage: string;
-                
-                if (!hasSeenWelcome) {
-                    // First time user - show full welcome
-                    welcomeMessage = `${timeGreeting}Welcome to Otakon! I'm here to be your spoiler-free guide through any game. To get started, you can upload a screenshot from a game you're currently playing, or just tell me about a game that's on your mind. What have you been playing lately?`;
-                } else if (hasPreviousConversations) {
-                    // Returning user with game history - show contextual welcome
-                    const recentGames = Object.values(conversations)
-                        .filter(conv => conv.id !== 'everything-else' && conv.title && conv.title !== 'New Game')
-                        .slice(0, 2)
-                        .map(conv => conv.title);
-                    
-                    if (recentGames.length > 0) {
-                        welcomeMessage = `${timeGreeting}Welcome back! I see you've been playing ${recentGames.join(' and ')}. What's your next gaming challenge today?`;
+                                    // Check if user has previous conversations to determine message type
+                        const hasPreviousConversations = Object.values(conversations).some(conv => 
+                            conv.id !== 'everything-else' && conv.messages && conv.messages.length > 1
+                        );
+                        
+                        // Check if user has completed first run experience (has created at least one game conversation)
+                        const hasCompletedFirstRun = await hasCompletedFirstRunExperience();
+                        
+                        let welcomeMessage: string;
+                        
+                        if (hasCompletedFirstRun) {
+                            // User has completed first run experience - show session summary and contextual welcome
+                            const recentGames = Object.values(conversations)
+                                .filter(conv => conv.id !== 'everything-else' && conv.title && conv.title !== 'New Game')
+                                .slice(0, 3); // Get up to 3 recent games
+                            
+                            if (recentGames.length > 0) {
+                                // Create session summary
+                                const gameSummaries = recentGames.map(conv => {
+                                    const messageCount = conv.messages?.length || 0;
+                                    const progress = conv.progress || 0;
+                                    const lastInteraction = conv.lastInteractionTimestamp || conv.createdAt;
+                                    
+                                    let summary = `**${conv.title}**`;
+                                    if (progress > 0) summary += ` (${progress}% progress)`;
+                                    if (messageCount > 1) summary += ` - ${messageCount} messages`;
+                                    
+                                    return summary;
+                                });
+                                
+                                const totalGames = recentGames.length;
+                                const totalMessages = recentGames.reduce((sum, conv) => sum + (conv.messages?.length || 0), 0);
+                                
+                                welcomeMessage = `${timeGreeting}Welcome back to Otakon! 🎮\n\n📊 **Your Gaming Session Summary:**\n${gameSummaries.join('\n')}\n\n🎯 **Total:** ${totalGames} game${totalGames > 1 ? 's' : ''}, ${totalMessages} message${totalMessages > 1 ? 's' : ''}\n\nWhat's your next gaming challenge today? I'm ready to help you continue your adventures or start something new!`;
+                                console.log('🎮 User with completed first run - showing session summary welcome');
+                            } else {
+                                welcomeMessage = `${timeGreeting}Welcome back! I'm ready to help with your next gaming challenge. What game are you tackling today, or would you like to continue where you left off?`;
+                                console.log('🔄 Returning user without recent game history - showing gentle reminder');
+                            }
+                        } else if (hasPreviousConversations) {
+                            // User has conversations but no game conversations yet - show encouragement
+                            welcomeMessage = `${timeGreeting}Welcome back! I see you've been chatting with me. Ready to dive into some actual gaming? Upload a screenshot from a game you're playing, or tell me what you'd like to play, and I'll help you get unstuck without spoilers!`;
+                            console.log('🔄 User with conversations but no games yet - showing encouragement');
+                        } else {
+                            // Returning user without any history - show gentle reminder
+                            welcomeMessage = `${timeGreeting}Welcome back! Ready to dive into some gaming? Upload a screenshot or tell me what you're playing, and I'll help you get unstuck without spoilers.`;
+                            console.log('🔄 Returning user without any history - showing gentle reminder');
+                        }
+                        
+                        console.log('📝 Adding welcome message to chat:', welcomeMessage);
+                        addSystemMessage(welcomeMessage, 'everything-else', false);
+                        
+                        // Update tracking using Supabase service with automatic fallback
+                        await supabaseDataService.updateWelcomeMessageShown();
+                        console.log('✅ Welcome message tracking updated via Supabase service');
                     } else {
-                        welcomeMessage = `${timeGreeting}Welcome back! I'm ready to help with your next gaming challenge. What game are you tackling today, or would you like to continue where you left off?`;
+                        console.log('❌ Welcome message not shown - conditions not met:', {
+                            hasCompletedProfileSetup,
+                            shouldShow
+                        });
                     }
-                } else {
-                    // Returning user without game history - show gentle reminder
-                    welcomeMessage = `${timeGreeting}Welcome back! Ready to dive into some gaming? Upload a screenshot or tell me what you're playing, and I'll help you get unstuck without spoilers.`;
+                } catch (error) {
+                    console.error('Error checking welcome message:', error);
                 }
-                
-                addSystemMessage(welcomeMessage, 'everything-else', false);
-                
-                // Update tracking
-                localStorage.setItem('otakon_welcome_message_shown', 'true');
-                localStorage.setItem('otakon_last_session_date', currentDate);
-            }
+            };
+            
+            // Execute the welcome message check
+            checkWelcomeMessage();
         }
-    }, [view, onboardingStatus, isFirstTime, addSystemMessage, conversations]);
+    }, [view, onboardingStatus, addSystemMessage, conversations]);
+
+
 
     if (view === 'landing') {
-        return (
-            <>
-                <LandingPage 
-                    onGetStarted={handleGetStarted} 
-                    onOpenAbout={() => setActiveModal('about')}
-                    onOpenPrivacy={() => setActiveModal('privacy')}
-                    onOpenRefund={() => setActiveModal('refund')}
-                    onOpenContact={() => setActiveModal('contact')}
-                />
-                {activeModal === 'about' && <PolicyModal title="About Otakon" onClose={() => setActiveModal(null)}><AboutPage /></PolicyModal>}
-                {activeModal === 'privacy' && <PolicyModal title="Privacy Policy" onClose={() => setActiveModal(null)}><PrivacyPolicyPage /></PolicyModal>}
-                {activeModal === 'refund' && <PolicyModal title="Refund Policy" onClose={() => setActiveModal(null)}><RefundPolicyPage /></PolicyModal>}
-                {activeModal === 'contact' && <ContactUsModal onClose={() => setActiveModal(null)} />}
-            </>
-        );
+        // Redirect to login instead of showing landing page
+        setOnboardingStatus('login');
+        setView('app');
+        return null;
     }
 
 
@@ -1630,9 +2186,8 @@ const AppComponent: React.FC = () => {
             <header className={`relative flex-shrink-0 flex items-center justify-between p-3 sm:p-4 md:p-6 bg-black/80 backdrop-blur-xl z-20 border-b border-[#424242]/20 shadow-2xl`}>
                 <button
                     type="button"
-                    onClick={() => setView('landing')}
                     className="transition-all duration-200 hover:opacity-80 hover:scale-105 group"
-                    aria-label="Reset application and return to landing page"
+                    aria-label="Otakon logo and title"
                 >
                     <div className="flex items-center gap-4">
                         <div className="group-hover:scale-110 transition-transform duration-200">
@@ -1705,22 +2260,20 @@ const AppComponent: React.FC = () => {
                     <button
                         type="button"
                         onClick={handleOpenConnectionModal}
-                        className={`flex items-center justify-center gap-3 px-4 h-12 rounded-xl text-sm font-semibold transition-all duration-300 disabled:opacity-50
+                        className={`flex items-center gap-2 px-3 h-12 rounded-xl text-sm font-semibold transition-all duration-300 disabled:opacity-50
                         ${
                             connectionStatus === ConnectionStatus.CONNECTED
                             ? 'border-2 border-[#5CBB7B]/60 text-[#5CBB7B] hover:bg-[#5CBB7B]/10 hover:border-[#5CBB7B] shadow-[0_0_20px_rgba(92,187,123,0.4)] hover:shadow-[0_0_30px_rgba(92,187,123,0.6)]'
                             : 'bg-gradient-to-r from-[#2E2E2E] to-[#1C1C1C] border-2 border-[#424242]/60 text-[#CFCFCF] hover:bg-gradient-to-r hover:from-[#424242] hover:to-[#2E2E2E] hover:border-[#5A5A5A] hover:scale-105'
                         }
                         ${
-                            connectionStatus === ConnectionStatus.CONNECTING || isAutoConnecting ? 'animate-pulse' : ''
+                            connectionStatus === ConnectionStatus.CONNECTING ? 'animate-pulse' : ''
                         }
                         `}
                         title={
-                            isAutoConnecting 
-                                ? `Auto-connecting... (Attempt ${autoConnectAttempts}/3)` 
-                                : connectionStatus === ConnectionStatus.CONNECTED 
-                                    ? 'Connected to PC' 
-                                    : 'Connect to PC'
+                            connectionStatus === ConnectionStatus.CONNECTED 
+                                ? 'Connected to PC' 
+                                : 'Connect to PC'
                         }
                     >
                         <DesktopIcon className="w-5 h-5" />
@@ -1728,7 +2281,6 @@ const AppComponent: React.FC = () => {
                         {
                             connectionStatus === ConnectionStatus.CONNECTED ? 'Connected' :
                             connectionStatus === ConnectionStatus.CONNECTING ? 'Connecting...' :
-                            isAutoConnecting ? `Auto-connecting (${autoConnectAttempts}/3)` :
                             'Connect to PC'
                         }
                         </span>
@@ -1736,12 +2288,11 @@ const AppComponent: React.FC = () => {
                     
                     {/* Force Reconnect Button - Only show when disconnected and have a saved code */}
                     {connectionStatus === ConnectionStatus.DISCONNECTED && 
-                     connectionCode && 
-                     !isAutoConnecting && (
+                     connectionCode && (
                         <button
                             type="button"
                             onClick={forceReconnect}
-                            className="flex items-center justify-center gap-2 px-3 h-12 rounded-xl text-sm font-semibold bg-gradient-to-r from-[#2E2E2E] to-[#1C1C1C] border-2 border-[#424242]/60 text-[#CFCFCF] hover:from-[#424242] hover:to-[#2E2E2E] hover:border-[#5A5A5A] hover:scale-105 transition-all duration-300 shadow-lg"
+                            className="flex items-center gap-2 px-3 h-12 rounded-xl text-sm font-semibold bg-gradient-to-r from-[#2E2E2E] to-[#1C1C1C] border-2 border-[#424242]/60 text-[#CFCFCF] hover:from-[#424242] hover:to-[#2E2E2E] hover:border-[#5A5A5A] hover:scale-105 transition-all duration-300 shadow-lg"
                             title="Force reconnect with saved code"
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1757,10 +2308,11 @@ const AppComponent: React.FC = () => {
                         type="button"
                         onClick={handleSettingsClick}
                         onContextMenu={handleSettingsClick}
-                        className="flex items-center justify-center w-12 h-12 rounded-xl text-sm font-semibold bg-gradient-to-r from-[#2E2E2E] to-[#1C1C1C] border-2 border-[#424242]/60 text-white/90 transition-all duration-300 hover:from-[#424242] hover:to-[#2E2E2E] hover:scale-105 hover:shadow-lg"
+                        className="flex items-center gap-2 px-3 h-12 rounded-xl text-sm font-semibold bg-gradient-to-r from-[#2E2E2E] to-[#1C1C1C] border-2 border-[#424242]/60 text-white/90 transition-all duration-300 hover:from-[#424242] hover:to-[#2E2E2E] hover:scale-105 hover:shadow-lg"
                         aria-label="Open settings"
                     >
                         <SettingsIcon className="w-5 h-5" />
+                        <span className="hidden sm:inline font-medium">Settings</span>
                     </button>
                 </div>
             </header>
@@ -1780,25 +2332,7 @@ const AppComponent: React.FC = () => {
               />
             )}
 
-            {showSessionContinuation && (
-              <SessionContinuationModal
-                onClose={() => setShowSessionContinuation(false)}
-                onContinueSession={(gameId) => {
-                  // Switch to the specific game conversation
-                  if (conversations[gameId]) {
-                    switchConversation(gameId);
-                  }
-                  setShowSessionContinuation(false);
-                }}
-                onStartNew={() => {
-                  // Switch to "Everything Else" conversation
-                  switchConversation('everything-else');
-                  setShowSessionContinuation(false);
-                }}
-                autoDismiss={false}
-                dismissDelay={0}
-              />
-            )}
+
 
             {/* Player Profile Setup Modal - Show instead of session continuation for first-time users */}
             {showProfileSetup && (
@@ -1867,6 +2401,9 @@ const AppComponent: React.FC = () => {
                 />
             )}
             
+            {/* Main Chat Interface - Hide when profile setup modal is active */}
+            {!showProfileSetup && (
+                <>
             {isProView ? (
                  <MainViewContainer
                     activeConversation={activeConversation!}
@@ -1881,9 +2418,10 @@ const AppComponent: React.FC = () => {
                     onFeedback={handleFeedback}
                     onRetry={retryMessage}
                     isFirstTime={isFirstTime}
+                    onOpenWishlistModal={() => setIsWishlistModalOpen(true)}
                 />
             ) : (
-                 <main className="flex-1 flex flex-col px-4 sm:px-6 pt-4 sm:pt-6 pb-4 overflow-y-auto">
+                 <main className="flex-1 flex flex-col px-4 sm:px-6 pt-4 sm:pt-6 pb-4 overflow-y-auto" ref={chatContainerRef}>
                     {messages.length === 0 && loadingMessages.length === 0 ? (
                         <div className="flex-1 flex flex-col justify-end">
                             {/* Show suggested prompts for other tabs when no messages */}
@@ -1897,33 +2435,35 @@ const AppComponent: React.FC = () => {
                         </div>
                     ) : (
                         <div className="flex flex-col gap-6 sm:gap-8 w-full max-w-4xl sm:max-w-5xl mx-auto my-4 sm:my-6">
-                            {messages.map(msg => (
-                                <ChatMessageComponent
-                                    key={msg.id}
-                                    message={msg}
-                                    isLoading={loadingMessages.includes(msg.id)}
-                                    onStop={() => handleStopMessage(msg.id)}
-                                    onPromptClick={(prompt) => handleSendMessage(prompt)}
-                                    onUpgradeClick={handleUpgradeClick}
-                                    onFeedback={(vote) => handleFeedback('message', activeConversationId, msg.id, msg.text, vote)}
-                                    onRetry={() => retryMessage(msg.id)}
-                                />
-                            ))}
-                            <div ref={chatEndRef} />
+                            {(() => { const loadingSet = new Set(loadingMessages); return messages.map(msg => (
+                                 <ChatMessageComponent
+                                     key={msg.id}
+                                     message={msg}
+                                     isLoading={loadingSet.has(msg.id)}
+                                     onStop={() => handleStopMessage(msg.id)}
+                                     onPromptClick={(prompt) => handleSendMessage(prompt)}
+                                     onUpgradeClick={handleUpgradeClick}
+                                     onFeedback={(vote) => handleFeedback('message', activeConversationId, msg.id, msg.text, vote)}
+                                     onRetry={() => retryMessage(msg.id)}
+                                 />
+                            ))})()}
+                             <div ref={chatEndRef} />
                         </div>
                     )}
+                    
+                    {/* Scroll to Bottom Button */}
+                    {showScrollToBottom && (
+                        <button
+                            onClick={scrollToBottom}
+                            className="fixed bottom-24 right-6 z-50 bg-[#E53A3A] hover:bg-[#D98C1F] text-white p-3 rounded-full shadow-lg transition-all duration-200 hover:scale-110"
+                            title="Scroll to bottom"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                            </svg>
+                        </button>
+                    )}
                 </main>
-            )}
-
-            {isProView && (
-                <SubTabs
-                    activeConversation={activeConversation}
-                    activeSubView={activeSubView}
-                    onTabClick={handleSubTabClick}
-                    userTier={usage.tier}
-                    onReorder={reorderInsights}
-                    onContextMenu={handleInsightContextMenu}
-                />
             )}
 
             {/* Suggested Prompts Above Chat Input for "Everything Else" tab - Show based on user interaction */}
@@ -1937,24 +2477,44 @@ const AppComponent: React.FC = () => {
                     />
                 </div>
             )}
+
+                    {/* SubTabs - below prompts, visible when has insights (all users can see Otaku Diary) */}
+                    {(activeConversation?.insights && activeConversation.id !== 'everything-else') || activeConversation?.id === 'everything-else' ? (
+                <div className="w-full max-w-5xl mx-auto px-4 pt-4 flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                        <SubTabs
+                            activeConversation={activeConversation}
+                            activeSubView={activeSubView}
+                            onTabClick={handleSubTabClick}
+                            userTier={usage.tier}
+                            onReorder={reorderInsights}
+                            onContextMenu={handleInsightContextMenu}
+                            connectionStatus={connectionStatus}
+                        />
+                    </div>
+                    <div className="flex-shrink-0">
+                        <ScreenshotButton
+                            isConnected={connectionStatus === ConnectionStatus.CONNECTED}
+                            isProcessing={isInputDisabled}
+                            isManualUploadMode={isManualUploadMode}
+                            onRequestConnect={() => setIsConnectionModalOpen(true)}
+                            usage={usage}
+                        />
+                    </div>
+                </div>
+            ) : null}
+
+            {/* Temporary Test Component - Remove after testing */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="w-full max-w-5xl mx-auto px-4 pt-4">
+                <CharacterImmersionTest />
+              </div>
+            )}
             
+
+            
+                    {/* Chat Input - Hide when profile setup modal is active */}
             <div className="flex-shrink-0 bg-black/60 backdrop-blur-xl z-10 border-t border-[#424242]/20 shadow-2xl">
-                {/* Progress Tracking Bar for Pro Users */}
-                {showProgressBar && activeConversation && activeConversation.id !== 'everything-else' && (
-                  <ProgressTrackingBar
-                    gameId={activeConversation.id}
-                    gameTitle={activeConversation.id}
-                    onViewProgress={() => {
-                      // TODO: Open progress dashboard
-                      console.log('View progress clicked');
-                    }}
-                    onSetGoals={() => {
-                      // TODO: Open goals setting modal
-                      console.log('Set goals clicked');
-                    }}
-                  />
-                )}
-                
                 <ChatInput
                     value={chatInputValue}
                     onChange={setChatInputValue}
@@ -1973,8 +2533,11 @@ const AppComponent: React.FC = () => {
                     hasInsights={hasInsights}
                 />
             </div>
+                </>
+            )}
             
             {isSettingsModalOpen && (
+                <React.Suspense fallback={null}>
                 <SettingsModal
                     isOpen={isSettingsModalOpen}
                     onClose={() => setIsSettingsModalOpen(false)}
@@ -1984,8 +2547,9 @@ const AppComponent: React.FC = () => {
                     onLogout={handleLogout}
                     onResetApp={handleResetApp}
                     onShowHowToUse={() => setOnboardingStatus('how-to-use')}
-                    userEmail={authState.user?.email}
+                    userEmail={authState.user?.email || ''}
                 />
+                </React.Suspense>
             )}
 
             {contextMenu && <ContextMenu {...contextMenu} onClose={() => setContextMenu(null)} />}
@@ -2059,6 +2623,14 @@ const AppComponent: React.FC = () => {
                 />
             )}
 
+            {/* Cache Performance Dashboard */}
+            {isCacheDashboardOpen && (
+                <CachePerformanceDashboard
+                    isOpen={isCacheDashboardOpen}
+                    onClose={() => setIsCacheDashboardOpen(false)}
+                />
+            )}
+
             {/* Authentication Modal */}
             {isAuthModalOpen && (
                 <AuthModal
@@ -2106,14 +2678,25 @@ const AppComponent: React.FC = () => {
             )}
 
             {/* PWA Install Banner */}
-            <PWAInstallBanner />
-            <AutoConnectionNotification
-                isAutoConnecting={isAutoConnecting}
-                autoConnectAttempts={autoConnectAttempts}
-                connectionStatus={connectionStatus}
-                connectionCode={connectionCode}
-                lastSuccessfulConnection={lastSuccessfulConnection}
-            />
+            {/* PWA Install Banner removed - only shows on splash screens */}
+
+            {isOtakuDiaryModalOpen && otakuDiaryGameInfo && (
+                <OtakuDiaryModal
+                    isOpen={isOtakuDiaryModalOpen}
+                    onClose={() => setIsOtakuDiaryModalOpen(false)}
+                    gameId={otakuDiaryGameInfo.id}
+                    gameTitle={otakuDiaryGameInfo.title}
+                />
+            )}
+
+            {/* Wishlist Modal */}
+            {isWishlistModalOpen && (
+                <WishlistModal
+                    isOpen={isWishlistModalOpen}
+                    onClose={() => setIsWishlistModalOpen(false)}
+                />
+            )}
+
         </div>
     );
 };

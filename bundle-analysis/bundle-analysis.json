@@ -1,0 +1,202 @@
+{
+  "timestamp": "2025-08-27T17:34:04.504Z",
+  "bundleInfo": {
+    "totalSize": 1858096,
+    "fileCount": 16,
+    "largestFiles": [
+      {
+        "path": "assets/chunk-CgYf95-6.js",
+        "size": 718668,
+        "sizeFormatted": "701.82 KB"
+      },
+      {
+        "path": "assets/chunk-7J4LelS0.js",
+        "size": 231248,
+        "sizeFormatted": "225.83 KB"
+      },
+      {
+        "path": "assets/chunk-DduAmwEu.js",
+        "size": 206048,
+        "sizeFormatted": "201.22 KB"
+      },
+      {
+        "path": "assets/chunk-D4WZp8Rd.js",
+        "size": 163454,
+        "sizeFormatted": "159.62 KB"
+      },
+      {
+        "path": "assets/chunk-r1PYVhUZ.js",
+        "size": 123933,
+        "sizeFormatted": "121.03 KB"
+      },
+      {
+        "path": "assets/chunk-DAscfu2G.js",
+        "size": 119726,
+        "sizeFormatted": "116.92 KB"
+      },
+      {
+        "path": "assets/index-BBTLzvbW.js",
+        "size": 81918,
+        "sizeFormatted": "80 KB"
+      },
+      {
+        "path": "assets/chunk-B23-wmeL.js",
+        "size": 77298,
+        "sizeFormatted": "75.49 KB"
+      },
+      {
+        "path": "assets/chunk--FHOvp7l.js",
+        "size": 47335,
+        "sizeFormatted": "46.23 KB"
+      },
+      {
+        "path": "assets/chunk-NzCmqK8Y.js",
+        "size": 27737,
+        "sizeFormatted": "27.09 KB"
+      }
+    ],
+    "fileTypes": {
+      ".md": 6298,
+      ".js": 1819319,
+      ".css": 15683,
+      ".html": 13771,
+      ".xml": 3025
+    },
+    "totalGzipped": 0,
+    "totalSizeFormatted": "1.77 MB"
+  },
+  "dependencyInfo": {
+    "packages": {
+      "@google/genai": {
+        "version": "^1.12.0",
+        "size": 102400,
+        "category": "other"
+      },
+      "@heroicons/react": {
+        "version": "^2.2.0",
+        "size": 102400,
+        "category": "framework"
+      },
+      "@lottiefiles/dotlottie-react": {
+        "version": "^0.15.1",
+        "size": 102400,
+        "category": "framework"
+      },
+      "@supabase/supabase-js": {
+        "version": "^2.55.0",
+        "size": 204800,
+        "category": "database"
+      },
+      "clsx": {
+        "version": "^2.1.1",
+        "size": 102400,
+        "category": "other"
+      },
+      "lottie-react": {
+        "version": "^2.4.1",
+        "size": 102400,
+        "category": "framework"
+      },
+      "react": {
+        "version": "^19.1.1",
+        "size": 43008,
+        "category": "framework"
+      },
+      "react-dom": {
+        "version": "^19.1.1",
+        "size": 122880,
+        "category": "framework"
+      },
+      "react-markdown": {
+        "version": "^9.0.1",
+        "size": 102400,
+        "category": "framework"
+      },
+      "remark-gfm": {
+        "version": "^4.0.0",
+        "size": 102400,
+        "category": "other"
+      },
+      "tailwind-merge": {
+        "version": "^3.3.1",
+        "size": 102400,
+        "category": "other"
+      },
+      "web-vitals": {
+        "version": "^3.5.2",
+        "size": 102400,
+        "category": "other"
+      },
+      "@testing-library/jest-dom": {
+        "version": "^6.7.0",
+        "size": 102400,
+        "category": "testing"
+      },
+      "@testing-library/react": {
+        "version": "^16.3.0",
+        "size": 102400,
+        "category": "framework"
+      },
+      "@testing-library/user-event": {
+        "version": "^14.6.1",
+        "size": 102400,
+        "category": "testing"
+      },
+      "@types/node": {
+        "version": "^22.14.0",
+        "size": 102400,
+        "category": "other"
+      },
+      "@vitejs/plugin-react": {
+        "version": "^5.0.0",
+        "size": 102400,
+        "category": "framework"
+      },
+      "@vitest/coverage-v8": {
+        "version": "^3.2.4",
+        "size": 102400,
+        "category": "testing"
+      },
+      "@vitest/ui": {
+        "version": "^3.2.4",
+        "size": 102400,
+        "category": "ui"
+      },
+      "jsdom": {
+        "version": "^26.1.0",
+        "size": 102400,
+        "category": "other"
+      },
+      "typescript": {
+        "version": "~5.8.2",
+        "size": 102400,
+        "category": "other"
+      },
+      "vite": {
+        "version": "^6.2.0",
+        "size": 102400,
+        "category": "other"
+      },
+      "vitest": {
+        "version": "^3.2.4",
+        "size": 102400,
+        "category": "testing"
+      }
+    },
+    "duplicates": [],
+    "unused": [],
+    "suggestions": []
+  },
+  "suggestions": [
+    {
+      "type": "large_files",
+      "priority": "medium",
+      "message": "Found 6 large files that could be optimized.",
+      "actions": [
+        "Compress images and assets",
+        "Consider lazy loading for large components",
+        "Split large files into smaller chunks"
+      ]
+    }
+  ]
+}

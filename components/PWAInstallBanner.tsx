@@ -20,6 +20,16 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = "" }) =
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
+    // Check global installation status first
+    const globalInstallStatus = localStorage.getItem('otakonGlobalPWAInstalled') === 'true';
+    if (globalInstallStatus) {
+      console.log('PWA globally installed, hiding banner');
+      setIsInstalled(true);
+      setShowBanner(false);
+      setShowMobileFeatures(false);
+      return;
+    }
+
     // Set up PWA install service listener
     const handleInstallPromptChange = (prompt: any) => {
       const canInstallPWA = prompt !== null;
@@ -29,14 +39,23 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = "" }) =
       setIsInstalled(isInstalledPWA);
       setDeferredPrompt(prompt);
       
+      // Don't show banner if already installed
+      if (isInstalledPWA) {
+        setShowBanner(false);
+        setShowMobileFeatures(false);
+        return;
+      }
+      
       // Show banner if can install and not dismissed
       if (canInstallPWA && !localStorage.getItem('otakonInstallDismissed')) {
         setShowBanner(true);
+        setShowMobileFeatures(false);
       }
       
       // Show mobile features banner if mobile and not installed and not dismissed
       if (pwaInstallService.isMobile() && !isInstalledPWA && !canInstallPWA && !localStorage.getItem('otakonInstallDismissed')) {
         setShowMobileFeatures(true);
+        setShowBanner(false);
       }
     };
 

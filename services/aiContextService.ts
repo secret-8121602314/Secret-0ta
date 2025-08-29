@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { authService } from './supabase';
 import { userPreferencesService } from './userPreferencesService';
+import { characterDetectionService, CharacterInfo, GameLanguageProfile } from './characterDetectionService';
 
 export interface AIContext {
   id?: string;
@@ -220,7 +221,7 @@ class AIContextService {
   }
 
   // Generate comprehensive user context for AI
-  async generateUserContextForAI(): Promise<string> {
+  async generateUserContextForAI(conversation?: { id: string; title: string; messages?: any[] }): Promise<string> {
     try {
       const userId = await this.getCurrentUserId();
       if (!userId) return '';
@@ -237,8 +238,16 @@ class AIContextService {
 
       let contextString = '';
 
+      // Add character and game language context if conversation is provided
+      if (conversation) {
+        const characterContext = await this.generateCharacterAndGameContext(conversation);
+        if (characterContext) {
+          contextString += characterContext;
+        }
+      }
+
       // Get user preferences for AI personalization
-      const userPrefs = await userPreferencesService.getUserPreferences();
+      const userPrefs = await userPreferencesService.getPreferences();
       
       // Add game-specific context (using fallback since method was removed)
       if (userPrefs?.game_genre) {
@@ -311,6 +320,68 @@ class AIContextService {
       console.error('Error generating user context for AI:', error);
       return '';
     }
+  }
+
+  // Generate character and game-specific language context
+  private async generateCharacterAndGameContext(conversation: { id: string; title: string; messages?: any[] }): Promise<string> {
+    try {
+      let contextString = '';
+
+      // Detect character from messages if available
+      if (conversation.messages && conversation.messages.length > 0) {
+        const characterInfo = characterDetectionService.detectCharacterFromMessages(conversation.messages);
+        if (characterInfo) {
+          contextString += `[CHARACTER_INFO: ${JSON.stringify(characterInfo)}]\n`;
+        }
+      }
+
+      // Get or create game language profile
+      const gameId = this.extractGameId(conversation.title);
+      if (gameId) {
+        const gameProfile = characterDetectionService.getGameLanguageProfile(gameId, conversation.title);
+        contextString += `[GAME_LANGUAGE_PROFILE: ${JSON.stringify(gameProfile)}]\n`;
+        
+        // Add immersive language patterns
+        const languagePatterns = characterDetectionService.getImmersiveLanguagePatterns(gameId);
+        contextString += `[IMMERSIVE_LANGUAGE_PATTERNS: ${JSON.stringify(languagePatterns)}]\n`;
+      }
+
+      return contextString;
+    } catch (error) {
+      console.warn('Failed to generate character and game context:', error);
+      return '';
+    }
+  }
+
+  // Extract game ID from conversation title
+  private extractGameId(title: string): string | null {
+    if (!title || title === 'everything-else') return null;
+    
+    // Convert title to lowercase for matching
+    const lowerTitle = title.toLowerCase();
+    
+    // Common game patterns
+    const gamePatterns = [
+      { pattern: /elden\s*ring/i, id: 'elden-ring' },
+      { pattern: /baldur['']s?\s*gate\s*3/i, id: 'baldurs-gate-3' },
+      { pattern: /cyberpunk\s*2077/i, id: 'cyberpunk-2077' },
+      { pattern: /zelda.*tears.*kingdom/i, id: 'zelda-tears-kingdom' },
+      { pattern: /god\s*of\s*war.*ragnarok/i, id: 'god-of-war-ragnarok' },
+      { pattern: /final\s*fantasy\s*xvi/i, id: 'final-fantasy-16' },
+      { pattern: /starfield/i, id: 'starfield' },
+      { pattern: /diablo\s*iv/i, id: 'diablo-4' },
+      { pattern: /hogwarts\s*legacy/i, id: 'hogwarts-legacy' },
+      { pattern: /resident\s*evil\s*4/i, id: 'resident-evil-4' }
+    ];
+
+    for (const game of gamePatterns) {
+      if (game.pattern.test(lowerTitle)) {
+        return game.id;
+      }
+    }
+
+    // Generate a generic ID from the title
+    return lowerTitle.replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
   }
 
   // Get user behavior summary

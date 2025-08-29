@@ -45,24 +45,19 @@ class ProfileAwareInsightService {
         gameName: string, 
         genre: string, 
         progress: number, 
-        conversationId: string, 
         userTier: 'free' | 'paid',
-        onError: (error: string) => void
+        profile: Promise<PlayerProfile>,
+        gameContext?: GameContext,
+        onError?: (message: string) => void
     ): Promise<ProfileAwareInsightResult[]> {
         try {
-            // Get player profile and game context
-            const profile = playerProfileService.getProfile();
-            const gameContext = playerProfileService.getGameContext(gameName);
-            
-            if (!profile) {
-                onError('Player profile not found');
-                return [];
-            }
+            // Await the profile
+            const resolvedProfile = await profile;
 
             // Generate tabs based on user tier
             const tabs = enhancedInsightService.generateProfileAwareTabsForNewGame(
                 genre, 
-                profile, 
+                resolvedProfile, 
                 gameContext || playerProfileService.getDefaultGameContext(),
                 userTier
             );
@@ -96,7 +91,7 @@ class ProfileAwareInsightService {
                                 gameName, 
                                 genre, 
                                 progress, 
-                                profile, 
+                                resolvedProfile, 
                                 gameContext
                             );
                         } else {
@@ -107,7 +102,7 @@ class ProfileAwareInsightService {
                                 gameName, 
                                 genre, 
                                 progress, 
-                                profile, 
+                                resolvedProfile, 
                                 gameContext
                             );
                         }
@@ -123,7 +118,7 @@ class ProfileAwareInsightService {
                         });
                     } catch (error) {
                         console.error(`Error generating content for tab ${tab.id}:`, error);
-                        onError(`Failed to generate content for ${tab.title}`);
+                        onError?.(`Failed to generate content for ${tab.title}`);
                         
                         // Fallback to basic content
                         results.push({
@@ -143,7 +138,7 @@ class ProfileAwareInsightService {
             
         } catch (error) {
             console.error('Error generating insights for new game pill:', error);
-            onError('Failed to generate game insights');
+            onError?.(`Failed to generate game insights`);
             return [];
         }
     }
@@ -159,6 +154,7 @@ class ProfileAwareInsightService {
         conversationId: string,
         existingTabs: EnhancedInsightTab[],
         userTier: 'free' | 'paid',
+        profile: Promise<PlayerProfile>,
         onError: (error: string) => void
     ): Promise<ProfileAwareInsightResult[]> {
         try {
@@ -167,8 +163,9 @@ class ProfileAwareInsightService {
                 return [];
             }
 
-            const profile = playerProfileService.getProfile();
-            if (!profile) {
+            // Await the profile
+            const resolvedProfile = await profile;
+            if (!resolvedProfile) {
                 onError('Player profile not found');
                 return [];
             }
@@ -187,8 +184,8 @@ class ProfileAwareInsightService {
                         gameName, 
                         genre, 
                         progress, 
-                        profile, 
-                        playerProfileService.getGameContext(gameName)
+                        resolvedProfile, 
+                        await playerProfileService.getGameContext(gameName)
                     );
                     
                     results.push({
@@ -320,9 +317,10 @@ Provide updated, relevant content that matches the player's current progress and
     /**
      * Get the order for generating insights (only when explicitly requested)
      */
-    getInsightGenerationOrder(tabs: EnhancedInsightTab[]): string[] {
+    async getInsightGenerationOrder(tabs: EnhancedInsightTab[]): Promise<string[]> {
         // Prioritize by importance and profile specificity
-        const sortedTabs = enhancedInsightService.prioritizeTabsForProfile(tabs, playerProfileService.getProfile() || playerProfileService.getDefaultProfile());
+        const profile = await playerProfileService.getProfile() || playerProfileService.getDefaultProfile();
+        const sortedTabs = enhancedInsightService.prioritizeTabsForProfile(tabs, profile);
         return sortedTabs.map(tab => tab.id);
     }
 
