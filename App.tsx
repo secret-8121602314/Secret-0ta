@@ -597,9 +597,9 @@ const AppComponent: React.FC = () => {
         // Show welcome message for first-time users if they haven't seen it yet
         if (isFirstTime && !localStorage.getItem('otakon_first_welcome_shown')) {
             const timeGreeting = getTimeGreeting();
-            const welcomeMessage = `${timeGreeting}Welcome to Otakon! 🎮\n\n✨ **Your Personal Gaming Companion**\n\n🎯 **What I can help you with:**\n• Upload screenshots from games you're playing\n• Get spoiler-free guidance and hints\n• Discover secrets and strategies\n• Track your gaming progress\n• Answer questions about any game\n\n🚀 **Let's get started!** Upload a screenshot from a game you're currently playing, or just tell me what you'd like help with.`;
+            const welcomeMessage = `${timeGreeting}Welcome to Otakon!\n\n**Your Personal Gaming Companion**\n\n**What I can help you with:**\n• Upload screenshots from games you're playing\n• Get spoiler-free guidance and hints\n• Discover secrets and strategies\n• Track your gaming progress\n• Answer questions about any game\n\n**Let's get started!** Upload a screenshot from a game you're currently playing, or just tell me what you'd like help with.`;
             
-            console.log('🎉 Adding first-time welcome message:', welcomeMessage);
+            console.log('Adding first-time welcome message:', welcomeMessage);
             addSystemMessage(welcomeMessage, 'everything-else', false);
             localStorage.setItem('otakon_first_welcome_shown', 'true');
         }
@@ -1756,7 +1756,7 @@ const AppComponent: React.FC = () => {
         // Add welcome message immediately for first-time users
         const timeGreeting = getTimeGreeting();
         addSystemMessage(
-            `${timeGreeting}Welcome to Otakon! 🎮\n\n✨ **Profile Setup Complete!** Your gaming experience is now personalized.\n\n🚀 **Next Steps:**\n• Upload a screenshot from a game you're playing\n• Tell me about a game you want help with\n• I'll create a dedicated conversation tab for each game\n• Get spoiler-free guidance tailored to your progress\n\nWhat game would you like to start with today?`,
+            `${timeGreeting}Welcome to Otakon!\n\n**Profile Setup Complete!** Your gaming experience is now personalized.\n\n**Next Steps:**\n• Upload a screenshot from a game you're playing\n• Tell me about a game you want help with\n• I'll create a dedicated conversation tab for each game\n• Get spoiler-free guidance tailored to your progress\n\nWhat game would you like to start with today?`,
             'everything-else',
             false
         );
@@ -2124,20 +2124,20 @@ const AppComponent: React.FC = () => {
                                 const totalGames = recentGames.length;
                                 const totalMessages = recentGames.reduce((sum, conv) => sum + (conv.messages?.length || 0), 0);
                                 
-                                welcomeMessage = `${timeGreeting}Welcome back to Otakon! 🎮\n\n📊 **Your Gaming Session Summary:**\n${gameSummaries.join('\n')}\n\n🎯 **Total:** ${totalGames} game${totalGames > 1 ? 's' : ''}, ${totalMessages} message${totalMessages > 1 ? 's' : ''}\n\nWhat's your next gaming challenge today? I'm ready to help you continue your adventures or start something new!`;
+                                welcomeMessage = `${timeGreeting}Welcome back to Otakon!\n\n**Your Gaming Session Summary:**\n${gameSummaries.join('\n')}\n\n**Total:** ${totalGames} game${totalGames > 1 ? 's' : ''}, ${totalMessages} message${totalMessages > 1 ? 's' : ''}\n\nWhat's your next gaming challenge today? I'm ready to help you continue your adventures or start something new!`;
                                 console.log('🎮 User with completed first run - showing session summary welcome');
                             } else {
                                 welcomeMessage = `${timeGreeting}Welcome back! I'm ready to help with your next gaming challenge. What game are you tackling today, or would you like to continue where you left off?`;
-                                console.log('🔄 Returning user without recent game history - showing gentle reminder');
+                                console.log('Returning user without recent game history - showing gentle reminder');
                             }
                         } else if (hasPreviousConversations) {
                             // User has conversations but no game conversations yet - show encouragement
                             welcomeMessage = `${timeGreeting}Welcome back! I see you've been chatting with me. Ready to dive into some actual gaming? Upload a screenshot from a game you're playing, or tell me what you'd like to play, and I'll help you get unstuck without spoilers!`;
-                            console.log('🔄 User with conversations but no games yet - showing encouragement');
+                            console.log('User with conversations but no games yet - showing encouragement');
                         } else {
                             // Returning user without any history - show gentle reminder
                             welcomeMessage = `${timeGreeting}Welcome back! Ready to dive into some gaming? Upload a screenshot or tell me what you're playing, and I'll help you get unstuck without spoilers.`;
-                            console.log('🔄 Returning user without any history - showing gentle reminder');
+                            console.log('Returning user without any history - showing gentle reminder');
                         }
                         
                         console.log('📝 Adding welcome message to chat:', welcomeMessage);

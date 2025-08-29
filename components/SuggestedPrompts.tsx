@@ -30,7 +30,7 @@ const SuggestedPrompts: React.FC<SuggestedPromptsProps> = ({ onPromptClick, isIn
     const getWelcomeMessage = () => {
         if (isFirstTime || !profile) {
             return {
-                title: "Welcome to Otakon! 🎮",
+                title: "Welcome to Otakon!",
                 subtitle: "I'm here to be your spoiler-free guide through any game. To get started, you can upload a screenshot from a game you're currently playing, or just tell me about a game that's on your mind. What have you been playing lately?",
                 showPrompts: true,
                 showWelcome: true
@@ -61,7 +61,7 @@ const SuggestedPrompts: React.FC<SuggestedPromptsProps> = ({ onPromptClick, isIn
                     {/* First-time user tips */}
                     {isFirstTime && (
                         <div className="mt-3 sm:mt-4 md:mt-6 p-2.5 sm:p-3 md:p-4 bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 rounded-lg sm:rounded-xl max-w-2xl mx-auto text-left">
-                            <h3 className="text-sm sm:text-base md:text-lg font-semibold text-blue-200 mb-1.5 sm:mb-2">💡 Getting Started Tips:</h3>
+                            <h3 className="text-sm sm:text-base md:text-lg font-semibold text-blue-200 mb-1.5 sm:mb-2">Getting Started Tips:</h3>
                             <ul className="text-blue-100 text-xs sm:text-sm space-y-0.5 sm:space-y-1">
                                 <li>• <strong>Upload a screenshot</strong> from your game for instant help</li>
                                 <li>• <strong>Ask about specific games</strong> you're playing or want to play</li>
