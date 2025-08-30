@@ -1,5 +1,6 @@
 
-import { unifiedUsageService } from './unifiedUsageService';
+import { getTier } from './unifiedUsageService';
+import { supabaseDataService } from './supabaseDataService';
 
 let synth: SpeechSynthesis;
 let voices: SpeechSynthesisVoice[] = [];
@@ -76,78 +77,133 @@ const getAvailableVoices = (): SpeechSynthesisVoice[] => {
     return voices.filter(v => v.lang.startsWith('en-'));
 };
 
-const speak = (text: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
-        if (unifiedUsageService.getTier() !== 'pro') {
-            const error = new Error("Hands-Free mode is a Pro feature.");
-            console.warn(error.message);
-            return reject(error);
-        }
-        if (!synth) {
-            const error = new Error("Text-to-Speech is not available on this browser.");
-            console.error(error.message);
-            return reject(error);
-        }
-        if (!text.trim()) {
-            return resolve();
-        }
-
-        cancel(); // Cancel any ongoing speech
-
-        const utterance = new SpeechSynthesisUtterance(text);
-        const storedRate = localStorage.getItem(SPEECH_RATE_KEY);
-        utterance.rate = storedRate ? parseFloat(storedRate) : 0.94; // Use stored rate or default to 94%
-        
-        const preferredVoiceURI = localStorage.getItem('otakonPreferredVoiceURI');
-        
-        const availableVoices = getAvailableVoices();
-        let voiceToUse: SpeechSynthesisVoice | undefined;
-
-        if (preferredVoiceURI) {
-            voiceToUse = availableVoices.find(v => v.voiceURI === preferredVoiceURI);
-        }
-        
-        // If no preferred voice is set or the saved one is no longer available
-        if (!voiceToUse && availableVoices.length > 0) {
-            // Prioritize voices with "Female" in the name as a default.
-            const femaleVoice = availableVoices.find(v => v.name.toLowerCase().includes('female'));
-            if (femaleVoice) {
-                voiceToUse = femaleVoice;
-            } else {
-                // As a fallback, use the first available voice.
-                voiceToUse = availableVoices[0];
+const speak = async (text: string): Promise<void> => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const tier = await getTier();
+            if (tier !== 'pro') {
+                const error = new Error("Hands-Free mode is a Pro feature.");
+                console.warn(error.message);
+                return reject(error);
             }
-        }
-
-        if (voiceToUse) {
-            utterance.voice = voiceToUse;
-        }
-
-        utterance.onstart = () => {
-            if ('mediaSession' in navigator) {
-                navigator.mediaSession.playbackState = 'playing';
-                navigator.mediaSession.metadata = new MediaMetadata({
-                    title: 'Otakon Hint',
-                    artist: 'Your AI Gaming Companion',
-                    album: 'Otakon',
-                    artwork: [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml' }]
-                });
+            
+            if (!synth) {
+                const error = new Error("Text-to-Speech is not available on this browser.");
+                console.error(error.message);
+                return reject(error);
             }
-        };
+            if (!text.trim()) {
+                return resolve();
+            }
 
-        utterance.onend = () => {
-            cancel();
-            resolve();
-        };
-        
-        utterance.onerror = (e) => {
-            console.error("SpeechSynthesis Utterance Error", e);
-            cancel();
-            reject(e);
-        };
+            cancel(); // Cancel any ongoing speech
 
-        synth.speak(utterance);
+            const utterance = new SpeechSynthesisUtterance(text);
+            const storedRate = localStorage.getItem(SPEECH_RATE_KEY);
+            utterance.rate = storedRate ? parseFloat(storedRate) : 0.94; // Use stored rate or default to 94%
+            
+            const preferredVoiceURI = localStorage.getItem('otakonPreferredVoiceURI');
+            
+            const availableVoices = getAvailableVoices();
+            let voiceToUse: SpeechSynthesisVoice | undefined;
+
+            if (preferredVoiceURI) {
+                voiceToUse = availableVoices.find(v => v.voiceURI === preferredVoiceURI);
+            }
+            
+            // If no preferred voice is set or the saved one is no longer available
+            if (!voiceToUse && availableVoices.length > 0) {
+                // Prioritize voices with "Female" in the name as a default.
+                const femaleVoice = availableVoices.find(v => v.name.toLowerCase().includes('female'));
+                if (femaleVoice) {
+                    voiceToUse = femaleVoice;
+                } else {
+                    // As a fallback, use the first available voice.
+                    voiceToUse = availableVoices[0];
+                }
+            }
+
+            if (voiceToUse) {
+                utterance.voice = voiceToUse;
+            }
+
+            utterance.onstart = () => {
+                if ('mediaSession' in navigator) {
+                    navigator.mediaSession.playbackState = 'playing';
+                    navigator.mediaSession.metadata = new MediaMetadata({
+                        title: 'Otakon Hint',
+                        artist: 'Your AI Gaming Companion',
+                        album: 'Otakon',
+                        artwork: [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml' }]
+                    });
+                }
+            };
+
+            utterance.onend = () => {
+                cancel();
+                resolve();
+            };
+            
+            utterance.onerror = (e) => {
+                console.error("SpeechSynthesis Utterance Error", e);
+                cancel();
+                reject(e);
+            };
+
+            synth.speak(utterance);
+        } catch (error) {
+            reject(error);
+        }
     });
+};
+
+// Helper functions to get/set TTS preferences from Supabase
+const getTtsPreferences = async (): Promise<{ speechRate: string | null; preferredVoiceURI: string | null }> => {
+    try {
+        const preferences = await supabaseDataService.getUserPreferences();
+        return {
+            speechRate: preferences.tts?.speechRate || null,
+            preferredVoiceURI: preferences.tts?.preferredVoiceURI || null
+        };
+    } catch (error) {
+        console.warn('Failed to get TTS preferences from Supabase, using localStorage fallback:', error);
+        return {
+            speechRate: localStorage.getItem(SPEECH_RATE_KEY),
+            preferredVoiceURI: localStorage.getItem('otakonPreferredVoiceURI')
+        };
+    }
+};
+
+const setTtsPreferences = async (speechRate?: string, preferredVoiceURI?: string): Promise<void> => {
+    try {
+        const currentPreferences = await supabaseDataService.getUserPreferences();
+        const ttsPreferences = {
+            ...currentPreferences.tts,
+            ...(speechRate !== undefined && { speechRate }),
+            ...(preferredVoiceURI !== undefined && { preferredVoiceURI })
+        };
+        
+        await supabaseDataService.updateUserPreferences('tts', ttsPreferences);
+        
+        // Also update localStorage as backup
+        if (speechRate !== undefined) {
+            localStorage.setItem(SPEECH_RATE_KEY, speechRate);
+        }
+        if (preferredVoiceURI !== undefined) {
+            localStorage.setItem('otakonPreferredVoiceURI', preferredVoiceURI);
+        }
+        
+        console.log('✅ TTS preferences updated in Supabase');
+    } catch (error) {
+        console.warn('Failed to update TTS preferences in Supabase, using localStorage fallback:', error);
+        // Fallback to localStorage only
+        if (speechRate !== undefined) {
+            localStorage.setItem(SPEECH_RATE_KEY, speechRate);
+        }
+        if (preferredVoiceURI !== undefined) {
+            localStorage.setItem('otakonPreferredVoiceURI', preferredVoiceURI);
+        }
+    }
 };
 
 export const ttsService = {
@@ -155,4 +211,6 @@ export const ttsService = {
     getAvailableVoices,
     speak,
     cancel,
+    getTtsPreferences,
+    setTtsPreferences,
 };

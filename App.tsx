@@ -13,6 +13,7 @@ import ChatInput from './components/ChatInput';
 import SuggestedPrompts from './components/SuggestedPrompts';
 import { useChat } from './hooks/useChat';
 import { useConnection } from './hooks/useConnection';
+import { useTutorial } from './hooks/useTutorial';
 import ConversationTabs from './components/ConversationTabs';
 import ContactUsModal from './components/ContactUsModal';
 import HandsFreeToggle from './components/HandsFreeToggle';
@@ -22,6 +23,7 @@ import { addFeedback } from './services/feedbackService';
 import UpgradeSplashScreen from './components/UpgradeSplashScreen';
 import ProFeaturesSplashScreen from './components/ProFeaturesSplashScreen';
 import SubTabs from './components/SubTabs';
+import UITutorial from './components/UITutorial';
 import MainViewContainer from './components/MainViewContainer';
 
 import CreditIndicator from './components/CreditIndicator';
@@ -66,6 +68,7 @@ import AchievementNotification from './components/AchievementNotification';
 import dailyEngagementService, { Achievement } from './services/dailyEngagementService';
 import { PlayerProfileSetupModal } from './components/PlayerProfileSetupModal';
 import { playerProfileService } from './services/playerProfileService';
+import { suggestedPromptsService } from './services/suggestedPromptsService';
 import { ProactiveInsightsPanel } from './components/ProactiveInsightsPanel';
 import { useEnhancedInsights } from './hooks/useEnhancedInsights';
 import { proactiveInsightService } from './services/proactiveInsightService';
@@ -106,7 +109,13 @@ const AppComponent: React.FC = () => {
     const [isHandsFreeMode, setIsHandsFreeMode] = useState(false);
     const [isManualUploadMode, setIsManualUploadMode] = useState(false);
     const [showUpgradeScreen, setShowUpgradeScreen] = useState(false);
-    const [usage, setUsage] = useState<Usage>(() => unifiedUsageService.getUsage());
+    const [usage, setUsage] = useState<Usage>({
+        textCount: 0,
+        imageCount: 0,
+        textLimit: 55,
+        imageLimit: 60,
+        tier: 'free'
+    });
     const [activeSubView, setActiveSubView] = useState('chat');
     const [imagesForReview, setImagesForReview] = useState<ImageFile[]>([]);
     const [activeModal, setActiveModal] = useState<ActiveModal>(null);
@@ -140,10 +149,8 @@ const AppComponent: React.FC = () => {
     // Player Profile Setup State
     const [showProfileSetup, setShowProfileSetup] = useState(false);
     const [isFirstTime, setIsFirstTime] = useState(() => {
-        // Check if user has had conversations before
-        const hasConversations = localStorage.getItem('otakon_has_conversations') === 'true';
-        const hasCompletedOnboarding = localStorage.getItem('otakonOnboardingComplete') === 'true';
-        return !hasConversations && !hasCompletedOnboarding;
+        // Default to true for first-time users, will be updated by Supabase check
+        return true;
     });
     const [isOtakuDiaryModalOpen, setIsOtakuDiaryModalOpen] = useState(false);
     const [otakuDiaryGameInfo, setOtakuDiaryGameInfo] = useState<{ id: string; title: string } | null>(null);
@@ -176,6 +183,12 @@ const AppComponent: React.FC = () => {
     // Ref to store the stop timeout for proper cleanup
     const stopTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     
+    // Reset suggested prompts on app initialization
+    useEffect(() => {
+        suggestedPromptsService.resetUsedPrompts();
+        console.log('🔄 Suggested prompts reset on app initialization');
+    }, []);
+
     // Cleanup deduplication sets periodically to prevent memory issues
     useEffect(() => {
         const cleanupInterval = setInterval(() => {
@@ -212,16 +225,22 @@ const AppComponent: React.FC = () => {
         console.log('🔍 Current localStorage state:', {
             otakon_profile_setup_completed: localStorage.getItem('otakon_profile_setup_completed'),
             otakon_welcome_message_shown: localStorage.getItem('otakon_welcome_message_shown'),
-            otakon_last_session_date: localStorage.getItem('otakon_last_session_date'),
+            otakon_first_welcome_shown: localStorage.getItem('otakon_first_welcome_shown'),
+            otakon_has_conversations: localStorage.getItem('otakon_has_conversations'),
             otakonOnboardingComplete: localStorage.getItem('otakonOnboardingComplete'),
+            isFirstTime,
             view,
             onboardingStatus
         });
-    }, [view, onboardingStatus]);
+    }, [view, onboardingStatus, isFirstTime]);
 
     const refreshUsage = useCallback(async () => {
-        const syncedUsage = await unifiedUsageService.getUsageWithSync();
-        setUsage(syncedUsage);
+        try {
+            const syncedUsage = await unifiedUsageService.getUsage();
+            setUsage(syncedUsage);
+        } catch (error) {
+            console.warn('Failed to refresh usage:', error);
+        }
     }, []);
 
     // Authentication effect
@@ -232,6 +251,20 @@ const AppComponent: React.FC = () => {
                 unsubscribe();
             }
         };
+    }, []);
+
+    // Load usage data on mount
+    useEffect(() => {
+        const loadUsageData = async () => {
+            try {
+                const usageData = await unifiedUsageService.getUsage();
+                setUsage(usageData);
+            } catch (error) {
+                console.warn('Failed to load usage data:', error);
+            }
+        };
+        
+        loadUsageData();
     }, []);
 
     // Auto-migrate localStorage data to Supabase on app start
@@ -292,9 +325,9 @@ const AppComponent: React.FC = () => {
             setTimeout(() => {
                 checkLocalStorageState();
             }, 1000);
-        }
-        
+            
 
+        }
     }, [checkLocalStorageState]);
     
     // Handle app visibility changes to track when user returns after 12+ hours
@@ -499,16 +532,15 @@ const AppComponent: React.FC = () => {
     useEffect(() => {
         if (view === 'app' && onboardingStatus === 'complete') {
             // Check if user has already completed profile setup in this session
-            const hasCompletedProfileSetup = localStorage.getItem('otakon_profile_setup_completed') === 'true';
             const hasCheckedThisSession = sessionStorage.getItem('otakon_profile_checked_this_session') === 'true';
             
-            if (!hasCompletedProfileSetup && !hasCheckedThisSession) {
+            if (!hasCheckedThisSession) {
                 // Mark that we've checked this session to prevent repeated checks
                 sessionStorage.setItem('otakon_profile_checked_this_session', 'true');
                 
-                console.log('🔍 Starting profile setup check:', { hasCompletedProfileSetup, hasCheckedThisSession });
+                console.log('🔍 Starting profile setup check');
                 
-                // Check if user needs profile setup
+                // Check if user needs profile setup using Supabase
                 const checkProfileSetup = async () => {
                     try {
                         const needsProfile = await playerProfileService.needsProfileSetup();
@@ -519,9 +551,8 @@ const AppComponent: React.FC = () => {
                             setIsFirstTime(true);
                             setShowProfileSetup(true);
                         } else {
-                            console.log('✅ User doesn\'t need profile setup - marking as completed');
-                            // User doesn't need profile setup, mark as completed
-                            localStorage.setItem('otakon_profile_setup_completed', 'true');
+                            console.log('✅ User doesn\'t need profile setup - profile already exists');
+                            // Profile already exists in Supabase, no need to mark anything
                         }
                     } catch (error) {
                         console.error('❌ Error checking profile setup:', error);
@@ -532,7 +563,7 @@ const AppComponent: React.FC = () => {
                 };
                 checkProfileSetup();
             } else {
-                console.log('🔍 Profile setup check skipped:', { hasCompletedProfileSetup, hasCheckedThisSession });
+                console.log('🔍 Profile setup check skipped - already checked this session');
             }
         }
     }, [view, onboardingStatus]);
@@ -569,6 +600,17 @@ const AppComponent: React.FC = () => {
 
     } = useChat(isHandsFreeMode);
     
+    // Tutorial hook for first-time users
+    const {
+        isTutorialOpen,
+        hasCompletedTutorial,
+        shouldShowTutorial,
+        openTutorial,
+        closeTutorial,
+        completeTutorial,
+        skipTutorial
+    } = useTutorial();
+    
     // Helper function to get time-based greeting
     const getTimeGreeting = useCallback(() => {
         const currentHour = new Date().getHours();
@@ -581,28 +623,53 @@ const AppComponent: React.FC = () => {
         }
     }, []);
     
-    // Track first-time experience and show welcome message
+    // Track first-time experience and show welcome message using Supabase
     useEffect(() => {
-        // Check if user has had conversations before
-        const hasConversations = Object.keys(conversations).length > 1 || // More than just 'everything-else'
-            Object.values(conversations).some(conv => conv.messages && conv.messages.length > 0);
+        const checkFirstTimeExperience = async () => {
+            try {
+                // Check if we should show welcome message using Supabase
+                const shouldShow = await supabaseDataService.shouldShowWelcomeMessage();
+                console.log('🔍 Supabase welcome message check:', { shouldShow, isFirstTime });
+                
+                if (shouldShow && isFirstTime) {
+                    // Show welcome message for first-time users
+                    const timeGreeting = getTimeGreeting();
+                    const welcomeMessage = `${timeGreeting}Welcome to Otakon!\n\n**Your Personal Gaming Companion**\n\n**What I can help you with:**\n• Upload screenshots from games you're playing\n• Get spoiler-free guidance and hints\n• Discover secrets and strategies\n• Track your gaming progress\n• Answer questions about any game\n\n**Let's get started!** Upload a screenshot from a game you're currently playing, or just tell me what you'd like help with.`;
+                    
+                    console.log('Adding first-time welcome message:', welcomeMessage);
+                    addSystemMessage(welcomeMessage, 'everything-else', false);
+                    
+                    // Update welcome message shown in Supabase
+                    await supabaseDataService.updateWelcomeMessageShown('first_time');
+                    
+                    // Mark as no longer first-time
+                    setIsFirstTime(false);
+                }
+                
+                // Check if user has had conversations before
+                const hasConversations = Object.keys(conversations).length > 1 || // More than just 'everything-else'
+                    Object.values(conversations).some(conv => conv.messages && conv.messages.length > 0);
+                
+                if (hasConversations && isFirstTime) {
+                    // User has had conversations, mark as no longer first-time
+                    setIsFirstTime(false);
+                    console.log('🎯 User has had conversations - no longer first-time');
+                }
+            } catch (error) {
+                console.error('Error checking first-time experience:', error);
+                // Fallback: show welcome message if there's an error
+                if (isFirstTime) {
+                    const timeGreeting = getTimeGreeting();
+                    const welcomeMessage = `${timeGreeting}Welcome to Otakon!\n\n**Your Personal Gaming Companion**\n\n**What I can help you with:**\n• Upload screenshots from games you're playing\n• Get spoiler-free guidance and hints\n• Discover secrets and strategies\n• Track your gaming progress\n• Answer questions about any game\n\n**Let's get started!** Upload a screenshot from a game you're currently playing, or just tell me what you'd like help with.`;
+                    
+                    console.log('Fallback: Adding first-time welcome message:', welcomeMessage);
+                    addSystemMessage(welcomeMessage, 'everything-else', false);
+                    setIsFirstTime(false);
+                }
+            }
+        };
         
-        if (hasConversations && isFirstTime) {
-            // User has had conversations, mark as no longer first-time
-            setIsFirstTime(false);
-            localStorage.setItem('otakon_has_conversations', 'true');
-            console.log('🎯 User has had conversations - no longer first-time');
-        }
-        
-        // Show welcome message for first-time users if they haven't seen it yet
-        if (isFirstTime && !localStorage.getItem('otakon_first_welcome_shown')) {
-            const timeGreeting = getTimeGreeting();
-            const welcomeMessage = `${timeGreeting}Welcome to Otakon!\n\n**Your Personal Gaming Companion**\n\n**What I can help you with:**\n• Upload screenshots from games you're playing\n• Get spoiler-free guidance and hints\n• Discover secrets and strategies\n• Track your gaming progress\n• Answer questions about any game\n\n**Let's get started!** Upload a screenshot from a game you're currently playing, or just tell me what you'd like help with.`;
-            
-            console.log('Adding first-time welcome message:', welcomeMessage);
-            addSystemMessage(welcomeMessage, 'everything-else', false);
-            localStorage.setItem('otakon_first_welcome_shown', 'true');
-        }
+        checkFirstTimeExperience();
     }, [conversations, isFirstTime, addSystemMessage, getTimeGreeting]);
     
     // Enhanced Insights Hook
@@ -1744,10 +1811,7 @@ const AppComponent: React.FC = () => {
         setShowProfileSetup(false);
         setIsFirstTime(false);
         
-        // Mark profile setup as completed
-        localStorage.setItem('otakon_profile_setup_completed', 'true');
-        
-        // Mark onboarding as complete
+        // Mark onboarding as complete (profile setup is handled by Supabase)
         localStorage.setItem('otakonOnboardingComplete', 'true');
         
         // Mark first run completed in Supabase with localStorage fallback
@@ -1763,7 +1827,11 @@ const AppComponent: React.FC = () => {
         
         // Update welcome message tracking in Supabase with localStorage fallback
         await playerProfileService.updateWelcomeMessageShown('profile_setup');
-    }, [addSystemMessage]);
+        
+        // Trigger tutorial immediately after profile setup
+        console.log('🎯 Profile setup complete - opening tutorial now');
+        setTimeout(() => openTutorial(), 1000); // 1 second delay to let UI settle
+    }, [addSystemMessage, openTutorial]);
 
     const handleProfileSetupSkip = useCallback(async () => {
         // Set default profile
@@ -1772,15 +1840,16 @@ const AppComponent: React.FC = () => {
         setShowProfileSetup(false);
         setIsFirstTime(false);
         
-        // Mark profile setup as completed (even when skipped)
-        localStorage.setItem('otakon_profile_setup_completed', 'true');
-        
-        // Mark onboarding as complete
+        // Mark onboarding as complete (profile setup is handled by Supabase)
         localStorage.setItem('otakonOnboardingComplete', 'true');
         
         // Mark first run completed in Supabase with localStorage fallback
         await playerProfileService.markFirstRunCompleted();
-    }, []);
+        
+        // Trigger tutorial immediately after profile setup skip
+        console.log('🎯 Profile setup skipped - opening tutorial now');
+        setTimeout(() => openTutorial(), 1000); // 1 second delay to let UI settle
+    }, [openTutorial]);
 
     const handleCloseUpgradeScreen = useCallback(() => setShowUpgradeScreen(false), []);
     
@@ -1814,6 +1883,9 @@ const AppComponent: React.FC = () => {
     const handleAuthSuccess = useCallback(() => {
         setIsAuthModalOpen(false);
         
+        // Reset suggested prompts on new login
+        suggestedPromptsService.resetUsedPrompts();
+        
         // Check if user has already completed onboarding
         const hasCompletedOnboarding = localStorage.getItem('otakonOnboardingComplete');
         const hasCompletedProfileSetup = localStorage.getItem('otakon_profile_setup_completed');
@@ -1833,6 +1905,9 @@ const AppComponent: React.FC = () => {
     
     const handleMigrationSuccess = useCallback(() => {
         setIsMigrationModalOpen(false);
+        
+        // Reset suggested prompts on migration success
+        suggestedPromptsService.resetUsedPrompts();
         
         // Check if user has already completed onboarding
         const hasCompletedOnboarding = localStorage.getItem('otakonOnboardingComplete');
@@ -1960,6 +2035,11 @@ const AppComponent: React.FC = () => {
                 label: 'Settings',
                 icon: SettingsIcon,
                 action: () => setIsSettingsModalOpen(true),
+            },
+            {
+                label: 'Watch Tutorial',
+                icon: SettingsIcon, // You can create a custom icon for this
+                action: () => openTutorial(),
             },
             {
                 label: 'Cache Performance',
@@ -2360,6 +2440,8 @@ const AppComponent: React.FC = () => {
                         <SettingsIcon className="w-5 h-5" />
                         <span className="hidden sm:inline font-medium">Settings</span>
                     </button>
+
+
                 </div>
             </header>
             
@@ -2742,6 +2824,15 @@ const AppComponent: React.FC = () => {
                 <WishlistModal
                     isOpen={isWishlistModalOpen}
                     onClose={() => setIsWishlistModalOpen(false)}
+                />
+            )}
+
+            {/* UI Tutorial Modal */}
+            {isTutorialOpen && (
+                <UITutorial
+                    isOpen={isTutorialOpen}
+                    onComplete={completeTutorial}
+                    onSkip={skipTutorial}
                 />
             )}
 

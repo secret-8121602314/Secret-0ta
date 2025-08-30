@@ -17,12 +17,12 @@ export interface PWAEngagementEvent {
 }
 
 export interface PWAAnalyticsService {
-  trackInstall(success: boolean, method: string, timeToInstall?: number): void;
-  trackEngagement(eventType: string, data?: any): void;
-  getInstallStats(): PWAInstallEvent[];
-  getEngagementStats(): PWAEngagementEvent[];
-  exportData(): string;
-  clearData(): void;
+  trackInstall(success: boolean, method: string, timeToInstall?: number): Promise<void>;
+  trackEngagement(eventType: string, data?: any): Promise<void>;
+  getInstallStats(): Promise<PWAInstallEvent[]>;
+  getEngagementStats(): Promise<PWAEngagementEvent[]>;
+  exportData(): Promise<string>;
+  clearData(): Promise<void>;
 }
 
 class PWAAnalyticsServiceImpl implements PWAAnalyticsService {
@@ -47,7 +47,7 @@ class PWAAnalyticsServiceImpl implements PWAAnalyticsService {
     });
   }
 
-  trackInstall(success: boolean, method: string, timeToInstall: number = 0): void {
+  async trackInstall(success: boolean, method: string, timeToInstall: number = 0): Promise<void> {
     const installEvent: PWAInstallEvent = {
       timestamp: Date.now(),
       success,
@@ -57,180 +57,191 @@ class PWAAnalyticsServiceImpl implements PWAAnalyticsService {
       timeToInstall
     };
 
-    const existingData = this.getInstallStats();
-    existingData.push(installEvent);
-    
-    // Keep only last 100 install events
-    if (existingData.length > 100) {
-      existingData.splice(0, existingData.length - 100);
-    }
+    try {
+      // Try to update in Supabase first
+      const existingData = await this.getInstallStats();
+      existingData.push(installEvent);
+      
+      // Keep only last 100 install events
+      if (existingData.length > 100) {
+        existingData.splice(0, existingData.length - 100);
+      }
 
-    // Update in Supabase with localStorage fallback
-    this.updatePWAAnalytics('installs', existingData);
-    
-    console.log('PWA Install tracked:', installEvent);
+      await supabaseDataService.updateUserAppState('pwaAnalytics', { installs: existingData });
+      
+      // Also update localStorage as backup
+      localStorage.setItem(this.STORAGE_KEY_INSTALLS, JSON.stringify(existingData));
+      
+      console.log('✅ PWA Install tracked in Supabase:', installEvent);
+    } catch (error) {
+      console.warn('Supabase PWA install tracking failed, using localStorage fallback:', error);
+      // Fallback to localStorage only
+      const existingData = this.getLocalStorageInstalls();
+      existingData.push(installEvent);
+      
+      if (existingData.length > 100) {
+        existingData.splice(0, existingData.length - 100);
+      }
+      
+      localStorage.setItem(this.STORAGE_KEY_INSTALLS, JSON.stringify(existingData));
+      console.log('PWA Install tracked (localStorage fallback):', installEvent);
+    }
   }
 
-  trackEngagement(eventType: string, data?: any): void {
+  async trackEngagement(eventType: string, data?: any): Promise<void> {
     const engagementEvent: PWAEngagementEvent = {
       timestamp: Date.now(),
       eventType: eventType as any,
       ...data
     };
 
-    const existingData = this.getEngagementStats();
-    existingData.push(engagementEvent);
-    
-    // Keep only last 500 engagement events
-    if (existingData.length > 500) {
-      existingData.splice(0, existingData.length - 500);
-    }
+    try {
+      // Try to update in Supabase first
+      const existingData = await this.getEngagementStats();
+      existingData.push(engagementEvent);
+      
+      // Keep only last 500 engagement events
+      if (existingData.length > 500) {
+        existingData.splice(0, existingData.length - 500);
+      }
 
-    // Update in Supabase with localStorage fallback
-    this.updatePWAAnalytics('engagement', existingData);
-    
-    console.log('PWA Engagement tracked:', engagementEvent);
+      await supabaseDataService.updateUserAppState('pwaAnalytics', { engagement: existingData });
+      
+      // Also update localStorage as backup
+      localStorage.setItem(this.STORAGE_KEY_ENGAGEMENT, JSON.stringify(existingData));
+      
+      console.log('✅ PWA Engagement tracked in Supabase:', engagementEvent);
+    } catch (error) {
+      console.warn('Supabase PWA engagement tracking failed, using localStorage fallback:', error);
+      // Fallback to localStorage only
+      const existingData = this.getLocalStorageEngagement();
+      existingData.push(engagementEvent);
+      
+      if (existingData.length > 500) {
+        existingData.splice(0, existingData.length - 500);
+      }
+      
+      localStorage.setItem(this.STORAGE_KEY_ENGAGEMENT, JSON.stringify(existingData));
+      console.log('PWA Engagement tracked (localStorage fallback):', engagementEvent);
+    }
   }
 
-  getInstallStats(): PWAInstallEvent[] {
+  async getInstallStats(): Promise<PWAInstallEvent[]> {
     try {
       // Try to get from Supabase first
-      this.loadPWAAnalyticsFromSupabase();
+      const supabaseData = await supabaseDataService.getUserAppState();
+      const pwaAnalytics = supabaseData.pwaAnalytics;
+      const pwaInstalls = pwaAnalytics?.installs;
       
-      // Fallback to localStorage
-      const data = localStorage.getItem(this.STORAGE_KEY_INSTALLS);
-      return data ? JSON.parse(data) : [];
+      if (pwaInstalls && Array.isArray(pwaInstalls)) {
+        return pwaInstalls as PWAInstallEvent[];
+      }
+      
+      // If no Supabase data, try localStorage
+      return this.getLocalStorageInstalls();
     } catch (error) {
-      console.error('Failed to get install stats:', error);
+      console.warn('Supabase PWA install stats fetch failed, using localStorage fallback:', error);
+      return this.getLocalStorageInstalls();
+    }
+  }
+
+  async getEngagementStats(): Promise<PWAEngagementEvent[]> {
+    try {
+      // Try to get from Supabase first
+      const supabaseData = await supabaseDataService.getUserAppState();
+      const pwaAnalytics = supabaseData.pwaAnalytics;
+      const pwaEngagement = pwaAnalytics?.engagement;
+      
+      if (pwaEngagement && Array.isArray(pwaEngagement)) {
+        return pwaEngagement as PWAEngagementEvent[];
+      }
+      
+      // If no Supabase data, try localStorage
+      return this.getLocalStorageEngagement();
+    } catch (error) {
+      console.warn('Supabase PWA engagement stats fetch failed, using localStorage fallback:', error);
+      return this.getLocalStorageEngagement();
+    }
+  }
+
+  async exportData(): Promise<string> {
+    try {
+      const installStats = await this.getInstallStats();
+      const engagementStats = await this.getEngagementStats();
+      
+      const exportData = {
+        installs: installStats,
+        engagement: engagementStats,
+        exportedAt: new Date().toISOString()
+      };
+      
+      return JSON.stringify(exportData, null, 2);
+    } catch (error) {
+      console.error('Failed to export PWA analytics data:', error);
+      return JSON.stringify({ error: 'Export failed', message: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  }
+
+  async clearData(): Promise<void> {
+    try {
+      // Clear from Supabase
+      await supabaseDataService.updateUserAppState('pwaAnalytics', { installs: [], engagement: [] });
+      
+      // Also clear localStorage
+      localStorage.removeItem(this.STORAGE_KEY_INSTALLS);
+      localStorage.removeItem(this.STORAGE_KEY_ENGAGEMENT);
+      
+      console.log('✅ PWA analytics data cleared from Supabase and localStorage');
+    } catch (error) {
+      console.error('Failed to clear PWA analytics data:', error);
+      // Still try to clear localStorage
+      localStorage.removeItem(this.STORAGE_KEY_INSTALLS);
+      localStorage.removeItem(this.STORAGE_KEY_ENGAGEMENT);
+    }
+  }
+
+  // Helper methods for localStorage fallback
+  private getLocalStorageInstalls(): PWAInstallEvent[] {
+    try {
+      const stored = localStorage.getItem(this.STORAGE_KEY_INSTALLS);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
       return [];
     }
   }
 
-  getEngagementStats(): PWAEngagementEvent[] {
+  private getLocalStorageEngagement(): PWAEngagementEvent[] {
     try {
-      // Try to get from Supabase first
-      this.loadPWAAnalyticsFromSupabase();
-      
-      // Fallback to localStorage
-      const data = localStorage.getItem(this.STORAGE_KEY_ENGAGEMENT);
-      return data ? JSON.parse(data) : [];
-    } catch (error) {
-      console.error('Failed to get engagement stats:', error);
+      const stored = localStorage.getItem(this.STORAGE_KEY_ENGAGEMENT);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
       return [];
     }
-  }
-
-  exportData(): string {
-    const data = {
-      installs: this.getInstallStats(),
-      engagement: this.getEngagementStats(),
-      exportDate: new Date().toISOString(),
-      summary: this.getSummaryStats()
-    };
-
-    return JSON.stringify(data, null, 2);
-  }
-
-  clearData(): void {
-    localStorage.removeItem(this.STORAGE_KEY_INSTALLS);
-    localStorage.removeItem(this.STORAGE_KEY_ENGAGEMENT);
-    console.log('PWA Analytics data cleared');
   }
 
   private getPlatform(): string {
-    if (/Android/i.test(navigator.userAgent)) return 'Android';
-    if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) return 'iOS';
-    if (/Windows/i.test(navigator.userAgent)) return 'Windows';
-    if (/Mac/i.test(navigator.userAgent)) return 'macOS';
-    if (/Linux/i.test(navigator.userAgent)) return 'Linux';
-    return 'Unknown';
-  }
-
-  private getSummaryStats(): any {
-    const installs = this.getInstallStats();
-    const engagement = this.getEngagementStats();
-
-    const successfulInstalls = installs.filter(i => i.success).length;
-    const totalInstalls = installs.length;
-    const successRate = totalInstalls > 0 ? (successfulInstalls / totalInstalls) * 100 : 0;
-
-    const avgTimeToInstall = installs.length > 0 
-      ? installs.reduce((sum, i) => sum + i.timeToInstall, 0) / installs.length 
-      : 0;
-
-    return {
-      totalInstalls,
-      successfulInstalls,
-      successRate: successRate.toFixed(2) + '%',
-      avgTimeToInstall: Math.round(avgTimeToInstall) + 'ms',
-      totalEngagementEvents: engagement.length,
-      lastEvent: engagement.length > 0 ? new Date(engagement[engagement.length - 1].timestamp).toISOString() : 'None'
-    };
-  }
-
-  private async updatePWAAnalytics(type: 'installs' | 'engagement', data: any[]): Promise<void> {
-    try {
-      // Update in Supabase
-      await supabaseDataService.updateUserAppState('pwaAnalytics', {
-        [type]: data,
-        lastUpdated: Date.now()
-      });
-      
-      // Also update localStorage as backup
-      if (type === 'installs') {
-        localStorage.setItem(this.STORAGE_KEY_INSTALLS, JSON.stringify(data));
-      } else {
-        localStorage.setItem(this.STORAGE_KEY_ENGAGEMENT, JSON.stringify(data));
-      }
-    } catch (error) {
-      console.warn('Failed to update PWA analytics in Supabase, using localStorage only:', error);
-      
-      // Fallback to localStorage only
-      if (type === 'installs') {
-        localStorage.setItem(this.STORAGE_KEY_INSTALLS, JSON.stringify(data));
-      } else {
-        localStorage.setItem(this.STORAGE_KEY_ENGAGEMENT, JSON.stringify(data));
-      }
-    }
-  }
-
-  private async loadPWAAnalyticsFromSupabase(): Promise<void> {
-    try {
-      const appState = await supabaseDataService.getUserAppState();
-      const pwaAnalytics = appState.pwaAnalytics || {};
-      
-      if (pwaAnalytics.installs) {
-        localStorage.setItem(this.STORAGE_KEY_INSTALLS, JSON.stringify(pwaAnalytics.installs));
-      }
-      
-      if (pwaAnalytics.engagement) {
-        localStorage.setItem(this.STORAGE_KEY_ENGAGEMENT, JSON.stringify(pwaAnalytics.engagement));
-      }
-    } catch (error) {
-      console.warn('Failed to load PWA analytics from Supabase:', error);
-      // Continue with localStorage data
-    }
-  }
-
-  // Track session start
-  trackSessionStart(): void {
-    this.trackEngagement('launch');
-  }
-
-  // Track offline usage
-  trackOfflineUsage(duration: number): void {
-    this.trackEngagement('offline_use', { offlineDuration: duration });
-  }
-
-  // Track hands-free usage
-  trackHandsFreeUsage(): void {
-    this.trackEngagement('hands_free');
-  }
-
-  // Track shortcut usage
-  trackShortcutUsage(shortcutName: string): void {
-    this.trackEngagement('shortcut_used', { shortcutName });
+    const userAgent = navigator.userAgent.toLowerCase();
+    if (userAgent.includes('android')) return 'android';
+    if (userAgent.includes('iphone') || userAgent.includes('ipad')) return 'ios';
+    if (userAgent.includes('windows')) return 'windows';
+    if (userAgent.includes('mac')) return 'macos';
+    if (userAgent.includes('linux')) return 'linux';
+    return 'unknown';
   }
 }
 
-export const pwaAnalyticsService = new PWAAnalyticsServiceImpl();
+// Add missing methods for backward compatibility
+const pwaAnalyticsServiceInstance = new PWAAnalyticsServiceImpl();
+
+export const pwaAnalyticsService = {
+  ...pwaAnalyticsServiceInstance,
+  // Add missing methods for backward compatibility
+  trackSessionStart: async () => {
+    try {
+      await pwaAnalyticsServiceInstance.trackEngagement('launch');
+      console.log('✅ Session start tracked');
+    } catch (error) {
+      console.warn('Failed to track session start:', error);
+    }
+  }
+};

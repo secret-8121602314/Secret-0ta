@@ -31,9 +31,9 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = "" }) =
     }
 
     // Set up PWA install service listener
-    const handleInstallPromptChange = (prompt: any) => {
+    const handleInstallPromptChange = async (prompt: any) => {
       const canInstallPWA = prompt !== null;
-      const isInstalledPWA = pwaInstallService.isInstalled();
+      const isInstalledPWA = await pwaInstallService.isInstalled();
       
       setCanInstall(canInstallPWA);
       setIsInstalled(isInstalledPWA);
@@ -66,8 +66,8 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = "" }) =
     
     if (!wasDismissed) {
       // Show banner after a short delay to ensure PWA service is initialized
-      const timer = setTimeout(() => {
-        const criteria = pwaInstallService.getInstallCriteria();
+      const timer = setTimeout(async () => {
+        const criteria = await pwaInstallService.getInstallCriteria();
         
         if (criteria.canInstall && !criteria.isInstalled) {
           setShowBanner(true);

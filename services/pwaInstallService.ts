@@ -1,11 +1,30 @@
+import { supabaseDataService } from './supabaseDataService';
+
 export interface InstallPromptEvent extends Event {
   prompt(): Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-class PWAInstallService {
+interface PWAInstallServiceInterface {
+  canInstall(): boolean;
+  isInstalled(): Promise<boolean>;
+  isMobile(): boolean;
+  isAndroid(): boolean;
+  isIOS(): boolean;
+  isInAppBrowser(): boolean;
+  isAppLike(): boolean;
+  showInstallPrompt(): Promise<boolean>;
+  addListener(callback: (prompt: InstallPromptEvent | null) => void): void;
+  removeListener(callback: (prompt: InstallPromptEvent | null) => void): void;
+  getInstallCriteria(): Promise<any>;
+  debugInstallCriteria(): Promise<any>;
+  markAsInstalled(): Promise<void>;
+  resetInstallationStatus(): Promise<void>;
+}
+
+class PWAInstallService implements PWAInstallServiceInterface {
   private deferredPrompt: InstallPromptEvent | null = null;
-  private listeners: Array<(prompt: InstallPromptEvent | null) => void> = [];
+  private listeners: ((prompt: InstallPromptEvent | null) => void)[] = [];
 
   constructor() {
     this.initialize();
@@ -14,19 +33,34 @@ class PWAInstallService {
   private initialize() {
     // Listen for the beforeinstallprompt event
     window.addEventListener('beforeinstallprompt', (e) => {
-      console.log('PWA Install prompt detected');
       e.preventDefault();
       this.deferredPrompt = e as InstallPromptEvent;
+      console.log('PWA install prompt available');
       this.notifyListeners(this.deferredPrompt);
     });
 
     // Listen for the appinstalled event
-    window.addEventListener('appinstalled', () => {
+    window.addEventListener('appinstalled', async () => {
       console.log('PWA was installed');
       this.deferredPrompt = null;
-      // Mark as installed globally - this will hide banner on all screens
-      localStorage.setItem('otakonPWAInstalled', 'true');
-      localStorage.setItem('otakonGlobalPWAInstalled', 'true');
+      
+      try {
+        // Mark as installed in Supabase
+        await supabaseDataService.updateUserAppState('pwaInstalled', true);
+        await supabaseDataService.updateUserAppState('pwaGlobalInstalled', true);
+        
+        // Also update localStorage as backup
+        localStorage.setItem('otakonPWAInstalled', 'true');
+        localStorage.setItem('otakonGlobalPWAInstalled', 'true');
+        
+        console.log('✅ PWA install state updated in Supabase');
+      } catch (error) {
+        console.warn('Failed to update PWA install state in Supabase, using localStorage only:', error);
+        // Fallback to localStorage only
+        localStorage.setItem('otakonPWAInstalled', 'true');
+        localStorage.setItem('otakonGlobalPWAInstalled', 'true');
+      }
+      
       this.notifyListeners(null);
     });
 
@@ -39,32 +73,53 @@ class PWAInstallService {
     }, 500);
   }
 
-  private checkIfInstalled() {
-    // Check if running in standalone mode (installed)
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-    
-    // Check for iOS Safari standalone mode
-    const isIOSStandalone = (window.navigator as any).standalone === true;
-    
-    // Check for other PWA indicators
-    const hasInstalledPWA = localStorage.getItem('otakonPWAInstalled') === 'true';
-    const hasGlobalInstallFlag = localStorage.getItem('otakonGlobalPWAInstalled') === 'true';
-    const isInAppBrowser = this.isInAppBrowser();
-    
-    if (isStandalone || isIOSStandalone || hasInstalledPWA || hasGlobalInstallFlag) {
-      console.log('PWA is already installed or marked as installed globally');
-      this.notifyListeners(null);
-    }
-    
-    // Additional check for app-like behavior
-    if (this.isAppLike()) {
-      console.log('App-like behavior detected, treating as installed');
-      this.notifyListeners(null);
+  private async checkIfInstalled() {
+    try {
+      // Check if running in standalone mode (installed)
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+      
+      // Check for iOS Safari standalone mode
+      const isIOSStandalone = (window.navigator as any).standalone === true;
+      
+      // Check for PWA install state from Supabase
+      const appState = await supabaseDataService.getUserAppState();
+      const hasInstalledPWA = appState.pwaInstalled === true;
+      const hasGlobalInstallFlag = appState.pwaGlobalInstalled === true;
+      
+      // Fallback to localStorage if Supabase data not available
+      const localHasInstalledPWA = localStorage.getItem('otakonPWAInstalled') === 'true';
+      const localHasGlobalInstallFlag = localStorage.getItem('otakonGlobalPWAInstalled') === 'true';
+      
+      const finalHasInstalledPWA = hasInstalledPWA || localHasInstalledPWA;
+      const finalHasGlobalInstallFlag = hasGlobalInstallFlag || localHasGlobalInstallFlag;
+      
+      const isInAppBrowser = this.isInAppBrowser();
+      
+      if (isStandalone || isIOSStandalone || finalHasInstalledPWA || finalHasGlobalInstallFlag) {
+        console.log('PWA is already installed or marked as installed globally');
+        this.notifyListeners(null);
+      }
+      
+      // Additional check for app-like behavior
+      if (this.isAppLike()) {
+        console.log('App-like behavior detected, treating as installed');
+        this.notifyListeners(null);
+      }
+    } catch (error) {
+      console.warn('Failed to check PWA install state from Supabase, using localStorage fallback:', error);
+      // Fallback to localStorage only
+      const hasInstalledPWA = localStorage.getItem('otakonPWAInstalled') === 'true';
+      const hasGlobalInstallFlag = localStorage.getItem('otakonGlobalPWAInstalled') === 'true';
+      
+      if (hasInstalledPWA || hasGlobalInstallFlag) {
+        console.log('PWA is already installed (localStorage fallback)');
+        this.notifyListeners(null);
+      }
     }
   }
 
-  private checkInstallCriteria() {
-    const criteria = this.getInstallCriteria();
+  private async checkInstallCriteria() {
+    const criteria = await this.getInstallCriteria();
     
     // If we can install and haven't notified yet, notify listeners
     if (criteria.canInstall && !this.deferredPrompt) {
@@ -78,15 +133,39 @@ class PWAInstallService {
   }
 
   // Check if PWA is already installed
-  isInstalled(): boolean {
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-    const isIOSStandalone = (window.navigator as any).standalone === true;
-    const hasInstalledPWA = localStorage.getItem('otakonPWAInstalled') === 'true';
-    const hasGlobalInstallFlag = localStorage.getItem('otakonGlobalPWAInstalled') === 'true';
-    const isInAppBrowser = this.isInAppBrowser();
-    const isAppLike = this.isAppLike();
-    
-    return isStandalone || isIOSStandalone || hasInstalledPWA || hasGlobalInstallFlag || isInAppBrowser || isAppLike;
+  async isInstalled(): Promise<boolean> {
+    try {
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+      const isIOSStandalone = (window.navigator as any).standalone === true;
+      
+      // Check Supabase first
+      const appState = await supabaseDataService.getUserAppState();
+      const hasInstalledPWA = appState.pwaInstalled === true;
+      const hasGlobalInstallFlag = appState.pwaGlobalInstalled === true;
+      
+      // Fallback to localStorage
+      const localHasInstalledPWA = localStorage.getItem('otakonPWAInstalled') === 'true';
+      const localHasGlobalInstallFlag = localStorage.getItem('otakonGlobalPWAInstalled') === 'true';
+      
+      const finalHasInstalledPWA = hasInstalledPWA || localHasInstalledPWA;
+      const finalHasGlobalInstallFlag = hasGlobalInstallFlag || localHasGlobalInstallFlag;
+      
+      const isInAppBrowser = this.isInAppBrowser();
+      const isAppLike = this.isAppLike();
+      
+      return isStandalone || isIOSStandalone || finalHasInstalledPWA || finalHasGlobalInstallFlag || isInAppBrowser || isAppLike;
+    } catch (error) {
+      console.warn('Failed to check PWA install state from Supabase, using localStorage fallback:', error);
+      // Fallback to localStorage only
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+      const isIOSStandalone = (window.navigator as any).standalone === true;
+      const hasInstalledPWA = localStorage.getItem('otakonPWAInstalled') === 'true';
+      const hasGlobalInstallFlag = localStorage.getItem('otakonGlobalPWAInstalled') === 'true';
+      const isInAppBrowser = this.isInAppBrowser();
+      const isAppLike = this.isAppLike();
+      
+      return isStandalone || isIOSStandalone || hasInstalledPWA || hasGlobalInstallFlag || isInAppBrowser || isAppLike;
+    }
   }
 
   // Check if running on mobile
@@ -172,10 +251,12 @@ class PWAInstallService {
   }
 
   // Get PWA install criteria status
-  getInstallCriteria() {
+  async getInstallCriteria() {
+    const isInstalled = await this.isInstalled();
+    
     return {
       canInstall: this.canInstall(),
-      isInstalled: this.isInstalled(),
+      isInstalled,
       isMobile: this.isMobile(),
       isAndroid: this.isAndroid(),
       isIOS: this.isIOS(),
@@ -186,27 +267,56 @@ class PWAInstallService {
   }
 
   // Debug method to log all criteria
-  debugInstallCriteria() {
-    const criteria = this.getInstallCriteria();
+  async debugInstallCriteria() {
+    const criteria = await this.getInstallCriteria();
     console.log('PWA Install Criteria:', criteria);
     return criteria;
   }
 
   // Manually mark PWA as installed (useful for testing)
-  markAsInstalled() {
-    localStorage.setItem('otakonPWAInstalled', 'true');
-    localStorage.setItem('otakonGlobalPWAInstalled', 'true');
+  async markAsInstalled() {
+    try {
+      // Update in Supabase
+      await supabaseDataService.updateUserAppState('pwaInstalled', true);
+      await supabaseDataService.updateUserAppState('pwaGlobalInstalled', true);
+      
+      // Also update localStorage as backup
+      localStorage.setItem('otakonPWAInstalled', 'true');
+      localStorage.setItem('otakonGlobalPWAInstalled', 'true');
+      
+      console.log('✅ PWA manually marked as installed in Supabase');
+    } catch (error) {
+      console.warn('Failed to mark PWA as installed in Supabase, using localStorage only:', error);
+      // Fallback to localStorage only
+      localStorage.setItem('otakonPWAInstalled', 'true');
+      localStorage.setItem('otakonGlobalPWAInstalled', 'true');
+    }
+    
     this.notifyListeners(null);
-    console.log('PWA manually marked as installed');
   }
 
   // Reset installation status (useful for testing)
-  resetInstallationStatus() {
-    localStorage.removeItem('otakonPWAInstalled');
-    localStorage.removeItem('otakonGlobalPWAInstalled');
-    localStorage.removeItem('otakonInstallDismissed');
+  async resetInstallationStatus() {
+    try {
+      // Clear from Supabase
+      await supabaseDataService.updateUserAppState('pwaInstalled', false);
+      await supabaseDataService.updateUserAppState('pwaGlobalInstalled', false);
+      
+      // Also clear localStorage
+      localStorage.removeItem('otakonPWAInstalled');
+      localStorage.removeItem('otakonGlobalPWAInstalled');
+      localStorage.removeItem('otakonInstallDismissed');
+      
+      console.log('✅ PWA installation status reset in Supabase');
+    } catch (error) {
+      console.warn('Failed to reset PWA installation status in Supabase, using localStorage only:', error);
+      // Fallback to localStorage only
+      localStorage.removeItem('otakonPWAInstalled');
+      localStorage.removeItem('otakonGlobalPWAInstalled');
+      localStorage.removeItem('otakonInstallDismissed');
+    }
+    
     this.notifyListeners(this.deferredPrompt);
-    console.log('PWA installation status reset');
   }
 }
 

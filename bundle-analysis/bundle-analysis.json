@@ -1,13 +1,13 @@
 {
-  "timestamp": "2025-08-29T16:22:34.010Z",
+  "timestamp": "2025-08-30T01:26:56.955Z",
   "bundleInfo": {
-    "totalSize": 1917906,
+    "totalSize": 1904547,
     "fileCount": 16,
     "largestFiles": [
       {
-        "path": "assets/chunk-DMoTlmZA.js",
-        "size": 724086,
-        "sizeFormatted": "707.12 KB"
+        "path": "assets/chunk-CgYf95-6.js",
+        "size": 718668,
+        "sizeFormatted": "701.82 KB"
       },
       {
         "path": "assets/chunk-7J4LelS0.js",
@@ -15,55 +15,55 @@
         "sizeFormatted": "225.83 KB"
       },
       {
-        "path": "assets/chunk-BjIQ4jMe.js",
-        "size": 225208,
-        "sizeFormatted": "219.93 KB"
+        "path": "assets/chunk-BveJkPbd.js",
+        "size": 228918,
+        "sizeFormatted": "223.55 KB"
       },
       {
-        "path": "assets/chunk-B-FY7SeN.js",
+        "path": "assets/chunk-D4WZp8Rd.js",
         "size": 163454,
         "sizeFormatted": "159.62 KB"
       },
       {
-        "path": "assets/chunk-1XRmXACX.js",
-        "size": 143295,
-        "sizeFormatted": "139.94 KB"
+        "path": "assets/chunk-D0Ru9Yn3.js",
+        "size": 139651,
+        "sizeFormatted": "136.38 KB"
       },
       {
-        "path": "assets/chunk-ZDHtPeSP.js",
+        "path": "assets/chunk-D2ctUrAM.js",
         "size": 123933,
         "sizeFormatted": "121.03 KB"
       },
       {
-        "path": "assets/index-C6vGsv6W.js",
-        "size": 86591,
-        "sizeFormatted": "84.56 KB"
+        "path": "assets/index-BS-RD4jT.js",
+        "size": 84940,
+        "sizeFormatted": "82.95 KB"
       },
       {
-        "path": "assets/chunk-DmGeDtNv.js",
-        "size": 85147,
-        "sizeFormatted": "83.15 KB"
+        "path": "assets/chunk-RJ0sUU6v.js",
+        "size": 77360,
+        "sizeFormatted": "75.55 KB"
       },
       {
-        "path": "assets/chunk-CL6Cbj7a.js",
-        "size": 47335,
-        "sizeFormatted": "46.23 KB"
+        "path": "assets/chunk-DKA6Lt-D.js",
+        "size": 47387,
+        "sizeFormatted": "46.28 KB"
       },
       {
-        "path": "assets/chunk-D_8sBfSo.js",
-        "size": 27737,
-        "sizeFormatted": "27.09 KB"
+        "path": "assets/chunk-C6wwwWFC.js",
+        "size": 27280,
+        "sizeFormatted": "26.64 KB"
       }
     ],
     "fileTypes": {
       ".md": 6298,
-      ".js": 1879988,
+      ".js": 1866629,
       ".css": 15683,
       ".html": 12912,
       ".xml": 3025
     },
     "totalGzipped": 0,
-    "totalSizeFormatted": "1.83 MB"
+    "totalSizeFormatted": "1.82 MB"
   },
   "dependencyInfo": {
     "packages": {
@@ -146,6 +146,11 @@
         "version": "^22.14.0",
         "size": 102400,
         "category": "other"
+      },
+      "@types/react-dom": {
+        "version": "^19.1.9",
+        "size": 102400,
+        "category": "framework"
       },
       "@vitejs/plugin-react": {
         "version": "^5.0.0",

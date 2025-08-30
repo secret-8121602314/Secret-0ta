@@ -21,6 +21,8 @@ export interface UserAppState {
   otakuDiary?: any;
   apiCostRecords?: any;
   proactiveInsights?: any;
+  pwaInstalled?: boolean;
+  pwaGlobalInstalled?: boolean;
 }
 
 export interface UserPreferences {
@@ -33,6 +35,7 @@ export interface UserPreferences {
   accessibilitySettings: any;
   tts?: any;
   pwa?: any;
+  profileName?: string;
 }
 
 export interface DailyEngagement {
@@ -87,8 +90,8 @@ class SupabaseDataService {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.warn('Supabase usage data fetch failed, using localStorage fallback:', error);
-      return this.getLocalStorageUsageData();
+      console.error('Supabase usage data fetch failed:', error);
+      throw error;
     }
   }
 
@@ -103,11 +106,10 @@ class SupabaseDataService {
 
       if (error) throw error;
       
-      // Also update localStorage as backup
-      this.updateLocalStorageUsage(field, value);
+      console.log('✅ Usage data updated in Supabase');
     } catch (error) {
-      console.warn('Supabase usage update failed, using localStorage fallback:', error);
-      this.updateLocalStorageUsage(field, value);
+      console.error('❌ Supabase usage update failed:', error);
+      throw error;
     }
   }
 
@@ -133,8 +135,8 @@ class SupabaseDataService {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.warn('Supabase app state fetch failed, using localStorage fallback:', error);
-      return this.getLocalStorageAppState();
+      console.error('Supabase app state fetch failed:', error);
+      throw error;
     }
   }
 
@@ -149,11 +151,10 @@ class SupabaseDataService {
 
       if (error) throw error;
       
-      // Also update localStorage as backup
-      this.updateLocalStorageAppState(field, value);
+      console.log('✅ App state updated in Supabase');
     } catch (error) {
-      console.warn('Supabase app state update failed, using localStorage fallback:', error);
-      this.updateLocalStorageAppState(field, value);
+      console.error('❌ Supabase app state update failed:', error);
+      throw error;
     }
   }
 
@@ -175,8 +176,8 @@ class SupabaseDataService {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.warn('Supabase preferences fetch failed, using localStorage fallback:', error);
-      return this.getLocalStoragePreferences();
+      console.error('Supabase preferences fetch failed:', error);
+      throw error;
     }
   }
 
@@ -191,11 +192,10 @@ class SupabaseDataService {
 
       if (error) throw error;
       
-      // Also update localStorage as backup
-      this.updateLocalStoragePreferences(field, value);
+      console.log('✅ User preferences updated in Supabase');
     } catch (error) {
-      console.warn('Supabase preferences update failed, using localStorage fallback:', error);
-      this.updateLocalStoragePreferences(field, value);
+      console.error('❌ Supabase preferences update failed:', error);
+      throw error;
     }
   }
 
@@ -216,8 +216,8 @@ class SupabaseDataService {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.warn('Supabase daily engagement fetch failed, using localStorage fallback:', error);
-      return this.getLocalStorageDailyEngagement(date);
+      console.error('Supabase daily engagement fetch failed:', error);
+      throw error;
     }
   }
 
@@ -235,11 +235,10 @@ class SupabaseDataService {
 
       if (error) throw error;
       
-      // Also update localStorage as backup
-      this.updateLocalStorageDailyEngagement(field, value, date);
+      console.log('✅ Daily engagement updated in Supabase');
     } catch (error) {
-      console.warn('Supabase daily engagement update failed, using localStorage fallback:', error);
-      this.updateLocalStorageDailyEngagement(field, value, date);
+      console.error('❌ Supabase daily engagement update failed:', error);
+      throw error;
     }
   }
 
@@ -285,11 +284,10 @@ class SupabaseDataService {
 
       if (error) throw error;
       
-      // Also update localStorage as backup
-      this.setLocalStorageCache(cacheKey, cacheData, expiresAt);
+      console.log('✅ App cache set in Supabase');
     } catch (error) {
-      console.warn('Supabase cache set failed, using localStorage fallback:', error);
-      this.setLocalStorageCache(cacheKey, cacheData, expiresAt);
+      console.error('❌ Supabase cache set failed:', error);
+      throw error;
     }
   }
 
@@ -318,8 +316,9 @@ class SupabaseDataService {
       if (error) throw error;
       return data || false;
     } catch (error) {
-      console.warn('Supabase welcome message check failed, using localStorage fallback:', error);
-      return this.shouldShowLocalStorageWelcome();
+      console.warn('Supabase welcome message check failed:', error);
+      // Return false instead of localStorage fallback - we want Supabase only
+      return false;
     }
   }
 
@@ -333,11 +332,10 @@ class SupabaseDataService {
 
       if (error) throw error;
       
-      // Also update localStorage as backup
-      this.updateLocalStorageWelcomeShown();
+      console.log('✅ Welcome message state updated in Supabase');
     } catch (error) {
-      console.warn('Supabase welcome message update failed, using localStorage fallback:', error);
-      this.updateLocalStorageWelcomeShown();
+      console.error('❌ Supabase welcome message update failed:', error);
+      throw error; // Let the caller handle the error
     }
   }
 
@@ -350,11 +348,10 @@ class SupabaseDataService {
 
       if (error) throw error;
       
-      // Also update localStorage as backup
-      this.updateLocalStorageFirstRunCompleted();
+      console.log('✅ First run completed marked in Supabase');
     } catch (error) {
-      console.warn('Supabase first run completion failed, using localStorage fallback:', error);
-      this.updateLocalStorageFirstRunCompleted();
+      console.error('❌ Supabase first run completion failed:', error);
+      throw error; // Let the caller handle the error
     }
   }
 
@@ -367,11 +364,10 @@ class SupabaseDataService {
 
       if (error) throw error;
       
-      // Also update localStorage as backup
-      this.resetLocalStorageWelcomeTracking();
+      console.log('✅ Welcome message tracking reset in Supabase');
     } catch (error) {
-      console.warn('Supabase welcome message reset failed, using localStorage fallback:', error);
-      this.resetLocalStorageWelcomeTracking();
+      console.error('❌ Supabase welcome message reset failed:', error);
+      throw error; // Let the caller handle the error
     }
   }
 
@@ -614,37 +610,53 @@ class SupabaseDataService {
   // COMPREHENSIVE LOCALSTORAGE MIGRATION
   // =====================================================
 
+  // Helper method to get localStorage data safely
+  private getLocalStorageData(key: string): any {
+    try {
+      const stored = localStorage.getItem(key);
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  }
+
   async migrateAllLocalStorageData(): Promise<void> {
     try {
       const userId = await this.getUserId();
       
-      // Migrate usage data
-      const usageData = this.getLocalStorageUsageData();
-      await this.updateUserUsage('tier', usageData.tier);
-      await this.updateUserUsage('textCount', usageData.textCount);
-      await this.updateUserUsage('imageCount', usageData.imageCount);
-      await this.updateUserUsage('lastMonth', usageData.lastMonth);
-      await this.updateUserUsage('usageHistory', usageData.usageHistory);
-      await this.updateUserUsage('tierHistory', usageData.tierHistory);
-      await this.updateUserUsage('lastReset', usageData.lastReset);
+      // Migrate usage data from localStorage directly
+      const usageData = this.getLocalStorageData('otakon_usage_data');
+      if (usageData) {
+        await this.updateUserUsage('tier', usageData.tier);
+        await this.updateUserUsage('textCount', usageData.textCount);
+        await this.updateUserUsage('imageCount', usageData.imageCount);
+        await this.updateUserUsage('lastMonth', usageData.lastMonth);
+        await this.updateUserUsage('usageHistory', usageData.usageHistory);
+        await this.updateUserUsage('tierHistory', usageData.tierHistory);
+        await this.updateUserUsage('lastReset', usageData.lastReset);
+      }
 
-      // Migrate app state
-      const appState = this.getLocalStorageAppState();
-      await this.updateUserAppState('lastVisited', appState.lastVisited);
-      await this.updateUserAppState('uiPreferences', appState.uiPreferences);
-      await this.updateUserAppState('featureFlags', appState.featureFlags);
-      await this.updateUserAppState('appSettings', appState.appSettings);
-      await this.updateUserAppState('lastInteraction', appState.lastInteraction);
+      // Migrate app state from localStorage directly
+      const appState = this.getLocalStorageData('otakon_app_state');
+      if (appState) {
+        await this.updateUserAppState('lastVisited', appState.lastVisited);
+        await this.updateUserAppState('uiPreferences', appState.uiPreferences);
+        await this.updateUserAppState('featureFlags', appState.featureFlags);
+        await this.updateUserAppState('appSettings', appState.appSettings);
+        await this.updateUserAppState('lastInteraction', appState.lastInteraction);
+      }
 
-      // Migrate preferences
-      const preferences = this.getLocalStoragePreferences();
-      await this.updateUserPreferences('gameGenre', preferences.gameGenre);
-      await this.updateUserPreferences('detailLevel', preferences.detailLevel);
-      await this.updateUserPreferences('aiPersonality', preferences.aiPersonality);
-      await this.updateUserPreferences('preferredResponseFormat', preferences.preferredResponseFormat);
-      await this.updateUserPreferences('skillLevel', preferences.skillLevel);
-      await this.updateUserPreferences('notificationPreferences', preferences.notificationPreferences);
-      await this.updateUserPreferences('accessibilitySettings', preferences.accessibilitySettings);
+      // Migrate preferences from localStorage directly
+      const preferences = this.getLocalStorageData('otakon_preferences');
+      if (preferences) {
+        await this.updateUserPreferences('gameGenre', preferences.gameGenre);
+        await this.updateUserPreferences('detailLevel', preferences.detailLevel);
+        await this.updateUserPreferences('aiPersonality', preferences.aiPersonality);
+        await this.updateUserPreferences('preferredResponseFormat', preferences.preferredResponseFormat);
+        await this.updateUserPreferences('skillLevel', preferences.skillLevel);
+        await this.updateUserPreferences('notificationPreferences', preferences.notificationPreferences);
+        await this.updateUserPreferences('accessibilitySettings', preferences.accessibilitySettings);
+      }
 
       // Migrate additional localStorage keys
       await this.migrateAdditionalLocalStorageKeys();

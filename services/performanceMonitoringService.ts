@@ -1,4 +1,5 @@
 import { getCLS, getFID, getFCP, getLCP, getTTFB } from 'web-vitals';
+import { supabase } from './supabase';
 
 export interface PerformanceMetrics {
   CLS: number;
@@ -85,38 +86,41 @@ class PerformanceMonitoringService {
 
   private initializeErrorTracking(): void {
     // Global error handler
-    window.addEventListener('error', (event) => {
+    window.addEventListener('error', async (event) => {
+      const userId = await this.getUserId();
       this.recordError({
         message: event.message,
         stack: event.error?.stack,
         timestamp: Date.now(),
         url: window.location.href,
         userAgent: navigator.userAgent,
-        userId: this.getUserId()
+        userId
       });
     });
 
     // Unhandled promise rejection handler
-    window.addEventListener('unhandledrejection', (event) => {
+    window.addEventListener('unhandledrejection', async (event) => {
+      const userId = await this.getUserId();
       this.recordError({
         message: event.reason?.message || 'Unhandled Promise Rejection',
         stack: event.reason?.stack,
         timestamp: Date.now(),
         url: window.location.href,
         userAgent: navigator.userAgent,
-        userId: this.getUserId()
+        userId
       });
     });
 
     // React error boundary fallback
-    window.addEventListener('react-error-boundary', (event: any) => {
+    window.addEventListener('react-error-boundary', async (event: any) => {
+      const userId = await this.getUserId();
       this.recordError({
         message: event.detail?.error?.message || 'React Error Boundary Error',
         stack: event.detail?.error?.stack,
         timestamp: Date.now(),
         url: window.location.href,
         userAgent: navigator.userAgent,
-        userId: this.getUserId()
+        userId
       });
     });
   }
@@ -192,12 +196,19 @@ class PerformanceMonitoringService {
     console.error('🚨 Error tracked:', error);
   }
 
-  private getUserId(): string | undefined {
+  private async getUserId(): Promise<string | undefined> {
     try {
-      // Try to get user ID from localStorage or other sources
-      return localStorage.getItem('otakon_user_id') || undefined;
-    } catch {
-      return undefined;
+      // Try to get user ID from Supabase first
+      const { data: { user } } = await supabase.auth.getUser();
+      return user?.id;
+    } catch (error) {
+      console.warn('Failed to get user ID from Supabase:', error);
+      // Fallback to localStorage
+      try {
+        return localStorage.getItem('otakon_user_id') || undefined;
+      } catch {
+        return undefined;
+      }
     }
   }
 
@@ -227,14 +238,15 @@ class PerformanceMonitoringService {
     }
   }
 
-  trackError(error: Error, context?: any): void {
+  async trackError(error: Error, context?: any): Promise<void> {
+    const userId = await this.getUserId();
     const errorEvent: ErrorEvent = {
       message: error.message,
       stack: error.stack,
       timestamp: Date.now(),
       url: window.location.href,
       userAgent: navigator.userAgent,
-      userId: this.getUserId()
+      userId
     };
 
     this.recordError(errorEvent);

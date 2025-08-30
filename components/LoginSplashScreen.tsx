@@ -500,46 +500,54 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
                     <button
                         onClick={() => handleAuth('google')}
                         disabled={isLoading}
-                        className={`w-full flex items-center justify-center gap-3 bg-gradient-to-r from-white to-gray-100 hover:from-gray-100 hover:to-gray-200 text-gray-800 font-bold py-4 sm:py-5 px-6 sm:px-8 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-base sm:text-lg ${buttonAnimations.google ? 'animate-pulse-glow' : ''}`}
+                        className={`w-full flex items-center justify-center bg-gradient-to-r from-white to-gray-100 hover:from-gray-100 hover:to-gray-200 text-gray-800 font-bold py-4 sm:py-5 px-6 sm:px-8 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-base sm:text-lg ${buttonAnimations.google ? 'animate-pulse-glow' : ''}`}
                     >
-                        <div className="flex items-center gap-3 w-full justify-start">
-                            <GoogleIcon className="w-6 h-6" />
-                            <span className="text-left">Continue with Google</span>
+                        <div className="flex items-center gap-4 w-full max-w-sm">
+                            <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
+                                <GoogleIcon className="w-6 h-6" />
+                            </div>
+                            <span className="text-left flex-1">Continue with Google</span>
                         </div>
                     </button>
                     
                     <button
                         onClick={() => handleAuth('discord')}
                         disabled={isLoading}
-                        className={`w-full flex items-center justify-center gap-3 bg-gradient-to-r from-[#5865F2] to-[#4752C4] hover:from-[#4752C4] hover:to-[#3C45A5] text-white font-bold py-4 sm:py-5 px-6 sm:px-8 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#5865F2]/25 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-base sm:text-lg ${buttonAnimations.discord ? 'animate-pulse-glow' : ''}`}
+                        className={`w-full flex items-center justify-center bg-gradient-to-r from-[#5865F2] to-[#4752C4] hover:from-[#4752C4] hover:to-[#3C45A5] text-white font-bold py-4 sm:py-5 px-6 sm:px-8 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#5865F2]/25 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-base sm:text-lg ${buttonAnimations.discord ? 'animate-pulse-glow' : ''}`}
                     >
-                        <div className="flex items-center gap-3 w-full justify-start">
-                            <DiscordIcon className="w-6 h-6" />
-                            <span className="text-left">Continue with Discord</span>
+                        <div className="flex items-center gap-4 w-full max-w-sm">
+                            <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
+                                <DiscordIcon className="w-6 h-6" />
+                            </div>
+                            <span className="text-left flex-1">Continue with Discord</span>
                         </div>
                     </button>
                     
                     <button
                         onClick={() => handleAuth('email')}
                         disabled={isLoading}
-                        className={`w-full flex items-center justify-center gap-3 bg-gradient-to-r from-neutral-700 to-neutral-600 hover:from-neutral-600 hover:to-neutral-500 text-white font-bold py-4 sm:py-5 px-6 sm:px-8 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-base sm:text-lg ${buttonAnimations.email ? 'animate-pulse-glow' : ''}`}
+                        className={`w-full flex items-center justify-center bg-gradient-to-r from-neutral-700 to-neutral-600 hover:from-neutral-600 hover:to-neutral-500 text-white font-bold py-4 sm:py-5 px-6 sm:px-8 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-base sm:text-lg ${buttonAnimations.email ? 'animate-pulse-glow' : ''}`}
                     >
-                        <div className="flex items-center gap-3 w-full justify-start">
-                            <EmailIcon className="w-6 h-6" />
-                            <span className="text-left">Continue with Email</span>
+                        <div className="flex items-center gap-4 w-full max-w-sm">
+                            <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
+                                <EmailIcon className="w-6 h-6" />
+                            </div>
+                            <span className="text-left flex-1">Continue with Email</span>
                         </div>
                     </button>
 
                         {!showDeveloperPassword ? (
                             <button
                                 onClick={() => setShowDeveloperPassword(true)}
-                                className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-neutral-700 to-neutral-600 hover:from-neutral-600 hover:to-neutral-500 text-white font-bold py-4 sm:py-5 px-6 sm:px-8 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg text-base sm:text-lg border border-[#424242]/60"
+                                className="w-full flex items-center justify-center gap-3 bg-transparent border-2 border-[#424242] hover:border-[#FFAB40] text-white font-bold py-4 sm:py-5 px-6 sm:px-8 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg text-base sm:text-lg hover:bg-[#424242]/20"
                             >
-                                <div className="flex items-center gap-3 w-full justify-start">
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                                    </svg>
-                                    <span className="text-left">Developer Mode</span>
+                                <div className="flex items-center gap-4 w-full max-w-sm">
+                                    <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                                        </svg>
+                                    </div>
+                                    <span className="text-left flex-1">Developer Mode</span>
                                 </div>
                             </button>
                         ) : (

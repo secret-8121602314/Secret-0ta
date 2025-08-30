@@ -198,6 +198,16 @@
   @apply before:animate-shimmer;
 }
 
+/* Tutorial Highlight Effect */
+.tutorial-highlight {
+  @apply ring-4 ring-[#FF4D4D]/60 ring-offset-2 ring-offset-[#1C1C1C];
+  @apply shadow-[0_0_30px_rgba(255,77,77,0.4)];
+  @apply scale-105;
+  @apply transition-all duration-300;
+  @apply z-10;
+  @apply relative;
+}
+
 .typing-indicator {
   @apply flex space-x-1 p-4;
   @apply bg-gradient-to-r from-[#2E2E2E]/90 to-[#1C1C1C]/90;

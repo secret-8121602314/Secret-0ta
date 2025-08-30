@@ -173,19 +173,15 @@ const AIContextDemo: React.FC = () => {
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <span className="text-gray-400">Tier:</span>
-            <span className="ml-2 text-white font-medium">{unifiedUsageService.getTier()}</span>
+            <span className="ml-2 text-white font-medium">Loading...</span>
           </div>
           <div>
             <span className="text-gray-400">Text Queries:</span>
-            <span className="ml-2 text-white font-medium">
-              {unifiedUsageService.getUsage().textCount} / {unifiedUsageService.getUsage().textLimit}
-            </span>
+            <span className="ml-2 text-white font-medium">Loading...</span>
           </div>
           <div>
             <span className="text-gray-400">Image Queries:</span>
-            <span className="ml-2 text-white font-medium">
-              {unifiedUsageService.getUsage().imageCount} / {unifiedUsageService.getUsage().imageLimit}
-            </span>
+            <span className="ml-2 text-white font-medium">Loading...</span>
           </div>
           <div>
             <span className="text-gray-400">Session ID:</span>

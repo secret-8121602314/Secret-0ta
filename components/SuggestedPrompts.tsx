@@ -3,6 +3,7 @@
 import React from 'react';
 import { newsPrompts } from '../services/types';
 import { playerProfileService } from '../services/playerProfileService';
+import { suggestedPromptsService } from '../services/suggestedPromptsService';
 
 interface SuggestedPromptsProps {
     onPromptClick: (prompt: string) => void;
@@ -26,6 +27,10 @@ const SuggestedPrompts: React.FC<SuggestedPromptsProps> = ({ onPromptClick, isIn
         return () => mq.removeEventListener('change', apply);
     }, []);
     
+    // Get unused prompts
+    const unusedPrompts = suggestedPromptsService.getUnusedPrompts(newsPrompts);
+    const allPromptsUsed = suggestedPromptsService.areAllPromptsUsed(newsPrompts);
+    
     // Customize welcome message based on profile and first-time status
     const getWelcomeMessage = () => {
         if (isFirstTime || !profile) {
@@ -48,8 +53,19 @@ const SuggestedPrompts: React.FC<SuggestedPromptsProps> = ({ onPromptClick, isIn
 
     const welcomeMessage = getWelcomeMessage();
 
+    // Handle prompt click and mark as used
+    const handlePromptClick = (prompt: string) => {
+        suggestedPromptsService.markPromptAsUsed(prompt);
+        onPromptClick(prompt);
+    };
+
+    // Don't render if all prompts have been used
+    if (allPromptsUsed) {
+        return null;
+    }
+
     return (
-        <div className="w-full max-w-[95%] sm:max-w-4xl md:max-w-5xl mx-auto animate-fade-in">
+        <div className="w-full px-4 sm:px-6 md:px-8 max-w-[95%] sm:max-w-4xl md:max-w-5xl mx-auto animate-fade-in">
             {/* Only show welcome message for first-time users */}
             {welcomeMessage.showWelcome && (
                 <div className="mb-4 sm:mb-6 md:mb-8 text-center">
@@ -88,11 +104,11 @@ const SuggestedPrompts: React.FC<SuggestedPromptsProps> = ({ onPromptClick, isIn
                     </button>
                 )}
                 {(!isTinyScreen || accordionOpen) && (
-                    <div id="suggested-prompts-panel" className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 md:gap-4 mt-2">
-                        {newsPrompts.map((prompt) => (
+                    <div id="suggested-prompts-panel" className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 md:gap-4 mt-2 px-1 sm:px-0">
+                        {unusedPrompts.map((prompt) => (
                             <button
                                 key={prompt}
-                                onClick={() => onPromptClick(prompt)}
+                                onClick={() => handlePromptClick(prompt)}
                                 disabled={isInputDisabled}
                                 className={`group text-left px-2.5 sm:px-3 md:px-4 lg:px-6 py-3 sm:py-3.5 md:py-4 lg:py-6 rounded-lg sm:rounded-xl md:rounded-2xl bg-gradient-to-r from-[#1C1C1C]/60 to-[#0A0A0A]/60 border border-[#424242]/40 text-xs sm:text-sm md:text-base text-[#E5E5E5]
                                             hover:bg-gradient-to-r hover:from-[#E53A3A]/20 hover:to-[#D98C1F]/20 hover:border-[#E53A3A]/60 hover:scale-[1.02] sm:hover:scale-[1.03] md:hover:scale-105 hover:shadow-lg hover:shadow-[#E53A3A]/20
@@ -106,30 +122,7 @@ const SuggestedPrompts: React.FC<SuggestedPromptsProps> = ({ onPromptClick, isIn
                 )}
             </div>
             
-            {/* First-time user action buttons */}
-            {isFirstTime && (
-                <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
-                    <div className="text-center">
-                        <p className="text-[#A3A3A3] text-sm mb-2">Ready to get started?</p>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => onPromptClick("I'm playing a game and need help. Can you identify it from a screenshot?")}
-                                disabled={isInputDisabled}
-                                className="px-4 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-                            >
-                                📸 Upload Screenshot
-                            </button>
-                            <button
-                                onClick={() => onPromptClick("What are some great games to play right now?")}
-                                disabled={isInputDisabled}
-                                className="px-4 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-                            >
-                                🎮 Game Recommendations
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+
         </div>
     );
 };

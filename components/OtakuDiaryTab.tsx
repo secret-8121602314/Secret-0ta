@@ -16,12 +16,23 @@ const OtakuDiaryTab: React.FC<OtakuDiaryTabProps> = ({ gameId, gameTitle }) => {
   const [tasks, setTasks] = useState<DiaryTask[]>([]);
   const [favorites, setFavorites] = useState<DiaryFavorite[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const usage = unifiedUsageService.getUsage();
+  const [usage, setUsage] = useState<any>(null);
 
   // Load data when component mounts
   useEffect(() => {
     loadDiaryData();
+    loadUsageData();
   }, [gameId]);
+
+  const loadUsageData = async () => {
+    try {
+      const usageData = await unifiedUsageService.getUsage();
+      setUsage(usageData);
+    } catch (error) {
+      console.warn('Failed to load usage data:', error);
+      setUsage({ tier: 'free' });
+    }
+  };
 
   const loadDiaryData = async () => {
     setIsLoading(true);
@@ -50,7 +61,7 @@ const OtakuDiaryTab: React.FC<OtakuDiaryTabProps> = ({ gameId, gameTitle }) => {
 
   const handleTabChange = (tab: DiaryTabType) => {
     // For free users, show upgrade splash when trying to access AI Suggested Tasks
-    if (tab === 'todo' && usage.tier === 'free') {
+    if (tab === 'todo' && usage?.tier === 'free') {
       // This will be handled by the ToDoListTab component
     }
     setActiveTab(tab);
@@ -123,7 +134,7 @@ const OtakuDiaryTab: React.FC<OtakuDiaryTabProps> = ({ gameId, gameTitle }) => {
             gameId={gameId}
             tasks={tasks}
             onTaskUpdate={handleTaskUpdate}
-            userTier={usage.tier}
+            userTier={usage?.tier || 'free'}
           />
         )}
         {activeTab === 'favorites' && (

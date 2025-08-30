@@ -143,8 +143,15 @@ class PlayerProfileService {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        // Fallback to localStorage
-        return this.getLocalStorageWelcomeState();
+        // No user, return default state
+        return {
+          welcomeMessageShown: false,
+          firstRunCompleted: false,
+          lastWelcomeTime: null,
+          lastSessionDate: null,
+          welcomeMessageCount: 0,
+          firstGameConversationDate: null
+        };
       }
 
       // Call Supabase function
@@ -153,8 +160,8 @@ class PlayerProfileService {
       });
 
       if (error) {
-        console.warn('Failed to get welcome message state from Supabase, falling back to localStorage:', error);
-        return this.getLocalStorageWelcomeState();
+        console.error('Failed to get welcome message state from Supabase:', error);
+        throw error;
       }
 
       return {
@@ -166,8 +173,8 @@ class PlayerProfileService {
         firstGameConversationDate: data?.first_game_conversation_date || null
       };
     } catch (error) {
-      console.warn('Error getting welcome message state, falling back to localStorage:', error);
-      return this.getLocalStorageWelcomeState();
+      console.error('Error getting welcome message state:', error);
+      throw error;
     }
   }
 
@@ -175,9 +182,8 @@ class PlayerProfileService {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        // Fallback to localStorage
-        this.updateLocalStorageWelcomeShown();
-        return true;
+        // No user, can't update
+        return false;
       }
 
       // Call Supabase function
@@ -187,16 +193,14 @@ class PlayerProfileService {
       });
 
       if (error) {
-        console.warn('Failed to update welcome message shown in Supabase, falling back to localStorage:', error);
-        this.updateLocalStorageWelcomeShown();
-        return true;
+        console.error('Failed to update welcome message shown in Supabase:', error);
+        throw error;
       }
 
       return true;
     } catch (error) {
-      console.warn('Error updating welcome message shown, falling back to localStorage:', error);
-      this.updateLocalStorageWelcomeShown();
-      return true;
+      console.error('Error updating welcome message shown:', error);
+      throw error;
     }
   }
 
@@ -204,9 +208,8 @@ class PlayerProfileService {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        // Fallback to localStorage
-        this.updateLocalStorageFirstRunCompleted();
-        return true;
+        // No user, can't mark
+        return false;
       }
 
       // Call Supabase function
@@ -215,16 +218,14 @@ class PlayerProfileService {
       });
 
       if (error) {
-        console.warn('Failed to mark first run completed in Supabase, falling back to localStorage:', error);
-        this.updateLocalStorageFirstRunCompleted();
-        return true;
+        console.error('Failed to mark first run completed in Supabase:', error);
+        throw error;
       }
 
       return true;
     } catch (error) {
-      console.warn('Error marking first run completed, falling back to localStorage:', error);
-      this.updateLocalStorageFirstRunCompleted();
-      return true;
+      console.error('Error marking first run completed:', error);
+      throw error;
     }
   }
 
@@ -232,8 +233,8 @@ class PlayerProfileService {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        // Fallback to localStorage
-        return this.shouldShowLocalStorageWelcome();
+        // No user, no welcome message
+        return false;
       }
 
       // Call Supabase function
@@ -242,14 +243,14 @@ class PlayerProfileService {
       });
 
       if (error) {
-        console.warn('Failed to check welcome message from Supabase, falling back to localStorage:', error);
-        return this.shouldShowLocalStorageWelcome();
+        console.error('Failed to check welcome message from Supabase:', error);
+        return false;
       }
 
       return data || false;
     } catch (error) {
-      console.warn('Error checking welcome message, falling back to localStorage:', error);
-      return this.shouldShowLocalStorageWelcome();
+      console.error('Error checking welcome message:', error);
+      return false;
     }
   }
 
@@ -257,9 +258,8 @@ class PlayerProfileService {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        // Fallback to localStorage
-        this.resetLocalStorageWelcomeTracking();
-        return true;
+        // No user, can't reset
+        return false;
       }
 
       // Call Supabase function
@@ -268,65 +268,18 @@ class PlayerProfileService {
       });
 
       if (error) {
-        console.warn('Failed to reset welcome message tracking in Supabase, falling back to localStorage:', error);
-        this.resetLocalStorageWelcomeTracking();
-        return true;
+        console.error('Failed to reset welcome message tracking in Supabase:', error);
+        return false;
       }
 
       return true;
     } catch (error) {
-      console.warn('Error resetting welcome message tracking, falling back to localStorage:', error);
-      this.resetLocalStorageWelcomeTracking();
-      return true;
+      console.error('Error resetting welcome message tracking:', error);
+      return false;
     }
   }
 
-  // LocalStorage Fallback Methods
-  private getLocalStorageWelcomeState() {
-    return {
-      welcomeMessageShown: localStorage.getItem('otakon_welcome_message_shown') === 'true',
-      firstRunCompleted: localStorage.getItem('otakon_first_run_completed') === 'true',
-      lastWelcomeTime: localStorage.getItem('otakon_last_welcome_time') ? parseInt(localStorage.getItem('otakon_last_welcome_time')!, 10) : null,
-      lastSessionDate: localStorage.getItem('otakon_last_session_date'),
-      welcomeMessageCount: localStorage.getItem('otakon_welcome_message_count') ? parseInt(localStorage.getItem('otakon_welcome_message_count')!, 10) : 0,
-      firstGameConversationDate: localStorage.getItem('otakon_first_game_conversation_date')
-    };
-  }
 
-  private updateLocalStorageWelcomeShown() {
-    localStorage.setItem('otakon_welcome_message_shown', 'true');
-    localStorage.setItem('otakon_last_welcome_time', Date.now().toString());
-    localStorage.setItem('otakon_last_session_date', new Date().toDateString());
-    const currentCount = parseInt(localStorage.getItem('otakon_welcome_message_count') || '0', 10);
-    localStorage.setItem('otakon_welcome_message_count', (currentCount + 1).toString());
-  }
-
-  private updateLocalStorageFirstRunCompleted() {
-    localStorage.setItem('otakon_first_run_completed', 'true');
-    localStorage.setItem('otakon_first_game_conversation_date', new Date().toISOString());
-  }
-
-  private shouldShowLocalStorageWelcome(): boolean {
-    const hasSeenWelcome = localStorage.getItem('otakon_welcome_message_shown') === 'true';
-    if (!hasSeenWelcome) return true;
-
-    const lastWelcomeTime = localStorage.getItem('otakon_last_welcome_time');
-    if (!lastWelcomeTime) return true;
-
-    const timeSinceLastWelcome = Date.now() - parseInt(lastWelcomeTime, 10);
-    const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
-    
-    return timeSinceLastWelcome >= TWELVE_HOURS_MS;
-  }
-
-  private resetLocalStorageWelcomeTracking() {
-    localStorage.removeItem('otakon_welcome_message_shown');
-    localStorage.removeItem('otakon_last_welcome_time');
-    localStorage.removeItem('otakon_last_session_date');
-    localStorage.removeItem('otakon_first_run_completed');
-    localStorage.removeItem('otakon_first_game_conversation_date');
-    localStorage.removeItem('otakon_app_closed_time');
-  }
 
   // Get game context for specific game
   async getGameContext(gameId: string): Promise<GameContext> {

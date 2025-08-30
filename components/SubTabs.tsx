@@ -129,21 +129,17 @@ const SubTabs: React.FC<SubTabsProps> = ({
         if (shouldShowSubtabs) {
             return [
                 { id: 'chat', title: 'Chat', isNew: false, status: 'loaded' },
-                ...orderedInsights
-                    .filter(insight => insight.id !== 'chat') // Filter out chat if it somehow got into insights
-                    .filter(insight => {
-                        // Free users can only see Otaku Diary tab
-                        if (userTier === 'free') {
-                            return insight.id === 'otaku-diary';
-                        }
-                        // Pro/Vanguard users can see all insights
-                        return true;
-                    })
+                { id: 'otaku-diary', title: 'Otaku Diary', isNew: false, status: 'loaded' },
+                ...(userTier !== 'free' ? [
+                    { id: 'story-so-far', title: 'Story So Far', isNew: false, status: 'loaded' },
+                    { id: 'lore', title: 'Lore', isNew: false, status: 'loaded' },
+                    { id: 'build', title: 'Build', isNew: false, status: 'loaded' }
+                ] : [])
             ];
         } else if (shouldShowWishlistTab) {
             return [
                 { id: 'chat', title: 'Chat', isNew: false, status: 'loaded' },
-                { id: 'wishlist', title: '🎮 Wishlist', isNew: false, status: 'loaded', hasNotifications: wishlistNotifications > 0 }
+                { id: 'wishlist', title: 'Wishlist', isNew: false, status: 'loaded', hasNotifications: wishlistNotifications > 0 }
             ];
         }
         return [];

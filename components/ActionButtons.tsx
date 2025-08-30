@@ -129,12 +129,12 @@ const ActionButtons: React.FC<ActionButtonsProps> = React.memo(({
   };
 
   return (
-    <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-[#424242]/20">
+    <div className="flex items-center gap-2 sm:gap-1.5 md:gap-1 mt-1 sm:mt-1.5 pt-0.5 sm:pt-0.5 border-t border-[#424242]/20">
       {/* Thumbs Up */}
       <button
         onClick={onThumbsUp}
         disabled={isLoading}
-        className={`p-1 sm:p-1.5 md:p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
+        className={`p-2 sm:p-1.5 md:p-1 rounded-lg transition-all duration-200 hover:scale-105 ${
           thumbsUpActive 
             ? 'text-green-400 bg-green-400/10 border border-green-400/30' 
             : 'text-[#8A8A8A] hover:text-green-400 hover:bg-green-400/10'
@@ -150,7 +150,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = React.memo(({
       <button
         onClick={onThumbsDown}
         disabled={isLoading}
-        className={`p-1 sm:p-1.5 md:p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
+        className={`p-2 sm:p-1.5 md:p-1 rounded-lg transition-all duration-200 hover:scale-105 ${
           thumbsDownActive 
             ? 'text-red-400 bg-red-400/10 border border-red-400/30' 
             : 'text-[#8A8A8A] hover:text-red-400 hover:bg-red-400/10'
@@ -166,7 +166,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = React.memo(({
       <button
         onClick={handleFavorite}
         disabled={isLoading}
-        className={`p-1 sm:p-1.5 md:p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
+        className={`p-2 sm:p-1.5 md:p-1 rounded-lg transition-all duration-200 hover:scale-105 ${
           isFavorited 
             ? 'text-pink-400 bg-pink-400/10 border border-pink-400/30' 
             : 'text-[#8A8A8A] hover:text-pink-400 hover:bg-pink-400/10'
@@ -182,7 +182,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = React.memo(({
       <button
         onClick={handleAddToTasks}
         disabled={isLoading}
-        className="p-1 sm:p-1.5 md:p-2 rounded-lg transition-all duration-200 hover:scale-105 text-[#8A8A8A] hover:text-[#FFAB40] hover:bg-[#FFAB40]/10"
+        className="p-2 sm:p-1.5 md:p-1 rounded-lg transition-all duration-200 hover:scale-105 text-[#8A8A8A] hover:text-[#FFAB40] hover:bg-[#FFAB40]/10"
         title="Add to tasks"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

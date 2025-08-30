@@ -182,7 +182,7 @@ const ChatInput: React.FC<ChatInputProps> = React.memo(({ value, onChange, onSen
         const textarea = textareaRef.current;
         if (textarea) {
             const MAX_HEIGHT = 120; // Reduced for mobile (approx 5 lines)
-            const MIN_HEIGHT = 44;
+            const MIN_HEIGHT = 32;
 
             if (value.trim() === '' && selectedImages.length === 0) {
                  textarea.style.height = `${MIN_HEIGHT}px`;
@@ -412,7 +412,7 @@ const ChatInput: React.FC<ChatInputProps> = React.memo(({ value, onChange, onSen
                     </div>
                 )}
                 <div className="p-0 bg-transparent rounded-xl sm:rounded-2xl border-2 border-[#424242]/60 focus-within:p-[2px] focus-within:bg-gradient-to-r focus-within:from-[#E53A3A] focus-within:to-[#D98C1F] focus-within:border-transparent focus-within:shadow-[0_0_20px_rgba(229,58,58,0.4)] sm:focus-within:shadow-[0_0_30px_rgba(229,58,58,0.5)] transition-all duration-300">
-                    <div className="flex items-center bg-gradient-to-r from-[#1C1C1C] to-[#0A0A0A] rounded-xl sm:rounded-2xl w-full px-2 sm:px-3 md:px-4 gap-2 sm:gap-3 py-1.5 sm:py-2">
+                    <div className="flex items-center bg-gradient-to-r from-[#1C1C1C] to-[#0A0A0A] rounded-xl sm:rounded-2xl w-full px-2 sm:px-3 md:px-4 gap-2 sm:gap-3 py-2 sm:py-2.5 md:py-3">
                         <input 
                             type="file" 
                             ref={fileInputRef} 
@@ -430,7 +430,7 @@ const ChatInput: React.FC<ChatInputProps> = React.memo(({ value, onChange, onSen
                         >
                             <CameraIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5"/>
                         </button>
-                        <div className="relative flex-grow">
+                        <div className="relative flex-grow flex items-center">
                              {showSuggestions && (
                                 <CommandSuggestions
                                     suggestions={suggestions}
@@ -442,12 +442,12 @@ const ChatInput: React.FC<ChatInputProps> = React.memo(({ value, onChange, onSen
                             <textarea
                                 ref={textareaRef}
                                 rows={1}
-                                style={{ height: '44px' }}
+                                style={{ height: '32px' }}
                                 value={value}
                                 onChange={handleValueChange}
                                 onKeyDown={handleKeyDown}
                                 placeholder={placeholderText}
-                                className="flex-grow w-full bg-transparent py-2 sm:py-2.5 md:py-3 px-2 sm:px-3 text-[#F5F5F5] placeholder-[#A3A3A3] focus:outline-none resize-none overflow-y-auto disabled:opacity-60 text-xs sm:text-sm md:text-base leading-relaxed"
+                                className="flex-grow w-full bg-transparent py-0 px-2 sm:px-3 text-[#F5F5F5] placeholder-[#A3A3A3] focus:outline-none resize-none overflow-y-auto disabled:opacity-60 text-xs sm:text-sm md:text-base leading-relaxed"
                                 aria-label="Chat input"
                                 disabled={isProcessing}
                             />

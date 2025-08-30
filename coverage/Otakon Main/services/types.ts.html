@@ -1,0 +1,1054 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Code coverage report for Otakon Main/services/types.ts</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../../favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">Otakon Main/services</a> types.ts</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>0/324</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>0/1</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>0/1</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>0/324</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line low'></div>
+    <pre><table class="coverage">
+<tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
+<a name='L2'></a><a href='#L2'>2</a>
+<a name='L3'></a><a href='#L3'>3</a>
+<a name='L4'></a><a href='#L4'>4</a>
+<a name='L5'></a><a href='#L5'>5</a>
+<a name='L6'></a><a href='#L6'>6</a>
+<a name='L7'></a><a href='#L7'>7</a>
+<a name='L8'></a><a href='#L8'>8</a>
+<a name='L9'></a><a href='#L9'>9</a>
+<a name='L10'></a><a href='#L10'>10</a>
+<a name='L11'></a><a href='#L11'>11</a>
+<a name='L12'></a><a href='#L12'>12</a>
+<a name='L13'></a><a href='#L13'>13</a>
+<a name='L14'></a><a href='#L14'>14</a>
+<a name='L15'></a><a href='#L15'>15</a>
+<a name='L16'></a><a href='#L16'>16</a>
+<a name='L17'></a><a href='#L17'>17</a>
+<a name='L18'></a><a href='#L18'>18</a>
+<a name='L19'></a><a href='#L19'>19</a>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a>
+<a name='L83'></a><a href='#L83'>83</a>
+<a name='L84'></a><a href='#L84'>84</a>
+<a name='L85'></a><a href='#L85'>85</a>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a>
+<a name='L99'></a><a href='#L99'>99</a>
+<a name='L100'></a><a href='#L100'>100</a>
+<a name='L101'></a><a href='#L101'>101</a>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a>
+<a name='L104'></a><a href='#L104'>104</a>
+<a name='L105'></a><a href='#L105'>105</a>
+<a name='L106'></a><a href='#L106'>106</a>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a>
+<a name='L109'></a><a href='#L109'>109</a>
+<a name='L110'></a><a href='#L110'>110</a>
+<a name='L111'></a><a href='#L111'>111</a>
+<a name='L112'></a><a href='#L112'>112</a>
+<a name='L113'></a><a href='#L113'>113</a>
+<a name='L114'></a><a href='#L114'>114</a>
+<a name='L115'></a><a href='#L115'>115</a>
+<a name='L116'></a><a href='#L116'>116</a>
+<a name='L117'></a><a href='#L117'>117</a>
+<a name='L118'></a><a href='#L118'>118</a>
+<a name='L119'></a><a href='#L119'>119</a>
+<a name='L120'></a><a href='#L120'>120</a>
+<a name='L121'></a><a href='#L121'>121</a>
+<a name='L122'></a><a href='#L122'>122</a>
+<a name='L123'></a><a href='#L123'>123</a>
+<a name='L124'></a><a href='#L124'>124</a>
+<a name='L125'></a><a href='#L125'>125</a>
+<a name='L126'></a><a href='#L126'>126</a>
+<a name='L127'></a><a href='#L127'>127</a>
+<a name='L128'></a><a href='#L128'>128</a>
+<a name='L129'></a><a href='#L129'>129</a>
+<a name='L130'></a><a href='#L130'>130</a>
+<a name='L131'></a><a href='#L131'>131</a>
+<a name='L132'></a><a href='#L132'>132</a>
+<a name='L133'></a><a href='#L133'>133</a>
+<a name='L134'></a><a href='#L134'>134</a>
+<a name='L135'></a><a href='#L135'>135</a>
+<a name='L136'></a><a href='#L136'>136</a>
+<a name='L137'></a><a href='#L137'>137</a>
+<a name='L138'></a><a href='#L138'>138</a>
+<a name='L139'></a><a href='#L139'>139</a>
+<a name='L140'></a><a href='#L140'>140</a>
+<a name='L141'></a><a href='#L141'>141</a>
+<a name='L142'></a><a href='#L142'>142</a>
+<a name='L143'></a><a href='#L143'>143</a>
+<a name='L144'></a><a href='#L144'>144</a>
+<a name='L145'></a><a href='#L145'>145</a>
+<a name='L146'></a><a href='#L146'>146</a>
+<a name='L147'></a><a href='#L147'>147</a>
+<a name='L148'></a><a href='#L148'>148</a>
+<a name='L149'></a><a href='#L149'>149</a>
+<a name='L150'></a><a href='#L150'>150</a>
+<a name='L151'></a><a href='#L151'>151</a>
+<a name='L152'></a><a href='#L152'>152</a>
+<a name='L153'></a><a href='#L153'>153</a>
+<a name='L154'></a><a href='#L154'>154</a>
+<a name='L155'></a><a href='#L155'>155</a>
+<a name='L156'></a><a href='#L156'>156</a>
+<a name='L157'></a><a href='#L157'>157</a>
+<a name='L158'></a><a href='#L158'>158</a>
+<a name='L159'></a><a href='#L159'>159</a>
+<a name='L160'></a><a href='#L160'>160</a>
+<a name='L161'></a><a href='#L161'>161</a>
+<a name='L162'></a><a href='#L162'>162</a>
+<a name='L163'></a><a href='#L163'>163</a>
+<a name='L164'></a><a href='#L164'>164</a>
+<a name='L165'></a><a href='#L165'>165</a>
+<a name='L166'></a><a href='#L166'>166</a>
+<a name='L167'></a><a href='#L167'>167</a>
+<a name='L168'></a><a href='#L168'>168</a>
+<a name='L169'></a><a href='#L169'>169</a>
+<a name='L170'></a><a href='#L170'>170</a>
+<a name='L171'></a><a href='#L171'>171</a>
+<a name='L172'></a><a href='#L172'>172</a>
+<a name='L173'></a><a href='#L173'>173</a>
+<a name='L174'></a><a href='#L174'>174</a>
+<a name='L175'></a><a href='#L175'>175</a>
+<a name='L176'></a><a href='#L176'>176</a>
+<a name='L177'></a><a href='#L177'>177</a>
+<a name='L178'></a><a href='#L178'>178</a>
+<a name='L179'></a><a href='#L179'>179</a>
+<a name='L180'></a><a href='#L180'>180</a>
+<a name='L181'></a><a href='#L181'>181</a>
+<a name='L182'></a><a href='#L182'>182</a>
+<a name='L183'></a><a href='#L183'>183</a>
+<a name='L184'></a><a href='#L184'>184</a>
+<a name='L185'></a><a href='#L185'>185</a>
+<a name='L186'></a><a href='#L186'>186</a>
+<a name='L187'></a><a href='#L187'>187</a>
+<a name='L188'></a><a href='#L188'>188</a>
+<a name='L189'></a><a href='#L189'>189</a>
+<a name='L190'></a><a href='#L190'>190</a>
+<a name='L191'></a><a href='#L191'>191</a>
+<a name='L192'></a><a href='#L192'>192</a>
+<a name='L193'></a><a href='#L193'>193</a>
+<a name='L194'></a><a href='#L194'>194</a>
+<a name='L195'></a><a href='#L195'>195</a>
+<a name='L196'></a><a href='#L196'>196</a>
+<a name='L197'></a><a href='#L197'>197</a>
+<a name='L198'></a><a href='#L198'>198</a>
+<a name='L199'></a><a href='#L199'>199</a>
+<a name='L200'></a><a href='#L200'>200</a>
+<a name='L201'></a><a href='#L201'>201</a>
+<a name='L202'></a><a href='#L202'>202</a>
+<a name='L203'></a><a href='#L203'>203</a>
+<a name='L204'></a><a href='#L204'>204</a>
+<a name='L205'></a><a href='#L205'>205</a>
+<a name='L206'></a><a href='#L206'>206</a>
+<a name='L207'></a><a href='#L207'>207</a>
+<a name='L208'></a><a href='#L208'>208</a>
+<a name='L209'></a><a href='#L209'>209</a>
+<a name='L210'></a><a href='#L210'>210</a>
+<a name='L211'></a><a href='#L211'>211</a>
+<a name='L212'></a><a href='#L212'>212</a>
+<a name='L213'></a><a href='#L213'>213</a>
+<a name='L214'></a><a href='#L214'>214</a>
+<a name='L215'></a><a href='#L215'>215</a>
+<a name='L216'></a><a href='#L216'>216</a>
+<a name='L217'></a><a href='#L217'>217</a>
+<a name='L218'></a><a href='#L218'>218</a>
+<a name='L219'></a><a href='#L219'>219</a>
+<a name='L220'></a><a href='#L220'>220</a>
+<a name='L221'></a><a href='#L221'>221</a>
+<a name='L222'></a><a href='#L222'>222</a>
+<a name='L223'></a><a href='#L223'>223</a>
+<a name='L224'></a><a href='#L224'>224</a>
+<a name='L225'></a><a href='#L225'>225</a>
+<a name='L226'></a><a href='#L226'>226</a>
+<a name='L227'></a><a href='#L227'>227</a>
+<a name='L228'></a><a href='#L228'>228</a>
+<a name='L229'></a><a href='#L229'>229</a>
+<a name='L230'></a><a href='#L230'>230</a>
+<a name='L231'></a><a href='#L231'>231</a>
+<a name='L232'></a><a href='#L232'>232</a>
+<a name='L233'></a><a href='#L233'>233</a>
+<a name='L234'></a><a href='#L234'>234</a>
+<a name='L235'></a><a href='#L235'>235</a>
+<a name='L236'></a><a href='#L236'>236</a>
+<a name='L237'></a><a href='#L237'>237</a>
+<a name='L238'></a><a href='#L238'>238</a>
+<a name='L239'></a><a href='#L239'>239</a>
+<a name='L240'></a><a href='#L240'>240</a>
+<a name='L241'></a><a href='#L241'>241</a>
+<a name='L242'></a><a href='#L242'>242</a>
+<a name='L243'></a><a href='#L243'>243</a>
+<a name='L244'></a><a href='#L244'>244</a>
+<a name='L245'></a><a href='#L245'>245</a>
+<a name='L246'></a><a href='#L246'>246</a>
+<a name='L247'></a><a href='#L247'>247</a>
+<a name='L248'></a><a href='#L248'>248</a>
+<a name='L249'></a><a href='#L249'>249</a>
+<a name='L250'></a><a href='#L250'>250</a>
+<a name='L251'></a><a href='#L251'>251</a>
+<a name='L252'></a><a href='#L252'>252</a>
+<a name='L253'></a><a href='#L253'>253</a>
+<a name='L254'></a><a href='#L254'>254</a>
+<a name='L255'></a><a href='#L255'>255</a>
+<a name='L256'></a><a href='#L256'>256</a>
+<a name='L257'></a><a href='#L257'>257</a>
+<a name='L258'></a><a href='#L258'>258</a>
+<a name='L259'></a><a href='#L259'>259</a>
+<a name='L260'></a><a href='#L260'>260</a>
+<a name='L261'></a><a href='#L261'>261</a>
+<a name='L262'></a><a href='#L262'>262</a>
+<a name='L263'></a><a href='#L263'>263</a>
+<a name='L264'></a><a href='#L264'>264</a>
+<a name='L265'></a><a href='#L265'>265</a>
+<a name='L266'></a><a href='#L266'>266</a>
+<a name='L267'></a><a href='#L267'>267</a>
+<a name='L268'></a><a href='#L268'>268</a>
+<a name='L269'></a><a href='#L269'>269</a>
+<a name='L270'></a><a href='#L270'>270</a>
+<a name='L271'></a><a href='#L271'>271</a>
+<a name='L272'></a><a href='#L272'>272</a>
+<a name='L273'></a><a href='#L273'>273</a>
+<a name='L274'></a><a href='#L274'>274</a>
+<a name='L275'></a><a href='#L275'>275</a>
+<a name='L276'></a><a href='#L276'>276</a>
+<a name='L277'></a><a href='#L277'>277</a>
+<a name='L278'></a><a href='#L278'>278</a>
+<a name='L279'></a><a href='#L279'>279</a>
+<a name='L280'></a><a href='#L280'>280</a>
+<a name='L281'></a><a href='#L281'>281</a>
+<a name='L282'></a><a href='#L282'>282</a>
+<a name='L283'></a><a href='#L283'>283</a>
+<a name='L284'></a><a href='#L284'>284</a>
+<a name='L285'></a><a href='#L285'>285</a>
+<a name='L286'></a><a href='#L286'>286</a>
+<a name='L287'></a><a href='#L287'>287</a>
+<a name='L288'></a><a href='#L288'>288</a>
+<a name='L289'></a><a href='#L289'>289</a>
+<a name='L290'></a><a href='#L290'>290</a>
+<a name='L291'></a><a href='#L291'>291</a>
+<a name='L292'></a><a href='#L292'>292</a>
+<a name='L293'></a><a href='#L293'>293</a>
+<a name='L294'></a><a href='#L294'>294</a>
+<a name='L295'></a><a href='#L295'>295</a>
+<a name='L296'></a><a href='#L296'>296</a>
+<a name='L297'></a><a href='#L297'>297</a>
+<a name='L298'></a><a href='#L298'>298</a>
+<a name='L299'></a><a href='#L299'>299</a>
+<a name='L300'></a><a href='#L300'>300</a>
+<a name='L301'></a><a href='#L301'>301</a>
+<a name='L302'></a><a href='#L302'>302</a>
+<a name='L303'></a><a href='#L303'>303</a>
+<a name='L304'></a><a href='#L304'>304</a>
+<a name='L305'></a><a href='#L305'>305</a>
+<a name='L306'></a><a href='#L306'>306</a>
+<a name='L307'></a><a href='#L307'>307</a>
+<a name='L308'></a><a href='#L308'>308</a>
+<a name='L309'></a><a href='#L309'>309</a>
+<a name='L310'></a><a href='#L310'>310</a>
+<a name='L311'></a><a href='#L311'>311</a>
+<a name='L312'></a><a href='#L312'>312</a>
+<a name='L313'></a><a href='#L313'>313</a>
+<a name='L314'></a><a href='#L314'>314</a>
+<a name='L315'></a><a href='#L315'>315</a>
+<a name='L316'></a><a href='#L316'>316</a>
+<a name='L317'></a><a href='#L317'>317</a>
+<a name='L318'></a><a href='#L318'>318</a>
+<a name='L319'></a><a href='#L319'>319</a>
+<a name='L320'></a><a href='#L320'>320</a>
+<a name='L321'></a><a href='#L321'>321</a>
+<a name='L322'></a><a href='#L322'>322</a>
+<a name='L323'></a><a href='#L323'>323</a>
+<a name='L324'></a><a href='#L324'>324</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >export enum ConnectionStatus {</span></span></span>
+<span class="cstat-no" title="statement not covered" >  DISCONNECTED = 'DISCONNECTED',</span>
+<span class="cstat-no" title="statement not covered" >  CONNECTING = 'CONNECTING',</span>
+<span class="cstat-no" title="statement not covered" >  CONNECTED = 'CONNECTED',</span>
+<span class="cstat-no" title="statement not covered" >  ERROR = 'ERROR',</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export type ChatMessageFeedback = 'up' | 'down' | 'submitted';</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export type ChatMessage = {</span>
+<span class="cstat-no" title="statement not covered" >  id: string;</span>
+<span class="cstat-no" title="statement not covered" >  role: 'user' | 'model' | 'system';</span>
+<span class="cstat-no" title="statement not covered" >  text: string;</span>
+<span class="cstat-no" title="statement not covered" >  images?: string[]; // data URLs for displaying images in chat</span>
+<span class="cstat-no" title="statement not covered" >  isFromPC?: boolean;</span>
+<span class="cstat-no" title="statement not covered" >  sources?: { uri: string; title: string; }[];</span>
+<span class="cstat-no" title="statement not covered" >  suggestions?: string[];</span>
+<span class="cstat-no" title="statement not covered" >  triumph?: { type: string; name: string; };</span>
+<span class="cstat-no" title="statement not covered" >  showUpgradeButton?: boolean;</span>
+<span class="cstat-no" title="statement not covered" >  feedback?: ChatMessageFeedback;</span>
+<span class="cstat-no" title="statement not covered" >};</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export type UserTier = 'free' | 'pro' | 'vanguard_pro';</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export type Usage = {</span>
+<span class="cstat-no" title="statement not covered" >  textCount: number;</span>
+<span class="cstat-no" title="statement not covered" >  imageCount: number;</span>
+<span class="cstat-no" title="statement not covered" >  textLimit: number;</span>
+<span class="cstat-no" title="statement not covered" >  imageLimit: number;</span>
+<span class="cstat-no" title="statement not covered" >  tier: UserTier;</span>
+<span class="cstat-no" title="statement not covered" >};</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export type InsightStatus = 'loading' | 'streaming' | 'loaded' | 'error' | 'placeholder';</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export type Insight = {</span>
+<span class="cstat-no" title="statement not covered" >  id: string;</span>
+<span class="cstat-no" title="statement not covered" >  title: string;</span>
+<span class="cstat-no" title="statement not covered" >  content: string;</span>
+<span class="cstat-no" title="statement not covered" >  status: InsightStatus;</span>
+<span class="cstat-no" title="statement not covered" >  isNew?: boolean;</span>
+<span class="cstat-no" title="statement not covered" >  feedback?: ChatMessageFeedback;</span>
+<span class="cstat-no" title="statement not covered" >  isPlaceholder?: boolean; // New flag for placeholder content</span>
+<span class="cstat-no" title="statement not covered" >  lastUpdated?: number; // Track when content was last updated</span>
+<span class="cstat-no" title="statement not covered" >  generationAttempts?: number; // Track generation attempts for retry logic</span>
+<span class="cstat-no" title="statement not covered" >};</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export type GeminiModel = 'gemini-2.5-pro' | 'gemini-2.5-flash';</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export const GEMINI_PRO_MODEL: GeminiModel = 'gemini-2.5-pro';</span>
+<span class="cstat-no" title="statement not covered" >export const GEMINI_FLASH_MODEL: GeminiModel = 'gemini-2.5-flash';</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export type PendingInsightModification = {</span>
+<span class="cstat-no" title="statement not covered" >  id: string; // The ID of the insight to modify/overwrite</span>
+<span class="cstat-no" title="statement not covered" >  type: 'add' | 'remove' | 'modify';</span>
+<span class="cstat-no" title="statement not covered" >  title?: string;</span>
+<span class="cstat-no" title="statement not covered" >  content?: string;</span>
+<span class="cstat-no" title="statement not covered" >  status?: InsightStatus;</span>
+<span class="cstat-no" title="statement not covered" >};</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >// New simplified tab management types</span>
+<span class="cstat-no" title="statement not covered" >export type TabCommand = TabModificationCommand | TabDeletionCommand;</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export type TabActionType = 'add' | 'modify' | 'delete' | 'reorder';</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export type TabModificationCommand = {</span>
+<span class="cstat-no" title="statement not covered" >  action: 'add' | 'modify';</span>
+<span class="cstat-no" title="statement not covered" >  tabId?: string; // Required for modify, optional for add</span>
+<span class="cstat-no" title="statement not covered" >  title: string;</span>
+<span class="cstat-no" title="statement not covered" >  content?: string;</span>
+<span class="cstat-no" title="statement not covered" >  position?: number; // For reordering</span>
+<span class="cstat-no" title="statement not covered" >};</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export type TabDeletionCommand = {</span>
+<span class="cstat-no" title="statement not covered" >  action: 'delete';</span>
+<span class="cstat-no" title="statement not covered" >  tabId: string;</span>
+<span class="cstat-no" title="statement not covered" >  confirmation?: boolean; // For safety</span>
+<span class="cstat-no" title="statement not covered" >};</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export type TabCommandResult = {</span>
+<span class="cstat-no" title="statement not covered" >  success: boolean;</span>
+<span class="cstat-no" title="statement not covered" >  message: string;</span>
+<span class="cstat-no" title="statement not covered" >  updatedTabs?: string[];</span>
+<span class="cstat-no" title="statement not covered" >  error?: string;</span>
+<span class="cstat-no" title="statement not covered" >};</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export type ContextMenuItem = {</span>
+<span class="cstat-no" title="statement not covered" >  label: string;</span>
+<span class="cstat-no" title="statement not covered" >  action: () =&gt; void;</span>
+<span class="cstat-no" title="statement not covered" >  icon?: React.FC&lt;{ className?: string }&gt;;</span>
+<span class="cstat-no" title="statement not covered" >  isDestructive?: boolean;</span>
+<span class="cstat-no" title="statement not covered" >};</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export type ContextMenuState = {</span>
+<span class="cstat-no" title="statement not covered" >  targetRect: DOMRect;</span>
+<span class="cstat-no" title="statement not covered" >  items: ContextMenuItem[];</span>
+<span class="cstat-no" title="statement not covered" >};</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export type Conversation = {</span>
+<span class="cstat-no" title="statement not covered" >  id:string;</span>
+<span class="cstat-no" title="statement not covered" >  title: string;</span>
+<span class="cstat-no" title="statement not covered" >  messages: ChatMessage[];</span>
+<span class="cstat-no" title="statement not covered" >  createdAt: number;</span>
+<span class="cstat-no" title="statement not covered" >  progress?: number;</span>
+<span class="cstat-no" title="statement not covered" >  inventory?: string[];</span>
+<span class="cstat-no" title="statement not covered" >  lastTrailerTimestamp?: number;</span>
+<span class="cstat-no" title="statement not covered" >  lastInteractionTimestamp?: number;</span>
+<span class="cstat-no" title="statement not covered" >  genre?: string;</span>
+<span class="cstat-no" title="statement not covered" >  insights?: Record&lt;string, Insight&gt;;</span>
+<span class="cstat-no" title="statement not covered" >  insightsOrder?: string[];</span>
+<span class="cstat-no" title="statement not covered" >  isPinned?: boolean;</span>
+<span class="cstat-no" title="statement not covered" >  activeObjective?: { description: string; isCompleted: boolean; } | null;</span>
+<span class="cstat-no" title="statement not covered" >};</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export type Conversations = Record&lt;string, Conversation&gt;;</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export const newsPrompts = [</span>
+<span class="cstat-no" title="statement not covered" >    "What's the latest gaming news?",</span>
+<span class="cstat-no" title="statement not covered" >    "Which games are releasing soon?",</span>
+<span class="cstat-no" title="statement not covered" >    "What are the latest game reviews?",</span>
+<span class="cstat-no" title="statement not covered" >    "Show me the hottest new game trailers.",</span>
+<span class="cstat-no" title="statement not covered" >];</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >const storySoFarTab: InsightTab = { id: 'story_so_far', title: 'Story So Far', instruction: "Provide a concise summary of the main plot events that have occurred strictly up to the estimated game progress. Do not mention, hint at, or allude to any future events, characters, or plot twists. The summary should read like a journal entry of what has *already happened*." };</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export const insightTabsConfig: Record&lt;string, InsightTab[]&gt; = {</span>
+<span class="cstat-no" title="statement not covered" >    'default': [</span>
+<span class="cstat-no" title="statement not covered" >        storySoFarTab,</span>
+<span class="cstat-no" title="statement not covered" >        { id: 'missed_items', title: 'Items You May Have Missed', instruction: "Based on the player's current progress, identify 2-3 significant items, secrets, or side quests they might have overlooked in areas they have already visited. Provide clear, actionable hints about their locations without giving away the exact solution. Use landmarks and environmental descriptions. Example: 'In the Whispering Caverns, a waterfall hides more than just a damp cave wall.'" },</span>
+<span class="cstat-no" title="statement not covered" >        { id: 'game_lore', title: 'Relevant Lore', instruction: "Provide a fascinating, detailed, spoiler-free piece of lore about the game's world, characters, or backstory that is relevant to the player's current situation or recent events. This should be a deep-dive, not a short summary." },</span>
+<span class="cstat-no" title="statement not covered" >        { id: 'build_guide', title: 'Build Guide', instruction: "Suggest one or two detailed, effective character builds or loadouts using items and skills available up to the current progress point. Be specific about the synergy between components, stat allocation, and how the build excels in the player's current or upcoming challenges." },</span>
+<span class="cstat-no" title="statement not covered" >        { id: 'next_session_plan', title: 'Plan Your Next Session', instruction: "Based on the player's progress and story so far, clearly list 3-4 concrete objectives or tasks they can tackle in their next gameplay session. This should include a mix of main quests, important side quests, and interesting areas to explore next. Provide a brief, compelling reason for each suggestion." },</span>
+<span class="cstat-no" title="statement not covered" >    ],</span>
+<span class="cstat-no" title="statement not covered" >    'Action RPG': [</span>
+<span class="cstat-no" title="statement not covered" >        storySoFarTab,</span>
+<span class="cstat-no" title="statement not covered" >        { id: 'quest_log', title: 'Active Quests', instruction: "Summarize the active main quest and suggest 2-3 relevant side quests available in the current area. Explain the potential rewards or story connections." },</span>
+<span class="cstat-no" title="statement not covered" >        { id: 'build_optimization', title: 'Build Optimization', instruction: "Analyze the player's likely stats and gear. Suggest 2-3 specific improvements, like stat allocation changes, better weapon affinities, or spells that synergize with their build." },</span>
+<span class="cstat-no" title="statement not covered" >        { id: 'boss_strategy', title: 'Upcoming Boss Strategy', instruction: "A significant challenge may lie ahead. **Do not name the upcoming boss or describe its appearance.** Instead, provide clear, actionable tactical advice based on its likely attack patterns and weaknesses. Suggest effective weapon types, armor properties, status effects, and specific strategies (e.g., 'This foe is relentless up close; focus on ranged attacks and stay mobile,' or 'Its armor is vulnerable to fire damage; enchanted weapons will be key.'). The advice should be practical, not metaphorical." },</span>
+<span class="cstat-no" title="statement not covered" >        { id: 'hidden_paths', title: 'Hidden Paths &amp; Secrets', instruction: "Hint at a secret path or hidden area nearby that the player may have missed. **Do not give explicit directions.** Instead, provide a clear clue tied to a specific landmark or environmental feature. The goal is to make the player think 'Aha!' not 'Huh?'. Example: 'The large statue in the Grand Hall seems to be pointing at a specific tapestry on the wall...' or 'Listen for the sound of running water behind the library's northern bookshelf.'" },</span>
+<span class="cstat-no" title="statement not covered" >    ],</span>
+<span class="cstat-no" title="statement not covered" >    'First-Person Shooter': [</span>
+<span class="cstat-no" title="statement not covered" >        storySoFarTab,</span>
+<span class="cstat-no" title="statement not covered" >        { id: 'loadout_analysis', title: 'Loadout Analysis', instruction: "Analyze the probable current weapon loadout. Suggest 2 alternative, powerful loadouts (primary, secondary, equipment) for the current situation or map, explaining the strategic advantage of each." },</span>
+<span class="cstat-no" title="statement not covered" >        { id: 'map_strategies', title: 'Map Strategies', instruction: "Provide 3 key strategic tips for the likely current map or area, focusing on positioning, flanking routes, and objective control." },</span>
+<span class="cstat-no" title="statement not covered" >        { id: 'enemy_intel', title: 'Enemy Intel', instruction: "You'll encounter new threats in this zone. **Do not name the enemy types or describe their appearance in a way that spoils their reveal.** Describe their behavior, attack patterns, and a key vulnerability in a tactical, in-universe way. The advice must be actionable. For example: 'Some hostiles carry volatile canisters on their backs. A well-placed shot could trigger a chain reaction.' or 'Listen for a high-pitched whine; it signals a devastating charge you must evade immediately.'" },</span>
+<span class="cstat-no" title="statement not covered" >        { id: 'pro_tips', title: 'Pro Tips', instruction: "Offer 3 advanced tips or 'pro strats' for this game that a new player might not know, such as movement tricks, ability combos, or unusual weapon uses." },</span>
+<span class="cstat-no" title="statement not covered" >    ],</span>
+<span class="cstat-no" title="statement not covered" >     'Strategy': [</span>
+<span class="cstat-no" title="statement not covered" >        storySoFarTab,</span>
+<span class="cstat-no" title="statement not covered" >        { id: 'current_board_state', title: 'Current State Analysis', instruction: "Analyze the current game state (e.g., board position, resources, army composition). Provide a high-level summary of strengths, weaknesses, and immediate threats." },</span>
+<span class="cstat-no" title="statement not covered" >        { id: 'opening_moves', title: 'Opening Builds', instruction: "Describe 2-3 popular and effective opening strategies or build orders for the player's faction or starting position." },</span>
+<span class="cstat-no" title="statement not covered" >        { id: 'unit_counters', title: 'Unit Counters', instruction: "Intelligence suggests the enemy will deploy units with specific strengths. **Do not name the enemy units.** Instead, describe their function (e.g., 'fast-moving aerial threats', 'heavily armored ground forces') and suggest specific, effective counters from the player's available arsenal. Explain *why* the counter works (e.g., '...because your Stinger units have tracking projectiles that are effective against agile air targets.')." },</span>
+<span class="cstat-no" title="statement not covered" >        { id: 'economy_guide', title: 'Economy Management', instruction: "Provide 3 tips for optimizing resource generation and spending at the player's current stage of the game." },</span>
+<span class="cstat-no" title="statement not covered" >    ],</span>
+<span class="cstat-no" title="statement not covered" >    'Simulation': [</span>
+<span class="cstat-no" title="statement not covered" >        { id: 'goal_suggestions', title: 'Goal Suggestions', instruction: "Based on the current state, suggest 3 short-term and 1 long-term goal to work towards. For example, expanding a facility, achieving a milestone, or unlocking a new technology." },</span>
+<span class="cstat-no" title="statement not covered" >        { id: 'efficiency_tips', title: 'Efficiency &amp; Optimization', instruction: "Provide 3 actionable tips for improving the efficiency of the player's current setup, such as optimizing a production line, improving traffic flow, or managing finances better." },</span>
+<span class="cstat-no" title="statement not covered" >        { id: 'hidden_mechanics', title: 'Hidden Mechanics', instruction: "Explain one non-obvious game mechanic that can significantly impact gameplay, which the player may not be aware of yet." },</span>
+<span class="cstat-no" title="statement not covered" >        { id: 'disaster_prep', title: 'Disaster Prep', instruction: "Great endeavors are often tested. **Do not name the specific disaster or event.** Hint at a potential future challenge in a thematic way and suggest 2-3 concrete, preventative measures. For example: 'The markets are fickle; diversifying your income streams and building a cash reserve can weather any financial storm.' or 'The earth sometimes trembles. Ensuring your infrastructure is reinforced near fault lines could prevent a catastrophe.'" },</span>
+<span class="cstat-no" title="statement not covered" >    ]</span>
+<span class="cstat-no" title="statement not covered" >};</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >// Enhanced Types for Otakon AI v19</span>
+<span class="cstat-no" title="statement not covered" >export interface PlayerProfile {</span>
+<span class="cstat-no" title="statement not covered" >  hintStyle: 'Cryptic' | 'Balanced' | 'Direct';</span>
+<span class="cstat-no" title="statement not covered" >  playerFocus: 'Story-Driven' | 'Completionist' | 'Strategist';</span>
+<span class="cstat-no" title="statement not covered" >  preferredTone: 'Encouraging' | 'Professional' | 'Casual';</span>
+<span class="cstat-no" title="statement not covered" >  spoilerTolerance: 'Strict' | 'Moderate' | 'Relaxed';</span>
+<span class="cstat-no" title="statement not covered" >  isFirstTime: boolean;</span>
+<span class="cstat-no" title="statement not covered" >  createdAt: number;</span>
+<span class="cstat-no" title="statement not covered" >  lastUpdated: number;</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export interface BuildSnapshot {</span>
+<span class="cstat-no" title="statement not covered" >  timestamp: number;</span>
+<span class="cstat-no" title="statement not covered" >  level: number;</span>
+<span class="cstat-no" title="statement not covered" >  stats: Record&lt;string, number&gt;;</span>
+<span class="cstat-no" title="statement not covered" >  equipment: string[];</span>
+<span class="cstat-no" title="statement not covered" >  skills: string[];</span>
+<span class="cstat-no" title="statement not covered" >  notes: string;</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export interface SessionSummary {</span>
+<span class="cstat-no" title="statement not covered" >  date: number;</span>
+<span class="cstat-no" title="statement not covered" >  duration: number;</span>
+<span class="cstat-no" title="statement not covered" >  objectives: string[];</span>
+<span class="cstat-no" title="statement not covered" >  discoveries: string[];</span>
+<span class="cstat-no" title="statement not covered" >  summary: string;</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export interface GameContext {</span>
+<span class="cstat-no" title="statement not covered" >  playthroughCount: number;</span>
+<span class="cstat-no" title="statement not covered" >  lastSessionDate: number;</span>
+<span class="cstat-no" title="statement not covered" >  totalPlayTime: number;</span>
+<span class="cstat-no" title="statement not covered" >  objectivesCompleted: string[];</span>
+<span class="cstat-no" title="statement not covered" >  secretsFound: string[];</span>
+<span class="cstat-no" title="statement not covered" >  buildHistory: BuildSnapshot[];</span>
+<span class="cstat-no" title="statement not covered" >  sessionSummaries: SessionSummary[];</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export interface ProactiveInsight {</span>
+<span class="cstat-no" title="statement not covered" >  id: string;</span>
+<span class="cstat-no" title="statement not covered" >  type: 'build_optimization' | 'lore_summary' | 'mechanic_explanation' | 'session_summary';</span>
+<span class="cstat-no" title="statement not covered" >  trigger: 'objective_complete' | 'inventory_change' | 'area_discovery' | 'session_start';</span>
+<span class="cstat-no" title="statement not covered" >  content: string;</span>
+<span class="cstat-no" title="statement not covered" >  priority: 'low' | 'medium' | 'high';</span>
+<span class="cstat-no" title="statement not covered" >  timestamp: number;</span>
+<span class="cstat-no" title="statement not covered" >  isRead: boolean;</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export interface ConversationContext {</span>
+<span class="cstat-no" title="statement not covered" >  conversationId: string;</span>
+<span class="cstat-no" title="statement not covered" >  gameId: string | null;</span>
+<span class="cstat-no" title="statement not covered" >  lastInteraction: number;</span>
+<span class="cstat-no" title="statement not covered" >  sessionStart: number;</span>
+<span class="cstat-no" title="statement not covered" >  messageHistory: string[];</span>
+<span class="cstat-no" title="statement not covered" >  userIntent: 'new_query' | 'clarification' | 'follow_up' | 'game_switch';</span>
+<span class="cstat-no" title="statement not covered" >  contextTags: Record&lt;string, any&gt;;</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export interface StructuredResponse {</span>
+<span class="cstat-no" title="statement not covered" >  type: 'new_help' | 'follow_up' | 'game_switch' | 'session_continuation';</span>
+<span class="cstat-no" title="statement not covered" >  sections: ResponseSection[];</span>
+<span class="cstat-no" title="statement not covered" >  context: ResponseContext;</span>
+<span class="cstat-no" title="statement not covered" >  formatting: ResponseFormatting;</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export interface ResponseSection {</span>
+<span class="cstat-no" title="statement not covered" >  id: string;</span>
+<span class="cstat-no" title="statement not covered" >  title: string;</span>
+<span class="cstat-no" title="statement not covered" >  content: string;</span>
+<span class="cstat-no" title="statement not covered" >  priority: 'high' | 'medium' | 'low';</span>
+<span class="cstat-no" title="statement not covered" >  isCollapsible?: boolean;</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export interface ResponseContext {</span>
+<span class="cstat-no" title="statement not covered" >  gameId: string;</span>
+<span class="cstat-no" title="statement not covered" >  lastInteraction: number;</span>
+<span class="cstat-no" title="statement not covered" >  conversationHistory: string[];</span>
+<span class="cstat-no" title="statement not covered" >  userIntent: 'new_query' | 'clarification' | 'follow_up' | 'game_switch';</span>
+<span class="cstat-no" title="statement not covered" >  sessionDuration: number;</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export interface ResponseFormatting {</span>
+<span class="cstat-no" title="statement not covered" >  useHeaders: boolean;</span>
+<span class="cstat-no" title="statement not covered" >  useBulletPoints: boolean;</span>
+<span class="cstat-no" title="statement not covered" >  useNumberedLists: boolean;</span>
+<span class="cstat-no" title="statement not covered" >  useCallouts: boolean;</span>
+<span class="cstat-no" title="statement not covered" >  useProgressIndicators: boolean;</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >// Enhanced Conversation interface extending current Conversation</span>
+<span class="cstat-no" title="statement not covered" >export interface ConversationV19 extends Conversation {</span>
+<span class="cstat-no" title="statement not covered" >  playerProfile?: PlayerProfile;</span>
+<span class="cstat-no" title="statement not covered" >  gameContext?: GameContext;</span>
+<span class="cstat-no" title="statement not covered" >  proactiveInsights?: ProactiveInsight[];</span>
+<span class="cstat-no" title="statement not covered" >  userId?: string;</span>
+<span class="cstat-no" title="statement not covered" >  crossGameReferences?: string[]; // Other game IDs this user has played</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >// Enhanced Insight Types for v19</span>
+<span class="cstat-no" title="statement not covered" >export interface InsightTab {</span>
+<span class="cstat-no" title="statement not covered" >  id: string;</span>
+<span class="cstat-no" title="statement not covered" >  title: string;</span>
+<span class="cstat-no" title="statement not covered" >  content?: string;</span>
+<span class="cstat-no" title="statement not covered" >  instruction?: string;</span>
+<span class="cstat-no" title="statement not covered" >  conversationId?: string;</span>
+<span class="cstat-no" title="statement not covered" >  tabId?: string;</span>
+<span class="cstat-no" title="statement not covered" >  tabTitle?: string;</span>
+<span class="cstat-no" title="statement not covered" >  tabType?: 'objective' | 'inventory' | 'progress' | 'suggestions' | 'custom';</span>
+<span class="cstat-no" title="statement not covered" >  isPinned?: boolean;</span>
+<span class="cstat-no" title="statement not covered" >  orderIndex?: number;</span>
+<span class="cstat-no" title="statement not covered" >  metadata?: Record&lt;string, any&gt;;</span>
+<span class="cstat-no" title="statement not covered" >  webSearch?: boolean; // Add webSearch property</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export interface EnhancedInsightTab extends InsightTab {</span>
+<span class="cstat-no" title="statement not covered" >    priority: 'high' | 'medium' | 'low';</span>
+<span class="cstat-no" title="statement not covered" >    playerFocus: string[];</span>
+<span class="cstat-no" title="statement not covered" >    hintStyle: string[];</span>
+<span class="cstat-no" title="statement not covered" >    isProfileSpecific: boolean;</span>
+<span class="cstat-no" title="statement not covered" >    customInstruction?: string;</span>
+<span class="cstat-no" title="statement not covered" >    isNewGamePill?: boolean;</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export interface ProfileAwareInsightConfig {</span>
+<span class="cstat-no" title="statement not covered" >    tabs: EnhancedInsightTab[];</span>
+<span class="cstat-no" title="statement not covered" >    contentInstructions: Record&lt;string, string&gt;;</span>
+<span class="cstat-no" title="statement not covered" >    responseFormatting: Record&lt;string, any&gt;;</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >// Otaku Diary System Interfaces</span>
+<span class="cstat-no" title="statement not covered" >export interface DiaryTask {</span>
+<span class="cstat-no" title="statement not covered" >  id: string;</span>
+<span class="cstat-no" title="statement not covered" >  title: string;</span>
+<span class="cstat-no" title="statement not covered" >  description: string;</span>
+<span class="cstat-no" title="statement not covered" >  type: 'user_created' | 'ai_suggested';</span>
+<span class="cstat-no" title="statement not covered" >  status: 'pending' | 'completed' | 'need_help';</span>
+<span class="cstat-no" title="statement not covered" >  category: 'quest' | 'boss' | 'exploration' | 'item' | 'character' | 'custom';</span>
+<span class="cstat-no" title="statement not covered" >  createdAt: number;</span>
+<span class="cstat-no" title="statement not covered" >  completedAt?: number;</span>
+<span class="cstat-no" title="statement not covered" >  gameId: string;</span>
+<span class="cstat-no" title="statement not covered" >  source?: string; // AI response or user input</span>
+<span class="cstat-no" title="statement not covered" >  priority?: 'low' | 'medium' | 'high';</span>
+<span class="cstat-no" title="statement not covered" >  sourceMessageId?: string; // Link to original message/insight</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export interface DiaryFavorite {</span>
+<span class="cstat-no" title="statement not covered" >  id: string;</span>
+<span class="cstat-no" title="statement not covered" >  content: string;</span>
+<span class="cstat-no" title="statement not covered" >  type: 'ai_response' | 'insight' | 'lore';</span>
+<span class="cstat-no" title="statement not covered" >  gameId: string;</span>
+<span class="cstat-no" title="statement not covered" >  createdAt: number;</span>
+<span class="cstat-no" title="statement not covered" >  context?: string;</span>
+<span class="cstat-no" title="statement not covered" >  sourceMessageId?: string;</span>
+<span class="cstat-no" title="statement not covered" >  sourceInsightId?: string;</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export interface DetectedTask {</span>
+<span class="cstat-no" title="statement not covered" >  title: string;</span>
+<span class="cstat-no" title="statement not covered" >  description: string;</span>
+<span class="cstat-no" title="statement not covered" >  category: 'quest' | 'boss' | 'exploration' | 'item' | 'character' | 'custom';</span>
+<span class="cstat-no" title="statement not covered" >  confidence: number;</span>
+<span class="cstat-no" title="statement not covered" >  source: string;</span>
+<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at 2025-08-30T01:27:04.971Z
+            </div>
+        <script src="../../prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="../../sorter.js"></script>
+        <script src="../../block-navigation.js"></script>
+    </body>
+</html>
+    

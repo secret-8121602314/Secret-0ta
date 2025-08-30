@@ -464,7 +464,7 @@ export const useChat = (isHandsFreeMode: boolean) => {
         }));
         setLoadingMessages(prev => [...prev, modelMessageId]);
         
-        const usage = unifiedUsageService.getUsage();
+        const usage = await unifiedUsageService.getUsage();
         const { tier, textCount, textLimit, imageCount, imageLimit } = usage;
         
         if (tier === 'free') {
@@ -485,7 +485,7 @@ export const useChat = (isHandsFreeMode: boolean) => {
         if (!sourceConversation) return { success: false, reason: 'conversation_not_found' };
 
         const history = sourceConversation.messages || [];
-        const isProUser = unifiedUsageService.getTier() !== 'free';
+        const isProUser = (await unifiedUsageService.getTier()) !== 'free';
         
         const onError = (error: string) => {
             setLoadingMessages(prev => prev.filter(id => id !== modelMessageId));
