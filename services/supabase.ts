@@ -36,7 +36,7 @@ export class AuthService {
   private authState: AuthState = {
     user: null,
     session: null,
-    loading: true,
+    loading: false,
     error: null,
   };
 

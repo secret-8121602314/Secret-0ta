@@ -121,7 +121,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
 
   return (
     <div 
-        className="h-screen bg-[#111111] text-[#F5F5F5] flex flex-col font-inter animate-fade-in"
+        className="h-screen bg-[#111111] text-[#F5F5F5] flex flex-col font-inter"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}

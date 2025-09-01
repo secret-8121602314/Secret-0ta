@@ -1,8 +1,8 @@
 // Service Worker for Otakon PWA - Performance Optimized with Enhanced Background Sync
-const CACHE_NAME = 'otakon-v1.2.0';
-const CHAT_CACHE_NAME = 'otakon-chat-v1.2.0';
-const STATIC_CACHE = 'otakon-static-v1.2.0';
-const API_CACHE = 'otakon-api-v1.2.0';
+const CACHE_NAME = 'otakon-v1.2.1';
+const CHAT_CACHE_NAME = 'otakon-chat-v1.2.1';
+const STATIC_CACHE = 'otakon-static-v1.2.1';
+const API_CACHE = 'otakon-api-v1.2.1';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -21,14 +21,55 @@ const BACKGROUND_SYNC_TAGS = {
   IMAGE_SYNC: 'image-sync'
 };
 
-// Install event - cache resources
+// Install event - cache resources and clear old caches
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
+    Promise.all([
+      // Clear old caches
+      caches.keys().then(cacheNames => {
+        return Promise.all(
+          cacheNames.map(cacheName => {
+            if (cacheName !== CACHE_NAME && 
+                cacheName !== CHAT_CACHE_NAME && 
+                cacheName !== STATIC_CACHE && 
+                cacheName !== API_CACHE) {
+              console.log('Deleting old cache:', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      }),
+      // Open new cache
+      caches.open(CACHE_NAME)
+        .then((cache) => {
+          console.log('Opened new cache:', CACHE_NAME);
+          return cache.addAll(urlsToCache);
+        })
+    ])
+  );
+});
+
+// Activate event - take control and clear old caches
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    Promise.all([
+      // Take control of all clients immediately
+      self.clients.claim(),
+      // Clear old caches
+      caches.keys().then(cacheNames => {
+        return Promise.all(
+          cacheNames.map(cacheName => {
+            if (cacheName !== CACHE_NAME && 
+                cacheName !== CHAT_CACHE_NAME && 
+                cacheName !== STATIC_CACHE && 
+                cacheName !== API_CACHE) {
+              console.log('Deleting old cache on activate:', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
       })
+    ])
   );
 });
 

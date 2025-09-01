@@ -36,7 +36,7 @@ const FeatureItem: React.FC<{ icon: React.ReactNode; title: React.ReactNode; chi
 
 const HowToUseSplashScreen: React.FC<HowToUseSplashScreenProps> = ({ onComplete }) => {
     return (
-        <div className="h-screen bg-gradient-to-br from-[#111111] to-[#0A0A0A] text-[#F5F5F5] flex flex-col font-inter animate-fade-in">
+        <div className="h-screen bg-gradient-to-br from-[#111111] to-[#0A0A0A] text-[#F5F5F5] flex flex-col font-inter">
             {/* Fixed Header */}
             <header className="flex-shrink-0 px-8 pt-16 pb-8 text-center z-10 bg-gradient-to-br from-[#111111] to-[#0A0A0A]">
                 <div className="max-w-4xl mx-auto">

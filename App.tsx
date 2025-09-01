@@ -84,6 +84,63 @@ import CachePerformanceDashboard from './components/CachePerformanceDashboard';
 // and is used to keep the app process alive in the background for TTS.
 const SILENT_AUDIO_URL = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
 
+// Cache clearing function for first run experience testing
+const clearFirstRunCache = () => {
+  const keysToClear = [
+    'otakonOnboardingComplete',
+    'otakon_profile_setup_completed',
+    'otakon_first_run_completed',
+    'otakon_welcome_message_shown',
+    'otakon_first_welcome_shown',
+    'otakon_has_conversations',
+    'otakon_has_interacted_with_chat',
+    'otakon_last_welcome_time',
+    'otakon_app_closed_time',
+    'otakon_tutorial_completed',
+    'otakon_tutorial_step',
+    'otakon_tutorial_shown',
+    'otakonAuthMethod',
+    'otakonHasConnectedBefore',
+    'otakonGlobalPWAInstalled',
+    'otakonInstallDismissed',
+    'otakon_screenshot_mode',
+    'otakon_screenshot_hint_seen',
+    'otakonPreferredVoiceURI',
+    'otakonSpeechRate',
+    'lastSuggestedPromptsShown',
+    'otakon_used_suggested_prompts',
+    'otakonConversations',
+    'otakonUsage'
+  ];
+
+  let clearedCount = 0;
+  keysToClear.forEach(key => {
+    if (localStorage.getItem(key)) {
+      localStorage.removeItem(key);
+      clearedCount++;
+    }
+  });
+
+  // Clear service worker cache
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+      registrations.forEach(registration => registration.unregister());
+    });
+  }
+
+  if ('caches' in window) {
+    caches.keys().then(cacheNames => {
+      cacheNames.forEach(cacheName => caches.delete(cacheName));
+    });
+  }
+
+  console.log(`🧹 Cleared ${clearedCount} localStorage keys and service worker cache`);
+  console.log('🔄 First run experience cache has been reset. Refresh to see changes.');
+  
+  // Force reload to apply changes
+  window.location.reload();
+};
+
 type ImageFile = { base64: string; mimeType: string; dataUrl: string };
 type FeedbackModalState = {
     type: 'message' | 'insight';
@@ -2303,7 +2360,7 @@ const AppComponent: React.FC = () => {
     const hasInsights = usage.tier !== 'free' && !!(activeConversation?.insightsOrder && activeConversation.insightsOrder.length > 0);
 
     return (
-        <div className="h-screen bg-black text-[#F5F5F5] flex flex-col font-inter relative animate-fade-in overflow-hidden" onContextMenu={(e) => e.preventDefault()}>
+        <div className="h-screen bg-black text-[#F5F5F5] flex flex-col font-inter relative overflow-hidden" onContextMenu={(e) => e.preventDefault()}>
             <audio ref={silentAudioRef} src={SILENT_AUDIO_URL} loop playsInline />
 
             <div className="absolute top-0 left-0 w-full h-full bg-gradient-radial-at-top from-[#1C1C1C]/40 to-transparent -z-0 pointer-events-none"></div>
@@ -2312,7 +2369,7 @@ const AppComponent: React.FC = () => {
             <header className={`relative flex-shrink-0 flex items-center justify-between p-2 sm:p-3 md:p-4 lg:p-6 bg-black/80 backdrop-blur-xl z-20 border-b border-[#424242]/20 shadow-2xl`}>
                 <button
                     type="button"
-                    className="transition-all duration-200 hover:opacity-80 hover:scale-105 group"
+                    className="transition-all duration-200 hover:opacity-80 hover:scale-105 group flex-shrink-0"
                     aria-label="Otakon logo and title"
                 >
                     <div className="flex items-center gap-4">
@@ -2323,10 +2380,10 @@ const AppComponent: React.FC = () => {
                 </button>
                 
                 {/* Enhanced Features Status Bar */}
-                <div className="flex items-center gap-2 sm:gap-3">
+                <div className="flex items-center gap-1 sm:gap-2 md:gap-3 flex-shrink-0">
                     {/* Database Sync Status */}
                     {authState.user && (
-                        <div className="flex items-center gap-1.5 sm:gap-2">
+                        <div className="hidden sm:flex items-center gap-1.5 sm:gap-2">
                             <button
                                 onClick={syncToDatabase}
                                 disabled={databaseSyncStatus === 'syncing'}
@@ -2361,6 +2418,7 @@ const AppComponent: React.FC = () => {
                     
                     {/* Proactive Insights Toggle */}
                     {authState.user && (
+                        <div className="hidden md:block">
                         <button
                             onClick={() => setShowProactiveInsights(!showProactiveInsights)}
                             className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 h-10 sm:h-12 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 ${
@@ -2375,9 +2433,10 @@ const AppComponent: React.FC = () => {
                             </svg>
                             <span className="hidden sm:inline">Insights</span>
                         </button>
+                        </div>
                     )}
                 </div>
-                <div className="flex items-center gap-2 sm:gap-3">
+                <div className="flex items-center gap-1 sm:gap-2 md:gap-3 flex-shrink-0">
                      <CreditIndicator usage={usage} onClick={handleOpenCreditModal} />
                      <HandsFreeToggle
                         isHandsFree={isHandsFreeMode}
@@ -2674,6 +2733,7 @@ const AppComponent: React.FC = () => {
                     onResetApp={handleResetApp}
                     onShowHowToUse={() => setOnboardingStatus('how-to-use')}
                     userEmail={authState.user?.email || ''}
+                    onClearFirstRunCache={clearFirstRunCache}
                 />
                 </React.Suspense>
             )}

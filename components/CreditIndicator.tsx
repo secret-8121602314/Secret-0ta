@@ -64,53 +64,53 @@ const CreditIndicator: React.FC<CreditIndicatorProps> = ({ usage, onClick }) => 
             background: '#111111',
             borderRadius: '10px'
           }}>
-        {/* Mobile View: Circular Bars */}
-        <div className="sm:hidden w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-neutral-900/50 rounded-full p-0.5">
-           <svg className="w-full h-full" viewBox="0 0 32 32" fill="none">
-              <defs>
-                <linearGradient id="sky-gradient" x1="0" y1="0" x2="1" y2="1">
+            {/* Mobile View: Circular Bars */}
+            <div className="md:hidden w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-neutral-900/50 rounded-full p-0.5">
+              <svg className="w-full h-full" viewBox="0 0 32 32" fill="none">
+                <defs>
+                  <linearGradient id="sky-gradient" x1="0" y1="0" x2="1" y2="1">
                     <stop offset="0%" stopColor="#38bdf8" />
                     <stop offset="100%" stopColor="#0ea5e9" />
-                </linearGradient>
-                <linearGradient id="emerald-gradient" x1="0" y1="0" x2="1" y2="1">
+                  </linearGradient>
+                  <linearGradient id="emerald-gradient" x1="0" y1="0" x2="1" y2="1">
                     <stop offset="0%" stopColor="#34d399" />
                     <stop offset="100%" stopColor="#10b981" />
-                </linearGradient>
-              </defs>
-              {/* Outer circle (text) */}
-              <circle cx="16" cy="16" r={radiusOuter} stroke="#424242" strokeWidth={strokeWidth} />
-              <circle 
-                cx="16" cy="16" r={radiusOuter} 
-                stroke="url(#sky-gradient)" 
-                strokeWidth={strokeWidth} 
-                strokeDasharray={circumferenceOuter}
-                strokeDashoffset={offsetOuter}
-                strokeLinecap="round"
-                transform="rotate(-90 16 16)"
-              />
-              {/* Inner circle (image) */}
-              <circle cx="16" cy="16" r={radiusInner} stroke="#424242" strokeWidth={strokeWidth} />
-              <circle 
-                cx="16" cy="16" r={radiusInner} 
-                stroke="url(#emerald-gradient)" 
-                strokeWidth={strokeWidth}
-                strokeDasharray={circumferenceInner}
-                strokeDashoffset={offsetInner}
-                strokeLinecap="round"
-                transform="rotate(-90 16 16)"
-              />
-           </svg>
-        </div>
+                  </linearGradient>
+                </defs>
+                {/* Outer circle (text) */}
+                <circle cx="16" cy="16" r={radiusOuter} stroke="#424242" strokeWidth={strokeWidth} />
+                <circle 
+                  cx="16" cy="16" r={radiusOuter} 
+                  stroke="url(#sky-gradient)" 
+                  strokeWidth={strokeWidth} 
+                  strokeDasharray={circumferenceOuter}
+                  strokeDashoffset={offsetOuter}
+                  strokeLinecap="round"
+                  transform="rotate(-90 16 16)"
+                />
+                {/* Inner circle (image) */}
+                <circle cx="16" cy="16" r={radiusInner} stroke="#424242" strokeWidth={strokeWidth} />
+                <circle 
+                  cx="16" cy="16" r={radiusInner} 
+                  stroke="url(#emerald-gradient)" 
+                  strokeWidth={strokeWidth}
+                  strokeDasharray={circumferenceInner}
+                  strokeDashoffset={offsetInner}
+                  strokeLinecap="round"
+                  transform="rotate(-90 16 16)"
+                />
+              </svg>
+            </div>
 
-        {/* Desktop View: Horizontal Bars */}
-        <div className="hidden sm:flex flex-col gap-1">
-            <CreditBar current={usage.textCount} limit={usage.textLimit} colorClass="bg-gradient-to-r from-sky-400 to-sky-500">
-            <TextIcon className="w-3 h-3 text-sky-400 flex-shrink-0" />
-            </CreditBar>
-            <CreditBar current={usage.imageCount} limit={usage.imageLimit} colorClass="bg-gradient-to-r from-emerald-400 to-emerald-500">
-            <ImageIcon className="w-3 h-3 text-emerald-400 flex-shrink-0" />
-            </CreditBar>
-        </div>
+            {/* Tablet & Desktop View: Horizontal Bars */}
+            <div className="hidden md:flex flex-col gap-1">
+              <CreditBar current={usage.textCount} limit={usage.textLimit} colorClass="bg-gradient-to-r from-sky-400 to-sky-500">
+                <TextIcon className="w-3 h-3 text-sky-400 flex-shrink-0" />
+              </CreditBar>
+              <CreditBar current={usage.imageCount} limit={usage.imageLimit} colorClass="bg-gradient-to-r from-emerald-400 to-emerald-500">
+                <ImageIcon className="w-3 h-3 text-emerald-400 flex-shrink-0" />
+              </CreditBar>
+            </div>
       </div>
     </button>
   );

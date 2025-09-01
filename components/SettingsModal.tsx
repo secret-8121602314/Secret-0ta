@@ -26,12 +26,13 @@ interface SettingsModalProps {
   onResetApp: () => void;
   onShowHowToUse: () => void;
   userEmail?: string;
+  onClearFirstRunCache?: () => void;
 }
 
 type ActiveTab = 'general' | 'preferences' | 'subscription' | 'help' | 'admin' | 'migration' | 'performance';
 
 // Admin Tab Content Component
-const AdminTabContent: React.FC = () => {
+const AdminTabContent: React.FC<{ onClearFirstRunCache?: () => void }> = ({ onClearFirstRunCache }) => {
     const [costSummary, setCostSummary] = useState<APICostSummary | null>(null);
     const [recommendations, setRecommendations] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -156,6 +157,19 @@ const AdminTabContent: React.FC = () => {
                         >
                             ⚠️ Reset All Data
                         </button>
+                        {onClearFirstRunCache && (
+                            <button
+                                onClick={() => {
+                                    if (window.confirm('This will clear all first run experience cache and force a fresh onboarding flow. Continue?')) {
+                                        onClearFirstRunCache();
+                                    }
+                                }}
+                                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+                                title="Clear first run experience cache"
+                            >
+                                🧹 Clear First Run Cache
+                            </button>
+                        )}
                     </div>
 
                     {/* Recommendations */}
@@ -188,7 +202,7 @@ const AdminTabContent: React.FC = () => {
     );
 };
 
-const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, usage, onShowUpgrade, onShowVanguardUpgrade, onLogout, onResetApp, onShowHowToUse, userEmail }) => {
+const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, usage, onShowUpgrade, onShowVanguardUpgrade, onLogout, onResetApp, onShowHowToUse, userEmail, onClearFirstRunCache }) => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('general');
   const modalRef = useRef<HTMLDivElement>(null);
   
@@ -351,7 +365,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, usage, o
                 {activeTab === 'admin' && (
                     <div>
                         <h2 className="text-xl font-bold text-white mb-6">💰 API Cost Dashboard</h2>
-                        <AdminTabContent />
+                        <AdminTabContent onClearFirstRunCache={onClearFirstRunCache} />
                     </div>
                 )}
                 {activeTab === 'migration' && (
