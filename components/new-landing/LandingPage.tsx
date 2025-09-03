@@ -224,7 +224,7 @@ const PricingSection = ({ onCtaClick }: { onCtaClick: () => void }) => {
                         </div>
                         <ul className="space-y-4 mb-10">
                             <FeatureListItem>55 Text Queries/month</FeatureListItem>
-                            <FeatureListItem>60 Image Queries/month</FeatureListItem>
+                            <FeatureListItem>25 Image Queries/month</FeatureListItem>
                             <FeatureListItem>Standard AI Model</FeatureListItem>
                             <FeatureListItem>Single Screenshot Upload</FeatureListItem>
                             <FeatureListItem>Automatic Progress Tracking</FeatureListItem>

@@ -223,7 +223,7 @@ if (identifiedGameId && (sourceConvoId === EVERYTHING_ELSE_ID || identifiedGameI
 
 #### **Query Limits**
 - **Text Queries**: 55 per month
-- **Image Queries**: 60 per month
+- **Image Queries**: 25 per month
 - **Concurrent Analysis**: Limited to 1 at a time
 
 #### **AI Response Quality**

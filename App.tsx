@@ -170,7 +170,7 @@ const AppComponent: React.FC = () => {
         textCount: 0,
         imageCount: 0,
         textLimit: 55,
-        imageLimit: 60,
+        imageLimit: 25,
         tier: 'free'
     });
     const [activeSubView, setActiveSubView] = useState('chat');

@@ -10,7 +10,7 @@ const DATE_KEY = 'otakonLastUsageDate';
 const getThisMonth = () => new Date().toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit' });
 
 const LIMITS: Record<UserTier, { text: number; image: number }> = {
-    free: { text: 55, image: 60 },
+    free: { text: 55, image: 25 },
     pro: { text: 1583, image: 328 },
     vanguard_pro: { text: 1583, image: 328 },
 };

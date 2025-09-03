@@ -20,7 +20,7 @@ export class TierService {
   }
 
   private readonly TIER_LIMITS: Record<UserTier, { text: number; image: number }> = {
-    free: { text: 55, image: 60 },
+    free: { text: 55, image: 25 },
     pro: { text: 1583, image: 328 },
     vanguard_pro: { text: 1583, image: 328 },
   };
@@ -28,7 +28,7 @@ export class TierService {
   private readonly TIER_FEATURES: Record<UserTier, string[]> = {
     free: [
       '55 text queries per month',
-      '60 image queries per month',
+      '25 image queries per month',
       'Basic conversation features',
       'Standard response quality'
     ],
