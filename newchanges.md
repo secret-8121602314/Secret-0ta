@@ -740,3 +740,143 @@ User Commands → @Tab Commands → Enhanced Flash → IGDB-Enhanced Insight Upd
 - **Performance-focused implementation**
 - **User experience prioritized**
 - **Scalable architecture design**
+
+---
+
+## 🎯 **STRATEGIC IMPLEMENTATION RECOMMENDATIONS**
+
+### **1. 🗄️ Dynamic Wiki Search (Replace Static Database)**
+**Challenge**: Static database of 2,000+ wiki sources is high-maintenance and degrades over time.
+
+**Solution**: Implement **Google Programmable Search Engine API**
+```typescript
+// Instead of static wiki database, use dynamic search
+const searchGamingWikis = async (query: string, gameContext: any) => {
+  // Store curated list of trusted wiki domains
+  const trustedWikiDomains = [
+    'fandom.com', 'wikia.com', 'gamepedia.com',
+    'elderscrolls.fandom.com', 'witcher.fandom.com'
+  ];
+  
+  // Use Google Programmable Search Engine API
+  // Configured to search ONLY across trusted domains
+  const searchResults = await googleSearchAPI.search({
+    query: `${query} site:(${trustedWikiDomains.join(' OR ')})`,
+    numResults: 10
+  });
+  
+  return searchResults;
+};
+```
+
+**Benefits**:
+- ✅ **Always up-to-date** - No manual maintenance
+- ✅ **Zero data warehousing** - Simple API calls
+- ✅ **Scalable** - Easy to add/remove domains
+- ✅ **Real-time** - Fresh content every search
+
+### **2. 🛡️ Bulletproof Parsing Logic**
+**Challenge**: LLMs can produce malformed output, risking app crashes.
+
+**Solution**: **Multi-layered parsing strategy**
+```typescript
+// Layer 1: Robust regex extraction
+const extractAITasks = (response: string): string[] => {
+  const taskMatch = response.match(/\[OTAKON_AI_TASKS:\s*(.*?)\]/s);
+  if (!taskMatch) return [];
+  
+  try {
+    // Layer 2: Try-catch JSON parsing
+    const tasksArray = JSON.parse(taskMatch[1]);
+    
+    // Layer 3: Schema validation with Zod
+    const validatedTasks = aiTasksSchema.parse(tasksArray);
+    return validatedTasks;
+    
+  } catch (error) {
+    // Graceful error handling - log for debugging, don't crash
+    console.error('Failed to parse AI tasks:', error);
+    console.log('Raw AI output:', response);
+    return []; // Return empty array, user still gets text response
+  }
+};
+
+// Zod schema for validation
+const aiTasksSchema = z.array(z.string()).min(1).max(10);
+```
+
+**Benefits**:
+- ✅ **App stability** - No crashes from malformed AI output
+- ✅ **Debugging** - Logged errors for development
+- ✅ **User experience** - Graceful degradation
+- ✅ **Data integrity** - Validated before processing
+
+### **3. 💬 Conversational Context Gathering UX**
+**Challenge**: Manual data entry forms reduce user engagement.
+
+**Solution**: **Make data collection conversational and opportunistic**
+```typescript
+// Example: AI intelligently asks for progress during conversation
+const conversationalContextGathering = `
+User: "I'm stuck on the final boss in Elden Ring."
+AI: "The final boss can be tough! To make sure I don't spoil anything, 
+     can you confirm which ending you're aiming for? I'll remember your 
+     progress for our future chats."
+
+User: "I want the Age of Stars ending."
+AI: "Perfect! I'll remember you're going for the Age of Stars ending. 
+     For the final boss, focus on [spoiler-free advice]..."
+
+// Background process updates user progress
+await updateUserProgress({
+  game: 'Elden Ring',
+  storyProgress: 'Final Boss - Age of Stars Path',
+  lastUpdated: Date.now()
+});
+`;
+```
+
+**Benefits**:
+- ✅ **Natural conversation** - No interruption to user flow
+- ✅ **Opportunistic collection** - Gather data when relevant
+- ✅ **High engagement** - Users willingly provide information
+- ✅ **Rich context** - Detailed progress tracking without forms
+
+---
+
+## 🎯 **IMPLEMENTATION PRIORITY ORDER**
+
+### **Phase 1: Foundation (Week 1) - CRITICAL**
+1. **IGDB Service** - Perfect this bedrock (your focus area)
+2. **Dynamic Wiki Search** - Google Programmable Search Engine
+3. **Bulletproof Parsing** - Multi-layered approach with Zod
+4. **Enhanced Tables** - Gaming context fields
+
+### **Phase 2: Core Integration (Week 2)**
+1. **Enhanced Flash Calls** - IGDB + AI tasks
+2. **Enhanced Pro Calls** - Comprehensive knowledge
+3. **Conversational Context** - Natural data gathering
+
+### **Phase 3: Optimization (Week 3)**
+1. **Performance Testing** - Response time validation
+2. **Error Handling** - Robust error management
+3. **User Experience** - Seamless integration
+
+---
+
+## 🌟 **FINAL VERDICT**
+
+**This plan is approved and implementation-ready.** It's a comprehensive, well-reasoned, and technically sound strategy for a significant and valuable evolution of the Otakon app.
+
+**Key Success Factors**:
+- ✅ **Seamless Integration Strategy** - "Enhance, not replace" approach
+- ✅ **Sophisticated Two-Call Architecture** - Flash → Pro balance
+- ✅ **Meticulous Prompt Engineering** - Clear output formats
+- ✅ **Robust Database Design** - Comprehensive user context
+- ✅ **Dynamic Wiki Search** - Google Programmable Search Engine
+- ✅ **Bulletproof Parsing** - Multi-layered error handling
+- ✅ **Conversational UX** - Natural data collection
+
+**The risks are identifiable and manageable with the right implementation tactics. Focus on getting Phase 1 Foundation perfect, especially the IGDB service. This will be the bedrock for all subsequent features.**
+
+**You have a clear path to creating a best-in-class, AI-powered gaming companion. It's time to start building!** 🚀
