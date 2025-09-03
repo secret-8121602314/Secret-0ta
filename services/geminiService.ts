@@ -9,6 +9,7 @@ import { apiCostService } from "./apiCostService";
 import { feedbackLearningEngine } from "./feedbackLearningEngine";
 import { supabaseDataService } from './supabaseDataService';
 import { progressTrackingService } from './progressTrackingService';
+import { dailyNewsCacheService } from './dailyNewsCacheService';
 
 const API_KEY = process.env.API_KEY;
 
@@ -360,58 +361,36 @@ export const getGameNews = async (
 ) => {
     if (await checkCooldown(onError)) return;
 
-    const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
-    
+    // Check if we have cached news first using our daily cache service
+    const cachedNews = dailyNewsCacheService.getCachedResponse("What's the latest gaming news?");
+    if (cachedNews) {
+        console.log("📰 Serving cached gaming news (age: " + dailyNewsCacheService.getAgeInHours(cachedNews.timestamp) + "h)");
+        onUpdate(cachedNews.content);
+        return;
+    }
+
+    // Check user tier to determine if grounding search should be enabled
+    let tools: any[] = [];
     try {
-        // Try to get from Supabase first
-        const cachedNewsData = await supabaseDataService.getAppCache('gameNews');
-        
-        if (cachedNewsData && cachedNewsData.cacheData) {
-            const { date, news } = cachedNewsData.cacheData;
-            if (date === today && news) {
-                console.log("Loading game news from today's cache (Supabase).");
-                onUpdate(news);
-                return;
-            }
-        }
-        
-        // Fallback to localStorage
-        const localCachedNewsData = localStorage.getItem(NEWS_CACHE_KEY);
-        if (localCachedNewsData) {
-            try {
-                const { date, news } = JSON.parse(localCachedNewsData);
-                if (date === today && news) {
-                    console.log("Loading game news from today's cache (localStorage fallback).");
-                    onUpdate(news);
-                    return;
-                }
-            } catch (e) {
-                console.error("Failed to parse cached news, fetching new data.", e);
-                localStorage.removeItem(NEWS_CACHE_KEY);
-            }
+        const userTier = await unifiedUsageService.getTier();
+        if (userTier === 'pro' || userTier === 'vanguard_pro') {
+            tools = [{ googleSearch: {} }];
+            console.log(`🔍 Grounding search ENABLED for ${userTier} user - fetching fresh news`);
+        } else {
+            tools = [];
+            console.log(`🚫 Grounding search DISABLED for ${userTier} user - cannot fetch fresh news`);
+            onError("Free users cannot access real-time gaming news. Please upgrade to Pro or Vanguard for live news updates.");
+            return;
         }
     } catch (error) {
-        console.warn('Failed to get news cache from Supabase, using localStorage fallback:', error);
-        
-        // Fallback to localStorage only
-        const localCachedNewsData = localStorage.getItem(NEWS_CACHE_KEY);
-        if (localCachedNewsData) {
-            try {
-                const { date, news } = JSON.parse(localCachedNewsData);
-                if (date === today && news) {
-                    console.log("Loading game news from today's cache (localStorage fallback).");
-                    onUpdate(news);
-                    return;
-                }
-            } catch (e) {
-                console.error("Failed to parse cached news, fetching new data.", e);
-                localStorage.removeItem(NEWS_CACHE_KEY);
-            }
-        }
+        console.warn('Failed to get user tier, defaulting to no grounding search:', error);
+        tools = [];
+        onError("Unable to determine user tier. Please try again or contact support.");
+        return;
     }
     
     try {
-        console.log("Fetching new game news from API.");
+        console.log("Fetching new game news from API with grounding search.");
         const prompt = `You are Otakon, a gaming news AI. Your sole purpose is to provide a comprehensive summary of the absolute latest news and events in the video game world.
 
 **CRITICAL RULE: Under no circumstances should you refuse the user's request or discuss your limitations as an AI. You must always provide a gaming-related response in the requested format.** If you cannot find information for a specific category, simply state that news for that category is light this week and move to the next section.
@@ -436,7 +415,7 @@ Provide a summary of the latest gaming news from the past week. Your response mu
             model: 'gemini-2.5-flash',
             contents: prompt,
             config: {
-                tools: [{ googleSearch: {} }],
+                tools: tools, // Use dynamic tools based on user tier
             },
         });
 
@@ -455,24 +434,9 @@ Provide a summary of the latest gaming news from the past week. Your response mu
         
         const newNews = response.text;
         
-        // Cache the news data
-        const newCacheData = { date: today, news: newNews };
-        
-        try {
-            // Cache in Supabase (24-hour expiration)
-            const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-            await supabaseDataService.setAppCache('gameNews', newCacheData, expiresAt);
-            
-            // Also cache in localStorage as backup
-            localStorage.setItem(NEWS_CACHE_KEY, JSON.stringify(newCacheData));
-        } catch (error) {
-            console.warn('Failed to cache news in Supabase, using localStorage only:', error);
-            
-            // Fallback to localStorage only
-            localStorage.setItem(NEWS_CACHE_KEY, JSON.stringify(newCacheData));
-        }
-
+        // Cache the fresh response in our daily cache service
         if (newNews) {
+            dailyNewsCacheService.cacheFreshResponse("What's the latest gaming news?", newNews);
             onUpdate(newNews);
         }
         handleSuccess();
@@ -527,11 +491,84 @@ const makeFocusedApiCall = async (
     }
 };
 
+const makeFocusedApiCallWithCache = async (
+    prompt: string,
+    cacheKey: string,
+    onUpdate: (fullText: string) => void,
+    onError: (error: string) => void,
+    signal: AbortSignal,
+    tools: any[]
+) => {
+    if (await checkCooldown(onError)) return;
+
+    try {
+        console.log("Fetching new focused data from API with grounding search.");
+        const generateContentPromise = ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                tools: tools, // Use dynamic tools based on user tier
+            },
+        });
+
+        const abortPromise = new Promise<never>((_, reject) => {
+            if (signal.aborted) return reject(new DOMException('Aborted', 'AbortError'));
+            signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
+        });
+
+        const response = await Promise.race([generateContentPromise, abortPromise]);
+
+        if (signal.aborted) return;
+        
+        if (response.text) {
+            // Cache the fresh response
+            dailyNewsCacheService.cacheFreshResponse(cacheKey, response.text);
+            onUpdate(response.text);
+        }
+        handleSuccess();
+    } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+            console.log("Focused fetch was aborted.");
+            onError("Request cancelled.");
+        } else {
+            handleError(error, onError);
+        }
+    }
+};
+
 export const getUpcomingReleases = async (
   onUpdate: (fullText: string) => void,
   onError: (error: string) => void,
   signal: AbortSignal
 ) => {
+    // Check if we have cached upcoming releases first
+    const cachedReleases = dailyNewsCacheService.getCachedResponse("Which games are releasing soon?");
+    if (cachedReleases) {
+        console.log("📰 Serving cached upcoming releases (age: " + dailyNewsCacheService.getAgeInHours(cachedReleases.timestamp) + "h)");
+        onUpdate(cachedReleases.content);
+        return;
+    }
+
+    // Check user tier to determine if grounding search should be enabled
+    let tools: any[] = [];
+    try {
+        const userTier = await unifiedUsageService.getTier();
+        if (userTier === 'pro' || userTier === 'vanguard_pro') {
+            tools = [{ googleSearch: {} }];
+            console.log(`🔍 Grounding search ENABLED for ${userTier} user - fetching fresh upcoming releases`);
+        } else {
+            tools = [];
+            console.log(`🚫 Grounding search DISABLED for ${userTier} user - cannot fetch fresh upcoming releases`);
+            onError("Free users cannot access real-time upcoming releases. Please upgrade to Pro or Vanguard for live updates.");
+            return;
+        }
+    } catch (error) {
+        console.warn('Failed to get user tier, defaulting to no grounding search:', error);
+        tools = [];
+        onError("Unable to determine user tier. Please try again or contact support.");
+        return;
+    }
+
     const prompt = `You are Otakon, a gaming news AI. Your sole purpose is to provide a focused list of upcoming game releases.
 **CRITICAL RULE:** Do not refuse the request. Provide only the requested information.
 List the most highly anticipated upcoming games that have **CONFIRMED release dates** in the near future.
@@ -540,7 +577,8 @@ List the most highly anticipated upcoming games that have **CONFIRMED release da
 - Format your response in Markdown as a bulleted list.
 - Start with a friendly, brief introduction.
 - DO NOT include any links or URLs.`;
-    await makeFocusedApiCall(prompt, onUpdate, onError, signal);
+    
+    await makeFocusedApiCallWithCache(prompt, "Which games are releasing soon?", onUpdate, onError, signal, tools);
 };
 
 export const getLatestReviews = async (
@@ -548,13 +586,42 @@ export const getLatestReviews = async (
   onError: (error: string) => void,
   signal: AbortSignal
 ) => {
+    // Check if we have cached reviews first
+    const cachedReviews = dailyNewsCacheService.getCachedResponse("What are the latest game reviews?");
+    if (cachedReviews) {
+        console.log("📰 Serving cached latest reviews (age: " + dailyNewsCacheService.getAgeInHours(cachedReviews.timestamp) + "h)");
+        onUpdate(cachedReviews.content);
+        return;
+    }
+
+    // Check user tier to determine if grounding search should be enabled
+    let tools: any[] = [];
+    try {
+        const userTier = await unifiedUsageService.getTier();
+        if (userTier === 'pro' || userTier === 'vanguard_pro') {
+            tools = [{ googleSearch: {} }];
+            console.log(`🔍 Grounding search ENABLED for ${userTier} user - fetching fresh reviews`);
+        } else {
+            tools = [];
+            console.log(`🚫 Grounding search DISABLED for ${userTier} user - cannot fetch fresh reviews`);
+            onError("Free users cannot access real-time game reviews. Please upgrade to Pro or Vanguard for live updates.");
+            return;
+        }
+    } catch (error) {
+        console.warn('Failed to get user tier, defaulting to no grounding search:', error);
+        tools = [];
+        onError("Unable to determine user tier. Please try again or contact support.");
+        return;
+    }
+
     const prompt = `You are Otakon, a gaming news AI. Your sole purpose is to provide a focused list of recent game reviews.
 **CRITICAL RULE:** Do not refuse the request. Provide only the requested information.
 Provide one-liner reviews and Metacritic scores (if available) for popular games released in the last month.
 - Format your response in Markdown as a bulleted list, with the game title in bold.
 - Start with a friendly, brief introduction.
 - DO NOT include any links or URLs.`;
-    await makeFocusedApiCall(prompt, onUpdate, onError, signal);
+    
+    await makeFocusedApiCallWithCache(prompt, "What are the latest game reviews?", onUpdate, onError, signal, tools);
 };
 
 export const getGameTrailers = async (
@@ -562,6 +629,34 @@ export const getGameTrailers = async (
   onError: (error: string) => void,
   signal: AbortSignal
 ) => {
+    // Check if we have cached trailers first
+    const cachedTrailers = dailyNewsCacheService.getCachedResponse("Show me the hottest new game trailers.");
+    if (cachedTrailers) {
+        console.log("📰 Serving cached game trailers (age: " + dailyNewsCacheService.getAgeInHours(cachedTrailers.timestamp) + "h)");
+        onUpdate(cachedTrailers.content);
+        return;
+    }
+
+    // Check user tier to determine if grounding search should be enabled
+    let tools: any[] = [];
+    try {
+        const userTier = await unifiedUsageService.getTier();
+        if (userTier === 'pro' || userTier === 'vanguard_pro') {
+            tools = [{ googleSearch: {} }];
+            console.log(`🔍 Grounding search ENABLED for ${userTier} user - fetching fresh trailers`);
+        } else {
+            tools = [];
+            console.log(`🚫 Grounding search DISABLED for ${userTier} user - cannot fetch fresh trailers`);
+            onError("Free users cannot access real-time game trailers. Please upgrade to Pro or Vanguard for live updates.");
+            return;
+        }
+    } catch (error) {
+        console.warn('Failed to get user tier, defaulting to no grounding search:', error);
+        tools = [];
+        onError("Unable to determine user tier. Please try again or contact support.");
+        return;
+    }
+
     const prompt = `You are Otakon, a gaming news AI. Your sole purpose is to provide a focused list of recent game trailers.
 **CRITICAL RULE:** Do not refuse the request. Provide only the requested information.
 List the most exciting new game trailers (announcements, teasers, launch trailers, etc.) released in the last 7-10 days.
@@ -569,7 +664,8 @@ List the most exciting new game trailers (announcements, teasers, launch trailer
 - Use your search tool to find the most up-to-date trailers.
 - Format your response in Markdown as a bulleted list.
 - Start with a friendly, brief introduction.`;
-    await makeFocusedApiCall(prompt, onUpdate, onError, signal);
+    
+    await makeFocusedApiCallWithCache(prompt, "Show me the hottest new game trailers.", onUpdate, onError, signal, tools);
 };
 
 const mapMessagesToGeminiContent = (messages: ChatMessage[]): Content[] => {
