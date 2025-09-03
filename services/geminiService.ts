@@ -1035,10 +1035,29 @@ export const generateInsightStream = async (
     const systemInstruction = getInsightSystemInstruction(gameName, genre, progress, instruction, insightId);
     const contentPrompt = `Generate the content for the "${insightId}" insight for the game ${gameName}, following the system instructions.`;
     
+    // Check user tier to determine if grounding search should be enabled
+    let tools: any[] = [];
+    try {
+        const userTier = await unifiedUsageService.getTier();
+        if (userTier === 'pro' || userTier === 'vanguard_pro') {
+            tools = [{ googleSearch: {} }];
+            console.log(`🔍 Insight stream with grounding search for ${userTier} user`);
+        } else {
+            tools = [];
+            console.log(`🚫 Insight stream without grounding search for ${userTier} user`);
+        }
+    } catch (error) {
+        console.warn('Failed to get user tier for insight stream, defaulting to no grounding search:', error);
+        tools = [];
+    }
+    
     const streamPromise = ai.models.generateContentStream({
       model,
       contents: contentPrompt,
-      config: { systemInstruction },
+      config: { 
+        systemInstruction,
+        tools
+      },
     });
 
     const abortPromise = new Promise<never>((_, reject) => {
