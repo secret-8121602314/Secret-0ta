@@ -9,9 +9,16 @@ const DailyCacheStatus: React.FC = () => {
     updateCacheStatus();
   }, []);
 
-  const updateCacheStatus = () => {
-    const status = dailyNewsCacheService.getCacheStatus();
-    setCacheStatus(status);
+  const updateCacheStatus = async () => {
+    try {
+      const status = await dailyNewsCacheService.getDetailedCacheStatus();
+      setCacheStatus(status);
+    } catch (error) {
+      console.warn('Failed to get detailed cache status:', error);
+      // Fallback to basic status
+      const basicStatus = dailyNewsCacheService.getCacheStatus();
+      setCacheStatus(basicStatus);
+    }
   };
 
   const clearCache = () => {
@@ -45,17 +52,31 @@ const DailyCacheStatus: React.FC = () => {
       
       <div className="space-y-2 text-xs">
         {Object.entries(cacheStatus).map(([key, status]: [string, any]) => (
-          <div key={key} className="flex justify-between items-center">
-            <span className="text-gray-300 capitalize">
-              {key.replace(/_/g, ' ')}:
-            </span>
-            <span className={`px-2 py-1 rounded text-xs ${
-              status.hasCache 
-                ? 'bg-green-600 text-white' 
-                : 'bg-red-600 text-white'
-            }`}>
-              {status.hasCache ? status.age : 'No Cache'}
-            </span>
+          <div key={key} className="space-y-1">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-300 capitalize">
+                {key.replace(/_/g, ' ')}:
+              </span>
+              <span className={`px-2 py-1 rounded text-xs ${
+                status.hasCache 
+                  ? 'bg-green-600 text-white' 
+                  : 'bg-red-600 text-white'
+              }`}>
+                {status.hasCache ? status.age : 'No Cache'}
+              </span>
+            </div>
+            
+            {status.hasCache && (
+              <div className="text-gray-400 text-xs ml-2">
+                <div>Source: {status.source}</div>
+                <div>Triggered by: {status.triggeredBy}</div>
+                {status.freeUserWindowActive !== undefined && (
+                  <div className={status.freeUserWindowActive ? 'text-green-400' : 'text-red-400'}>
+                    {status.freeWindowStatus}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </div>

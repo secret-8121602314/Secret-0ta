@@ -361,7 +361,23 @@ export const getGameNews = async (
 ) => {
     if (await checkCooldown(onError)) return;
 
-    // Check if we have cached news first using our daily cache service
+    // Get user tier first to determine access
+    let userTier: string;
+    let userId: string | undefined;
+    try {
+        userTier = await unifiedUsageService.getTier();
+        // Try to get user ID for tracking
+        try {
+            userId = authService.getCurrentUserId();
+        } catch (e) {
+            // User ID not critical, continue without it
+        }
+    } catch (error) {
+        console.warn('Failed to get user tier, defaulting to free:', error);
+        userTier = 'free';
+    }
+
+    // Check if we have cached news first
     const cachedNews = dailyNewsCacheService.getCachedResponse("What's the latest gaming news?");
     if (cachedNews) {
         console.log("📰 Serving cached gaming news (age: " + dailyNewsCacheService.getAgeInHours(cachedNews.timestamp) + "h)");
@@ -369,23 +385,33 @@ export const getGameNews = async (
         return;
     }
 
-    // Check user tier to determine if grounding search should be enabled
-    let tools: any[] = [];
-    try {
-        const userTier = await unifiedUsageService.getTier();
-        if (userTier === 'pro' || userTier === 'vanguard_pro') {
-            tools = [{ googleSearch: {} }];
-            console.log(`🔍 Grounding search ENABLED for ${userTier} user - fetching fresh news`);
+    // Check if this user can trigger grounding search
+    const searchCheck = await dailyNewsCacheService.needsGroundingSearch("What's the latest gaming news?", userTier);
+    
+    if (!searchCheck.needsSearch) {
+        if (searchCheck.reason.includes('Free user cannot trigger search')) {
+            onError("Free users cannot access real-time gaming news at this time. Please upgrade to Pro or Vanguard for live news updates, or wait for a free user window to open.");
+        } else if (searchCheck.reason.includes('Recent similar content found')) {
+            onError("Recent gaming news is already available. Please try again later or upgrade to Pro/Vanguard for fresh content.");
         } else {
-            tools = [];
-            console.log(`🚫 Grounding search DISABLED for ${userTier} user - cannot fetch fresh news`);
-            onError("Free users cannot access real-time gaming news. Please upgrade to Pro or Vanguard for live news updates.");
-            return;
+            onError(searchCheck.reason);
         }
-    } catch (error) {
-        console.warn('Failed to get user tier, defaulting to no grounding search:', error);
+        return;
+    }
+
+    // Determine tools based on user tier and free user window
+    let tools: any[] = [];
+    if (userTier === 'pro' || userTier === 'vanguard_pro' || searchCheck.canUseFreeWindow) {
+        tools = [{ googleSearch: {} }];
+        if (searchCheck.canUseFreeWindow) {
+            console.log(`🆓 Free user window active - ${userTier} user can trigger grounding search`);
+        } else {
+            console.log(`🔍 Grounding search ENABLED for ${userTier} user - fetching fresh news`);
+        }
+    } else {
         tools = [];
-        onError("Unable to determine user tier. Please try again or contact support.");
+        console.log(`🚫 Grounding search DISABLED for ${userTier} user`);
+        onError("You cannot trigger grounding search at this time. Please upgrade to Pro or Vanguard, or wait for a free user window.");
         return;
     }
     
@@ -434,9 +460,9 @@ Provide a summary of the latest gaming news from the past week. Your response mu
         
         const newNews = response.text;
         
-        // Cache the fresh response in our daily cache service
+        // Cache the fresh response with user tier and ID tracking
         if (newNews) {
-            dailyNewsCacheService.cacheFreshResponse("What's the latest gaming news?", newNews);
+            await dailyNewsCacheService.cacheFreshResponse("What's the latest gaming news?", newNews, userTier, userId);
             onUpdate(newNews);
         }
         handleSuccess();
@@ -497,7 +523,9 @@ const makeFocusedApiCallWithCache = async (
     onUpdate: (fullText: string) => void,
     onError: (error: string) => void,
     signal: AbortSignal,
-    tools: any[]
+    tools: any[],
+    userTier: string,
+    userId?: string
 ) => {
     if (await checkCooldown(onError)) return;
 
@@ -521,8 +549,8 @@ const makeFocusedApiCallWithCache = async (
         if (signal.aborted) return;
         
         if (response.text) {
-            // Cache the fresh response
-            dailyNewsCacheService.cacheFreshResponse(cacheKey, response.text);
+            // Cache the fresh response with user tier and ID tracking
+            await dailyNewsCacheService.cacheFreshResponse(cacheKey, response.text, userTier, userId);
             onUpdate(response.text);
         }
         handleSuccess();
@@ -541,6 +569,22 @@ export const getUpcomingReleases = async (
   onError: (error: string) => void,
   signal: AbortSignal
 ) => {
+    // Get user tier first to determine access
+    let userTier: string;
+    let userId: string | undefined;
+    try {
+        userTier = await unifiedUsageService.getTier();
+        // Try to get user ID for tracking
+        try {
+            userId = authService.getCurrentUserId();
+        } catch (e) {
+            // User ID not critical, continue without it
+        }
+    } catch (error) {
+        console.warn('Failed to get user tier, defaulting to free:', error);
+        userTier = 'free';
+    }
+
     // Check if we have cached upcoming releases first
     const cachedReleases = dailyNewsCacheService.getCachedResponse("Which games are releasing soon?");
     if (cachedReleases) {
@@ -549,23 +593,33 @@ export const getUpcomingReleases = async (
         return;
     }
 
-    // Check user tier to determine if grounding search should be enabled
-    let tools: any[] = [];
-    try {
-        const userTier = await unifiedUsageService.getTier();
-        if (userTier === 'pro' || userTier === 'vanguard_pro') {
-            tools = [{ googleSearch: {} }];
-            console.log(`🔍 Grounding search ENABLED for ${userTier} user - fetching fresh upcoming releases`);
+    // Check if this user can trigger grounding search
+    const searchCheck = await dailyNewsCacheService.needsGroundingSearch("Which games are releasing soon?", userTier);
+    
+    if (!searchCheck.needsSearch) {
+        if (searchCheck.reason.includes('Free user cannot trigger search')) {
+            onError("Free users cannot access real-time upcoming releases at this time. Please upgrade to Pro or Vanguard for live updates, or wait for a free user window to open.");
+        } else if (searchCheck.reason.includes('Recent similar content found')) {
+            onError("Recent upcoming releases are already available. Please try again later or upgrade to Pro/Vanguard for fresh content.");
         } else {
-            tools = [];
-            console.log(`🚫 Grounding search DISABLED for ${userTier} user - cannot fetch fresh upcoming releases`);
-            onError("Free users cannot access real-time upcoming releases. Please upgrade to Pro or Vanguard for live updates.");
-            return;
+            onError(searchCheck.reason);
         }
-    } catch (error) {
-        console.warn('Failed to get user tier, defaulting to no grounding search:', error);
+        return;
+    }
+
+    // Determine tools based on user tier and free user window
+    let tools: any[] = [];
+    if (userTier === 'pro' || userTier === 'vanguard_pro' || searchCheck.canUseFreeWindow) {
+        tools = [{ googleSearch: {} }];
+        if (searchCheck.canUseFreeWindow) {
+            console.log(`🆓 Free user window active - ${userTier} user can trigger grounding search`);
+        } else {
+            console.log(`🔍 Grounding search ENABLED for ${userTier} user - fetching fresh upcoming releases`);
+        }
+    } else {
         tools = [];
-        onError("Unable to determine user tier. Please try again or contact support.");
+        console.log(`🚫 Grounding search DISABLED for ${userTier} user`);
+        onError("You cannot trigger grounding search at this time. Please upgrade to Pro or Vanguard, or wait for a free user window.");
         return;
     }
 
@@ -578,7 +632,7 @@ List the most highly anticipated upcoming games that have **CONFIRMED release da
 - Start with a friendly, brief introduction.
 - DO NOT include any links or URLs.`;
     
-    await makeFocusedApiCallWithCache(prompt, "Which games are releasing soon?", onUpdate, onError, signal, tools);
+    await makeFocusedApiCallWithCache(prompt, "Which games are releasing soon?", onUpdate, onError, signal, tools, userTier, userId);
 };
 
 export const getLatestReviews = async (
@@ -586,6 +640,22 @@ export const getLatestReviews = async (
   onError: (error: string) => void,
   signal: AbortSignal
 ) => {
+    // Get user tier first to determine access
+    let userTier: string;
+    let userId: string | undefined;
+    try {
+        userTier = await unifiedUsageService.getTier();
+        // Try to get user ID for tracking
+        try {
+            userId = authService.getCurrentUserId();
+        } catch (e) {
+            // User ID not critical, continue without it
+        }
+    } catch (error) {
+        console.warn('Failed to get user tier, defaulting to free:', error);
+        userTier = 'free';
+    }
+
     // Check if we have cached reviews first
     const cachedReviews = dailyNewsCacheService.getCachedResponse("What are the latest game reviews?");
     if (cachedReviews) {
@@ -594,23 +664,33 @@ export const getLatestReviews = async (
         return;
     }
 
-    // Check user tier to determine if grounding search should be enabled
-    let tools: any[] = [];
-    try {
-        const userTier = await unifiedUsageService.getTier();
-        if (userTier === 'pro' || userTier === 'vanguard_pro') {
-            tools = [{ googleSearch: {} }];
-            console.log(`🔍 Grounding search ENABLED for ${userTier} user - fetching fresh reviews`);
+    // Check if this user can trigger grounding search
+    const searchCheck = await dailyNewsCacheService.needsGroundingSearch("What are the latest game reviews?", userTier);
+    
+    if (!searchCheck.needsSearch) {
+        if (searchCheck.reason.includes('Free user cannot trigger search')) {
+            onError("Free users cannot access real-time game reviews at this time. Please upgrade to Pro or Vanguard for live updates, or wait for a free user window to open.");
+        } else if (searchCheck.reason.includes('Recent similar content found')) {
+            onError("Recent game reviews are already available. Please try again later or upgrade to Pro/Vanguard for fresh content.");
         } else {
-            tools = [];
-            console.log(`🚫 Grounding search DISABLED for ${userTier} user - cannot fetch fresh reviews`);
-            onError("Free users cannot access real-time game reviews. Please upgrade to Pro or Vanguard for live updates.");
-            return;
+            onError(searchCheck.reason);
         }
-    } catch (error) {
-        console.warn('Failed to get user tier, defaulting to no grounding search:', error);
+        return;
+    }
+
+    // Determine tools based on user tier and free user window
+    let tools: any[] = [];
+    if (userTier === 'pro' || userTier === 'vanguard_pro' || searchCheck.canUseFreeWindow) {
+        tools = [{ googleSearch: {} }];
+        if (searchCheck.canUseFreeWindow) {
+            console.log(`🆓 Free user window active - ${userTier} user can trigger grounding search`);
+        } else {
+            console.log(`🔍 Grounding search ENABLED for ${userTier} user - fetching fresh reviews`);
+        }
+    } else {
         tools = [];
-        onError("Unable to determine user tier. Please try again or contact support.");
+        console.log(`🚫 Grounding search DISABLED for ${userTier} user`);
+        onError("You cannot trigger grounding search at this time. Please upgrade to Pro or Vanguard, or wait for a free user window.");
         return;
     }
 
@@ -621,7 +701,7 @@ Provide one-liner reviews and Metacritic scores (if available) for popular games
 - Start with a friendly, brief introduction.
 - DO NOT include any links or URLs.`;
     
-    await makeFocusedApiCallWithCache(prompt, "What are the latest game reviews?", onUpdate, onError, signal, tools);
+    await makeFocusedApiCallWithCache(prompt, "What are the latest game reviews?", onUpdate, onError, signal, tools, userTier, userId);
 };
 
 export const getGameTrailers = async (
@@ -629,6 +709,22 @@ export const getGameTrailers = async (
   onError: (error: string) => void,
   signal: AbortSignal
 ) => {
+    // Get user tier first to determine access
+    let userTier: string;
+    let userId: string | undefined;
+    try {
+        userTier = await unifiedUsageService.getTier();
+        // Try to get user ID for tracking
+        try {
+            userId = authService.getCurrentUserId();
+        } catch (e) {
+            // User ID not critical, continue without it
+        }
+    } catch (error) {
+        console.warn('Failed to get user tier, defaulting to free:', error);
+        userTier = 'free';
+    }
+
     // Check if we have cached trailers first
     const cachedTrailers = dailyNewsCacheService.getCachedResponse("Show me the hottest new game trailers.");
     if (cachedTrailers) {
@@ -637,23 +733,33 @@ export const getGameTrailers = async (
         return;
     }
 
-    // Check user tier to determine if grounding search should be enabled
-    let tools: any[] = [];
-    try {
-        const userTier = await unifiedUsageService.getTier();
-        if (userTier === 'pro' || userTier === 'vanguard_pro') {
-            tools = [{ googleSearch: {} }];
-            console.log(`🔍 Grounding search ENABLED for ${userTier} user - fetching fresh trailers`);
+    // Check if this user can trigger grounding search
+    const searchCheck = await dailyNewsCacheService.needsGroundingSearch("Show me the hottest new game trailers.", userTier);
+    
+    if (!searchCheck.needsSearch) {
+        if (searchCheck.reason.includes('Free user cannot trigger search')) {
+            onError("Free users cannot access real-time game trailers at this time. Please upgrade to Pro or Vanguard for live updates, or wait for a free user window to open.");
+        } else if (searchCheck.reason.includes('Recent similar content found')) {
+            onError("Recent game trailers are already available. Please try again later or upgrade to Pro/Vanguard for fresh content.");
         } else {
-            tools = [];
-            console.log(`🚫 Grounding search DISABLED for ${userTier} user - cannot fetch fresh trailers`);
-            onError("Free users cannot access real-time game trailers. Please upgrade to Pro or Vanguard for live updates.");
-            return;
+            onError(searchCheck.reason);
         }
-    } catch (error) {
-        console.warn('Failed to get user tier, defaulting to no grounding search:', error);
+        return;
+    }
+
+    // Determine tools based on user tier and free user window
+    let tools: any[] = [];
+    if (userTier === 'pro' || userTier === 'vanguard_pro' || searchCheck.canUseFreeWindow) {
+        tools = [{ googleSearch: {} }];
+        if (searchCheck.canUseFreeWindow) {
+            console.log(`🆓 Free user window active - ${userTier} user can trigger grounding search`);
+        } else {
+            console.log(`🔍 Grounding search ENABLED for ${userTier} user - fetching fresh trailers`);
+        }
+    } else {
         tools = [];
-        onError("Unable to determine user tier. Please try again or contact support.");
+        console.log(`🚫 Grounding search DISABLED for ${userTier} user`);
+        onError("You cannot trigger grounding search at this time. Please upgrade to Pro or Vanguard, or wait for a free user window.");
         return;
     }
 
@@ -665,7 +771,7 @@ List the most exciting new game trailers (announcements, teasers, launch trailer
 - Format your response in Markdown as a bulleted list.
 - Start with a friendly, brief introduction.`;
     
-    await makeFocusedApiCallWithCache(prompt, "Show me the hottest new game trailers.", onUpdate, onError, signal, tools);
+    await makeFocusedApiCallWithCache(prompt, "Show me the hottest new game trailers.", onUpdate, onError, signal, tools, userTier, userId);
 };
 
 const mapMessagesToGeminiContent = (messages: ChatMessage[]): Content[] => {
