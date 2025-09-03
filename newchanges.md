@@ -280,24 +280,87 @@ ALWAYS PROVIDE SOURCE ATTRIBUTION:
 
 ---
 
-## 🎯 **GAME PILL OPTIMIZATION - ENHANCED GEMINI PRO USAGE**
+## 🎯 **GAME PILL OPTIMIZATION - ENHANCING YOUR EXISTING TWO-CALL ARCHITECTURE**
 
-### **2.1 🚀 Smart Game Pill Creation**
+### **2.1 🚀 Current Architecture Analysis (What You Actually Have)**
+**Status: ✅ ALREADY IMPLEMENTED - ENHANCING EXISTING SYSTEM**
+
+#### **Your Current Two-Call Strategy:**
+```typescript
+// CURRENT IMPLEMENTATION - ALREADY WORKING
+// Step 1: Immediate Response (Gemini Flash)
+const flashResponse = await geminiService.sendMessage(message, conversation, signal, onChunk, onError, history);
+// - User gets immediate help
+// - Game is identified
+// - "Thin pill" created in Supabase
+
+// Step 2: Background Enrichment (Gemini Pro - Pro users only)
+const insightGeneration = await geminiService.generateUnifiedInsights(gameName, genre, progress, userQuery, onError, signal);
+// - Background insight tabs generation
+// - Rich pill data creation
+// - User never waits for this
+```
+
+#### **What We're Enhancing (Not Replacing):**
+- ✅ **Keep your existing two-call flow**
+- ✅ **Enhance Flash calls** with IGDB function calling
+- ✅ **Enhance Pro calls** with comprehensive gaming knowledge
+- ✅ **Add Otaku Diary AI tasks** generation to Flash calls
+
+### **2.2 🔧 Enhanced Flash Call with IGDB Integration**
 **Priority: HIGH** | **Effort: MEDIUM** | **Impact: HIGH**
 
-#### **Enhanced Game Pill Prompt Strategy:**
+#### **Enhanced Flash Prompt Strategy:**
 ```typescript
-// When creating new game pill, use enhanced Gemini Pro prompt
-const enhancedGamePillPrompt = `
-${userQuery}
+// ENHANCE existing Flash calls with IGDB knowledge
+const enhancedFlashPrompt = `
+${existingOtakonMasterPrompt}
 
-GAME PILL CREATION TASK:
-You are creating a comprehensive game pill for ${gameName}. Use this ONE Gemini Pro call to:
+ENHANCED GAMING KNOWLEDGE:
+You now have access to IGDB gaming database via function calling.
+Use searchIGDB() for game identification and verification.
 
-1. **Game Identification & Verification** (IGDB data)
-2. **Story & Lore Foundation** (Wiki sources)
+REQUIRED OUTPUT STRUCTURE:
+1. **Immediate Helpful Response** - Answer user's question directly
+2. **Game Identification** - Use searchIGDB() to verify game details
+3. **JSON Response** - Include structured game data for pill creation
+4. **AI Suggested Tasks** - Generate 3-5 relevant tasks for Otaku Diary
+
+OUTPUT FORMAT:
+[Your helpful response to user's question]
+
+[OTAKON_GAME_DATA: {
+  "game_name": "Verified game name from IGDB",
+  "igdb_id": "IGDB game ID",
+  "platform": "Game platform",
+  "release_date": "Release date",
+  "genre": "Primary genre"
+}]
+
+[OTAKON_AI_TASKS: [
+  "Task 1: [Specific, actionable task related to user's question]",
+  "Task 2: [Another relevant task for this game]",
+  "Task 3: [Progression or exploration task]"
+]]
+`;
+```
+
+### **2.3 🎯 Enhanced Pro Call for Insight Generation**
+**Priority: HIGH** | **Effort: MEDIUM** | **Impact: HIGH**
+
+#### **Enhanced Pro Call Strategy:**
+```typescript
+// ENHANCE existing Pro calls with comprehensive gaming knowledge
+const enhancedProPrompt = `
+${existingOtakonMasterPrompt}
+
+COMPREHENSIVE GAME PILL ENRICHMENT:
+You are creating rich insight tabs for ${gameName}. Use this ONE Gemini Pro call to:
+
+1. **Game Verification & Metadata** (searchIGDB function)
+2. **Story & Lore Foundation** (searchGamingWikis function)
 3. **Progress Tracking Setup** (User context structure)
-4. **Insight Tab Pre-generation** (Flash-optimized content)
+4. **Insight Tab Pre-generation** (All insight categories)
 5. **Community Knowledge Base** (Reddit, forums, wikis)
 6. **User Experience Optimization** (Personalized recommendations)
 
@@ -314,6 +377,102 @@ REQUIRED OUTPUT STRUCTURE:
 This single call will power ALL future Flash responses for this game.
 Make it comprehensive and user-focused.
 `;
+```
+
+### **2.4 📝 Otaku Diary AI Tasks Generation (NEW FEATURE)**
+**Priority: HIGH** | **Effort: MEDIUM** | **Impact: HIGH**
+
+#### **Enhanced Flash Call with AI Task Generation:**
+```typescript
+// ENHANCE existing Flash calls to generate AI suggested tasks
+const enhancedFlashWithTasks = `
+${enhancedFlashPrompt}
+
+OTAKU DIARY AI TASKS GENERATION:
+After providing helpful response, generate 3-5 AI suggested tasks for the user's Otaku Diary.
+
+TASK GENERATION RULES:
+1. **Context-Aware**: Tasks must relate to user's current question/situation
+2. **Actionable**: Each task should be specific and achievable
+3. **Progressive**: Include tasks for different difficulty levels
+4. **Varied Types**: Mix of story, exploration, combat, and collection tasks
+5. **Spoiler-Free**: No tasks that reveal future content
+
+REQUIRED OUTPUT FORMAT:
+[Your helpful response to user's question]
+
+[OTAKON_GAME_DATA: { ... }]
+
+[OTAKON_AI_TASKS: [
+  "🎯 [Story Task] Complete the current quest: [specific quest name]",
+  "🗺️ [Exploration Task] Discover [specific area] and find hidden items",
+  "⚔️ [Combat Task] Master the combat mechanics by defeating [enemy type]",
+  "🏆 [Achievement Task] Unlock [specific achievement] by [action]",
+  "💎 [Collection Task] Find and collect [specific item type] in [area]"
+]]
+`;
+```
+
+#### **AI Tasks Integration with Existing Otaku Diary System:**
+```typescript
+// services/otakuDiaryService.ts - ENHANCE existing service
+export class OtakuDiaryService {
+  // ... existing methods ...
+
+  // NEW: Parse AI suggested tasks from Flash responses
+  async parseAISuggestedTasks(flashResponse: string): Promise<AISuggestedTask[]> {
+    const taskMatch = flashResponse.match(/\[OTAKON_AI_TASKS: (\[.*?\])/);
+    if (!taskMatch) return [];
+
+    try {
+      const tasksArray = JSON.parse(taskMatch[1]);
+      return tasksArray.map((task: string, index: number) => ({
+        id: `ai-task-${Date.now()}-${index}`,
+        title: task,
+        description: task,
+        category: this.categorizeTask(task),
+        difficulty: this.assessTaskDifficulty(task),
+        source: 'ai_suggested',
+        game_context: this.extractGameContext(flashResponse),
+        created_at: new Date().toISOString(),
+        is_completed: false,
+        user_id: await this.getCurrentUserId()
+      }));
+    } catch (error) {
+      console.error('Failed to parse AI suggested tasks:', error);
+      return [];
+    }
+  }
+
+  // NEW: Auto-add AI tasks to user's diary
+  async addAISuggestedTasks(flashResponse: string): Promise<void> {
+    const tasks = await this.parseAISuggestedTasks(flashResponse);
+    
+    for (const task of tasks) {
+      await this.createTask(task);
+    }
+
+    // Update UI to show new AI suggested tasks
+    this.notifyNewTasksAvailable(tasks.length);
+  }
+
+  // NEW: Categorize tasks automatically
+  private categorizeTask(taskText: string): string {
+    if (taskText.includes('🎯')) return 'story';
+    if (taskText.includes('🗺️')) return 'exploration';
+    if (taskText.includes('⚔️')) return 'combat';
+    if (taskText.includes('🏆')) return 'achievement';
+    if (taskText.includes('💎')) return 'collection';
+    return 'general';
+  }
+
+  // NEW: Assess task difficulty
+  private assessTaskDifficulty(taskText: string): string {
+    if (taskText.includes('Master') || taskText.includes('defeat')) return 'hard';
+    if (taskText.includes('Discover') || taskText.includes('find')) return 'medium';
+    return 'easy';
+  }
+}
 ```
 
 #### **2.2 📊 Enhanced Insight Tab Pre-generation:**
@@ -403,18 +562,21 @@ async function searchGamingWikis(query: string, gameContext: any) {
 
 ### **Phase 1: Foundation (Week 1)**
 - [ ] Create IGDB service
-- [ ] Enhance existing Supabase tables
-- [ ] Set up environment variables
+- [ ] Enhance existing Supabase tables with gaming fields
+- [ ] Set up environment variables (IGDB, YouTube, Reddit)
 - [ ] Test IGDB API connectivity
+- [ ] **Verify existing two-call architecture** (Flash → Pro)
 
 ### **Phase 2: Core Integration (Week 2)**
-- [ ] Implement function calling in Gemini service
-- [ ] Enhance game pill creation prompts
+- [ ] **Enhance existing Gemini Flash calls** with IGDB function calling
+- [ ] **Enhance existing Gemini Pro calls** with comprehensive gaming knowledge
+- [ ] **Add AI task generation** to Flash calls for Otaku Diary
 - [ ] Create wiki source database
 - [ ] Test enhanced AI responses
 
 ### **Phase 3: Optimization (Week 3)**
 - [ ] Implement smart wiki search
+- [ ] **Integrate AI tasks** with existing Otaku Diary system
 - [ ] Optimize performance and caching
 - [ ] Add user progress tracking
 - [ ] Test end-to-end functionality
@@ -424,6 +586,7 @@ async function searchGamingWikis(query: string, gameContext: any) {
 - [ ] Implement advanced context awareness
 - [ ] Performance optimization
 - [ ] User testing and feedback
+- [ ] **Validate AI task generation** quality and relevance
 
 ---
 
@@ -446,6 +609,13 @@ async function searchGamingWikis(query: string, gameContext: any) {
 - **Wiki sources**: Clear source attribution
 - **User data**: Enhanced privacy controls
 - **API limits**: Respect all rate limits
+
+### **4. 🔄 Integration with Existing Architecture**
+- **Preserve existing two-call flow**: Flash → Pro ✅
+- **Enhance Flash calls**: Add IGDB + AI tasks ✅
+- **Enhance Pro calls**: Add comprehensive gaming knowledge ✅
+- **Maintain existing user experience**: No breaking changes ✅
+- **Leverage existing Otaku Diary system**: Add AI task generation ✅
 
 ---
 
