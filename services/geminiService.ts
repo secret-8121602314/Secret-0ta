@@ -9,6 +9,9 @@ import { apiCostService } from "./apiCostService";
 import { feedbackLearningEngine } from "./feedbackLearningEngine";
 import { supabaseDataService } from './supabaseDataService';
 import { progressTrackingService } from './progressTrackingService';
+import { igdbService } from './igdbService';
+import { gamingWikiSearchService } from './gamingWikiSearchService';
+import { aiOutputParsingService } from './aiOutputParsingService';
 
 const API_KEY = process.env.API_KEY;
 
@@ -628,7 +631,61 @@ const getOrCreateChat = async (conversation: Conversation, hasImages: boolean, m
         history: geminiHistory,
         config: {
             systemInstruction,
-            tools: [{ googleSearch: {} }]
+            tools: [
+                { googleSearch: {} },
+                {
+                    functionDeclarations: [
+                        {
+                            name: 'searchIGDB',
+                            description: 'Get comprehensive game data from IGDB gaming database for game identification, metadata, and verification.',
+                            parameters: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    gameName: { 
+                                        type: Type.STRING, 
+                                        description: 'The name of the game to search for' 
+                                    },
+                                    includeStory: { 
+                                        type: Type.BOOLEAN, 
+                                        description: 'Whether to include story and character information' 
+                                    },
+                                    includeProgress: { 
+                                        type: Type.BOOLEAN, 
+                                        description: 'Whether to include progress tracking data' 
+                                    }
+                                },
+                                required: ['gameName']
+                            }
+                        },
+                        {
+                            name: 'searchGamingWikis',
+                            description: 'Search gaming wikis for detailed lore, walkthroughs, and community knowledge.',
+                            parameters: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    query: { 
+                                        type: Type.STRING, 
+                                        description: 'Search query for gaming wikis' 
+                                    },
+                                    gameName: { 
+                                        type: Type.STRING, 
+                                        description: 'Specific game name to focus search' 
+                                    },
+                                    year: { 
+                                        type: Type.INTEGER, 
+                                        description: 'Game release year for targeted wiki search' 
+                                    },
+                                    category: { 
+                                        type: Type.STRING, 
+                                        description: 'Wiki category: franchise, platform, or genre' 
+                                    }
+                                },
+                                required: ['query']
+                            }
+                        }
+                    ]
+                }
+            ]
         }
     });
     chatSessions[conversationId] = { chat: newChat, model };

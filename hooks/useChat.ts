@@ -15,6 +15,9 @@ import {
     generateInsightStream,
     generateInsightWithSearch
 } from '../services/geminiService';
+import { enhancedGeminiService } from '../services/enhancedGeminiService';
+import { enhancedOtakuDiaryService } from '../services/enhancedOtakuDiaryService';
+import { aiOutputParsingService } from '../services/aiOutputParsingService';
 import tabManagementService from '../services/tabManagementService';
 import { ttsService } from '../services/ttsService';
 import { unifiedUsageService } from '../services/unifiedUsageService';
@@ -41,7 +44,8 @@ const allOtakonTags = [
     'GAME_IS_UNRELEASED', 'TRIUMPH', 'INVENTORY_ANALYSIS',
     'INSIGHT_UPDATE', 'SUGGESTIONS',
     'INSIGHT_MODIFY_PENDING', 'INSIGHT_DELETE_REQUEST',
-    'OBJECTIVE_SET', 'OBJECTIVE_COMPLETE'
+    'OBJECTIVE_SET', 'OBJECTIVE_COMPLETE',
+    'OTAKON_GAME_DATA', 'OTAKON_AI_TASKS' // New enhanced tags
 ];
 const tagCleanupRegex = new RegExp(`\\[OTAKON_(${allOtakonTags.join('|')}):.*?\\]`, 'gs');
 
@@ -1464,6 +1468,76 @@ Progress: ${conversation.progress}%`;
         }
     }, [activeConversationId, conversations, updateConversation]);
 
+    // Enhanced Gaming Features Processing
+    const processEnhancedGamingFeatures = useCallback(async (message: ChatMessage, conversation: Conversation) => {
+        try {
+            // Parse AI output for enhanced gaming features
+            const parsedOutput = aiOutputParsingService.parseAIOutput(message.text);
+            
+            // Handle game data from IGDB
+            if (parsedOutput.gameData) {
+                console.log('🎮 Game data parsed:', parsedOutput.gameData);
+                
+                // Update conversation with game metadata
+                if (conversation.id) {
+                    // Store game data in conversation context
+                    const gameContext = {
+                        game_name: parsedOutput.gameData.game_name,
+                        igdb_id: parsedOutput.gameData.igdb_id,
+                        platform: parsedOutput.gameData.platform,
+                        release_date: parsedOutput.gameData.release_date,
+                        genre: parsedOutput.gameData.genre
+                    };
+                    
+                    // Update conversation metadata
+                    updateConversation(conversation.id, convo => ({
+                        ...convo,
+                        gameMetadata: gameContext
+                    }));
+                }
+            }
+
+            // Handle AI suggested tasks for Otaku Diary
+            if (parsedOutput.aiTasks && parsedOutput.aiTasks.length > 0) {
+                console.log('📝 AI tasks parsed:', parsedOutput.aiTasks);
+                
+                try {
+                    // Add AI tasks to user's diary
+                    const gameContext = parsedOutput.gameData ? {
+                        gameName: parsedOutput.gameData.game_name,
+                        igdb_id: typeof parsedOutput.gameData.igdb_id === 'string' ? parseInt(parsedOutput.gameData.igdb_id) : parsedOutput.gameData.igdb_id,
+                        platform: parsedOutput.gameData.platform
+                    } : undefined;
+                    
+                    await enhancedOtakuDiaryService.addAISuggestedTasks(
+                        message.text,
+                        gameContext
+                    );
+                    
+                    console.log('✅ AI tasks added to Otaku Diary');
+                } catch (error) {
+                    console.error('Failed to add AI tasks to diary:', error);
+                }
+            }
+
+            // Handle insight updates with enhanced gaming knowledge
+            if (parsedOutput.insightUpdate) {
+                console.log('🔄 Enhanced insight update parsed:', parsedOutput.insightUpdate);
+                
+                // The existing insight update system will handle this
+                // We're just enhancing it with gaming context
+            }
+
+            // Log any parsing errors
+            if (parsedOutput.parsingErrors && parsedOutput.parsingErrors.length > 0) {
+                console.warn('⚠️ AI output parsing errors:', parsedOutput.parsingErrors);
+            }
+
+        } catch (error) {
+            console.error('Failed to process enhanced gaming features:', error);
+        }
+    }, [updateConversation]);
+
     return {
         conversations,
         conversationsOrder,
@@ -1497,6 +1571,7 @@ Progress: ${conversation.progress}%`;
         updateInsightsForProgress,
         updateInsightsOnUserQuery, // 🔥 NEW: Consolidated insight updates on user queries
         handleTabManagementCommand,
+        processEnhancedGamingFeatures, // 🔥 NEW: Enhanced gaming features processing
     };
 };
 

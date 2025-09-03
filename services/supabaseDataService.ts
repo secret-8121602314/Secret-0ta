@@ -80,6 +80,301 @@ class SupabaseDataService {
   // USER USAGE DATA MANAGEMENT
   // =====================================================
 
+  // =====================================================
+  // GAMING ENHANCEMENT METHODS
+  // =====================================================
+
+  // Enhanced Otaku Diary Tasks
+  async addOtakuDiaryTask(task: any): Promise<void> {
+    try {
+      const userId = await this.getUserId();
+      const { error } = await supabase
+        .from('enhanced_otaku_diary_tasks')
+        .insert({
+          ...task,
+          user_id: userId
+        });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Failed to add Otaku Diary task:', error);
+      throw error;
+    }
+  }
+
+  async getOtakuDiaryTasks(): Promise<any[]> {
+    try {
+      const userId = await this.getUserId();
+      const { data, error } = await supabase
+        .from('enhanced_otaku_diary_tasks')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Failed to get Otaku Diary tasks:', error);
+      return [];
+    }
+  }
+
+  async updateOtakuDiaryTask(taskId: string, updates: any): Promise<void> {
+    try {
+      const userId = await this.getUserId();
+      const { error } = await supabase
+        .from('enhanced_otaku_diary_tasks')
+        .update(updates)
+        .eq('id', taskId)
+        .eq('user_id', userId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Failed to update Otaku Diary task:', error);
+      throw error;
+    }
+  }
+
+  // Gaming Progress Tracking
+  async updateGamingProgress(gameName: string, progressData: any): Promise<void> {
+    try {
+      const userId = await this.getUserId();
+      
+      // Check if progress record exists
+      const { data: existing } = await supabase
+        .from('gaming_progress_tracking')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('game_name', gameName)
+        .single();
+
+      if (existing) {
+        // Update existing record
+        const { error } = await supabase
+          .from('gaming_progress_tracking')
+          .update({
+            ...progressData,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existing.id);
+
+        if (error) throw error;
+      } else {
+        // Create new record
+        const { error } = await supabase
+          .from('gaming_progress_tracking')
+          .insert({
+            user_id: userId,
+            game_name: gameName,
+            ...progressData
+          });
+
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.error('Failed to update gaming progress:', error);
+      throw error;
+    }
+  }
+
+  async getGamingProgress(gameName?: string): Promise<any[]> {
+    try {
+      const userId = await this.getUserId();
+      let query = supabase
+        .from('gaming_progress_tracking')
+        .select('*')
+        .eq('user_id', userId);
+
+      if (gameName) {
+        query = query.eq('game_name', gameName);
+      }
+
+      const { data, error } = await query.order('last_played', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Failed to get gaming progress:', error);
+      return [];
+    }
+  }
+
+  // Gaming Wiki Sources
+  async getGamingWikiSources(category?: string, year?: number): Promise<any[]> {
+    try {
+      let query = supabase
+        .from('gaming_wiki_sources')
+        .select('*')
+        .eq('is_active', true);
+
+      if (category) {
+        query = query.eq('category', category);
+      }
+
+      if (year) {
+        query = query.eq('year', year);
+      }
+
+      const { data, error } = await query.order('relevance_score', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Failed to get gaming wiki sources:', error);
+      return [];
+    }
+  }
+
+  // Cache Management
+  async getWikiSearchCache(searchQuery: string, gameContext?: any): Promise<any | null> {
+    try {
+      const { data, error } = await supabase
+        .from('gaming_wiki_search_cache')
+        .select('*')
+        .eq('search_query', searchQuery)
+        .gt('expires_at', new Date().toISOString())
+        .single();
+
+      if (error || !data) return null;
+
+      // Update cache hits
+      await supabase
+        .from('gaming_wiki_search_cache')
+        .update({ cache_hits: (data.cache_hits || 0) + 1 })
+        .eq('id', data.id);
+
+      return data;
+    } catch (error) {
+      console.error('Failed to get wiki search cache:', error);
+      return null;
+    }
+  }
+
+  async setWikiSearchCache(searchQuery: string, results: any, gameContext?: any, searchTime?: number): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('gaming_wiki_search_cache')
+        .upsert({
+          search_query: searchQuery,
+          game_context: gameContext || {},
+          search_results: results,
+          total_results: results?.length || 0,
+          search_time_ms: searchTime || 0,
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Failed to set wiki search cache:', error);
+    }
+  }
+
+  async getIGDBCache(igdbId: number): Promise<any | null> {
+    try {
+      const { data, error } = await supabase
+        .from('igdb_game_cache')
+        .select('*')
+        .eq('igdb_id', igdbId)
+        .gt('expires_at', new Date().toISOString())
+        .single();
+
+      if (error || !data) return null;
+
+      // Update cache hits
+      await supabase
+        .from('igdb_game_cache')
+        .update({ cache_hits: (data.cache_hits || 0) + 1 })
+        .eq('id', data.id);
+
+      return data;
+    } catch (error) {
+      console.error('Failed to get IGDB cache:', error);
+      return null;
+    }
+  }
+
+  async setIGDBCache(igdbId: number, gameData: any, searchQueries?: string[]): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('igdb_game_cache')
+        .upsert({
+          igdb_id: igdbId,
+          game_name: gameData.name,
+          game_data: gameData,
+          search_queries: searchQueries || [],
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Failed to set IGDB cache:', error);
+    }
+  }
+
+  // User Gaming Context Enhancement
+  async updateUserGamingContext(gameName: string, contextData: any): Promise<void> {
+    try {
+      const userId = await this.getUserId();
+      
+      // Check if context exists
+      const { data: existing } = await supabase
+        .from('user_gaming_context')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('game_name', gameName)
+        .single();
+
+      if (existing) {
+        // Update existing context
+        const { error } = await supabase
+          .from('user_gaming_context')
+          .update({
+            ...contextData,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existing.id);
+
+        if (error) throw error;
+      } else {
+        // Create new context
+        const { error } = await supabase
+          .from('user_gaming_context')
+          .insert({
+            user_id: userId,
+            game_name: gameName,
+            ...contextData
+          });
+
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.error('Failed to update user gaming context:', error);
+      throw error;
+    }
+  }
+
+  async getUserGamingContext(gameName?: string): Promise<any[]> {
+    try {
+      const userId = await this.getUserId();
+      let query = supabase
+        .from('user_gaming_context')
+        .select('*')
+        .eq('user_id', userId);
+
+      if (gameName) {
+        query = query.eq('game_name', gameName);
+      }
+
+      const { data, error } = await query.order('updated_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Failed to get user gaming context:', error);
+      return [];
+    }
+  }
+
   async getUserUsageData(): Promise<UserUsageData> {
     try {
       const userId = await this.getUserId();

@@ -1,0 +1,132 @@
+# =====================================================
+# OTAKON GAMING ENHANCEMENT - ENVIRONMENT VARIABLES
+# =====================================================
+# Copy this file to .env.local and fill in your actual API keys
+# Never commit the actual .env.local file to version control
+
+# =====================================================
+# EXISTING OTAKON CONFIGURATION
+# =====================================================
+
+# Gemini API Key (Google AI)
+API_KEY=your_gemini_api_key_here
+
+# Supabase Configuration
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# =====================================================
+# NEW GAMING ENHANCEMENT API KEYS
+# =====================================================
+
+# IGDB Gaming Database API (Required for Phase 2)
+# Get from: https://api.igdb.com/
+# Free tier: 4 requests/second, commercial use allowed
+IGDB_CLIENT_ID=your_igdb_client_id_here
+IGDB_CLIENT_SECRET=your_igdb_client_secret_here
+
+# Google Programmable Search Engine API (Required for Phase 2)
+# Get from: https://programmablesearchengine.google.com/
+# Free tier: 10,000 requests/day
+GOOGLE_SEARCH_API_KEY=your_google_search_api_key_here
+GOOGLE_SEARCH_ENGINE_ID=your_google_search_engine_id_here
+
+# =====================================================
+# PHASE 3 API KEYS (Optional for now)
+# =====================================================
+
+# YouTube Data API v3 (Phase 3 - Media Integration)
+# Get from: https://console.cloud.google.com/apis/library/youtube.googleapis.com
+# Free tier: 10,000 requests/day
+YOUTUBE_API_KEY=your_youtube_api_key_here
+
+# Reddit API (Phase 3 - Community Knowledge)
+# Get from: https://www.reddit.com/prefs/apps
+# Free tier: 100 requests/minute
+REDDIT_CLIENT_ID=your_reddit_client_id_here
+REDDIT_CLIENT_SECRET=your_reddit_client_secret_here
+
+# =====================================================
+# OPTIONAL CONFIGURATION
+# =====================================================
+
+# Cache Configuration
+CACHE_EXPIRY_HOURS=24
+IGDB_CACHE_EXPIRY_DAYS=7
+
+# Rate Limiting
+IGDB_MAX_REQUESTS_PER_SECOND=4
+GOOGLE_SEARCH_MAX_REQUESTS_PER_SECOND=10
+
+# =====================================================
+# SETUP INSTRUCTIONS
+# =====================================================
+
+# 1. IGDB SETUP:
+#    - Go to https://api.igdb.com/
+#    - Sign up for a free account
+#    - Create a new application
+#    - Copy Client ID and Client Secret
+#    - Note: IGDB is free for commercial use
+
+# 2. GOOGLE SEARCH SETUP:
+#    - Go to https://programmablesearchengine.google.com/
+#    - Create a new search engine
+#    - Add the gaming wiki domains from our curated list
+#    - Get the Search Engine ID
+#    - Enable the Custom Search API in Google Cloud Console
+#    - Get the API Key
+
+# 3. YOUTUBE SETUP (Phase 3):
+#    - Go to https://console.cloud.google.com/
+#    - Enable YouTube Data API v3
+#    - Create credentials (API Key)
+
+# 4. REDDIT SETUP (Phase 3):
+#    - Go to https://www.reddit.com/prefs/apps
+#    - Create a new application
+#    - Choose "script" as the application type
+#    - Copy Client ID and Client Secret
+
+# =====================================================
+# SECURITY NOTES
+# =====================================================
+
+# ⚠️  IMPORTANT SECURITY REMINDERS:
+# - Never commit .env.local to version control
+# - Keep your API keys secure
+# - Monitor API usage to stay within free tier limits
+# - Rotate keys regularly for production use
+# - Use environment-specific keys (dev/staging/prod)
+
+# =====================================================
+# TESTING YOUR SETUP
+# =====================================================
+
+# After setting up your environment variables:
+# 1. Restart your development server
+# 2. Check the browser console for any API key warnings
+# 3. Test the health check endpoints
+# 4. Verify IGDB connectivity with a simple game search
+# 5. Test wiki search functionality
+
+# =====================================================
+# TROUBLESHOOTING
+# =====================================================
+
+# Common Issues:
+# - "IGDB credentials not configured" → Check IGDB_CLIENT_ID and IGDB_CLIENT_SECRET
+# - "Google Search credentials not configured" → Check GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_ENGINE_ID
+# - "Rate limit reached" → Wait a moment, the app respects API limits
+# - "Authentication failed" → Verify your API keys are correct
+
+# =====================================================
+# SUPPORT
+# =====================================================
+
+# If you encounter issues:
+# 1. Check the browser console for error messages
+# 2. Verify your API keys are correct
+# 3. Ensure you're within the free tier limits
+# 4. Check the service health endpoints
+# 5. Review the implementation logs
