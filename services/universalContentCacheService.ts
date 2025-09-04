@@ -79,6 +79,7 @@ class UniversalContentCacheService {
       const cachedContent = await this.getFromSupabase(queryHash);
       if (cachedContent && this.isContentValid(cachedContent)) {
         await this.updateAccessStats(cachedContent.id);
+        console.log(`🎯 Universal Cache HIT: Serving cached ${query.contentType} content`);
         return {
           found: true,
           content: cachedContent,
@@ -89,6 +90,7 @@ class UniversalContentCacheService {
       // Check for similar queries
       const similarContent = await this.findSimilarContent(query);
       if (similarContent) {
+        console.log(`🔄 Universal Cache SIMILAR: Serving similar ${query.contentType} content (85%+ match)`);
         return {
           found: true,
           content: similarContent,
@@ -159,7 +161,7 @@ class UniversalContentCacheService {
       // Cleanup old cache entries
       await this.cleanupOldCache();
       
-      console.log(`💾 Cached ${query.contentType} content for query: ${query.query.substring(0, 50)}...`);
+      console.log(`💾 Universal Cache STORED: ${query.contentType} content cached for future use`);
     } catch (error) {
       console.error('Failed to cache content:', error);
     }
@@ -282,7 +284,7 @@ class UniversalContentCacheService {
       const cacheKey = `universalCache_${content.queryHash}`;
       const expiresAt = new Date(content.expiresAt);
       
-      await supabaseDataService.setAppCache(cacheKey, content, expiresAt);
+      await supabaseDataService.setAppCache(cacheKey, content, expiresAt.toISOString());
     } catch (error) {
       console.error('Failed to store content in Supabase:', error);
     }
@@ -360,7 +362,7 @@ class UniversalContentCacheService {
             const entriesToKeep = sortedEntries.slice(-this.MAX_CACHE_SIZE);
             
             // Update cache with only valid entries
-            await supabaseDataService.setAppCache(cacheKey, { entries: entriesToKeep }, new Date());
+            await supabaseDataService.setAppCache(cacheKey, { entries: entriesToKeep }, new Date().toISOString());
           }
         }
       }
@@ -428,14 +430,15 @@ class UniversalContentCacheService {
     try {
       if (contentType) {
         const cacheKey = `universalCache_${contentType}`;
-        await supabaseDataService.deleteAppCache(cacheKey);
+        // Clear cache by setting it to empty data with immediate expiration
+        await supabaseDataService.setAppCache(cacheKey, { entries: [] }, new Date(0).toISOString());
         console.log(`🗑️ Cleared cache for ${contentType}`);
       } else {
         // Clear all cache types
         const cacheTypes = ['game_help', 'insight', 'task', 'game_info', 'general', 'unreleased_game'];
         for (const type of cacheTypes) {
           const cacheKey = `universalCache_${type}`;
-          await supabaseDataService.deleteAppCache(cacheKey);
+          await supabaseDataService.setAppCache(cacheKey, { entries: [] }, new Date(0).toISOString());
         }
         console.log('🗑️ Cleared all universal cache');
       }
