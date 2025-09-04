@@ -13,7 +13,7 @@
 
 1. **🆓 Free User Windows**: First free user of the day can trigger grounding search
 2. **💾 Supabase Persistence**: Cache stored in database for cross-session access
-3. **📚 Cache History Tracking**: Avoids repetitive news over 15-day period
+3. **📚 Cache History Tracking**: Avoids repetitive news over 1-day period
 4. **🆔 User Tracking**: Records which user tier triggered each cache entry
 5. **🔄 Smart Deduplication**: Content hash-based repetition prevention
 
@@ -179,13 +179,13 @@ private async hasRecentSimilarContent(promptKey: string): Promise<boolean> {
     if (historyData && historyData.cacheData && historyData.cacheData.history) {
       const history: CacheHistoryEntry[] = historyData.cacheData.history;
       const now = Date.now();
-      const fifteenDaysAgo = now - (15 * 24 * 60 * 60 * 1000); // 15 days
+      const oneDayAgo = now - (1 * 24 * 60 * 60 * 1000); // 1 day
       
-      // Check for content from the last 15 days
-      const recentContent = history.filter(entry => entry.timestamp > fifteenDaysAgo);
+      // Check for content from the last 1 day
+      const recentContent = history.filter(entry => entry.timestamp > oneDayAgo);
       
       if (recentContent.length > 0) {
-        console.log(`📰 Found ${recentContent.length} recent cache entries for ${promptKey} - avoiding repetition (15-day period)`);
+        console.log(`📰 Found ${recentContent.length} recent cache entries for ${promptKey} - avoiding repetition (1-day period)`);
         return true;
       }
     }
@@ -283,7 +283,7 @@ export const getGameNews = async (onUpdate, onError, signal) => {
 
 ### **Scenario 4: Recent Content Prevention**
 1. **Any user** asks for news
-2. **System checks**: Recent similar content found (within 15 days)
+2. **System checks**: Recent similar content found (within 1 day)
 3. **Result**: No search needed to avoid repetition
 4. **Action**: Serves existing content or suggests upgrade
 5. **Future**: Prevents duplicate news generation
@@ -361,7 +361,7 @@ export const getGameNews = async (onUpdate, onError, signal) => {
 - **Free User Windows**: 24-hour access periods for free users
 - **Supabase Storage**: Cross-session cache persistence
 - **History Tracking**: 30-day cache history with deduplication
-- **Smart Logic**: Prevents repetitive content within 15 days
+- **Smart Logic**: Prevents repetitive content within 1 day
 - **User Tracking**: Records which tier triggered each cache entry
 - **Fallback System**: localStorage backup if Supabase fails
 
@@ -392,7 +392,7 @@ export const getGameNews = async (onUpdate, onError, signal) => {
 ✅ **Supabase Persistence**: Cross-session cache storage  
 ✅ **Cache History Tracking**: Prevents repetitive news generation  
 ✅ **User Tier Tracking**: Records who triggered each cache entry  
-✅ **Smart Deduplication**: 15-day repetition prevention  
+✅ **Smart Deduplication**: 1-day repetition prevention  
 ✅ **Cost Optimization**: Maximum 120 grounding calls/month  
 ✅ **News Database Building**: Persistent storage for future use  
 

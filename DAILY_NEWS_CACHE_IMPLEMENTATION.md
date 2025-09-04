@@ -266,11 +266,11 @@ const DailyCacheStatus: React.FC = () => {
 
 ---
 
-## 📅 **UPDATED: 15-Day Repetition Prevention**
+## 📅 **UPDATED: 1-Day Repetition Prevention**
 
-**Changed from 7-day to 15-day period** to provide better content variety while still preventing excessive repetition.
+**Changed to 1-day period** to ensure daily fresh content while preventing same-day repetition.
 
 **Impact:**
-- **More frequent fresh content** for users
-- **Better balance** between cost control and content freshness
-- **Improved user experience** with less repetitive news
+- **Daily fresh content** for users
+- **Optimal balance** between cost control and content freshness
+- **Best user experience** with fresh news every day
