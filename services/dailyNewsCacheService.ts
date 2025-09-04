@@ -166,13 +166,13 @@ class DailyNewsCacheService {
       if (historyData && historyData.cacheData && historyData.cacheData.history) {
         const history: CacheHistoryEntry[] = historyData.cacheData.history;
         const now = Date.now();
-        const oneWeekAgo = now - (7 * 24 * 60 * 60 * 1000); // 7 days
+        const fifteenDaysAgo = now - (15 * 24 * 60 * 60 * 1000); // 15 days
         
-        // Check for content from the last week
-        const recentContent = history.filter(entry => entry.timestamp > oneWeekAgo);
+        // Check for content from the last 15 days
+        const recentContent = history.filter(entry => entry.timestamp > fifteenDaysAgo);
         
         if (recentContent.length > 0) {
-          console.log(`📰 Found ${recentContent.length} recent cache entries for ${promptKey} - avoiding repetition`);
+          console.log(`📰 Found ${recentContent.length} recent cache entries for ${promptKey} - avoiding repetition (15-day period)`);
           return true;
         }
       }

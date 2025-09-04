@@ -263,3 +263,14 @@ const DailyCacheStatus: React.FC = () => {
 ✅ **Smart Caching**: Only first user of day triggers grounding search  
 
 **This implementation transforms the suggested prompts from a potential cost center into a controlled, predictable expense while maintaining high user satisfaction.**
+
+---
+
+## 📅 **UPDATED: 15-Day Repetition Prevention**
+
+**Changed from 7-day to 15-day period** to provide better content variety while still preventing excessive repetition.
+
+**Impact:**
+- **More frequent fresh content** for users
+- **Better balance** between cost control and content freshness
+- **Improved user experience** with less repetitive news
