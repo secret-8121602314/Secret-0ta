@@ -8,7 +8,7 @@ import { authService } from "./supabase";
 import { apiCostService } from "./apiCostService";
 import { feedbackLearningEngine } from "./feedbackLearningEngine";
 import { supabaseDataService } from './supabaseDataService';
-import { progressTrackingService } from './progressTrackingService';
+// Dynamic import will be used when needed
 import { dailyNewsCacheService } from './dailyNewsCacheService';
 import { universalContentCacheService, type CacheQuery } from './universalContentCacheService';
 
@@ -32,9 +32,9 @@ const isQuotaError = (error: any): boolean => {
 };
 
 const getSystemInstruction = async (conversation: Conversation, hasImages: boolean): Promise<string> => {
-  const userName = profileService.getName();
-  const personalizationDirective = userName
-    ? `- **PERSONALIZE:** You know the player's name is ${userName}. Use it very sparingly—only when it feels natural and encouraging—to build a friendly, companion-like rapport.`
+  const userFirstName = await profileService.getFirstName();
+  const personalizationDirective = userFirstName
+    ? `- **PERSONALIZE:** You know the player's first name is ${userFirstName}. Use it very sparingly—only when it feels natural and encouraging—to build a friendly, companion-like rapport.`
     : '';
 
   // Get user context for AI personalization
@@ -103,11 +103,13 @@ Your response is parsed by a machine. It MUST be perfectly structured.
   ### Another Subsection
   More detailed explanation with proper spacing.`;
   
-  const hintFormattingRule = `**2. HINT FORMATTING (FOR HANDS-FREE MODE)**
-- When providing a hint or a direct answer, you MUST wrap the entire portion of your response meant for text-to-speech in tags.
-- The audio hint starts with \`[OTAKON_HINT_START]\` and ends with \`[OTAKON_HINT_END]\`.
+  const hintFormattingRule = `**2. GAME HELP SECTION (MANDATORY FOR HANDS-FREE MODE)**
+- **CRITICAL:** EVERY response MUST include a game help section wrapped in \`[OTAKON_HINT_START]\` and \`[OTAKON_HINT_END]\` tags.
+- This section contains the core game help content that will be read aloud in hands-free mode.
+- The game help section should be the most important part of your response - the direct answer to their question or the key hint they need.
 - Example: \`[OTAKON_HINT_START]The lever is behind the waterfall.[OTAKON_HINT_END] You can find more lore about this area in the library.\`
-- Only the text between these tags will be read aloud. The user will see the full text without the tags. Be concise but complete in the hint block.`;
+- If no specific game help is needed, include a summary of what you discussed: \`[OTAKON_HINT_START]I've explained the story background and character motivations.[OTAKON_HINT_END] Feel free to ask about specific aspects.\`
+- Only the text between these tags will be read aloud. The user will see the full text without the tags. Be concise but complete in the game help block.`;
 
   const suggestionsRule = `**Universal Rule: CRITICAL SUGGESTIONS**
 At the very end of your response (except for news/clarification), you MUST include: \`[OTAKON_SUGGESTIONS: ["suggestion 1", "suggestion 2", "suggestion 3", "suggestion 4"]]\`. These **MUST be inquisitive questions** to guide the user (e.g., "What's the lore behind this weapon?", "Are there any hidden paths nearby?"). This must be a valid JSON array.`;
@@ -857,28 +859,100 @@ List the most exciting new game trailers (announcements, teasers, launch trailer
     await makeFocusedApiCallWithCache(prompt, "Show me the hottest new game trailers.", onUpdate, onError, signal, tools, userTier, userId);
 };
 
+// Context size management constants
+const MAX_CONTEXT_MESSAGES = 20; // Maximum messages to include in context
+const MAX_CONTEXT_TOKENS = 30000; // Approximate token limit (Gemini 2.5 Flash has ~32k context)
+const MAX_IMAGE_COUNT = 10; // Maximum images to include in context
+
 const mapMessagesToGeminiContent = (messages: ChatMessage[]): Content[] => {
     const history: Content[] = [];
-    for (const message of messages) {
+    
+    // NEW: Apply context compression and summarization
+    let processedMessages = messages;
+    
+    // Import context summarization service dynamically to avoid circular dependencies
+    let contextSummarizationService: any = null;
+    try {
+        const { contextSummarizationService: service } = require('./contextSummarizationService');
+        contextSummarizationService = service;
+    } catch (error) {
+        console.warn('Context summarization service not available:', error);
+    }
+    
+    // Apply compression if we have many messages
+    if (messages.length > MAX_CONTEXT_MESSAGES && contextSummarizationService) {
+        const compressionResult = contextSummarizationService.compressConversationHistory(
+            'current-conversation', // We'll pass the actual conversation ID later
+            messages,
+            MAX_CONTEXT_MESSAGES
+        );
+        
+        processedMessages = compressionResult.compressedMessages;
+        
+        // Add summary as a system message if we have one
+        if (compressionResult.summary) {
+            history.push({
+                role: 'model',
+                parts: [{ text: `[CONTEXT_SUMMARY] ${compressionResult.summary.summary}` }]
+            });
+        }
+        
+        console.log(`📊 Context Compression: ${compressionResult.originalCount} → ${compressionResult.compressedCount} messages (${Math.round(compressionResult.compressionRatio * 100)}% retained)`);
+    } else {
+        // Apply simple limits if no compression
+        processedMessages = messages.slice(-MAX_CONTEXT_MESSAGES);
+    }
+    
+    let totalImages = 0;
+    let estimatedTokens = 0;
+    
+    console.log(`📊 Context Management: Processing ${processedMessages.length} messages (limited from ${messages.length})`);
+    
+    for (const message of processedMessages) {
         const parts: Part[] = [];
         if (message.role !== 'user' && message.role !== 'model') continue;
+        
+        // NEW: Limit images in context
         if (message.images && message.images.length > 0) {
-            for (const imageUrl of message.images) {
+            const imagesToInclude = Math.min(message.images.length, MAX_IMAGE_COUNT - totalImages);
+            if (imagesToInclude <= 0) {
+                console.log(`📊 Context Management: Skipping ${message.images.length} images (limit reached)`);
+                continue;
+            }
+            
+            for (let i = 0; i < imagesToInclude; i++) {
+                const imageUrl = message.images[i];
                 try {
                     const [meta, base64] = imageUrl.split(',');
                     if (!meta || !base64) continue;
                     const mimeTypeMatch = meta.match(/:(.*?);/);
                     if (!mimeTypeMatch?.[1]) continue;
                     parts.push({ inlineData: { data: base64, mimeType: mimeTypeMatch[1] } });
+                    totalImages++;
+                    estimatedTokens += 1000; // Approximate tokens per image
                 } catch (e) {
                     console.error("Skipping malformed image in history", e);
                     continue;
                 }
             }
         }
+        
         if (message.text) {
-            parts.push({ text: message.text });
+            // NEW: Estimate text tokens and limit if necessary
+            const textTokens = Math.ceil(message.text.length / 4); // Rough estimate: 4 chars = 1 token
+            estimatedTokens += textTokens;
+            
+            if (estimatedTokens > MAX_CONTEXT_TOKENS) {
+                console.log(`📊 Context Management: Token limit reached (${estimatedTokens}), truncating text`);
+                const remainingTokens = MAX_CONTEXT_TOKENS - (estimatedTokens - textTokens);
+                const truncatedText = message.text.substring(0, remainingTokens * 4);
+                parts.push({ text: truncatedText + "... [Context truncated]" });
+                break; // Stop processing more messages
+            } else {
+                parts.push({ text: message.text });
+            }
         }
+        
         if (parts.length > 0) {
             const lastRole = history.length > 0 ? history[history.length - 1].role : undefined;
             if (lastRole === message.role) {
@@ -888,6 +962,8 @@ const mapMessagesToGeminiContent = (messages: ChatMessage[]): Content[] => {
             history.push({ role: message.role, parts });
         }
     }
+    
+    console.log(`📊 Context Management: Final context - ${history.length} messages, ${totalImages} images, ~${estimatedTokens} tokens`);
     return history;
 };
 
@@ -1502,20 +1578,23 @@ export const generateUnifiedInsights = async (
 Do not use web search for this task. The output MUST be a valid JSON object matching the provided schema.
 
 **CRITICAL CONTENT RULES (Non-negotiable):**
-1.  **DETAIL AND DEPTH:** The content for each tab must be detailed and comprehensive. Avoid short, superficial descriptions. Provide rich, useful information that adds value to the player's experience.
-2.  **STRICT SPOILER-GATING:** All information provided MUST be relevant and accessible to a player who is ${progress}% through the game. You are strictly forbidden from mentioning, hinting at, or alluding to any characters, locations, items, or plot points that appear after this progress marker.
-3.  **CLARITY OVER CRYPTICISM:** The primary content should be clear, direct, and easy to understand. While hints about *potential* future challenges can be slightly cryptic (as per specific tab instructions), the core information you provide about the past and present must be straightforward.
+1.  **DETAIL AND DEPTH:** The content for each tab must be detailed and comprehensive. Avoid short, superficial descriptions. Provide rich, useful information that adds value to the player's experience. Each tab should contain substantial, actionable content that a player at ${progress}% progress would find valuable.
+2.  **STRICT SPOILER-GATING:** All information provided MUST be relevant and accessible to a player who is ${progress}% through the game. You are strictly forbidden from mentioning, hinting at, or alluding to any characters, locations, items, or plot points that appear after this progress marker. However, you CAN and SHOULD include detailed information about everything that has happened up to this point.
+3.  **CLARITY OVER CRYPTICISM:** The primary content should be clear, direct, and easy to understand. While hints about *potential* future challenges can be slightly cryptic (as per specific tab instructions), the core information you provide about the past and present must be straightforward and detailed.
+4.  **COMPREHENSIVE COVERAGE:** For each tab, provide comprehensive information that covers all relevant aspects up to the current progress point. Don't hold back on details - the player has experienced everything up to ${progress}% and deserves full context and analysis.
 
 **CRITICAL FORMATTING & SCHEMA RULES:**
 - The output MUST be a valid JSON object matching the provided schema.
 - For the \`content\` field of each insight, you MUST use well-structured Markdown.
 - For longer content, you MUST structure it with clear headings (\`##\`), subheadings (\`###\`), and bullet points (\`-\`) for readability.
+- Each tab should be substantial (at least 200-500 words) with detailed, actionable information.
 
 **Context:**
 *   Game: ${gameName}
 *   Genre: ${genre}
 *   Player Progress: Approximately ${progress}% complete
 *   Original User Query: "${userQuery}"
+*   **IMPORTANT:** Fill each tab with comprehensive, detailed content covering everything the player has experienced up to this point. This is the initial detailed population of insight tabs.
 `;
     const contentPrompt = `Generate the content for the following insight tabs for the game ${gameName}: ${tabsToGenerate.map(t => `'${t.title}'`).join(', ')}. Follow the system instructions and schema precisely.`;
 
@@ -1608,6 +1687,7 @@ export const detectProgressFromResponse = async (
                               conversation.title.toLowerCase().includes('baldurs') ? 'baldurs_gate_3' : 'unknown';
 
                 if (gameId !== 'unknown') {
+                    const { progressTrackingService } = await import('./progressTrackingService');
                     await progressTrackingService.updateProgressForAnyGame(
                         userId,
                         gameId,

@@ -2,6 +2,9 @@ import { supabase } from './supabase';
 import { authService } from './supabase';
 import { supabaseDataService } from './supabaseDataService';
 import { unifiedDataService, STORAGE_KEYS } from './unifiedDataService';
+import { DetectedTask } from './unifiedAIService';
+import { playerProfileService } from './playerProfileService';
+import { longTermMemoryService } from './longTermMemoryService';
 
 export interface DiaryTask {
   id: string;
@@ -448,6 +451,35 @@ class OtakuDiaryService {
     }
   }
 
+  // NEW: Get central tasks (user-created + AI-generated tasks they added)
+  async getCentralTasks(gameId: string): Promise<DiaryTask[]> {
+    try {
+      const allTasks = await this.getTasks(gameId);
+      // Central tasks are user-created tasks and AI-generated tasks that user has moved to central
+      return allTasks.filter(task => 
+        task.type === 'user_created' || 
+        (task.type === 'ai_suggested' && task.status !== 'pending')
+      );
+    } catch (error) {
+      console.error('Failed to get central tasks:', error);
+      return [];
+    }
+  }
+
+  // NEW: Get AI-generated tasks (for completion prompting)
+  async getAISuggestedTasks(gameId: string): Promise<DiaryTask[]> {
+    try {
+      const allTasks = await this.getTasks(gameId);
+      // AI-generated tasks are those that are still pending (not moved to central)
+      return allTasks.filter(task => 
+        task.type === 'ai_suggested' && task.status === 'pending'
+      );
+    } catch (error) {
+      console.error('Failed to get AI suggested tasks:', error);
+      return [];
+    }
+  }
+
   // Favorite Management
   async addFavorite(favorite: Omit<DiaryFavorite, 'id' | 'createdAt'>): Promise<DiaryFavorite> {
     try {
@@ -615,13 +647,24 @@ class OtakuDiaryService {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
+      // Get the task before updating to track completion
+      const tasks = this.tasksCache.get(gameId) || [];
+      const task = tasks.find(t => t.id === taskId);
+      
       // Development mode fallback: use localStorage if not authenticated
       if (!user && process.env.NODE_ENV === 'development') {
         console.log('🔧 Development mode: Using localStorage fallback for marking task complete');
-        return this.updateTaskLocalStorage(gameId, taskId, { 
+        const result = this.updateTaskLocalStorage(gameId, taskId, { 
           status: 'completed', 
           completedAt: Date.now() 
         }) !== null;
+        
+        // NEW: Track task completion in AI context
+        if (result && task) {
+          await this.trackTaskCompletion(gameId, task);
+        }
+        
+        return result;
       }
       
       if (!user) throw new Error('User not authenticated');
@@ -641,11 +684,15 @@ class OtakuDiaryService {
       }
 
       // Update cache by finding and updating the task
-      const tasks = this.tasksCache.get(gameId) || [];
       const taskIndex = tasks.findIndex(t => t.id === taskId);
       if (taskIndex !== -1) {
         tasks[taskIndex] = { ...tasks[taskIndex], status: 'completed', completedAt: Date.now() };
         this.tasksCache.set(gameId, tasks);
+        
+        // NEW: Track task completion in AI context
+        if (task) {
+          await this.trackTaskCompletion(gameId, task);
+        }
       }
       return true;
     } catch (error) {
@@ -830,6 +877,273 @@ class OtakuDiaryService {
     } catch (error) {
       console.error('Failed to save favorites:', error);
       throw error;
+    }
+  }
+
+  // NEW: Refresh AI suggested tasks based on context
+  async refreshAISuggestedTasks(
+    gameId: string,
+    userQuery: string,
+    aiResponse: string,
+    context: {
+      longTermContext: string;
+      screenshotTimelineContext: string;
+      insightTabContext: string;
+    }
+  ): Promise<void> {
+    try {
+      // Get current AI suggested tasks
+      const currentTasks = await this.getTasks(gameId, 'ai_suggested');
+      
+      // Generate new tasks based on context (this would be called from unifiedAIService)
+      // For now, we'll create a placeholder that can be enhanced
+      const newTasks = await this.generateContextAwareTasks(
+        gameId,
+        userQuery,
+        aiResponse,
+        context
+      );
+      
+      // Remove outdated tasks and add new ones
+      await this.updateAISuggestedTasks(gameId, currentTasks, newTasks);
+      
+      console.log(`🔄 Refreshed AI suggested tasks for ${gameId}: ${newTasks.length} new tasks`);
+    } catch (error) {
+      console.error('Failed to refresh AI suggested tasks:', error);
+    }
+  }
+
+  // NEW: Generate context-aware tasks (placeholder for now)
+  private async generateContextAwareTasks(
+    gameId: string,
+    userQuery: string,
+    aiResponse: string,
+    context: {
+      longTermContext: string;
+      screenshotTimelineContext: string;
+      insightTabContext: string;
+    }
+  ): Promise<DetectedTask[]> {
+    // This would typically call the unifiedAIService to generate tasks
+    // For now, return empty array as tasks are generated in unifiedAIService
+    return [];
+  }
+
+  // NEW: Update AI suggested tasks intelligently
+  private async updateAISuggestedTasks(
+    gameId: string,
+    currentTasks: DiaryTask[],
+    newTasks: DetectedTask[]
+  ): Promise<void> {
+    // Remove tasks that are no longer relevant
+    const relevantTasks = currentTasks.filter(task => 
+      this.isTaskStillRelevant(task, newTasks)
+    );
+    
+    // Add new tasks that don't duplicate existing ones
+    const uniqueNewTasks = newTasks.filter(newTask =>
+      !this.taskExists(relevantTasks, newTask)
+    );
+    
+    // Convert to DiaryTask format and save
+    const tasksToAdd = uniqueNewTasks.map(task => ({
+      id: this.generateId(),
+      title: task.title,
+      description: task.description,
+      type: 'ai_suggested' as const,
+      status: 'pending' as const,
+      category: task.category,
+      priority: 'medium' as const,
+      gameId,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      source: task.source
+    }));
+    
+    // Save updated tasks
+    await this.saveTasks(gameId, [...relevantTasks, ...tasksToAdd]);
+  }
+
+  // NEW: Check if task is still relevant
+  private isTaskStillRelevant(task: DiaryTask, newTasks: DetectedTask[]): boolean {
+    // Simple relevance check - can be enhanced
+    const taskAge = Date.now() - task.createdAt;
+    const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
+    
+    // Keep tasks that are recent or completed
+    if (taskAge < maxAge || task.status === 'completed') {
+      return true;
+    }
+    
+    // Check if task is similar to new tasks
+    return !newTasks.some(newTask => 
+      this.tasksAreSimilar(task, newTask)
+    );
+  }
+
+  // NEW: Check if tasks are similar
+  private tasksAreSimilar(task: DiaryTask, newTask: DetectedTask): boolean {
+    const taskTitle = task.title.toLowerCase();
+    const newTaskTitle = newTask.title.toLowerCase();
+    
+    // Simple similarity check - can be enhanced with better algorithms
+    return taskTitle.includes(newTaskTitle) || newTaskTitle.includes(taskTitle);
+  }
+
+  // NEW: Check if task already exists
+  private taskExists(tasks: DiaryTask[], newTask: DetectedTask): boolean {
+    return tasks.some(task => 
+      task.title.toLowerCase() === newTask.title.toLowerCase() ||
+      this.tasksAreSimilar(task, newTask)
+    );
+  }
+
+  // NEW: Generate unique ID
+  private generateId(): string {
+    return `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  // NEW: Add AI suggested tasks from unifiedAIService
+  async addAISuggestedTasks(gameId: string, tasks: DetectedTask[]): Promise<void> {
+    try {
+      const currentTasks = await this.getTasks(gameId);
+      const newTasks = tasks.map(task => ({
+        id: this.generateId(),
+        title: task.title,
+        description: task.description,
+        type: 'ai_suggested' as const,
+        status: 'pending' as const,
+        category: task.category,
+        priority: 'medium' as const,
+        gameId,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        source: task.source
+      }));
+      
+      // Filter out duplicates
+      const uniqueNewTasks = newTasks.filter(newTask =>
+        !this.taskExists(currentTasks, newTask)
+      );
+      
+      if (uniqueNewTasks.length > 0) {
+        await this.saveTasks(gameId, [...currentTasks, ...uniqueNewTasks]);
+        console.log(`✅ Added ${uniqueNewTasks.length} AI suggested tasks for ${gameId}`);
+      }
+    } catch (error) {
+      console.error('Failed to add AI suggested tasks:', error);
+    }
+  }
+
+  // NEW: Track task completion and update AI context
+  private async trackTaskCompletion(gameId: string, task: DiaryTask): Promise<void> {
+    try {
+      // Import services dynamically to avoid circular dependencies
+      const { progressTrackingService } = await import('./progressTrackingService');
+      const { taskCompletionPromptingService } = await import('./taskCompletionPromptingService');
+      
+      // Create completion event data
+      const completionEvent = {
+        taskId: task.id,
+        title: task.title,
+        description: task.description,
+        category: task.category,
+        completedAt: Date.now(),
+        type: 'task_completion'
+      };
+      
+      // Track in long-term memory
+      await longTermMemoryService.trackInteraction(gameId, 'progress', completionEvent);
+      
+      // Track in progress tracking service
+      await progressTrackingService.trackProgressEvent(gameId, {
+        type: 'task_completion',
+        data: completionEvent,
+        timestamp: Date.now()
+      });
+      
+      // NEW: Record completion in task completion prompting service for next query context
+      taskCompletionPromptingService.recordCompletionResponse(gameId, task.id, true);
+      
+      // Update player profile with completion
+      await this.updatePlayerProfileWithCompletion(gameId, task);
+      
+      console.log(`🎯 Tracked task completion: ${task.title} for ${gameId}`);
+    } catch (error) {
+      console.warn('Failed to track task completion:', error);
+    }
+  }
+
+  // NEW: Update player profile with task completion
+  private async updatePlayerProfileWithCompletion(gameId: string, task: DiaryTask): Promise<void> {
+    try {
+      // Create profile update based on task category
+      const profileUpdate = this.createProfileUpdateFromTask(task);
+      
+      if (profileUpdate) {
+        await playerProfileService.updateGameContext(gameId, profileUpdate);
+        console.log(`📊 Updated player profile with task completion: ${task.category}`);
+      }
+    } catch (error) {
+      console.warn('Failed to update player profile with task completion:', error);
+    }
+  }
+
+  // NEW: Create profile update from completed task
+  private createProfileUpdateFromTask(task: DiaryTask): any {
+    const baseUpdate = {
+      lastTaskCompletion: {
+        taskId: task.id,
+        title: task.title,
+        category: task.category,
+        completedAt: Date.now()
+      }
+    };
+
+    // Add category-specific updates
+    switch (task.category) {
+      case 'boss':
+        return {
+          ...baseUpdate,
+          bossDefeated: true,
+          lastBossDefeated: task.title,
+          combatProgress: 'advanced'
+        };
+      
+      case 'exploration':
+        return {
+          ...baseUpdate,
+          explorationProgress: 'advanced',
+          lastAreaExplored: task.title,
+          discoveryCount: 1
+        };
+      
+      case 'item':
+        return {
+          ...baseUpdate,
+          itemAcquired: true,
+          lastItemFound: task.title,
+          collectionProgress: 'advanced'
+        };
+      
+      case 'quest':
+        return {
+          ...baseUpdate,
+          questCompleted: true,
+          lastQuestCompleted: task.title,
+          storyProgress: 'advanced'
+        };
+      
+      case 'character':
+        return {
+          ...baseUpdate,
+          characterInteraction: true,
+          lastCharacterMet: task.title,
+          socialProgress: 'advanced'
+        };
+      
+      default:
+        return baseUpdate;
     }
   }
 }

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { otakuDiaryService } from '../services/otakuDiaryService';
 import { taskDetectionService } from '../services/taskDetectionService';
 import { unifiedUsageService } from '../services/unifiedUsageService';
 
@@ -32,6 +31,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = React.memo(({
   useEffect(() => {
     const checkFavoriteStatus = async () => {
       if (messageId || insightId) {
+        const { otakuDiaryService } = await import('../services/otakuDiaryService');
         const type = messageId ? 'message' : 'insight';
         const sourceId = messageId || insightId || '';
         const favorited = await otakuDiaryService.isFavorited(gameId, sourceId, type);
@@ -47,6 +47,8 @@ const ActionButtons: React.FC<ActionButtonsProps> = React.memo(({
     setIsLoading(true);
 
     try {
+      const { otakuDiaryService } = await import('../services/otakuDiaryService');
+      
       if (isFavorited) {
         // Remove from favorites
         const favorites = await otakuDiaryService.getFavorites(gameId);
@@ -84,6 +86,8 @@ const ActionButtons: React.FC<ActionButtonsProps> = React.memo(({
     setIsLoading(true);
 
     try {
+      const { otakuDiaryService } = await import('../services/otakuDiaryService');
+      
       // Detect tasks from content
       const detectedTasks = taskDetectionService.detectTasksFromText(content);
       

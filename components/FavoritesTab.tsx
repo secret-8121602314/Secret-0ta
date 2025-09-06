@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { otakuDiaryService, DiaryFavorite } from '../services/otakuDiaryService';
+import type { DiaryFavorite } from '../services/otakuDiaryService';
 
 interface FavoritesTabProps {
   gameId: string;
@@ -14,6 +14,7 @@ const FavoritesTab: React.FC<FavoritesTabProps> = ({ gameId, favorites, onFavori
     if (window.confirm('Are you sure you want to remove this from favorites?')) {
       setDeletingId(favoriteId);
       try {
+        const { otakuDiaryService } = await import('../services/otakuDiaryService');
         await otakuDiaryService.removeFavorite(gameId, favoriteId);
         onFavoriteUpdate();
       } catch (error) {

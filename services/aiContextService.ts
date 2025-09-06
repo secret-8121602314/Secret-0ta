@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { feedbackSecurityService } from './feedbackSecurityService';
 import { authService } from './supabase';
 import { userPreferencesService } from './userPreferencesService';
 import { characterDetectionService, CharacterInfo, GameLanguageProfile } from './characterDetectionService';
@@ -437,7 +438,7 @@ class AIContextService {
     }
   }
 
-  // Extract patterns from feedback
+  // Extract patterns from feedback (with security validation)
   private extractPatternsFromFeedback(feedback: AIFeedback): Array<{
     learning_type: AILearning['learning_type'];
     pattern_data: Record<string, any>;
@@ -451,7 +452,7 @@ class AIContextService {
       const hasCode = feedback.ai_response_context.has_code || false;
       const hasImages = feedback.ai_response_context.has_images || false;
 
-      patterns.push({
+      const responsePattern = {
         learning_type: 'response_pattern' as const,
         pattern_data: {
           response_length: responseLength,
@@ -461,7 +462,12 @@ class AIContextService {
           success: feedback.feedback_type === 'up'
         },
         confidence_score: 0.8
-      });
+      };
+
+      // SECURITY VALIDATION: Ensure response pattern learning is allowed
+      if (feedbackSecurityService.validateLearningScope('response_pattern', responsePattern.pattern_data)) {
+        patterns.push(responsePattern);
+      }
     }
 
     // Enhanced feedback analysis for AI learning
@@ -469,7 +475,7 @@ class AIContextService {
       const feedbackCategory = feedback.ai_response_context.feedback_category;
       const severity = feedback.ai_response_context.severity || 'medium';
       
-      patterns.push({
+      const errorCorrectionPattern = {
         learning_type: 'error_correction' as const,
         pattern_data: {
           feedback_category: feedbackCategory,
@@ -479,33 +485,96 @@ class AIContextService {
           timestamp: feedback.created_at
         },
         confidence_score: severity === 'high' ? 0.9 : severity === 'medium' ? 0.7 : 0.5
-      });
+      };
+
+      // SECURITY VALIDATION: Ensure error correction learning is allowed
+      if (feedbackSecurityService.validateLearningScope('error_correction', errorCorrectionPattern.pattern_data)) {
+        patterns.push(errorCorrectionPattern);
+      }
     }
 
-    // User preference analysis
+    // User preference analysis (ENHANCED - allows broader user experience improvements)
     if (feedback.user_context) {
       const userTier = feedback.user_context.user_tier || 'free';
       const gameGenre = feedback.user_context.game_genre;
       const userProgress = feedback.user_context.user_progress;
 
-      patterns.push({
+      const userPreferencePattern = {
         learning_type: 'user_preference' as const,
         pattern_data: {
-          userTier,
-          gameGenre,
-          userProgress,
+          // ENHANCED: Allow broader AI response and user experience preferences
+          response_style: feedback.ai_response_context?.response_style || 'default',
+          response_length: feedback.ai_response_context?.response_length || 'medium',
+          response_tone: feedback.ai_response_context?.response_tone || 'neutral',
+          response_detail_level: feedback.ai_response_context?.response_detail_level || 'medium',
+          response_format: feedback.ai_response_context?.response_format || 'text',
+          response_personality: feedback.ai_response_context?.response_personality || 'helpful',
+          response_helpfulness: feedback.ai_response_context?.response_helpfulness || 'high',
+          response_clarity: feedback.ai_response_context?.response_clarity || 'high',
+          response_engagement: feedback.ai_response_context?.response_engagement || 'medium',
+          response_personalization: feedback.ai_response_context?.response_personalization || 'medium',
+          response_quality: feedback.ai_response_context?.response_quality || 'high',
+          response_effectiveness: feedback.ai_response_context?.response_effectiveness || 'high',
+          user_satisfaction: feedback.feedback_type === 'up' ? 'high' : 'low',
+          user_engagement: feedback.ai_response_context?.user_engagement || 'medium',
+          user_learning: feedback.ai_response_context?.user_learning || 'medium',
+          user_progress: feedback.ai_response_context?.user_progress || 'medium',
+          user_guidance: feedback.ai_response_context?.user_guidance || 'high',
+          user_support: feedback.ai_response_context?.user_support || 'high',
+          user_help: feedback.ai_response_context?.user_help || 'high',
+          user_assistance: feedback.ai_response_context?.user_assistance || 'high',
           feedback_type: feedback.feedback_type,
           success: feedback.feedback_type === 'up',
           feedback_category: feedback.ai_response_context.feedback_category,
-          severity: feedback.ai_response_context.severity
+          severity: feedback.ai_response_context.severity,
+          game_genre: gameGenre,
+          user_tier: userTier,
+          current_user_progress: userProgress
         },
         confidence_score: 0.7
-      });
+      };
+
+      // SECURITY VALIDATION: Ensure user preference learning is allowed for broader improvements
+      if (feedbackSecurityService.validateLearningScope('user_preference', userPreferencePattern.pattern_data)) {
+        patterns.push(userPreferencePattern);
+      }
+    }
+
+    // Gaming content analysis (NEW - for gaming-specific improvements)
+    if (feedback.ai_response_context?.feedback_category) {
+      const gamingContentPattern = {
+        learning_type: 'gaming_content' as const,
+        pattern_data: {
+          gaming_help: feedback.ai_response_context?.gaming_help || 'high',
+          gaming_guidance: feedback.ai_response_context?.gaming_guidance || 'high',
+          gaming_tips: feedback.ai_response_context?.gaming_tips || 'high',
+          gaming_strategy: feedback.ai_response_context?.gaming_strategy || 'medium',
+          gaming_advice: feedback.ai_response_context?.gaming_advice || 'high',
+          gaming_support: feedback.ai_response_context?.gaming_support || 'high',
+          gaming_education: feedback.ai_response_context?.gaming_education || 'medium',
+          gaming_learning: feedback.ai_response_context?.gaming_learning || 'medium',
+          gaming_progress: feedback.ai_response_context?.gaming_progress || 'medium',
+          gaming_improvement: feedback.ai_response_context?.gaming_improvement || 'high',
+          gaming_optimization: feedback.ai_response_context?.gaming_optimization || 'medium',
+          gaming_enhancement: feedback.ai_response_context?.gaming_enhancement || 'high',
+          feedback_type: feedback.feedback_type,
+          success: feedback.feedback_type === 'up',
+          feedback_category: feedback.ai_response_context.feedback_category,
+          severity: feedback.ai_response_context.severity,
+          timestamp: feedback.created_at
+        },
+        confidence_score: 0.8
+      };
+
+      // SECURITY VALIDATION: Ensure gaming content learning is allowed
+      if (feedbackSecurityService.validateLearningScope('gaming_content', gamingContentPattern.pattern_data)) {
+        patterns.push(gamingContentPattern);
+      }
     }
 
     // Success pattern analysis (for thumbs up)
     if (feedback.feedback_type === 'up') {
-      patterns.push({
+      const successPattern = {
         learning_type: 'success_pattern' as const,
         pattern_data: {
           response_type: 'positive_feedback',
@@ -514,7 +583,12 @@ class AIContextService {
           timestamp: feedback.created_at
         },
         confidence_score: 0.8
-      });
+      };
+
+      // SECURITY VALIDATION: Ensure success pattern learning is allowed
+      if (feedbackSecurityService.validateLearningScope('success_pattern', successPattern.pattern_data)) {
+        patterns.push(successPattern);
+      }
     }
 
     return patterns;

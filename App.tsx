@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ConnectionStatus, Conversation, Conversations, Insight, UserTier, Usage, ContextMenuState, ContextMenuItem, PendingInsightModification } from './services/types';
+import { canAccessDeveloperFeatures } from './config/developer';
 import ConnectionModal from './components/ConnectionModal';
 import HandsFreeModal from './components/HandsFreeModal';
 import DesktopIcon from './components/DesktopIcon';
@@ -14,6 +15,9 @@ import SuggestedPrompts from './components/SuggestedPrompts';
 import { useChat } from './hooks/useChat';
 import { useConnection } from './hooks/useConnection';
 import { useTutorial } from './hooks/useTutorial';
+import { profileService } from './services/profileService';
+import { longTermMemoryService } from './services/longTermMemoryService';
+import { contextManagementService } from './services/contextManagementService';
 import ConversationTabs from './components/ConversationTabs';
 import ContactUsModal from './components/ContactUsModal';
 import HandsFreeToggle from './components/HandsFreeToggle';
@@ -45,9 +49,7 @@ import RefundPolicyPage from './components/RefundPolicyPage';
 import EditIcon from './components/EditIcon';
 import LogoutIcon from './components/LogoutIcon';
 import UserIcon from './components/UserIcon';
-import { authService, AuthState } from './services/supabase';
-import { useMigration } from './hooks/useMigration';
-import MigrationModal from './components/MigrationModal';
+import { authService, AuthState, supabase } from './services/supabase';
 import AuthModal from './components/AuthModal';
 import ErrorBoundary from './components/ErrorBoundary';
 import AuthCallbackHandler from './components/AuthCallbackHandler';
@@ -188,9 +190,6 @@ const AppComponent: React.FC = () => {
     // OAuth Callback State
     const [isOAuthCallback, setIsOAuthCallback] = useState(false);
     
-    // Migration State
-    const { migrationState, migrateData, retryMigration, skipMigration } = useMigration();
-    const [isMigrationModalOpen, setIsMigrationModalOpen] = useState(false);
     
     // Interactivity State
     const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
@@ -241,11 +240,7 @@ const AppComponent: React.FC = () => {
     // Ref to store the stop timeout for proper cleanup
     const stopTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     
-    // Reset suggested prompts on app initialization
-    useEffect(() => {
-        suggestedPromptsService.resetUsedPrompts();
-        console.log('🔄 Suggested prompts reset on app initialization');
-    }, []);
+    // Note: Suggested prompts now reset automatically every 24 hours via suggestedPromptsService
 
     // Cleanup deduplication sets periodically to prevent memory issues
     useEffect(() => {
@@ -276,7 +271,6 @@ const AppComponent: React.FC = () => {
     const chatEndRef = useRef<HTMLDivElement>(null);
     const chatContainerRef = useRef<HTMLDivElement>(null);
     const silentAudioRef = useRef<HTMLAudioElement>(null);
-    const [showScrollToBottom, setShowScrollToBottom] = useState(false);
 
     // Function to check current localStorage state (for debugging)
     const checkLocalStorageState = useCallback(() => {
@@ -318,13 +312,174 @@ const AppComponent: React.FC = () => {
 
     // Authentication effect
     useEffect(() => {
-        const unsubscribe = authService.subscribe(setAuthState);
+        const unsubscribe = authService.subscribe((newAuthState) => {
+            // Only log significant auth state changes to reduce console noise
+            const hasUserChanged = !!authState.user !== !!newAuthState.user;
+            const loadingChanged = authState.loading !== newAuthState.loading;
+            
+            if (hasUserChanged || loadingChanged) {
+                console.log('📨 App received auth state update:', { 
+                    hasUser: !!newAuthState.user, 
+                    loading: newAuthState.loading,
+                    error: newAuthState.error?.message 
+                });
+            }
+            setAuthState(newAuthState);
+            
+            // If user is authenticated and we're still on login screen, transition
+            if (newAuthState.user && !newAuthState.loading && onboardingStatus === 'login') {
+                console.log('User authenticated, transitioning from login screen...');
+                setOnboardingStatus('initial');
+            }
+        });
         return () => {
             if (typeof unsubscribe === 'function') {
                 unsubscribe();
             }
         };
-    }, []);
+    }, [onboardingStatus]);
+
+    // NEW: Long-term session restoration on app startup
+    useEffect(() => {
+        const restoreLongTermSessions = async () => {
+            if (authState.user && !authState.loading) {
+                try {
+                    console.log('🧠 Restoring long-term sessions...');
+                    
+                    // Use statically imported services
+                    
+                    // Restore sessions for all active conversations
+                    for (const [conversationId, conversation] of Object.entries(conversations)) {
+                        if (conversationId !== 'everything-else') {
+                            try {
+                                // Initialize long-term session
+                                await longTermMemoryService.initializeLongTermSession(conversationId, conversationId);
+                                
+                                // Restore context from database
+                                await contextManagementService.restoreLongTermSession(conversationId);
+                                
+                                console.log(`✅ Restored long-term session for: ${conversationId}`);
+                            } catch (error) {
+                                console.warn(`⚠️ Failed to restore session for ${conversationId}:`, error);
+                            }
+                        }
+                    }
+                    
+                    console.log('🧠 Long-term session restoration completed');
+                } catch (error) {
+                    console.error('❌ Failed to restore long-term sessions:', error);
+                }
+            }
+        };
+
+        restoreLongTermSessions();
+    }, [authState.user, authState.loading, conversations]);
+
+    // Handle authentication success - transition from login to initial splash screen
+    useEffect(() => {
+        console.log('Auth state change detected:', { 
+            hasUser: !!authState.user, 
+            loading: authState.loading, 
+            onboardingStatus,
+            authMethod: localStorage.getItem('otakonAuthMethod')
+        });
+        
+        // Only transition if user just became authenticated and we're on login screen
+        if (authState.user && !authState.loading && onboardingStatus === 'login') {
+            console.log('User authenticated on login screen, checking for recent auth...');
+            
+            // Check if this is a fresh authentication (not a page reload with existing session)
+            const authMethod = localStorage.getItem('otakonAuthMethod');
+            const hasRecentAuth = authMethod && (authMethod === 'google' || authMethod === 'discord');
+            
+            console.log('Auth method check:', { authMethod, hasRecentAuth });
+            
+            if (hasRecentAuth) {
+                console.log('Authentication successful, transitioning to initial splash screen...');
+                
+                // Clear the auth method to prevent re-triggering
+                localStorage.removeItem('otakonAuthMethod');
+                
+                // Check if user has already completed onboarding
+                const hasCompletedOnboarding = localStorage.getItem('otakonOnboardingComplete');
+                const hasCompletedProfileSetup = localStorage.getItem('otakon_profile_setup_completed');
+                
+                console.log('Onboarding check:', { hasCompletedOnboarding, hasCompletedProfileSetup });
+                
+                // Check if we should show splash screens after logout
+                const shouldShowSplashAfterLogin = localStorage.getItem('otakon_show_splash_after_login');
+                
+                if (shouldShowSplashAfterLogin === 'true') {
+                    // Clear the flag and show initial splash screens
+                    localStorage.removeItem('otakon_show_splash_after_login');
+                    console.log('Fresh login after logout detected, showing initial splash screens');
+                    setOnboardingStatus('initial');
+                    setView('app');
+                } else if (hasCompletedOnboarding && hasCompletedProfileSetup) {
+                    // Returning user - skip to complete status
+                    console.log('Returning user, skipping to complete status');
+                    setOnboardingStatus('complete');
+                    setView('app');
+                } else {
+                    // New user - go to initial splash screen
+                    console.log('New user, going to initial splash screen');
+                    setOnboardingStatus('initial');
+                    setView('app');
+                }
+            } else {
+                console.log('No recent auth method found, staying on login screen');
+            }
+        }
+    }, [authState.user, authState.loading, onboardingStatus]);
+
+    // Fallback: Check for OAuth completion after a delay (in case auth state change is delayed)
+    useEffect(() => {
+        if (onboardingStatus === 'login' && !authState.loading) {
+            const authMethod = localStorage.getItem('otakonAuthMethod');
+            if (authMethod && (authMethod === 'google' || authMethod === 'discord')) {
+                console.log('Fallback: Checking for delayed OAuth completion...');
+                
+                const checkAuthCompletion = setTimeout(async () => {
+                    console.log('Fallback: Checking auth state after delay...');
+                    
+                    // Check if we have OAuth parameters in the URL
+                    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+                    const hasOAuthParams = hashParams.has('access_token') || hashParams.has('refresh_token');
+                    
+                    if (hasOAuthParams) {
+                        console.log('Fallback: OAuth parameters still in URL, forcing completion...');
+                        
+                        // Try to get user directly
+                        const { data: { user }, error } = await supabase.auth.getUser();
+                        if (user) {
+                            console.log('Fallback: User found, transitioning...');
+                            localStorage.removeItem('otakonAuthMethod');
+                            setOnboardingStatus('initial');
+                            setView('app');
+                        } else {
+                            console.log('Fallback: No user found, but OAuth params exist - forcing transition anyway');
+                            localStorage.removeItem('otakonAuthMethod');
+                            setOnboardingStatus('initial');
+                            setView('app');
+                        }
+                    } else if (authState.user && onboardingStatus === 'login') {
+                        console.log('Fallback: OAuth completed, transitioning...');
+                        localStorage.removeItem('otakonAuthMethod');
+                        
+                        const hasCompletedOnboarding = localStorage.getItem('otakonOnboardingComplete');
+                        const hasCompletedProfileSetup = localStorage.getItem('otakon_profile_setup_completed');
+                        
+                        // For OAuth fallback, always start with initial splash screen
+                        console.log('OAuth fallback - ensuring first-time experience');
+                        setOnboardingStatus('initial');
+                        setView('app');
+                    }
+                }, 3000); // Wait 3 seconds for auth state to update
+                
+                return () => clearTimeout(checkAuthCompletion);
+            }
+        }
+    }, [onboardingStatus, authState.user, authState.loading]);
 
     // Load usage data on mount
     useEffect(() => {
@@ -340,34 +495,6 @@ const AppComponent: React.FC = () => {
         loadUsageData();
     }, []);
 
-    // Auto-migrate localStorage data to Supabase on app start
-    useEffect(() => {
-        const autoMigrateData = async () => {
-            try {
-                // Wait for app to be fully ready
-                await new Promise(resolve => setTimeout(resolve, 100));
-                
-                // Check if user needs migration
-                const needsMigration = await supabaseDataService.checkMigrationStatus();
-                if (needsMigration) {
-                    console.log('🔄 Auto-migrating localStorage data to Supabase...');
-                    
-                    await supabaseDataService.migrateAllLocalStorageData();
-                    
-                    console.log('✅ Auto-migration complete!');
-                } else {
-                    console.log('✅ No migration needed - data already synced');
-                }
-            } catch (error) {
-                console.warn('Auto-migration failed, continuing with localStorage:', error);
-            }
-        };
-        
-        // Run auto-migration after a short delay to ensure app is ready
-        const migrationTimer = setTimeout(autoMigrateData, 500);
-        
-        return () => clearTimeout(migrationTimer);
-    }, []);
     
     // PWA Navigation effect - handle post-install navigation
     useEffect(() => {
@@ -492,9 +619,24 @@ const AppComponent: React.FC = () => {
     // Check for OAuth callback on component mount
     useEffect(() => {
         const checkOAuthCallback = async () => {
+            // First, try the auth service's OAuth callback handler
+            const callbackHandled = await authService.handleOAuthCallback();
+            if (callbackHandled) {
+                console.log('✅ OAuth callback handled by auth service');
+                return;
+            }
+            
             // Check if we're returning from an OAuth flow
             const urlParams = new URLSearchParams(window.location.search);
             const hashParams = new URLSearchParams(window.location.hash.substring(1));
+            
+            console.log('Checking for OAuth callback...', {
+                url: window.location.href,
+                search: window.location.search,
+                hash: window.location.hash,
+                urlParams: Object.fromEntries(urlParams),
+                hashParams: Object.fromEntries(hashParams)
+            });
             
             // Check for Supabase OAuth callback parameters (both query params and hash params)
             const hasAuthParams = urlParams.has('access_token') || 
@@ -510,32 +652,127 @@ const AppComponent: React.FC = () => {
             if (hasAuthParams) {
                 console.log('OAuth callback detected, parameters:', Object.fromEntries([...urlParams, ...hashParams]));
                 setIsOAuthCallback(true);
+                
+                // Clear the URL immediately to prevent multiple processing
+                console.log('Clearing OAuth parameters from URL...');
+                window.history.replaceState({}, document.title, window.location.pathname);
+                
+                // Extract tokens before clearing URL
+                const accessToken = hashParams.get('access_token') || urlParams.get('access_token');
+                const refreshToken = hashParams.get('refresh_token') || urlParams.get('refresh_token');
+                
+                // Force Supabase to process the OAuth callback
+                console.log('Forcing Supabase to process OAuth callback...');
+                try {
+                    // Wait a moment for Supabase to process the OAuth response
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    
+                    // First, try to get the current session
+                    const { data: { session }, error } = await supabase.auth.getSession();
+                    console.log('Initial session check:', { session: !!session, error });
+                    
+                    if (error) {
+                        console.error('Error getting session after OAuth callback:', error);
+                    } else if (session) {
+                        console.log('Session found after OAuth callback:', session);
+                        // Force the auth state to update
+                        console.log('Forcing auth state update...');
+                        // Trigger a manual auth state change
+                        setTimeout(() => {
+                            console.log('Manual auth state update triggered');
+                        }, 100);
+                    } else {
+                        console.log('No session found, trying to process OAuth callback...');
+                        // Try to process the OAuth callback with the tokens from URL
+                        if (accessToken && refreshToken) {
+                            console.log('Processing OAuth callback with tokens...');
+                            const { data, error: setSessionError } = await supabase.auth.setSession({
+                                access_token: accessToken,
+                                refresh_token: refreshToken
+                            });
+                            
+                            if (setSessionError) {
+                                console.error('Error setting session:', setSessionError);
+                            } else if (data.session) {
+                                console.log('Session set successfully:', data.session);
+                                // Force transition
+                                localStorage.removeItem('otakonAuthMethod');
+                                setOnboardingStatus('initial');
+                                setView('app');
+                                setAuthState({ user: data.user, session: data.session, loading: false, error: null });
+                            }
+                        } else {
+                            console.log('No tokens available for session processing');
+                        }
+                    }
+                    
+                    // Also try to get the user directly
+                    const { data: { user }, error: userError } = await supabase.auth.getUser();
+                    console.log('Direct user check:', { user: !!user, error: userError });
+                    
+                    if (user) {
+                        console.log('User found directly:', user);
+                        // Force transition since we have a user
+                        console.log('User found, forcing transition to initial splash screen...');
+                        localStorage.removeItem('otakonAuthMethod');
+                        setOnboardingStatus('initial');
+                        setView('app');
+                        
+                        // Force auth state update
+                        setAuthState({ user, session, loading: false, error: null });
+                    } else {
+                        // If no user found, try to manually process the OAuth callback
+                        console.log('No user found, trying manual OAuth processing...');
+                        
+                        if (accessToken) {
+                            console.log('Access token found in URL, attempting manual session creation...');
+                            try {
+                                // Try to set the session manually
+                                const { data, error } = await supabase.auth.setSession({
+                                    access_token: accessToken,
+                                    refresh_token: refreshToken || ''
+                                });
+                                
+                                if (error) {
+                                    console.error('Error setting session manually:', error);
+                                } else if (data.session) {
+                                    console.log('Session set manually successfully:', data.session);
+                                    // Force transition
+                                    localStorage.removeItem('otakonAuthMethod');
+                                    setOnboardingStatus('initial');
+                                    setView('app');
+                                    
+                                    // Force auth state update
+                                    setAuthState({ user: data.session.user, session: data.session, loading: false, error: null });
+                                }
+                            } catch (error) {
+                                console.error('Error in manual session creation:', error);
+                            }
+                        }
+                    }
+                    
+                } catch (error) {
+                    console.error('Error processing OAuth callback:', error);
+                }
+            } else {
+                console.log('No OAuth callback parameters found');
             }
         };
         
-        checkOAuthCallback();
-    }, []);
+        // Only check for OAuth callback if we're on the login screen
+        if (onboardingStatus === 'login') {
+            checkOAuthCallback();
+        }
+    }, [onboardingStatus]);
 
-    // Migration effect
+    // Direct app access - no migration needed
     useEffect(() => {
-        if (authState.user && !migrationState.hasMigrated && !migrationState.isMigrating) {
-            // Check if there's actually data to migrate
-            const hasLocalData = localStorage.getItem('otakonConversations') || localStorage.getItem('otakonUsage');
-            
-            if (hasLocalData) {
-                // Show migration modal if there's data to migrate
-                setIsMigrationModalOpen(true);
-            } else {
-                // No data to migrate, go directly to main app
-                setOnboardingStatus('complete');
-                setView('app');
-            }
-        } else if (authState.user && migrationState.hasMigrated) {
-            // Migration is complete (either successful or skipped), go to main app
+        if (authState.user && !authState.loading) {
+            console.log('✅ User authenticated, going directly to main app (no migration needed)');
             setOnboardingStatus('complete');
             setView('app');
         }
-    }, [authState.user, migrationState.hasMigrated, migrationState.isMigrating]);
+    }, [authState.user, authState.loading]);
 
     // Sync usage with Supabase when authenticated
     useEffect(() => {
@@ -719,7 +956,20 @@ const AppComponent: React.FC = () => {
                 if (shouldShow && isFirstTime) {
                     // Show welcome message for first-time users
                     const timeGreeting = getTimeGreeting();
-                    const welcomeMessage = `${timeGreeting}Welcome to Otakon!\n\n**Your Personal Gaming Companion**\n\n**What I can help you with:**\n• Upload screenshots from games you're playing\n• Get spoiler-free guidance and hints\n• Discover secrets and strategies\n• Track your gaming progress\n• Answer questions about any game\n\n**Let's get started!** Upload a screenshot from a game you're currently playing, or just tell me what you'd like help with.`;
+                    
+                    // Get user's first name for personalization
+                    let firstName = '';
+                    try {
+                        const fullName = await profileService.getName();
+                        if (fullName) {
+                            const first = fullName.trim().split(' ')[0];
+                            firstName = first ? `, ${first}` : '';
+                        }
+                    } catch (error) {
+                        console.warn('Failed to get user name for welcome message:', error);
+                    }
+                    
+                    const welcomeMessage = `${timeGreeting}Welcome to Otakon${firstName}!\n\n**Your Personal Gaming Companion**\n\n**What I can help you with:**\n• Upload screenshots from games you're playing\n• Get spoiler-free guidance and hints\n• Discover secrets and strategies\n• Track your gaming progress\n• Answer questions about any game\n\n**Let's get started!** Upload a screenshot from a game you're currently playing, or just tell me what you'd like help with.`;
                     
                     console.log('Adding first-time welcome message:', welcomeMessage);
                     addSystemMessage(welcomeMessage, 'everything-else', false);
@@ -931,10 +1181,7 @@ const AppComponent: React.FC = () => {
     
     // Enhanced suggested prompts logic that can access conversations
     const shouldShowSuggestedPromptsEnhanced = useCallback((): boolean => {
-        // In development mode, always show suggested prompts for easier testing
-        if (process.env.NODE_ENV === 'development') {
-            return true;
-        }
+        // Only show suggested prompts based on normal logic, not development mode
         
         // Show prompts if:
         // 1. First run experience (isFirstTime is true)
@@ -1187,9 +1434,28 @@ const AppComponent: React.FC = () => {
             base64Length: f.base64?.length || 0
         })));
         
+        // NEW: Track multishot timeline in screenshot timeline service
+        if (activeConversationId && activeConversationId !== 'everything-else') {
+            try {
+                const { screenshotTimelineService } = await import('./services/screenshotTimelineService');
+                await screenshotTimelineService.trackMultiScreenshot(
+                    activeConversationId,
+                    imageDataArray,
+                    Date.now(),
+                    activeConversationId, // gameId
+                    activeConversation?.title, // gameName
+                    false // isGameSwitch - will be updated later if game switch occurs
+                );
+                console.log(`📸 Tracked multi-shot timeline: ${imageDataArray.length} screenshots`);
+            } catch (error) {
+                console.warn('Failed to track multishot timeline:', error);
+            }
+        }
+        
         // Use sendMessage to display the images grouped together in one message
         // sendMessage will create one userMessage with all images in the images array
-        const result = await sendMessage(`📸 Multi-shot capture: ${formattedImageFiles.length} screenshots`, formattedImageFiles, true);
+        const timelineMessage = `📸 Multi-shot timeline: ${formattedImageFiles.length} screenshots showing progression over the last 5 minutes`;
+        const result = await sendMessage(timelineMessage, formattedImageFiles, true);
         
         if (processImmediate) {
             console.log(`🚀 Multi-shot batch sent for AI analysis`);
@@ -1442,8 +1708,26 @@ const AppComponent: React.FC = () => {
                             return;
                         }
                         
+                        // NEW: Track single screenshot timeline
+                        if (activeConversationId && activeConversationId !== 'everything-else') {
+                            try {
+                                const { screenshotTimelineService } = await import('./services/screenshotTimelineService');
+                                await screenshotTimelineService.trackSingleScreenshot(
+                                    activeConversationId,
+                                    imageData,
+                                    timestamp || Date.now(),
+                                    activeConversationId, // gameId
+                                    activeConversation?.title, // gameName
+                                    false // isGameSwitch - will be updated later if game switch occurs
+                                );
+                                console.log(`📸 Tracked single screenshot timeline`);
+                            } catch (error) {
+                                console.warn('Failed to track single screenshot timeline:', error);
+                            }
+                        }
+                        
                         // Process immediately - sendMessage will handle the display
-                        await sendMessage('', [imageData], true);
+                        await sendMessage('📸 Single screenshot showing current game state', [imageData], true);
                         
                     } else {
                         // Manual review mode
@@ -1451,6 +1735,24 @@ const AppComponent: React.FC = () => {
                             // Only show this message once, don't spam the user
                             console.log(`⚠️ Manual review queue has images, skipping single shot`);
                             return;
+                        }
+                        
+                        // NEW: Track single screenshot timeline for manual review
+                        if (activeConversationId && activeConversationId !== 'everything-else') {
+                            try {
+                                const { screenshotTimelineService } = await import('./services/screenshotTimelineService');
+                                await screenshotTimelineService.trackSingleScreenshot(
+                                    activeConversationId,
+                                    imageData,
+                                    timestamp || Date.now(),
+                                    activeConversationId, // gameId
+                                    activeConversation?.title, // gameName
+                                    false // isGameSwitch - will be updated later if game switch occurs
+                                );
+                                console.log(`📸 Tracked single screenshot timeline (manual review)`);
+                            } catch (error) {
+                                console.warn('Failed to track single screenshot timeline:', error);
+                            }
                         }
                         
                         // Display in chat and add to review queue
@@ -1534,32 +1836,12 @@ const AppComponent: React.FC = () => {
     const messages = activeConversation?.messages ?? [];
     
     useEffect(() => {
-        // Only scroll to bottom if the last message is from user (to show input area)
-        // Don't scroll for AI responses so users can read from the start
-        if (messages.length > 0) {
-            const lastMessage = messages[messages.length - 1];
-            if (lastMessage.role === 'user') {
-                chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-            } else if (lastMessage.role === 'model') {
-                // No-op: do not show new message indicator
-            }
+        // Auto-scroll to show latest AI response when generating or generated
+        if (messages.length > 0 || loadingMessages.length > 0) {
+            chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
         }
     }, [messages, loadingMessages]);
     
-    // Handle scroll detection to show/hide scroll to bottom button
-    useEffect(() => {
-        const chatContainer = chatContainerRef.current;
-        if (!chatContainer) return;
-
-        const handleScroll = () => {
-            const { scrollTop, scrollHeight, clientHeight } = chatContainer;
-            const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10; // 10px threshold
-            setShowScrollToBottom(!isAtBottom);
-        };
-
-        chatContainer.addEventListener('scroll', handleScroll);
-        return () => chatContainer.removeEventListener('scroll', handleScroll);
-    }, []);
 
     const scrollToBottom = () => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -1614,51 +1896,109 @@ const AppComponent: React.FC = () => {
         setIsConnectionModalOpen(false);
     }, [disconnect]);
 
-    const executeFullReset = useCallback(() => {
-        if (send) {
-            send({ type: 'clear_history' });
+    const executeFullReset = useCallback(async () => {
+        try {
+            // First, clear local data and reset services while still authenticated
+            if (send) {
+                send({ type: 'clear_history' });
+            }
+            ttsService.cancel();
+            disconnect();
+            resetConversations();
+            
+            // Reset services while still authenticated to avoid 403 errors
+            try {
+                await unifiedUsageService.reset();
+            } catch (error) {
+                console.warn('Failed to reset usage service:', error);
+            }
+            
+            try {
+                await playerProfileService.resetWelcomeMessageTracking();
+            } catch (error) {
+                console.warn('Failed to reset welcome message tracking in Supabase:', error);
+            }
+            
+            // Clear localStorage
+            localStorage.removeItem('lastConnectionCode');
+            localStorage.removeItem('otakonOnboardingComplete');
+            localStorage.removeItem('otakon_profile_setup_completed');
+            localStorage.removeItem('otakonHasConnectedBefore');
+            localStorage.removeItem('otakonAuthMethod');
+            localStorage.removeItem('otakonInstallDismissed');
+            localStorage.removeItem('otakon_developer_mode'); // Clear developer mode flag
+            
+            // Set flag to indicate fresh login should show splash screens
+            localStorage.setItem('otakon_show_splash_after_login', 'true');
+            
+            // Reset welcome message tracking so it shows again on next login
+            localStorage.removeItem('otakon_welcome_message_shown');
+            localStorage.removeItem('otakon_last_welcome_time');
+            localStorage.removeItem('otakon_app_closed_time');
+            localStorage.removeItem('otakon_first_run_completed');
+            
+            // Now sign out from Supabase (after all authenticated operations are done)
+            await authService.signOut();
+            
+            // Reset app state and return to login screen
+            setOnboardingStatus('login');
+            setIsHandsFreeMode(false);
+            setIsConnectionModalOpen(false);
+            setView('landing');
+            
+            console.log('Full reset completed successfully');
+        } catch (error) {
+            console.error('Full reset error:', error);
+            // Even if there's an error, try to clear local state
+            setOnboardingStatus('login');
+            setIsHandsFreeMode(false);
+            setIsConnectionModalOpen(false);
+            setView('landing');
         }
-        ttsService.cancel();
-        disconnect();
-        resetConversations();
-        unifiedUsageService.reset();
-        refreshUsage();
-        localStorage.removeItem('lastConnectionCode');
-        localStorage.removeItem('otakonOnboardingComplete');
-        localStorage.removeItem('otakonHasConnectedBefore');
-        localStorage.removeItem('otakonAuthMethod');
-        localStorage.removeItem('otakonInstallDismissed');
-        setOnboardingStatus('login');
-        setIsHandsFreeMode(false);
-        setIsConnectionModalOpen(false);
-        setView('app');
     }, [send, disconnect, resetConversations]);
     
     const handleLogout = useCallback(async () => {
+        const isDeveloperMode = canAccessDeveloperFeatures(authState.user?.email);
+        
         setConfirmationModal({
-            title: 'Sign Out?',
-            message: 'Are you sure you want to sign out? You can sign back in anytime.',
+            title: isDeveloperMode ? 'Sign Out of Developer Mode?' : 'Sign Out?',
+            message: isDeveloperMode 
+                ? 'Are you sure you want to sign out of developer mode? You can sign back in anytime.'
+                : 'Are you sure you want to sign out? You can sign back in anytime.',
             onConfirm: async () => {
                 try {
-                    // Sign out from Supabase
-                    await authService.signOut();
-                    
-                    // Clear local data
+                    // First, clear local data and reset services while still authenticated
                     if (send) {
                         send({ type: 'clear_history' });
                     }
                     ttsService.cancel();
                     disconnect();
                     resetConversations();
-                    unifiedUsageService.reset();
-                    refreshUsage();
+                    
+                    // Reset services while still authenticated to avoid 403 errors
+                    try {
+                        await unifiedUsageService.reset();
+                    } catch (error) {
+                        console.warn('Failed to reset usage service:', error);
+                    }
+                    
+                    try {
+                        await playerProfileService.resetWelcomeMessageTracking();
+                    } catch (error) {
+                        console.warn('Failed to reset welcome message tracking in Supabase:', error);
+                    }
                     
                     // Clear localStorage
                     localStorage.removeItem('lastConnectionCode');
                     localStorage.removeItem('otakonOnboardingComplete');
+                    localStorage.removeItem('otakon_profile_setup_completed');
                     localStorage.removeItem('otakonHasConnectedBefore');
                     localStorage.removeItem('otakonAuthMethod');
                     localStorage.removeItem('otakonInstallDismissed');
+                    localStorage.removeItem('otakon_developer_mode'); // Clear developer mode flag
+                    
+                    // Set flag to indicate fresh login should show splash screens
+                    localStorage.setItem('otakon_show_splash_after_login', 'true');
                     
                     // Reset welcome message tracking so it shows again on next login
                     localStorage.removeItem('otakon_welcome_message_shown');
@@ -1666,24 +2006,20 @@ const AppComponent: React.FC = () => {
                     localStorage.removeItem('otakon_app_closed_time');
                     localStorage.removeItem('otakon_first_run_completed');
                     
-                    // Also reset in Supabase if possible
-                    try {
-                        await playerProfileService.resetWelcomeMessageTracking();
-                    } catch (error) {
-                        console.warn('Failed to reset welcome message tracking in Supabase:', error);
-                    }
+                    // Now sign out from Supabase (after all authenticated operations are done)
+                    await authService.signOut();
                     
-                    // Reset app state
+                    // Reset app state and return to login screen
                     setOnboardingStatus('login');
                     setIsHandsFreeMode(false);
                     setIsConnectionModalOpen(false);
-                    setView('app');
+                    setView('landing');
                     
                     console.log('User logged out successfully');
                 } catch (error) {
                     console.error('Logout error:', error);
                     // Even if Supabase logout fails, clear local data
-                    executeFullReset();
+                    await executeFullReset();
                 }
             },
         });
@@ -1756,13 +2092,29 @@ const AppComponent: React.FC = () => {
             isFromPC 
         });
         
-        // Record when user interacts with chat (any text query, image upload, or PC screenshot)
-        if (activeConversation?.id === 'everything-else') {
-            // Check if this is any kind of user interaction
-            if (text.trim().length > 0 || (images && images.length > 0) || isFromPC) {
-                // User has interacted with chat - hide suggested prompts
+        // IMMEDIATELY hide suggested prompts when user submits a query
+        if (text.trim().length > 0 || (images && images.length > 0) || isFromPC) {
+            // Hide static suggested prompts for Everything Else tab
+            if (activeConversation?.id === 'everything-else') {
                 localStorage.setItem('otakon_has_interacted_with_chat', 'true');
-                console.log('📝 User interacted with chat - hiding suggested prompts');
+                console.log('📝 User submitted query - immediately hiding suggested prompts');
+            }
+            
+            // Hide inline suggestions by clearing them from the last AI message
+            if (activeConversation && activeConversation.messages.length > 0) {
+                const lastMessage = activeConversation.messages[activeConversation.messages.length - 1];
+                if (lastMessage.role === 'model' && lastMessage.suggestions) {
+                    // Clear suggestions from the last AI message immediately
+                    updateConversation(activeConversation.id, conv => ({
+                        ...conv,
+                        messages: conv.messages.map(msg => 
+                            msg.id === lastMessage.id 
+                                ? { ...msg, suggestions: undefined }
+                                : msg
+                        )
+                    }));
+                    console.log('📝 Cleared inline suggestions from last AI message');
+                }
             }
         }
         
@@ -1891,31 +2243,57 @@ const AppComponent: React.FC = () => {
 
     // Player Profile Setup Handlers
     const handleProfileSetupComplete = useCallback(async (profile: any) => {
-        await playerProfileService.saveProfile(profile);
-        playerProfileService.completeFirstTimeSetup();
-        setShowProfileSetup(false);
-        setIsFirstTime(false);
-        
-        // Mark onboarding as complete (profile setup is handled by Supabase)
-        localStorage.setItem('otakonOnboardingComplete', 'true');
-        
-        // Mark first run completed in Supabase with localStorage fallback
-        await playerProfileService.markFirstRunCompleted();
-        
-        // Add welcome message immediately for first-time users
-        const timeGreeting = getTimeGreeting();
-        addSystemMessage(
-            `${timeGreeting}Welcome to Otakon!\n\n**Profile Setup Complete!** Your gaming experience is now personalized.\n\n**Next Steps:**\n• Upload a screenshot from a game you're playing\n• Tell me about a game you want help with\n• I'll create a dedicated conversation tab for each game\n• Get spoiler-free guidance tailored to your progress\n\nWhat game would you like to start with today?`,
-            'everything-else',
-            false
-        );
-        
-        // Update welcome message tracking in Supabase with localStorage fallback
-        await playerProfileService.updateWelcomeMessageShown('profile_setup');
-        
-        // Trigger tutorial immediately after profile setup
-        console.log('🎯 Profile setup complete - opening tutorial now');
-        setTimeout(() => openTutorial(), 1000); // 1 second delay to let UI settle
+        try {
+            console.log('🎯 Starting profile setup completion...', profile);
+            
+            // Save profile first
+            console.log('💾 Saving profile...');
+            await playerProfileService.saveProfile(profile);
+            console.log('✅ Profile saved successfully');
+            
+            // Complete first time setup
+            console.log('🎉 Completing first time setup...');
+            playerProfileService.completeFirstTimeSetup();
+            console.log('✅ First time setup completed');
+            
+            // Close modal immediately
+            console.log('🚪 Closing profile setup modal...');
+            setShowProfileSetup(false);
+            setIsFirstTime(false);
+            console.log('✅ Modal closed');
+            
+            // Mark onboarding as complete (profile setup is handled by Supabase)
+            localStorage.setItem('otakonOnboardingComplete', 'true');
+            console.log('✅ Onboarding marked as complete');
+            
+            // Mark first run completed in Supabase with localStorage fallback
+            console.log('🏁 Marking first run as completed...');
+            await playerProfileService.markFirstRunCompleted();
+            console.log('✅ First run marked as completed');
+            
+            // Add welcome message immediately for first-time users
+            const timeGreeting = getTimeGreeting();
+            addSystemMessage(
+                `${timeGreeting}Welcome to Otakon!\n\n**Profile Setup Complete!** Your gaming experience is now personalized.\n\n**Next Steps:**\n• Upload a screenshot from a game you're playing\n• Tell me about a game you want help with\n• I'll create a dedicated conversation tab for each game\n• Get spoiler-free guidance tailored to your progress\n\nWhat game would you like to start with today?`,
+                'everything-else',
+                false
+            );
+            console.log('✅ Welcome message added');
+            
+            // Update welcome message tracking in Supabase with localStorage fallback
+            await playerProfileService.updateWelcomeMessageShown('profile_setup');
+            console.log('✅ Welcome message tracking updated');
+            
+            // Trigger tutorial immediately after profile setup
+            console.log('🎯 Profile setup complete - opening tutorial now');
+            setTimeout(() => openTutorial(), 1000); // 1 second delay to let UI settle
+            
+        } catch (error) {
+            console.error('❌ Error in profile setup completion:', error);
+            // Still close the modal even if there's an error
+            setShowProfileSetup(false);
+            setIsFirstTime(false);
+        }
     }, [addSystemMessage, openTutorial]);
 
     const handleProfileSetupSkip = useCallback(async () => {
@@ -1988,26 +2366,6 @@ const AppComponent: React.FC = () => {
 
     const handleOpenAuthModal = useCallback(() => setIsAuthModalOpen(true), []);
     
-    const handleMigrationSuccess = useCallback(() => {
-        setIsMigrationModalOpen(false);
-        
-        // Reset suggested prompts on migration success
-        suggestedPromptsService.resetUsedPrompts();
-        
-        // Check if user has already completed onboarding
-        const hasCompletedOnboarding = localStorage.getItem('otakonOnboardingComplete');
-        const hasCompletedProfileSetup = localStorage.getItem('otakon_profile_setup_completed');
-        
-        if (hasCompletedOnboarding && hasCompletedProfileSetup) {
-            // Returning user - skip to complete status to allow profile setup check and welcome message
-            setOnboardingStatus('complete');
-            setView('app');
-        } else {
-            // New user - go through onboarding flow
-            setOnboardingStatus('initial');
-            setView('app');
-        }
-    }, []);
 
     const handleBatchUploadAttempt = useCallback(() => {
         addSystemMessage("Uploading multiple images is a Pro feature. Please select only one image or upgrade for batch analysis.", activeConversationId, true);
@@ -2115,6 +2473,11 @@ const AppComponent: React.FC = () => {
         e.preventDefault();
         e.stopPropagation();
         const targetRect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        
+        // Debug: Log current user email and developer access
+        console.log('🔍 Current user email:', authState.user?.email);
+        console.log('🔍 Can access developer features:', canAccessDeveloperFeatures(authState.user?.email));
+        
         const menuItems: ContextMenuItem[] = [
             {
                 label: 'Settings',
@@ -2122,15 +2485,44 @@ const AppComponent: React.FC = () => {
                 action: () => setIsSettingsModalOpen(true),
             },
             {
+                label: 'Insights',
+                icon: SettingsIcon, // You can create a custom icon for this
+                action: () => setShowProactiveInsights(true),
+            },
+            {
                 label: 'Watch Tutorial',
                 icon: SettingsIcon, // You can create a custom icon for this
                 action: () => openTutorial(),
             },
-            {
+            // Cache Performance - only for developers
+            ...(canAccessDeveloperFeatures(authState.user?.email) ? [{
                 label: 'Cache Performance',
                 icon: SettingsIcon, // You can create a custom icon for this
                 action: () => setIsCacheDashboardOpen(true),
-            },
+            }] : []),
+
+            // Reset First Run Experience - only for developers
+            ...(canAccessDeveloperFeatures(authState.user?.email) ? [{
+                label: 'Reset First Run Experience',
+                icon: SettingsIcon, // You can create a custom icon for this
+                action: () => {
+                    // Clear all onboarding and first-run flags
+                    localStorage.removeItem('otakon_profile_setup_completed');
+                    localStorage.removeItem('otakon_show_splash_after_login');
+                    localStorage.removeItem('otakon_onboarding_completed');
+                    localStorage.removeItem('otakon_first_run_completed');
+                    localStorage.removeItem('otakon_tutorial_completed');
+                    
+                    // Reset onboarding status to initial
+                    setOnboardingStatus('initial');
+                    
+                    // Show success message
+                    console.log('✅ First run experience reset successfully!');
+                    
+                    // Close context menu
+                    setContextMenu(null);
+                },
+            }] : []),
 
             // Add Sign In option for unauthenticated users
             ...(!authState.user ? [{
@@ -2139,10 +2531,10 @@ const AppComponent: React.FC = () => {
                 action: handleOpenAuthModal,
             }] : []),
             {
-                label: 'Logout & Reset',
+                label: canAccessDeveloperFeatures(authState.user?.email) ? 'Logout & Reset' : 'Logout',
                 icon: LogoutIcon,
                 isDestructive: true,
-                action: handleResetApp,
+                action: canAccessDeveloperFeatures(authState.user?.email) ? handleResetApp : handleLogout,
             }
         ];
         setContextMenu({ targetRect, items: menuItems });
@@ -2415,60 +2807,7 @@ const AppComponent: React.FC = () => {
                 
                 {/* Enhanced Features Status Bar */}
                 <div className="flex items-center gap-1 sm:gap-2 md:gap-3 flex-shrink-0">
-                    {/* Database Sync Status */}
-                    {authState.user && (
-                        <div className="hidden sm:flex items-center gap-1.5 sm:gap-2">
-                            <button
-                                onClick={syncToDatabase}
-                                disabled={databaseSyncStatus === 'syncing'}
-                                className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 h-10 sm:h-12 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 ${
-                                    databaseSyncStatus === 'syncing' 
-                                        ? 'bg-blue-600/20 text-blue-400 cursor-not-allowed' 
-                                        : databaseSyncStatus === 'success'
-                                        ? 'bg-green-600/20 text-green-400 hover:bg-green-600/30'
-                                        : databaseSyncStatus === 'error'
-                                        ? 'bg-red-600/20 text-red-400 hover:bg-red-600/30'
-                                        : 'bg-gradient-to-r from-[#2E2E2E] to-[#1C1C1C] border-2 border-[#424242]/60 text-[#CFCFCF] hover:from-[#424242] hover:to-[#2E2E2E] hover:border-[#5A5A5A] hover:scale-105'
-                                }`}
-                                title={`Database sync: ${databaseSyncStatus === 'syncing' ? 'Syncing...' : databaseSyncStatus === 'success' ? 'Last sync: ' + new Date(lastDatabaseSync).toLocaleTimeString() : 'Click to sync'}`}
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    {databaseSyncStatus === 'syncing' ? (
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                    ) : databaseSyncStatus === 'success' ? (
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                                    ) : databaseSyncStatus === 'error' ? (
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                    ) : (
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                    )}
-                                </svg>
-                                <span className="hidden sm:inline">
-                                    {databaseSyncStatus === 'syncing' ? 'Syncing...' : 'Sync'}
-                                </span>
-                            </button>
-                        </div>
-                    )}
                     
-                    {/* Proactive Insights Toggle */}
-                    {authState.user && (
-                        <div className="hidden md:block">
-                        <button
-                            onClick={() => setShowProactiveInsights(!showProactiveInsights)}
-                            className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 h-10 sm:h-12 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 ${
-                                showProactiveInsights 
-                                    ? 'bg-purple-600/20 text-purple-400 border-2 border-purple-500/30' 
-                                    : 'bg-gradient-to-r from-[#2E2E2E] to-[#1C1C1C] border-2 border-[#424242]/60 text-[#CFCFCF] hover:from-[#424242] hover:to-[#2E2E2E] hover:border-[#5A5A5A] hover:scale-105'
-                            }`}
-                            title="Toggle proactive insights panel"
-                        >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                            </svg>
-                            <span className="hidden sm:inline">Insights</span>
-                        </button>
-                        </div>
-                    )}
                 </div>
                 <div className="flex items-center gap-1 sm:gap-2 md:gap-3 flex-shrink-0">
                      <CreditIndicator usage={usage} onClick={handleOpenCreditModal} />
@@ -2578,16 +2917,7 @@ const AppComponent: React.FC = () => {
             )}
             
             {/* Enhanced Features Notifications */}
-            {databaseSyncStatus === 'success' && (
-              <div className="fixed top-20 right-4 z-50 bg-green-600/90 backdrop-blur-xl text-white px-4 py-3 rounded-lg shadow-2xl border border-green-500/30 animate-fade-in">
-                <div className="flex items-center gap-3">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span className="text-sm font-medium">Database synced successfully!</span>
-                </div>
-              </div>
-            )}
+            {/* Sync success notification removed - no need to show successful sync */}
             
             {databaseSyncStatus === 'error' && (
               <div className="fixed top-20 right-4 z-50 bg-red-600/90 backdrop-blur-xl text-white px-4 py-3 rounded-lg shadow-2xl border border-red-500/30 animate-fade-in">
@@ -2672,18 +3002,6 @@ const AppComponent: React.FC = () => {
                         </div>
                     )}
                     
-                    {/* Scroll to Bottom Button */}
-                    {showScrollToBottom && messages.length > 0 && (
-                        <button
-                            onClick={scrollToBottom}
-                            className="fixed bottom-20 sm:bottom-24 right-3 sm:right-6 z-50 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] hover:from-[#D42A2A] hover:to-[#C87A1A] text-white p-3 sm:p-3.5 rounded-full shadow-2xl hover:shadow-[#E53A3A]/30 transition-all duration-300 hover:scale-110 active:scale-95 border border-white/10 backdrop-blur-sm"
-                            title="Scroll to bottom"
-                        >
-                            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                            </svg>
-                        </button>
-                    )}
                 </main>
             )}
 
@@ -2723,12 +3041,6 @@ const AppComponent: React.FC = () => {
                 </div>
             ) : null}
 
-            {/* Temporary Test Component - Remove after testing */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="w-full max-w-5xl mx-auto px-4 pt-4">
-                <CharacterImmersionTest />
-              </div>
-            )}
             
 
             
@@ -2865,25 +3177,17 @@ const AppComponent: React.FC = () => {
                 />
             )}
 
-            {/* Migration Modal */}
-            {isMigrationModalOpen && (
-                <MigrationModal
-                    isOpen={isMigrationModalOpen}
-                    onClose={handleMigrationSuccess}
-                    migrationState={migrationState}
-                    onMigrate={migrateData}
-                    onRetry={retryMigration}
-                    onSkip={skipMigration}
-                />
-            )}
             
             {/* OAuth Callback Handler */}
             {isOAuthCallback && (
                 <AuthCallbackHandler
                     onAuthSuccess={() => {
+                        console.log('OAuth callback success, calling handleAuthSuccess...');
                         setIsOAuthCallback(false);
                         // Clear URL parameters
                         window.history.replaceState({}, document.title, window.location.pathname);
+                        // Call the authentication success handler to properly transition
+                        handleAuthSuccess();
                     }}
                     onAuthError={(error) => {
                         console.error('OAuth error:', error);
@@ -2892,14 +3196,37 @@ const AppComponent: React.FC = () => {
                         window.history.replaceState({}, document.title, window.location.pathname);
                     }}
                     onRedirectToSplash={() => {
+                        console.log('OAuth callback redirect to splash, calling handleAuthSuccess...');
                         setIsOAuthCallback(false);
                         // Clear URL parameters
                         window.history.replaceState({}, document.title, window.location.pathname);
-                        // Redirect to initial splash screen
-                        setOnboardingStatus('initial');
-                        setView('app');
+                        // Call the authentication success handler to properly transition
+                        handleAuthSuccess();
                     }}
                 />
+            )}
+
+            {/* Direct OAuth Processing Fallback */}
+            {isOAuthCallback && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg">
+                        <div className="text-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                            <p className="text-gray-700">Processing authentication...</p>
+                            <button 
+                                onClick={() => {
+                                    console.log('Manual OAuth completion triggered');
+                                    setIsOAuthCallback(false);
+                                    window.history.replaceState({}, document.title, window.location.pathname);
+                                    handleAuthSuccess();
+                                }}
+                                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                            >
+                                Complete Authentication
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* PWA Install Banner */}

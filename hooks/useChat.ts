@@ -23,6 +23,10 @@ import { gameAnalyticsService } from '../services/gameAnalyticsService';
 import { analyticsService } from '../services/analyticsService';
 import { playerProfileService } from '../services/playerProfileService';
 import { contextManagementService } from '../services/contextManagementService';
+import { longTermMemoryService } from '../services/longTermMemoryService';
+import { screenshotTimelineService } from '../services/screenshotTimelineService';
+import { unifiedAIService } from '../services/unifiedAIService';
+import { otakuDiaryService } from '../services/otakuDiaryService';
 
 const COOLDOWN_KEY = 'geminiCooldownEnd';
 const COOLDOWN_DURATION = 60 * 60 * 1000; // 1 hour
@@ -395,6 +399,36 @@ export const useChat = (isHandsFreeMode: boolean) => {
             return { ...convo, insights: newInsights };
         });
     }, [updateConversation]);
+
+    // Function to trigger intelligent insight updates based on AI response context
+    const triggerIntelligentInsightUpdate = useCallback(async (
+        conversationId: string,
+        aiResponseText: string,
+        gameName?: string,
+        genre?: string,
+        progress?: number
+    ) => {
+        if (!gameName || !genre || progress === undefined) {
+            console.log('Missing game context for intelligent insight update');
+            return;
+        }
+
+        const conversation = conversations[conversationId];
+        if (!conversation || !conversation.insights) {
+            console.log('No insights found for intelligent update');
+            return;
+        }
+
+        console.log(`🧠 Triggering intelligent insight update for: ${gameName} based on AI response context`);
+        
+        // This would integrate with the enhanced insights system
+        // For now, we'll log the context for future integration
+        console.log('AI Response Context:', aiResponseText.substring(0, 200) + '...');
+        console.log('Game Context:', { gameName, genre, progress });
+        
+        // TODO: Integrate with enhanced insights system to trigger updates
+        // This would call the updateInsightsForUserQuery function with the AI response context
+    }, [conversations]);
     
     const sendMessage = useCallback(async (text: string, images?: ImageFile[], isFromPC?: boolean): Promise<{ success: boolean; reason?: string }> => {
         // Check if this is a tab management command
@@ -564,6 +598,37 @@ export const useChat = (isHandsFreeMode: boolean) => {
                  if (sourceConversation.inventory?.length) {
                     metaNotes += `[META_INVENTORY: ${sourceConversation.inventory.join(', ')}]\n`;
                 }
+                
+                // NEW: Insight tab context injection to prevent repetition
+                if (sourceConversation.insights) {
+                    const insightTabs = Object.entries(sourceConversation.insights);
+                    if (insightTabs.length > 0) {
+                        metaNotes += `[META_INSIGHT_TABS_CONTEXT: The following insight tabs already exist with content - DO NOT regenerate similar content for these tabs:\n`;
+                        
+                        insightTabs.forEach(([tabId, insight]) => {
+                            if (insight && insight.content) {
+                                // Truncate content to avoid context bloat
+                                const truncatedContent = insight.content.length > 200 
+                                    ? insight.content.substring(0, 200) + '...' 
+                                    : insight.content;
+                                metaNotes += `- ${tabId}: "${truncatedContent}"\n`;
+                            }
+                        });
+                        
+                        metaNotes += `When generating new insights, avoid duplicating content from these existing tabs and focus on new, complementary information.]\n`;
+                    }
+                }
+            }
+
+            // NEW: Add task completion context
+            if (sourceConversation.id !== EVERYTHING_ELSE_ID) {
+                const { taskCompletionPromptingService } = await import('../services/taskCompletionPromptingService');
+                const completionContext = taskCompletionPromptingService.formatCompletionContext(sourceConversation.id);
+                if (completionContext) {
+                    metaNotes += `${completionContext}\n`;
+                    // Clear the pending completions after they've been included in context
+                    taskCompletionPromptingService.clearPendingCompletions(sourceConversation.id);
+                }
             }
             // --- End Context Injection ---
 
@@ -693,13 +758,85 @@ export const useChat = (isHandsFreeMode: boolean) => {
             if (smartNotificationService.isScreenLocked()) {
                 smartNotificationService.showAINotification(finalCleanedText, sourceConvoId);
             }
-            
+
             let finalTargetConvoId = sourceConvoId;
             const identifiedGameId = identifiedGameName ? generateGameId(identifiedGameName) : null;
             
             if (identifiedGameId && (sourceConvoId === EVERYTHING_ELSE_ID || identifiedGameId !== sourceConvoId)) {
                 console.log(`New game detected: "${identifiedGameName}". Creating/switching to new conversation tab.`);
                 finalTargetConvoId = identifiedGameId;
+                
+                // NEW: Track game switch in screenshot timeline service
+                if (images && images.length > 0) {
+                    try {
+                        const { screenshotTimelineService } = await import('../services/screenshotTimelineService');
+                        await screenshotTimelineService.handleGameSwitch(
+                            sourceConvoId,
+                            finalTargetConvoId,
+                            identifiedGameName!,
+                            identifiedGameId
+                        );
+                        console.log(`🔄 Game switch tracked in timeline: ${sourceConvoId} → ${finalTargetConvoId}`);
+                    } catch (error) {
+                        console.warn('Failed to track game switch in timeline:', error);
+                    }
+                }
+            }
+
+            // NEW: Generate AI suggested tasks for Pro/Vanguard users
+            if (finalTargetConvoId !== EVERYTHING_ELSE_ID && rawTextResponse) {
+                try {
+                    const userTier = await unifiedUsageService.getTier();
+                    if (userTier === 'pro' || userTier === 'vanguard_pro') {
+                        // Get context for task generation using statically imported services
+                        
+                        const longTermContext = longTermMemoryService.getLongTermContext(finalTargetConvoId);
+                        const screenshotTimelineContext = screenshotTimelineService.getTimelineContext(finalTargetConvoId);
+                        
+                        // Get insight tab context from the conversation
+                        const targetConversation = conversations[finalTargetConvoId];
+                        const insightTabContext = targetConversation?.insights ? 
+                          unifiedAIService.getInsightTabContext(targetConversation) : '';
+                        
+                        // Generate AI suggested tasks
+                        const suggestedTasks = await unifiedAIService.generateSuggestedTasks(
+                          targetConversation || { id: finalTargetConvoId, title: identifiedGameName || 'Unknown Game' },
+                          text,
+                          rawTextResponse
+                        );
+                        
+                        // Add tasks to Otaku Diary
+                        if (suggestedTasks.length > 0) {
+                          await otakuDiaryService.addAISuggestedTasks(finalTargetConvoId, suggestedTasks);
+                          console.log(`🎯 Added ${suggestedTasks.length} AI suggested tasks for ${finalTargetConvoId}`);
+                        }
+                    }
+                } catch (error) {
+                  console.warn('Failed to generate AI suggested tasks:', error);
+                }
+            }
+
+            // NEW: Get task completion prompt from AI response
+            let taskCompletionPrompt = undefined;
+            if (finalTargetConvoId !== EVERYTHING_ELSE_ID) {
+                try {
+                    const { unifiedAIService } = await import('../services/unifiedAIService');
+                    const { otakuDiaryService } = await import('../services/otakuDiaryService');
+                    const { taskCompletionPromptingService } = await import('../services/taskCompletionPromptingService');
+                    
+                    const userTier = await unifiedUsageService.getTier();
+                    const centralTasks = await otakuDiaryService.getCentralTasks(finalTargetConvoId);
+                    const aiGeneratedTasks = await otakuDiaryService.getAISuggestedTasks(finalTargetConvoId);
+                    
+                    taskCompletionPrompt = taskCompletionPromptingService.generateCompletionPrompt(
+                        finalTargetConvoId,
+                        userTier,
+                        centralTasks,
+                        aiGeneratedTasks
+                    );
+                } catch (error) {
+                    console.warn('Failed to generate task completion prompt:', error);
+                }
             }
             
             setChatState(prev => {
@@ -708,11 +845,12 @@ export const useChat = (isHandsFreeMode: boolean) => {
                 let newActiveId = prev.activeId;
                 const sourceConvo = newConversations[sourceConvoId];
                 if (!sourceConvo) return prev;
-            
+
                 const finalModelMessage: ChatMessage = {
                     id: modelMessageId, role: 'model', text: finalCleanedText,
                     suggestions: suggestions.length > 0 ? suggestions : undefined,
                     triumph: triumphPayload,
+                    taskCompletionPrompt, // NEW: Add task completion prompt
                 };
                 
                 const isNewConversation = finalTargetConvoId !== sourceConvoId;
@@ -740,15 +878,15 @@ export const useChat = (isHandsFreeMode: boolean) => {
                         const tabs = insightTabsConfig[gameGenre] || insightTabsConfig.default;
                         const insightsOrder = tabs.map(t => t.id);
                         
-                        // Create insight tabs instantly with engaging placeholder content
+                        // Create insight tabs with loading status - will be populated with actual content
                         const instantInsights: Record<string, Insight> = {};
                         tabs.forEach(tab => {
                             instantInsights[tab.id] = { 
                                 id: tab.id, 
                                 title: tab.title, 
-                                content: `📋 **${tab.title}**\n\n✨ Generating comprehensive insights for you!\n\n🔄 **All insights will be ready shortly**\n\n🎮 Based on your current progress: ${gameProgress || 0}%`, 
-                                status: 'idle' as any,
-                                isPlaceholder: true,
+                                content: '🔄 Generating comprehensive insights for you...', 
+                                status: 'loading' as any,
+                                isPlaceholder: false,
                                 lastUpdated: Date.now(),
                                 generationAttempts: 0
                             };
@@ -807,8 +945,19 @@ export const useChat = (isHandsFreeMode: boolean) => {
             });
 
             if (isHandsFreeMode) {
-                // Use the extracted hint text. Fallback to the fully cleaned text if tags are missing.
-                const textToSpeak = hintMatch ? hintMatch[1].trim() : finalCleanedText;
+                // Use the extracted game help section. If missing, extract the most relevant part of the response.
+                let textToSpeak = '';
+                
+                if (hintMatch) {
+                    // Use the explicitly marked game help section
+                    textToSpeak = hintMatch[1].trim();
+                    console.log('🎤 Hands-free: Using explicit game help section');
+                } else {
+                    // Fallback: Extract the most relevant part of the response for hands-free mode
+                    textToSpeak = extractGameHelpFromResponse(finalCleanedText, text.trim());
+                    console.log('🎤 Hands-free: Using extracted game help (no explicit tags found)');
+                }
+                
                 if (textToSpeak) {
                     ttsService.speak(textToSpeak).catch(error => addSystemMessage(`Could not play audio hint: ${error.message}`));
                 }
@@ -1078,13 +1227,12 @@ Progress: ${conversation.progress}%`;
         try {
             const tabs = insightTabsConfig[genre] || insightTabsConfig.default;
             
-            // Update all tabs to loading status
+            // Update all tabs to show generation progress
             updateConversation(conversationId, convo => {
                 if (convo.insights) {
                     Object.keys(convo.insights).forEach(tabId => {
-                        if (convo.insights![tabId].isPlaceholder) {
-                            convo.insights![tabId].status = 'loading';
-                            convo.insights![tabId].content = '🔄 Generating all insights...';
+                        if (convo.insights![tabId].status === 'loading') {
+                            convo.insights![tabId].content = '🔄 Generating comprehensive insights...';
                         }
                     });
                 }
@@ -1110,7 +1258,6 @@ Progress: ${conversation.progress}%`;
                                 convo.insights![tabId].content = result.insights[tabId].content;
                                 convo.insights![tabId].title = result.insights[tabId].title;
                                 convo.insights![tabId].status = 'loaded';
-                                convo.insights![tabId].isPlaceholder = false;
                                 convo.insights![tabId].lastUpdated = Date.now();
                                 convo.insights![tabId].isNew = true;
                             }
@@ -1414,6 +1561,54 @@ Progress: ${conversation.progress}%`;
         return inventoryMatch ? inventoryMatch[1].trim() : null;
     };
 
+    // Helper function to extract the most relevant game help content for hands-free mode
+    const extractGameHelpFromResponse = (response: string, userQuery: string): string => {
+        // First, try to find the most relevant section based on the user's query
+        const queryLower = userQuery.toLowerCase();
+        
+        // Look for direct answers to common game help queries
+        if (queryLower.includes('how') || queryLower.includes('what') || queryLower.includes('where') || queryLower.includes('why')) {
+            // Try to find the first complete sentence that seems to answer the question
+            const sentences = response.split(/[.!?]+/).filter(s => s.trim().length > 10);
+            for (const sentence of sentences) {
+                const sentenceLower = sentence.toLowerCase();
+                if (sentenceLower.includes('you can') || sentenceLower.includes('try') || sentenceLower.includes('look for') || 
+                    sentenceLower.includes('check') || sentenceLower.includes('find') || sentenceLower.includes('go to')) {
+                    return sentence.trim() + '.';
+                }
+            }
+        }
+        
+        // Look for hint-like content
+        const hintPatterns = [
+            /(?:hint|tip|suggestion|advice)[:\s]*([^.!?]+[.!?])/i,
+            /(?:you should|try to|look for|check|find|go to)[^.!?]*[.!?]/i,
+            /(?:the key is|the solution is|you need to)[^.!?]*[.!?]/i
+        ];
+        
+        for (const pattern of hintPatterns) {
+            const match = response.match(pattern);
+            if (match) {
+                return match[0].trim();
+            }
+        }
+        
+        // Fallback: return the first meaningful paragraph (first 2-3 sentences)
+        const paragraphs = response.split('\n\n').filter(p => p.trim().length > 20);
+        if (paragraphs.length > 0) {
+            const firstParagraph = paragraphs[0];
+            const sentences = firstParagraph.split(/[.!?]+/).filter(s => s.trim().length > 10);
+            if (sentences.length >= 2) {
+                return sentences.slice(0, 2).join('. ').trim() + '.';
+            } else if (sentences.length === 1) {
+                return sentences[0].trim() + '.';
+            }
+        }
+        
+        // Last resort: return the first 200 characters of the response
+        return response.substring(0, 200).trim() + (response.length > 200 ? '...' : '');
+    };
+
     // Tab management command handler
     const handleTabManagementCommand = useCallback(async (text: string) => {
         const command = tabManagementService.parseTabCommand(text);
@@ -1493,6 +1688,7 @@ Progress: ${conversation.progress}%`;
         updateInsightFeedback,
         retryMessage,
         updateConversation, // 🔥 ADDED: For enhanced insights integration
+        triggerIntelligentInsightUpdate, // 🔥 NEW: Intelligent insight updates based on AI response context
 
         updateInsightsForProgress,
         updateInsightsOnUserQuery, // 🔥 NEW: Consolidated insight updates on user queries

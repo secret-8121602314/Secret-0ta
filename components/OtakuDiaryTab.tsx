@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { otakuDiaryService, DiaryTask, DiaryFavorite } from '../services/otakuDiaryService';
+import type { DiaryTask, DiaryFavorite } from '../services/otakuDiaryService';
 import { unifiedUsageService } from '../services/unifiedUsageService';
 import ToDoListTab from './ToDoListTab';
 import FavoritesTab from './FavoritesTab';
@@ -37,6 +37,7 @@ const OtakuDiaryTab: React.FC<OtakuDiaryTabProps> = ({ gameId, gameTitle }) => {
   const loadDiaryData = async () => {
     setIsLoading(true);
     try {
+      const { otakuDiaryService } = await import('../services/otakuDiaryService');
       const [tasksData, favoritesData] = await Promise.all([
         otakuDiaryService.getTasks(gameId),
         otakuDiaryService.getFavorites(gameId)
