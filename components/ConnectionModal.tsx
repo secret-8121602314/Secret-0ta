@@ -159,36 +159,32 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Connection Code Format Notice */}
-            {code && code.length === 6 && (
-              <div className="p-4 rounded-2xl border-2 bg-gradient-to-r from-green-600/20 to-emerald-600/20 border-green-600/40 text-green-400 backdrop-blur-sm">
-                <div className="flex items-center gap-3 text-base">
-                  <span className="text-green-400">✓</span>
-                  <span>Enhanced 6-digit connection code detected</span>
-                </div>
-                <div className="text-sm mt-2 text-green-300">
-                  Ready to connect with enhanced features
-                </div>
-              </div>
-            )}
-            
             <div>
               <label htmlFor="connection-code" className="block text-base font-medium text-[#CFCFCF] mb-3">
                 6-Digit Connection Code
               </label>
-              <input
-                id="connection-code"
-                type="text"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="123456"
-                maxLength={6}
-                pattern="\d{6}"
-                title="Enter exactly 6 digits"
-                disabled={isConnecting || isConnected}
-                required
-                className="w-full bg-gradient-to-r from-[#2E2E2E] to-[#1A1A1A] border-2 border-[#424242]/60 rounded-xl py-3 px-4 text-[#F5F5F5] placeholder-[#6E6E6E] focus:outline-none focus:ring-2 focus:ring-[#FFAB40] focus:border-[#FFAB40]/60 disabled:opacity-50 text-lg backdrop-blur-sm"
-              />
+              <div className="relative">
+                <input
+                  id="connection-code"
+                  type="text"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder="123456"
+                  maxLength={6}
+                  pattern="\d{6}"
+                  title="Enter exactly 6 digits"
+                  disabled={isConnecting || isConnected}
+                  required
+                  className="w-full bg-gradient-to-r from-[#2E2E2E] to-[#1A1A1A] border-2 border-[#424242]/60 rounded-xl py-3 px-4 pr-12 text-[#F5F5F5] placeholder-[#6E6E6E] focus:outline-none focus:ring-2 focus:ring-[#FFAB40] focus:border-[#FFAB40]/60 disabled:opacity-50 text-lg backdrop-blur-sm"
+                />
+                {code && code.length === 6 && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-400">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
+              </div>
             </div>
             
             {error && <p className="text-[#E53A3A] text-base">{error}</p>}
