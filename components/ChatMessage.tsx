@@ -10,6 +10,7 @@ import StarIcon from './StarIcon';
 import DownloadIcon from './DownloadIcon';
 import Logo from './Logo';
 import UserAvatar from './UserAvatar';
+import TaskCompletionPrompt from './TaskCompletionPrompt';
 
 // Simple inline Confetti component
 const Confetti: React.FC = () => {
@@ -55,7 +56,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLoading, onStop, o
     // Check if this message is a welcome message
     const isWelcomeMessage = () => {
         if (!text) return false;
-        return text.includes('Welcome to Otakon!') || text.includes('Welcome to Otakon');
+        return text.includes('Welcome to Otagon!') || text.includes('Welcome to Otagon');
     };
 
     // Check if this message is a suggested prompt response in Everything Else conversation
@@ -285,20 +286,20 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLoading, onStop, o
                             {images.length === 1 ? (
                                 <button
                                     onClick={() => downloadImage(images[0], 0)}
-                                    className="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] text-white text-xs sm:text-sm font-medium rounded-lg hover:from-[#E53A3A] hover:to-[#D98C1F] transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                                    className="flex items-center justify-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] text-white text-xs sm:text-sm font-medium rounded-lg hover:from-[#E53A3A] hover:to-[#D98C1F] transition-all duration-300 hover:scale-105 hover:shadow-lg"
                                     title="Download this screenshot"
                                 >
-                                    <DownloadIcon className="w-3 h-3 sm:w-4 sm:h-4" />
+                                    <DownloadIcon className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                                     <span className="hidden sm:inline">Download</span>
                                 </button>
                             ) : (
                                 <>
                                     <button
                                         onClick={downloadAllImages}
-                                        className="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-gradient-to-r from-[#5CBB7B] to-[#4CAF50] text-white text-xs sm:text-sm font-medium rounded-lg hover:from-[#4CAF50] hover:to-[#45A049] transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                                        className="flex items-center justify-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-gradient-to-r from-[#5CBB7B] to-[#4CAF50] text-white text-xs sm:text-sm font-medium rounded-lg hover:from-[#4CAF50] hover:to-[#45A049] transition-all duration-300 hover:scale-105 hover:shadow-lg"
                                         title="Download all screenshots"
                                     >
-                                        <DownloadIcon className="w-3 h-3 sm:w-4 sm:h-4" />
+                                        <DownloadIcon className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                                         <span className="hidden sm:inline">Download All ({images.length})</span>
                                     </button>
                                     <div className="flex gap-1">
@@ -326,7 +327,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLoading, onStop, o
     if (role === 'system') {
         return (
             <div key={id} className="flex items-start gap-2 sm:gap-3">
-                <Logo className="w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0" />
+                <Logo className="w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0" />
                 <div className="bg-gradient-to-r from-[#1C1C1C]/80 to-[#0A0A0A]/80 border border-[#424242]/60 rounded-xl sm:rounded-2xl rounded-tl-none py-3 sm:py-4 px-4 sm:px-6 relative overflow-hidden backdrop-blur-sm">
                     <div className="ai-response max-w-none text-[#CFCFCF] text-sm sm:text-base">
                         <ReactMarkdown
@@ -410,7 +411,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLoading, onStop, o
         if (isCancelledMessage) {
             return (
                 <div key={id} className="flex items-start gap-2 sm:gap-3">
-                    <Logo className="w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0" />
+                    <Logo className="w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0" />
                     <div className="flex items-center w-full max-w-[95%] sm:max-w-2xl py-2 sm:py-3 px-3 sm:px-4">
                         <p className="text-xs sm:text-sm italic text-[#CFCFCF]">Request cancelled by user.</p>
                     </div>
@@ -422,7 +423,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLoading, onStop, o
 
         return (
                             <div key={id} className="flex items-start gap-2 sm:gap-3">
-                    <Logo className="w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0" />
+                    <Logo className="w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0" />
                     <div className="flex flex-col gap-2 sm:gap-3 w-full max-w-[95%] sm:max-w-2xl">
                         {showConfetti && <Confetti />}
                         {text.trim() && (
@@ -575,12 +576,28 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLoading, onStop, o
                             {suggestions.map((prompt) => (
                                 <button
                                     key={prompt}
-                                    onClick={() => onPromptClick(prompt)}
+                                    onClick={() => {
+                                        // Immediately hide suggestions when clicked
+                                        onPromptClick(prompt);
+                                    }}
                                     className="text-left p-3 sm:p-4 bg-[#1C1C1C]/60 border border-[#424242]/40 rounded-lg sm:rounded-xl transition-all duration-200 hover:bg-[#E53A3A]/20 hover:border-[#E53A3A]/60 hover:scale-[1.02] backdrop-blur-sm"
                                 >
                                     <p className="text-[#CFCFCF] font-medium text-xs sm:text-sm leading-relaxed">{prompt}</p>
                                 </button>
                             ))}
+                        </div>
+                    )}
+
+                    {/* NEW: Task Completion Prompt */}
+                    {!isLoading && message.taskCompletionPrompt && conversationId && (
+                        <div className="pl-2 pt-2">
+                            <TaskCompletionPrompt
+                                prompt={message.taskCompletionPrompt}
+                                conversationId={conversationId}
+                                onCompletionRecorded={() => {
+                                    console.log('📝 Task completion recorded, will be included in next query context');
+                                }}
+                            />
                         </div>
                     )}
                 </div>

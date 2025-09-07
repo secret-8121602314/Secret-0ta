@@ -157,8 +157,13 @@ type ActiveModal = 'about' | 'privacy' | 'refund' | 'contact' | null;
 const AppComponent: React.FC = () => {
     const [view, setView] = useState<'landing' | 'app'>('app');
     const [onboardingStatus, setOnboardingStatus] = useState<'login' | 'initial' | 'features' | 'pro-features' | 'how-to-use' | 'tier-splash' | 'complete'>(() => {
-        const hasCompletedOnboarding = localStorage.getItem('otakonOnboardingComplete');
-        return hasCompletedOnboarding ? 'complete' : 'login';
+        // Check if localStorage is available before accessing it
+        if (typeof window !== 'undefined' && window.localStorage) {
+            // For now, always start with 'login' to let the auth service handle the flow
+            // This prevents localStorage access during initialization
+            return 'login';
+        }
+        return 'login';
     });
     const [isConnectionModalOpen, setIsConnectionModalOpen] = useState(false);
     const [isHandsFreeModalOpen, setIsHandsFreeModalOpen] = useState(false);
@@ -217,6 +222,9 @@ const AppComponent: React.FC = () => {
     const [databaseSyncStatus, setDatabaseSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
     const [lastDatabaseSync, setLastDatabaseSync] = useState<number>(Date.now());
     const [lastSuggestedPromptsShown, setLastSuggestedPromptsShown] = useState<number>(0);
+    
+    // Welcome message session tracking to prevent duplicates
+    const [welcomeMessageShownThisSession, setWelcomeMessageShownThisSession] = useState<boolean>(false);
     
     // Wishlist modal state
     const [isWishlistModalOpen, setIsWishlistModalOpen] = useState(false);
@@ -339,41 +347,7 @@ const AppComponent: React.FC = () => {
         };
     }, [onboardingStatus]);
 
-    // NEW: Long-term session restoration on app startup
-    useEffect(() => {
-        const restoreLongTermSessions = async () => {
-            if (authState.user && !authState.loading) {
-                try {
-                    console.log('🧠 Restoring long-term sessions...');
-                    
-                    // Use statically imported services
-                    
-                    // Restore sessions for all active conversations
-                    for (const [conversationId, conversation] of Object.entries(conversations)) {
-                        if (conversationId !== 'everything-else') {
-                            try {
-                                // Initialize long-term session
-                                await longTermMemoryService.initializeLongTermSession(conversationId, conversationId);
-                                
-                                // Restore context from database
-                                await contextManagementService.restoreLongTermSession(conversationId);
-                                
-                                console.log(`✅ Restored long-term session for: ${conversationId}`);
-                            } catch (error) {
-                                console.warn(`⚠️ Failed to restore session for ${conversationId}:`, error);
-                            }
-                        }
-                    }
-                    
-                    console.log('🧠 Long-term session restoration completed');
-                } catch (error) {
-                    console.error('❌ Failed to restore long-term sessions:', error);
-                }
-            }
-        };
-
-        restoreLongTermSessions();
-    }, [authState.user, authState.loading, conversations]);
+    // NEW: Long-term session restoration on app startup - MOVED TO AFTER useChat
 
     // Handle authentication success - transition from login to initial splash screen
     useEffect(() => {
@@ -922,6 +896,42 @@ const AppComponent: React.FC = () => {
 
     } = useChat(isHandsFreeMode);
     
+    // NEW: Long-term session restoration on app startup
+    useEffect(() => {
+        const restoreLongTermSessions = async () => {
+            if (authState.user && !authState.loading) {
+                try {
+                    console.log('🧠 Restoring long-term sessions...');
+                    
+                    // Use statically imported services
+                    
+                    // Restore sessions for all active conversations
+                    for (const [conversationId, conversation] of Object.entries(conversations)) {
+                        if (conversationId !== 'everything-else') {
+                            try {
+                                // Initialize long-term session
+                                await longTermMemoryService.initializeLongTermSession(conversationId, conversationId);
+                                
+                                // Restore context from database
+                                await contextManagementService.restoreLongTermSession(conversationId);
+                                
+                                console.log(`✅ Restored long-term session for: ${conversationId}`);
+                            } catch (error) {
+                                console.warn(`⚠️ Failed to restore session for ${conversationId}:`, error);
+                            }
+                        }
+                    }
+                    
+                    console.log('🧠 Long-term session restoration completed');
+                } catch (error) {
+                    console.error('❌ Failed to restore long-term sessions:', error);
+                }
+            }
+        };
+
+        restoreLongTermSessions();
+    }, [authState.user, authState.loading, conversations]);
+    
     // Tutorial hook for first-time users
     const {
         isTutorialOpen,
@@ -969,7 +979,7 @@ const AppComponent: React.FC = () => {
                         console.warn('Failed to get user name for welcome message:', error);
                     }
                     
-                    const welcomeMessage = `${timeGreeting}Welcome to Otakon${firstName}!\n\n**Your Personal Gaming Companion**\n\n**What I can help you with:**\n• Upload screenshots from games you're playing\n• Get spoiler-free guidance and hints\n• Discover secrets and strategies\n• Track your gaming progress\n• Answer questions about any game\n\n**Let's get started!** Upload a screenshot from a game you're currently playing, or just tell me what you'd like help with.`;
+                    const welcomeMessage = `${timeGreeting}Welcome to Otagon${firstName}!\n\n**Your Personal Gaming Companion**\n\n**What I can help you with:**\n• Upload screenshots from games you're playing\n• Get spoiler-free guidance and hints\n• Discover secrets and strategies\n• Track your gaming progress\n• Answer questions about any game\n\n**Let's get started!** Upload a screenshot from a game you're currently playing, or just tell me what you'd like help with.`;
                     
                     console.log('Adding first-time welcome message:', welcomeMessage);
                     addSystemMessage(welcomeMessage, 'everything-else', false);
@@ -995,7 +1005,7 @@ const AppComponent: React.FC = () => {
                 // Fallback: show welcome message if there's an error
                 if (isFirstTime) {
                     const timeGreeting = getTimeGreeting();
-                    const welcomeMessage = `${timeGreeting}Welcome to Otakon!\n\n**Your Personal Gaming Companion**\n\n**What I can help you with:**\n• Upload screenshots from games you're playing\n• Get spoiler-free guidance and hints\n• Discover secrets and strategies\n• Track your gaming progress\n• Answer questions about any game\n\n**Let's get started!** Upload a screenshot from a game you're currently playing, or just tell me what you'd like help with.`;
+                    const welcomeMessage = `${timeGreeting}Welcome to Otagon!\n\n**Your Personal Gaming Companion**\n\n**What I can help you with:**\n• Upload screenshots from games you're playing\n• Get spoiler-free guidance and hints\n• Discover secrets and strategies\n• Track your gaming progress\n• Answer questions about any game\n\n**Let's get started!** Upload a screenshot from a game you're currently playing, or just tell me what you'd like help with.`;
                     
                     console.log('Fallback: Adding first-time welcome message:', welcomeMessage);
                     addSystemMessage(welcomeMessage, 'everything-else', false);
@@ -1204,7 +1214,19 @@ const AppComponent: React.FC = () => {
         localStorage.removeItem('otakon_welcome_message_shown');
         localStorage.removeItem('otakon_last_session_date');
         setLastSuggestedPromptsShown(0);
-        console.log('🔄 Interaction state reset - suggested prompts will be visible again');
+        
+        // Reset suggested prompts so all 4 are available again
+        suggestedPromptsService.resetUsedPrompts();
+        
+        // Reset welcome message tracking for testing
+        try {
+            supabaseDataService.resetWelcomeMessageTracking();
+            console.log('🔄 Welcome message tracking reset for testing');
+        } catch (error) {
+            console.warn('Failed to reset welcome message tracking:', error);
+        }
+        
+        console.log('🔄 Interaction state reset - suggested prompts and welcome message will be visible again');
     }, []);
     
     // Database synchronization function
@@ -1454,7 +1476,10 @@ const AppComponent: React.FC = () => {
         
         // Use sendMessage to display the images grouped together in one message
         // sendMessage will create one userMessage with all images in the images array
-        const timelineMessage = `📸 Multi-shot timeline: ${formattedImageFiles.length} screenshots showing progression over the last 5 minutes`;
+        const isSingleScreenshot = formattedImageFiles.length === 1;
+        const timelineMessage = isSingleScreenshot 
+            ? `📸 Single screenshot uploaded`
+            : `📸 Multi-shot timeline: ${formattedImageFiles.length} screenshots showing progression over the last 5 minutes`;
         const result = await sendMessage(timelineMessage, formattedImageFiles, true);
         
         if (processImmediate) {
@@ -1946,6 +1971,20 @@ const AppComponent: React.FC = () => {
             setIsConnectionModalOpen(false);
             setView('landing');
             
+            // Reset session flags to allow welcome message on next login
+            setWelcomeMessageShownThisSession(false);
+            
+            // Reset suggested prompts for fresh experience on next login
+            suggestedPromptsService.resetUsedPrompts();
+            
+            // Reset welcome message tracking for fresh experience on next login
+            try {
+                await supabaseDataService.resetWelcomeMessageTracking();
+                console.log('🔄 Welcome message tracking reset for fresh login');
+            } catch (error) {
+                console.warn('Failed to reset welcome message tracking:', error);
+            }
+            
             console.log('Full reset completed successfully');
         } catch (error) {
             console.error('Full reset error:', error);
@@ -2014,6 +2053,20 @@ const AppComponent: React.FC = () => {
                     setIsHandsFreeMode(false);
                     setIsConnectionModalOpen(false);
                     setView('landing');
+                    
+                    // Reset session flags to allow welcome message on next login
+                    setWelcomeMessageShownThisSession(false);
+                    
+                    // Reset suggested prompts for fresh experience on next login
+                    suggestedPromptsService.resetUsedPrompts();
+                    
+                    // Reset welcome message tracking for fresh experience on next login
+                    try {
+                        await supabaseDataService.resetWelcomeMessageTracking();
+                        console.log('🔄 Welcome message tracking reset for fresh login');
+                    } catch (error) {
+                        console.warn('Failed to reset welcome message tracking:', error);
+                    }
                     
                     console.log('User logged out successfully');
                 } catch (error) {
@@ -2176,7 +2229,7 @@ const AppComponent: React.FC = () => {
                         title: 'Daily Master',
                         description: 'Completed all daily goals!',
                         icon: 'fire',
-                        reward: '+100 Otakon Points'
+                        reward: '+100 Otagon Points'
                     });
                 }
             }
@@ -2274,7 +2327,7 @@ const AppComponent: React.FC = () => {
             // Add welcome message immediately for first-time users
             const timeGreeting = getTimeGreeting();
             addSystemMessage(
-                `${timeGreeting}Welcome to Otakon!\n\n**Profile Setup Complete!** Your gaming experience is now personalized.\n\n**Next Steps:**\n• Upload a screenshot from a game you're playing\n• Tell me about a game you want help with\n• I'll create a dedicated conversation tab for each game\n• Get spoiler-free guidance tailored to your progress\n\nWhat game would you like to start with today?`,
+                `${timeGreeting}Welcome to Otagon!\n\n**Profile Setup Complete!** Your gaming experience is now personalized.\n\n**Next Steps:**\n• Upload a screenshot from a game you're playing\n• Tell me about a game you want help with\n• I'll create a dedicated conversation tab for each game\n• Get spoiler-free guidance tailored to your progress\n\nWhat game would you like to start with today?`,
                 'everything-else',
                 false
             );
@@ -2636,10 +2689,19 @@ const AppComponent: React.FC = () => {
                         conversationsCount: Object.keys(conversations).length
                     });
                     
+                    // Check if there's already a welcome message in the current conversation
+                    const currentConversation = conversations['everything-else'];
+                    const hasExistingWelcomeMessage = currentConversation?.messages?.some(msg => 
+                        msg.role === 'system' && 
+                        (msg.text.includes('Welcome to Otagon') || msg.text.includes('Welcome back'))
+                    );
+                    
                     // Show welcome message if:
                     // 1. User has completed profile setup
                     // 2. Supabase/localStorage indicates welcome should be shown
-                    if (hasCompletedProfileSetup && shouldShow) {
+                    // 3. No existing welcome message in current conversation
+                    // Note: Removed session flag check to allow welcome messages after logout/login
+                    if (hasCompletedProfileSetup && shouldShow && !hasExistingWelcomeMessage) {
                 console.log('✅ Showing welcome message - conditions met');
                 
                 // Get current time for time-based greetings
@@ -2687,7 +2749,7 @@ const AppComponent: React.FC = () => {
                                 const totalGames = recentGames.length;
                                 const totalMessages = recentGames.reduce((sum, conv) => sum + (conv.messages?.length || 0), 0);
                                 
-                                welcomeMessage = `${timeGreeting}Welcome back to Otakon!\n\n**Your Gaming Session Summary:**\n${gameSummaries.join('\n')}\n\n**Total:** ${totalGames} game${totalGames > 1 ? 's' : ''}, ${totalMessages} message${totalMessages > 1 ? 's' : ''}\n\nWhat's your next gaming challenge today? I'm ready to help you continue your adventures or start something new!`;
+                                welcomeMessage = `${timeGreeting}Welcome back to Otagon!\n\n**Your Gaming Session Summary:**\n${gameSummaries.join('\n')}\n\n**Total:** ${totalGames} game${totalGames > 1 ? 's' : ''}, ${totalMessages} message${totalMessages > 1 ? 's' : ''}\n\nWhat's your next gaming challenge today? I'm ready to help you continue your adventures or start something new!`;
                                 console.log('🎮 User with completed first run - showing session summary welcome');
                             } else {
                                 welcomeMessage = `${timeGreeting}Welcome back! I'm ready to help with your next gaming challenge. What game are you tackling today, or would you like to continue where you left off?`;
@@ -2709,10 +2771,14 @@ const AppComponent: React.FC = () => {
                         // Update tracking using Supabase service with automatic fallback
                         await supabaseDataService.updateWelcomeMessageShown();
                         console.log('✅ Welcome message tracking updated via Supabase service');
+                        
+                        // Mark welcome message as shown this session to prevent duplicates
+                        setWelcomeMessageShownThisSession(true);
                     } else {
                         console.log('❌ Welcome message not shown - conditions not met:', {
                             hasCompletedProfileSetup,
-                            shouldShow
+                            shouldShow,
+                            hasExistingWelcomeMessage
                         });
                     }
                 } catch (error) {
@@ -2775,9 +2841,9 @@ const AppComponent: React.FC = () => {
     }
 
     const headerContent = (
-        <div className="flex items-center gap-2 sm:gap-3">
-            <Logo className="h-6 w-6 sm:h-8 sm:w-8" />
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40]">Otakon</h1>
+        <div className="flex items-center gap-2">
+            <Logo className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12" />
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] leading-normal">Otagon</h1>
         </div>
     );
 
@@ -2796,7 +2862,7 @@ const AppComponent: React.FC = () => {
                 <button
                     type="button"
                     className="transition-all duration-200 hover:opacity-80 hover:scale-105 group flex-shrink-0"
-                    aria-label="Otakon logo and title"
+                    aria-label="Otagon logo and title"
                 >
                     <div className="flex items-center gap-4">
                         <div className="group-hover:scale-110 transition-transform duration-200">
@@ -2818,7 +2884,7 @@ const AppComponent: React.FC = () => {
                     <button
                         type="button"
                         onClick={handleOpenConnectionModal}
-                        className={`flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-2 sm:px-3 h-10 sm:h-12 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300 disabled:opacity-50
+                        className={`flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 h-10 w-10 sm:w-auto sm:px-3 md:px-4 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300 disabled:opacity-50
                         ${
                             connectionStatus === ConnectionStatus.CONNECTED
                             ? 'border-2 border-[#5CBB7B]/60 text-[#5CBB7B] hover:bg-[#5CBB7B]/10 hover:border-[#5CBB7B] shadow-[0_0_20px_rgba(92,187,123,0.4)] hover:shadow-[0_0_30px_rgba(92,187,123,0.6)]'
@@ -2850,7 +2916,7 @@ const AppComponent: React.FC = () => {
                         <button
                             type="button"
                             onClick={forceReconnect}
-                            className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 h-10 sm:h-12 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold bg-gradient-to-r from-[#2E2E2E] to-[#1C1C1C] border-2 border-[#424242]/60 text-[#CFCFCF] hover:from-[#424242] hover:to-[#2E2E2E] hover:border-[#5A5A5A] hover:scale-105 transition-all duration-300 shadow-lg"
+                            className="flex items-center gap-1.5 sm:gap-2 h-10 w-10 rounded-xl text-xs sm:text-sm font-semibold bg-gradient-to-r from-[#2E2E2E] to-[#1C1C1C] border-2 border-[#424242]/60 text-[#CFCFCF] hover:from-[#424242] hover:to-[#2E2E2E] hover:border-[#5A5A5A] hover:scale-105 transition-all duration-300 shadow-lg"
                             title="Force reconnect with saved code"
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2866,7 +2932,7 @@ const AppComponent: React.FC = () => {
                         type="button"
                         onClick={handleSettingsClick}
                         onContextMenu={handleSettingsClick}
-                        className="flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-2 sm:px-3 h-10 sm:h-12 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold bg-gradient-to-r from-[#2E2E2E] to-[#1C1C1C] border-2 border-[#424242]/60 text-white/90 transition-all duration-300 hover:from-[#424242] hover:to-[#2E2E2E] hover:scale-105 hover:shadow-lg"
+                        className="flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 h-10 w-10 sm:w-auto sm:px-3 md:px-4 rounded-xl text-xs sm:text-sm font-semibold bg-gradient-to-r from-[#2E2E2E] to-[#1C1C1C] border-2 border-[#424242]/60 text-white/90 transition-all duration-300 hover:from-[#424242] hover:to-[#2E2E2E] hover:scale-105 hover:shadow-lg"
                         aria-label="Open settings"
                     >
                         <SettingsIcon className="w-5 h-5 flex-shrink-0" />
@@ -2972,11 +3038,10 @@ const AppComponent: React.FC = () => {
                     onOpenWishlistModal={() => setIsWishlistModalOpen(true)}
                 />
             ) : (
-                 <main className="flex-1 flex flex-col px-3 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-6 pb-3 sm:pb-4 overflow-y-auto" ref={chatContainerRef}>
+                 <main className="flex-1 flex flex-col px-3 sm:px-4 md:px-6 lg:px-8 pt-4 sm:pt-6 md:pt-8 pb-20 sm:pb-24 overflow-y-auto" ref={chatContainerRef}>
                     {messages.length === 0 && loadingMessages.length === 0 ? (
-                        <div className="flex-1 flex flex-col justify-end">
-                            {/* Show suggested prompts for other tabs when no messages */}
-                            {activeConversation?.id !== 'everything-else' && (
+                        <div className="flex-1 flex flex-col justify-center items-center">
+                            {shouldShowSuggestedPromptsEnhanced() && (
                                 <SuggestedPrompts 
                                     onPromptClick={(prompt) => handleSendMessage(prompt)} 
                                     isInputDisabled={isInputDisabled}
@@ -2985,7 +3050,7 @@ const AppComponent: React.FC = () => {
                             )}
                         </div>
                     ) : (
-                        <div className="flex flex-col gap-4 sm:gap-6 md:gap-8 w-full max-w-[95%] sm:max-w-4xl md:max-w-5xl mx-auto my-3 sm:my-4 md:my-6">
+                        <div className="flex flex-col gap-4 sm:gap-6 md:gap-8 lg:gap-10 w-full max-w-[95%] sm:max-w-4xl md:max-w-5xl mx-auto my-4 sm:my-6 md:my-8 lg:my-10">
                             {(() => { const loadingSet = new Set(loadingMessages); return messages.map(msg => (
                                  <ChatMessageComponent
                                      key={msg.id}
@@ -2998,6 +3063,16 @@ const AppComponent: React.FC = () => {
                                      onRetry={() => retryMessage(msg.id)}
                                  />
                             ))})()}
+                             
+                             {/* Show suggested prompts directly below messages as part of chat flow */}
+                             {shouldShowSuggestedPromptsEnhanced() && (
+                                 <SuggestedPrompts 
+                                     onPromptClick={(prompt) => handleSendMessage(prompt)} 
+                                     isInputDisabled={isInputDisabled}
+                                     isFirstTime={isFirstTime}
+                                 />
+                             )}
+                             
                              <div ref={chatEndRef} />
                         </div>
                     )}
@@ -3005,15 +3080,6 @@ const AppComponent: React.FC = () => {
                 </main>
             )}
 
-            {/* Suggested Prompts Above Chat Input for "Everything Else" tab - Show based on user interaction */}
-            {activeConversation?.id === 'everything-else' && 
-             shouldShowSuggestedPromptsEnhanced() && (
-                <SuggestedPrompts 
-                    onPromptClick={(prompt) => handleSendMessage(prompt)} 
-                    isInputDisabled={isInputDisabled}
-                    isFirstTime={isFirstTime}
-                />
-            )}
 
                     {/* SubTabs - below prompts, visible when has insights (all users can see Otaku Diary) */}
                     {(activeConversation?.insights && activeConversation.id !== 'everything-else') || activeConversation?.id === 'everything-else' ? (
@@ -3044,6 +3110,8 @@ const AppComponent: React.FC = () => {
             
 
             
+
+
                     {/* Chat Input - Hide when profile setup modal is active */}
             <div className="flex-shrink-0 bg-black/60 backdrop-blur-xl z-10 border-t border-[#424242]/20 shadow-2xl">
                 <ChatInput
