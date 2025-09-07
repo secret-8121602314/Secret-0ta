@@ -1258,6 +1258,9 @@ const AppComponent: React.FC = () => {
         localStorage.removeItem('otakon_profile_setup_completed');
         localStorage.removeItem('otakon_welcome_message_shown');
         localStorage.removeItem('otakon_last_session_date');
+        localStorage.removeItem('otakon_developer_mode'); // Clear developer mode flag
+        localStorage.removeItem('otakonAuthMethod'); // Clear auth method
+        localStorage.removeItem('otakonOnboardingComplete'); // Clear onboarding completion
         setLastSuggestedPromptsShown(0);
         
         // Reset suggested prompts so all 4 are available again
@@ -1989,17 +1992,22 @@ const AppComponent: React.FC = () => {
                 console.warn('Failed to reset welcome message tracking in Supabase:', error);
             }
             
-            // Clear localStorage
-            localStorage.removeItem('lastConnectionCode');
-            localStorage.removeItem('otakonOnboardingComplete');
-            localStorage.removeItem('otakon_profile_setup_completed');
-            localStorage.removeItem('otakonHasConnectedBefore');
-            localStorage.removeItem('otakonAuthMethod');
-            localStorage.removeItem('otakonInstallDismissed');
-            localStorage.removeItem('otakon_developer_mode'); // Clear developer mode flag
-            
-            // Set flag to indicate fresh login should show splash screens
-            localStorage.setItem('otakon_show_splash_after_login', 'true');
+        // Clear localStorage - complete reset for fresh first run experience
+        localStorage.removeItem('lastConnectionCode');
+        localStorage.removeItem('otakonOnboardingComplete');
+        localStorage.removeItem('otakon_profile_setup_completed');
+        localStorage.removeItem('otakonHasConnectedBefore');
+        localStorage.removeItem('otakonAuthMethod');
+        localStorage.removeItem('otakonInstallDismissed');
+        localStorage.removeItem('otakon_developer_mode'); // Clear developer mode flag
+        
+        // Clear any splash screen flags to force first run experience
+        localStorage.removeItem('otakon_show_splash_after_login');
+        
+        // Clear all conversation data for fresh start
+        localStorage.removeItem('otakon_conversations');
+        localStorage.removeItem('otakon_conversations_order');
+        localStorage.removeItem('otakon_active_conversation');
             
             // Reset welcome message tracking so it shows again on next login
             localStorage.removeItem('otakon_welcome_message_shown');
@@ -2072,7 +2080,7 @@ const AppComponent: React.FC = () => {
                         console.warn('Failed to reset welcome message tracking in Supabase:', error);
                     }
                     
-                    // Clear localStorage
+                    // Clear localStorage - complete reset for fresh first run experience
                     localStorage.removeItem('lastConnectionCode');
                     localStorage.removeItem('otakonOnboardingComplete');
                     localStorage.removeItem('otakon_profile_setup_completed');
@@ -2081,8 +2089,13 @@ const AppComponent: React.FC = () => {
                     localStorage.removeItem('otakonInstallDismissed');
                     localStorage.removeItem('otakon_developer_mode'); // Clear developer mode flag
                     
-                    // Set flag to indicate fresh login should show splash screens
-                    localStorage.setItem('otakon_show_splash_after_login', 'true');
+                    // Clear any splash screen flags to force first run experience
+                    localStorage.removeItem('otakon_show_splash_after_login');
+                    
+                    // Clear all conversation data for fresh start
+                    localStorage.removeItem('otakon_conversations');
+                    localStorage.removeItem('otakon_conversations_order');
+                    localStorage.removeItem('otakon_active_conversation');
                     
                     // Reset welcome message tracking so it shows again on next login
                     localStorage.removeItem('otakon_welcome_message_shown');
