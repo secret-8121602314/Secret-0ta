@@ -50,10 +50,21 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: 'dist',
-      sourcemap: false,
+      sourcemap: true, // Enable source maps for debugging minified errors
       // Raise only the warning threshold; does not affect runtime
       chunkSizeWarningLimit: 1200,
-      cssCodeSplit: true,
+      minify: 'terser', // Use terser for better minification control
+      terserOptions: {
+        compress: {
+          // Preserve function names for better debugging
+          keep_fnames: true
+        },
+        mangle: {
+          // Don't mangle certain variable names that cause reference errors
+          reserved: ['ae', 've', 'je', 'supabase', 'authService']
+        }
+      },
+      cssCodeSplit: false, // Keep CSS in single file for better HMR
       rollupOptions: {
         input: {
           main: './index.html'
@@ -105,6 +116,9 @@ export default defineConfig(({ mode }) => {
           }
         }
       }
+    },
+    css: {
+      devSourcemap: true, // Enable CSS source maps in development
     },
     publicDir: 'public',
     // Optimize development server
