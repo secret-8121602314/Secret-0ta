@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { otakuDiaryService, DiaryTask } from '../otakuDiaryService';
+import { otakuDiaryService } from '../otakuDiaryService';
+import { DiaryTask } from '../types';
 import { taskCompletionPromptingService } from '../taskCompletionPromptingService';
 
 // Mock the services that otakuDiaryService depends on

@@ -224,7 +224,7 @@ export class UnifiedAIService extends BaseService {
       // NEW: Track response for long-term memory
       await longTermMemoryService.trackInteraction(conversation.id, 'insight', {
         type: 'ai_response',
-        content: processedResponse.text,
+        content: processedResponse.content,
         relevance: 1.0
       });
       
@@ -272,7 +272,7 @@ export class UnifiedAIService extends BaseService {
             suggestedTasks = await this.generateSuggestedTasks(
               conversation,
               message,
-              processedResponse.text,
+              processedResponse.content,
               signal
             );
             console.log(`🎯 Generated ${suggestedTasks.length} AI suggested tasks for ${conversation.title}`);

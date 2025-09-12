@@ -1,9 +1,12 @@
 // Simple storage utility that uses dual storage service
 // This makes it easy to replace localStorage calls throughout your app
 
-import { dualStorageService } from './dualStorageService';
+import { DualStorageService } from './dualStorageService';
+import { supabase } from './supabase';
 
 // Simple wrapper functions that automatically use dual storage
+const dualStorageService = new DualStorageService(supabase);
+
 export const storage = {
   // Set item (automatically saves to Supabase and localStorage)
   async setItem(key: string, value: any): Promise<void> {

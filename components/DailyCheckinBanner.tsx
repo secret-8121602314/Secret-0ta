@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { DailyGoal, UserStreak } from '../services/dailyEngagementService';
+import { DailyEngagementService } from '../services/dailyEngagementService';
 import { XMarkIcon, FireIcon, TrophyIcon, StarIcon } from '@heroicons/react/24/outline';
 // Dynamic import to avoid circular dependency
 // import dailyEngagementService, { DailyGoal, UserStreak } from '../services/dailyEngagementService';
@@ -19,22 +21,28 @@ const DailyCheckinBanner: React.FC<DailyCheckinBannerProps> = ({
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    // Load daily data
-    const { dailyEngagementService } = await import('../services/dailyEngagementService');
-    const dailyGoals = dailyEngagementService.getDailyGoals();
-    const userStreaks = dailyEngagementService.getUserStreaks();
+    const loadDailyData = async () => {
+      try {
+        const dailyEngagementService = DailyEngagementService.getInstance();
+        const dailyGoals = dailyEngagementService.getDailyGoals();
+        const userStreaks = dailyEngagementService.getUserStreaks();
+        
+        setGoals(dailyGoals);
+        setStreaks(userStreaks);
+        
+        // Update login streak
+        dailyEngagementService.updateLoginStreak();
+      } catch (error) {
+        console.error('Failed to load daily data:', error);
+      }
+    };
     
-    setGoals(dailyGoals);
-    setStreaks(userStreaks);
-    
-    // Update login streak
-    const { dailyEngagementService } = await import('../services/dailyEngagementService');
-    dailyEngagementService.updateLoginStreak();
+    loadDailyData();
   }, []);
 
   const handleClose = () => {
     setIsVisible(false);
-    const { dailyEngagementService } = await import('../services/dailyEngagementService');
+    const dailyEngagementService = DailyEngagementService.getInstance();
     dailyEngagementService.markDailyCheckinShown();
     setTimeout(onClose, 300);
   };

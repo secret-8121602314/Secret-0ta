@@ -24,9 +24,9 @@ const DailyCacheStatus: React.FC = () => {
     }
   };
 
-  const clearCache = () => {
+  const clearCache = async () => {
     const { dailyNewsCacheService } = await import('../services/dailyNewsCacheService');
-    dailyNewsCacheService.clearCache();
+    await dailyNewsCacheService.clearCache();
     updateCacheStatus();
   };
 

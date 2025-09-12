@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { taskCompletionPromptingService } from '../taskCompletionPromptingService';
 import { TaskCompletionPrompt } from '../types';
-import { DiaryTask } from '../otakuDiaryService';
+import { DiaryTask } from '../types';
 
 describe('TaskCompletionPromptingService', () => {
   const mockCentralTasks: DiaryTask[] = [

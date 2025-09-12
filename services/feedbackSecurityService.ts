@@ -428,7 +428,7 @@ class FeedbackSecurityService {
       );
 
       if (!hasGamingContext) {
-        this.logSecurityEvent('system', 'gaming_focus_validation', 'warning', 
+        this.logSecurityEvent('system', 'gaming_focus_validation', 'blocked', 
           `Learning type ${learningType} should maintain gaming focus`);
         // Don't block, but log warning
       }

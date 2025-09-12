@@ -8,6 +8,15 @@ interface CachePerformanceDashboardProps {
   onClose: () => void;
 }
 
+interface CachePerformanceMetrics {
+  hitRate: number;
+  missRate: number;
+  averageResponseTime: number;
+  memoryUsage: number;
+  storageUsage: number;
+  lastUpdated: Date;
+}
+
 export default function CachePerformanceDashboard({ isOpen, onClose }: CachePerformanceDashboardProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'strategies' | 'performance' | 'management'>('overview');
   const [metrics, setMetrics] = useState<CachePerformanceMetrics>({

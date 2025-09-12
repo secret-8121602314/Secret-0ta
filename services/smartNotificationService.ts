@@ -16,7 +16,7 @@ class SmartNotificationServiceImpl implements SmartNotificationService {
     this.initialize();
   }
 
-  private async initialize(): Promise<void> {
+  async initialize(): Promise<void> {
 
     try {
       // Don't request notification permission during initialization

@@ -11,6 +11,15 @@ interface TierUpgradeModalProps {
   onUpgradeSuccess?: () => void;
 }
 
+interface TierInfo {
+  name: string;
+  price: number;
+  features: string[];
+  description: string;
+  textLimit?: number;
+  imageLimit?: number;
+}
+
 export const TierUpgradeModal: React.FC<TierUpgradeModalProps> = ({
   isOpen,
   onClose,
@@ -31,7 +40,7 @@ export const TierUpgradeModal: React.FC<TierUpgradeModalProps> = ({
     try {
       const { tierService } = await import('../services/tierService');
       const allTiers = tierService.getAllTiers();
-      setTiers(allTiers);
+      setTiers(allTiers as unknown as Record<string, TierInfo>);
 
       // Get current user's tier
       const { authService } = await import('../services/supabase');

@@ -67,7 +67,7 @@ const MainViewContainer: React.FC<MainViewContainerProps> = ({
 
   // Auto-scroll to top when switching to insight tabs to show latest information
   useEffect(() => {
-    if (activeSubView !== 'chat' && activeSubView !== previousIndex) {
+    if (activeSubView !== 'chat' && activeSubView !== String(previousIndex)) {
       const insightContainer = document.querySelector(`[data-insight-id="${activeSubView}"]`);
       if (insightContainer) {
         insightContainer.scrollTo({ top: 0, behavior: 'smooth' });

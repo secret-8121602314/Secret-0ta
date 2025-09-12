@@ -253,7 +253,7 @@ const PricingSection = ({ onCtaClick }: { onCtaClick: () => void }) => {
                         <p className="text-neutral-300 mt-3 mb-8 text-lg">Become a founding member with exclusive, permanent perks.</p>
                         <div className="mb-8">
                             <span className="text-6xl font-bold text-white">$20</span>
-                            <span className="text-xl text-neutral-300">/year</span>
+                            <span className="text-xl text-neutral-300">/month</span>
                             <p className="text-green-400 font-medium text-lg mt-2">Lifetime Price Guarantee!</p>
                         </div>
                         <ul className="space-y-4 mb-6">

@@ -477,16 +477,20 @@ class UniversalContentCacheService {
       }
     };
     
-    await this.setCachedContent(cacheKey, cacheData);
+    await this.cacheContent({ query: cacheKey, userTier: 'free', contentType: 'game_info' }, JSON.stringify(cacheData), {
+      model: 'player_progress',
+      tokens: 100,
+      cost: 0.001
+    });
   }
 
   // NEW: Get long-term player progress
   async getPlayerProgress(gameId: string): Promise<any | null> {
     const cacheKey = `player_progress_${gameId}`;
-    const cached = await this.getCachedContent(cacheKey);
+    const cached = await this.getCachedContent({ query: cacheKey, userTier: 'free', contentType: 'game_info' });
     
-    if (cached && !this.isExpired(cached.expiresAt)) {
-      return JSON.parse(cached.content);
+    if (cached && cached.content) {
+      return JSON.parse(cached.content as unknown as string);
     }
     
     return null;

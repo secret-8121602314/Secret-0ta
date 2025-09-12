@@ -29,7 +29,7 @@ export const LazyProFeaturesSplashScreen = lazy(() => import('./ProFeaturesSplas
 export const LazyTierSplashScreen = lazy(() => import('./TierSplashScreen'));
 
 // Lazy load feature components that aren't always needed
-export const LazyLandingPage = lazy(() => import('./LandingPage'));
+export const LazyLandingPage = lazy(() => import('./new-landing/LandingPage'));
 export const LazyPerformanceDashboard = lazy(() => import('./PerformanceDashboard'));
 export const LazyCachePerformanceDashboard = lazy(() => import('./CachePerformanceDashboard'));
 

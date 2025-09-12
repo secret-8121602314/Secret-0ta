@@ -40,7 +40,6 @@ const AIContextDemo: React.FC = () => {
         { demo: true, component: 'AIContextDemo' }
       );
       
-      const { aiContextService } = await import('../services/aiContextService');
       await aiContextService.storeUserContext('preferences', {
         preferred_game_genres: ['RPG', 'Action'],
         preferred_response_length: 'detailed',
@@ -66,7 +65,7 @@ const AIContextDemo: React.FC = () => {
     }
   };
 
-  const clearCache = () => {
+  const clearCache = async () => {
     const { aiContextService } = await import('../services/aiContextService');
     aiContextService.clearCache();
     setDemoMessage('Cache cleared! Refresh to see changes.');

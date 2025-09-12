@@ -8,6 +8,21 @@ interface AdminCostDashboardProps {
     onClose: () => void;
 }
 
+interface APICostSummary {
+    totalCost: number;
+    monthlyCost: number;
+    dailyCost: number;
+    costByService: Record<string, number>;
+    usageMetrics: Record<string, number>;
+    totalCalls: number;
+    callsByModel: Record<string, number>;
+    callsByPurpose: Record<string, number>;
+    callsByTier: Record<string, number>;
+    estimatedMonthlyCost: number;
+    // Add any missing properties that the service might return
+    [key: string]: any;
+}
+
 export const AdminCostDashboard: React.FC<AdminCostDashboardProps> = ({ isOpen, onClose }) => {
     const [costSummary, setCostSummary] = useState<APICostSummary | null>(null);
     const [recommendations, setRecommendations] = useState<string[]>([]);
@@ -28,7 +43,7 @@ export const AdminCostDashboard: React.FC<AdminCostDashboardProps> = ({ isOpen, 
                 apiCostService.getCostSummary(),
                 apiCostService.getCostOptimizationRecommendations()
             ]);
-            setCostSummary(summary);
+            setCostSummary(summary as unknown as APICostSummary);
             setRecommendations(recs);
         } catch (error) {
             console.error('Error loading cost data:', error);
@@ -157,7 +172,7 @@ export const AdminCostDashboard: React.FC<AdminCostDashboardProps> = ({ isOpen, 
                                         {Object.entries(costSummary.callsByPurpose).map(([purpose, count]) => (
                                             <div key={purpose} className="flex justify-between items-center">
                                                 <span className="text-gray-300 capitalize">{purpose.replace(/_/g, ' ')}</span>
-                                                <span className="text-white font-medium">{count}</span>
+                                                <span className="text-white font-medium">{String(count)}</span>
                                             </div>
                                         ))}
                                     </div>

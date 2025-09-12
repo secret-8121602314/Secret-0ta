@@ -1,10 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import Logo from './Logo';
-import CheckIcon from './CheckIcon';
-import StarIcon from './StarIcon';
-import { waitlistService } from '../../services/waitlistService';
-import FounderImage from './FounderImage';
-import ContactUsModal from './ContactUsModal';
+// Placeholder components
+const CheckIcon = ({ className }: { className?: string }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <polyline points="20,6 9,17 4,12"></polyline>
+    </svg>
+);
+
+const StarIcon = ({ className }: { className?: string }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"></polygon>
+    </svg>
+);
+
+const Logo = ({ className }: { className?: string }) => (
+    <div className={className}>Otakon</div>
+);
+
+const FounderImage = ({ className, size }: { className?: string; size?: string }) => (
+    <div className={className}>Founder</div>
+);
+
+const ContactUsModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => (
+    isOpen ? <div>Contact Us Modal</div> : null
+);
+
+// Mock waitlist service
+const waitlistService = {
+    addToWaitlist: async (email: string, source?: string) => {
+        console.log('Added to waitlist:', email, source);
+        return { success: true, error: null };
+    }
+};
 
 const GamepadIcon = ({ className }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

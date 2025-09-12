@@ -48,7 +48,6 @@ export const STORAGE_KEYS = {
   ONBOARDING_COMPLETE: 'otakonOnboardingComplete',
   PROFILE_SETUP_COMPLETED: 'otakon_profile_setup_completed',
   FIRST_RUN_COMPLETED: 'otakon_first_run_completed',
-  SHOW_SPLASH_AFTER_LOGIN: 'otakon_show_splash_after_login',
   
   // Welcome messages
   WELCOME_MESSAGE_SHOWN: 'otakon_welcome_message_shown',

@@ -52,8 +52,8 @@ export class TierService {
 
   private readonly TIER_PRICES: Record<UserTier, number | undefined> = {
     free: undefined,
-    pro: 9.99,
-    vanguard_pro: 19.99,
+    pro: 3.99,
+    vanguard_pro: 20.00,
   };
 
   /**

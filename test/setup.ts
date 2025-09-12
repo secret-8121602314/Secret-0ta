@@ -1,5 +1,14 @@
 import { vi } from 'vitest';
 
+// Add missing test globals
+declare global {
+  var describe: any;
+  var it: any;
+  var expect: any;
+  var beforeEach: any;
+  var afterAll: any;
+}
+
 // Mock global objects that might be used in tests
 global.localStorage = {
   getItem: vi.fn(),
@@ -91,9 +100,15 @@ global.URL = vi.fn().mockImplementation((url, base) => ({
   pathname: '/',
   search: '',
   hash: '',
+  username: '',
+  password: '',
   searchParams: new URLSearchParams(),
   toString: () => url,
-}));
+  canParse: vi.fn(() => true),
+  createObjectURL: vi.fn(() => 'blob:mock-url'),
+  parse: vi.fn(() => new URL(url)),
+  revokeObjectURL: vi.fn(),
+})) as any as typeof URL;
 
 // Mock URLSearchParams
 global.URLSearchParams = vi.fn().mockImplementation((init) => {

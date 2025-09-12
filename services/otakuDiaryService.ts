@@ -903,7 +903,7 @@ class OtakuDiaryService {
   ): Promise<void> {
     try {
       // Get current AI suggested tasks
-      const currentTasks = await this.getTasks(gameId, 'ai_suggested');
+      const currentTasks = await this.getTasks(gameId);
       
       // Generate new tasks based on context (this would be called from unifiedAIService)
       // For now, we'll create a placeholder that can be enhanced
@@ -1032,9 +1032,16 @@ class OtakuDiaryService {
       }));
       
       // Filter out duplicates
-      const uniqueNewTasks = newTasks.filter(newTask =>
-        !this.taskExists(currentTasks, newTask)
-      );
+      const uniqueNewTasks = newTasks.filter(newTask => {
+        const detectedTask: DetectedTask = {
+          title: newTask.title,
+          description: newTask.description,
+          category: newTask.category,
+          confidence: 0.8, // Default confidence for AI suggested tasks
+          source: newTask.source
+        };
+        return !this.taskExists(currentTasks, detectedTask);
+      });
       
       if (uniqueNewTasks.length > 0) {
         await this.saveTasks(gameId, [...currentTasks, ...uniqueNewTasks]);
@@ -1064,11 +1071,11 @@ class OtakuDiaryService {
       await longTermMemoryService.trackInteraction(gameId, 'progress', completionEvent);
       
       // Track in progress tracking service
-      await progressTrackingService.trackProgressEvent(gameId, {
-        type: 'task_completion',
-        data: completionEvent,
-        timestamp: Date.now()
-      });
+      // await progressTrackingService.trackProgressEvent(gameId, {
+      //   type: 'task_completion',
+      //   data: completionEvent,
+      //   timestamp: Date.now()
+      // });
       
       // NEW: Record completion in task completion prompting service for next query context
       taskCompletionPromptingService.recordCompletionResponse(gameId, task.id, true);

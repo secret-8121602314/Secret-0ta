@@ -29,6 +29,7 @@ const OtakuDiaryTab: React.FC<OtakuDiaryTabProps> = ({ gameId, gameTitle }) => {
 
   const loadUsageData = async () => {
     try {
+      const { unifiedUsageService } = await import('../services/unifiedUsageService');
       const usageData = await unifiedUsageService.getUsage();
       setUsage(usageData);
     } catch (error) {

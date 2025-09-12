@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { ChatMessage, Conversations, Conversation, newsPrompts, Insight, insightTabsConfig, InsightStatus, PendingInsightModification, ChatMessageFeedback } from '../services/types';
-import { authService } from '../services/supabase';
+import { authService, supabase } from '../services/supabase';
+import { databaseService } from '../services/databaseService';
 import { 
     getGameNews, 
     sendMessageWithImages, 
@@ -17,6 +18,63 @@ import {
     generateInsightWithSearch
 } from '../services/geminiService';
 // Dynamic imports to avoid circular dependencies
+let ttsService: any;
+let contextManagementService: any;
+let playerProfileService: any;
+let taskCompletionPromptingService: any;
+let universalContentCacheService: any;
+let smartNotificationService: any;
+let screenshotTimelineService: any;
+let longTermMemoryService: any;
+let unifiedAIService: any;
+let otakuDiaryService: any;
+let tabManagementService: any;
+
+// Initialize services dynamically
+const initializeServices = async () => {
+  try {
+    const ttsModule = await import('../services/ttsService');
+    ttsService = ttsModule.ttsService;
+    
+    const contextModule = await import('../services/contextManagementService');
+    contextManagementService = contextModule.contextManagementService;
+    
+    const profileModule = await import('../services/playerProfileService');
+    playerProfileService = profileModule.playerProfileService;
+    
+    const taskModule = await import('../services/taskCompletionPromptingService');
+    taskCompletionPromptingService = taskModule.taskCompletionPromptingService;
+    
+    const cacheModule = await import('../services/universalContentCacheService');
+    universalContentCacheService = cacheModule.universalContentCacheService;
+    
+    const notificationModule = await import('../services/smartNotificationService');
+    smartNotificationService = notificationModule.smartNotificationService;
+    
+    const timelineModule = await import('../services/screenshotTimelineService');
+    screenshotTimelineService = timelineModule.screenshotTimelineService;
+    
+    const memoryModule = await import('../services/longTermMemoryService');
+    longTermMemoryService = memoryModule.longTermMemoryService;
+    
+    const aiModule = await import('../services/unifiedAIService');
+    unifiedAIService = aiModule.unifiedAIService;
+    
+    const diaryModule = await import('../services/otakuDiaryService');
+    otakuDiaryService = diaryModule.otakuDiaryService;
+    
+    const tabModule = await import('../services/tabManagementService');
+    tabManagementService = tabModule.TabManagementService;
+  } catch (error) {
+    console.warn('Failed to initialize some services:', error);
+  }
+};
+
+// Initialize services on module load
+initializeServices();
+
+// Constants
+const KNOWLEDGE_CUTOFF_LABEL = 'April 2024';
 // import tabManagementService from '../services/tabManagementService';
 // import { ttsService } from '../services/ttsService';
 // Static imports to replace dynamic imports for Firebase hosting compatibility
@@ -106,7 +164,7 @@ export const useChat = (isHandsFreeMode: boolean) => {
     
     const saveConversationsToSupabase = useCallback(async () => {
         try {
-            const { data: { user } } = await authService.getUser();
+            const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
             // Save each conversation to Supabase
@@ -150,7 +208,7 @@ export const useChat = (isHandsFreeMode: boolean) => {
         const loadConversationsFromSupabase = async () => {
             try {
                 // Check if user is authenticated
-                const { data: { user } } = await authService.getUser();
+                const { data: { user } } = await supabase.auth.getUser();
                 if (!user) {
                     // Fallback to localStorage for unauthenticated users
                     loadConversationsFromLocalStorage();
@@ -171,9 +229,8 @@ export const useChat = (isHandsFreeMode: boolean) => {
                             title: conv.title || 'Untitled Conversation',
                             messages: conv.messages || [],
                             createdAt: new Date(conv.created_at).getTime(),
-                            updatedAt: new Date(conv.updated_at).getTime(),
                             insights: conv.insights || [],
-                            pinned: conv.pinned || false
+                            isPinned: conv.pinned || false
                         };
                         order.push(conv.id);
                     });

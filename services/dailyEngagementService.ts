@@ -5,10 +5,15 @@ export interface DailyGoal {
   current: number;
   title: string;
   description: string;
+  completed: boolean;
   reward: string;
 }
 
 export interface UserStreak {
+  type: string;
+  count: number;
+  lastAchieved: string;
+  nextMilestone: number;
   dailyLogin: number;
   gameDays: number;
   insightDays: number;
@@ -19,23 +24,6 @@ export interface UserStreak {
 
 import { supabase } from './supabase';
 import { Achievement } from './types';
-
-export interface DailyGoal {
-  id: string;
-  title: string;
-  description: string;
-  target: number;
-  current: number;
-  completed: boolean;
-  reward?: string;
-}
-
-export interface UserStreak {
-  type: 'daily_login' | 'daily_quest' | 'weekly_goal';
-  count: number;
-  lastAchieved: string;
-  nextMilestone: number;
-}
 
 export class DailyEngagementService {
   private static instance: DailyEngagementService;
@@ -69,6 +57,7 @@ export class DailyEngagementService {
         current: 0,
         title: 'Screenshot Master',
         description: 'Analyze screenshots to help your gaming',
+        completed: false,
         reward: '+50 Otagon Points'
       },
       {
@@ -78,6 +67,7 @@ export class DailyEngagementService {
         current: 0,
         title: 'Community Helper',
         description: 'Help other players with their questions',
+        completed: false,
         reward: '+30 Otagon Points'
       },
       {
@@ -87,6 +77,7 @@ export class DailyEngagementService {
         current: 0,
         title: 'Game Explorer',
         description: 'Try analyzing different games',
+        completed: false,
         reward: '+40 Otagon Points'
       },
       {
@@ -96,6 +87,7 @@ export class DailyEngagementService {
         current: 0,
         title: 'Insight Creator',
         description: 'Create new insights for your games',
+        completed: false,
         reward: '+25 Otagon Points'
       }
     ];
@@ -129,6 +121,10 @@ export class DailyEngagementService {
     }
 
     const defaultStreaks: UserStreak = {
+      type: 'daily_login',
+      count: 0,
+      lastAchieved: '',
+      nextMilestone: 7,
       dailyLogin: 0,
       gameDays: 0,
       insightDays: 0,

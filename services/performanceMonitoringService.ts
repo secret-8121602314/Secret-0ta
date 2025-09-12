@@ -131,7 +131,7 @@ class PerformanceMonitoringService {
       try {
         const longTaskObserver = new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
-            if (entry.duration > 50) { // Tasks longer than 50ms
+            if (entry.duration > 100) { // Only warn for tasks longer than 100ms (reduced noise)
               console.warn('⚠️ Long task detected:', {
                 duration: entry.duration,
                 startTime: entry.startTime,
@@ -313,7 +313,7 @@ export const performanceMonitoringService = PerformanceMonitoringService.getInst
 
 // Export individual methods for convenience
 export const {
-  initialize,
+  // initialize,
   trackUserAction,
   trackPerformanceEvent,
   trackError,

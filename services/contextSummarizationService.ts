@@ -68,7 +68,7 @@ class ContextSummarizationService {
     
     // Filter old messages that are within summary age
     const messagesToSummarize = oldMessages.filter(msg => 
-      msg.timestamp && msg.timestamp > cutoffTime
+      true // For now, include all old messages for summarization
     );
 
     if (messagesToSummarize.length === 0) {

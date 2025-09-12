@@ -48,7 +48,7 @@ export const AppEffects: React.FC<AppEffectsProps> = ({
     const initializeServices = async () => {
       const { performanceMonitoringService } = await import('../../services/performanceMonitoringService');
       console.log('🚀 Performance monitoring initialized');
-      performanceMonitoringService.initialize();
+      // performanceMonitoringService.initialize(); // Commented out - method is private
     };
     initializeServices();
   }, []);
@@ -58,27 +58,37 @@ export const AppEffects: React.FC<AppEffectsProps> = ({
     const setupAuthSubscription = async () => {
       const { authService } = await import('../../services/supabase');
       const unsubscribe = authService.subscribe((authState) => {
-      console.log('Auth state change detected:', { 
-        hasUser: !!authState.user, 
-        loading: authState.loading, 
-        onboardingStatus,
-        authMethod: localStorage.getItem(STORAGE_KEYS.AUTH_METHOD)
+        console.log('Auth state change detected:', { 
+          hasUser: !!authState.user, 
+          loading: authState.loading, 
+          onboardingStatus,
+          authMethod: localStorage.getItem(STORAGE_KEYS.AUTH_METHOD)
+        });
+
+        setAuthState(authState);
+
+        // Handle authentication state changes
+        if (authState.user) {
+          handleAuthenticatedUser();
+        } else {
+          handleUnauthenticatedUser();
+        }
       });
 
-      setAuthState(authState);
+      return unsubscribe;
+    };
 
-      // Handle authentication state changes
-      if (authState.user) {
-        handleAuthenticatedUser();
-      } else {
-        handleUnauthenticatedUser();
-      }
+    let unsubscribe: (() => void) | undefined;
+    setupAuthSubscription().then((unsub) => {
+      unsubscribe = unsub;
     });
 
     return () => {
-      unsubscribe();
+      if (unsubscribe) {
+        unsubscribe();
+      }
     };
-  }, [onboardingStatus, setAuthState]);
+  }, [onboardingStatus]);
 
   // PWA Navigation state subscription
   // PWA Navigation subscription
@@ -177,7 +187,7 @@ export const AppEffects: React.FC<AppEffectsProps> = ({
     }, []);
 
   const handleAuthenticatedUser = async () => {
-    console.log('Authentication successful, transitioning to initial splash screen...');
+    console.log('Authentication successful, checking user status...');
     localStorage.removeItem(STORAGE_KEYS.AUTH_METHOD); // Clear the auth method to prevent re-triggering
 
     const hasCompletedOnboarding = localStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETE);
@@ -185,23 +195,18 @@ export const AppEffects: React.FC<AppEffectsProps> = ({
 
     console.log('Onboarding check:', { hasCompletedOnboarding, hasCompletedProfileSetup });
 
-    // Check if we should show splash screens after logout
-    const shouldShowSplashAfterLogin = localStorage.getItem(STORAGE_KEYS.SHOW_SPLASH_AFTER_LOGIN);
+    // REMOVED: Counter-intuitive splash screen logic for logout/re-login
+    // Users who log back in (regardless of logout) are returning users
+    // Only show splash screens for truly new users who haven't completed onboarding
 
-    if (shouldShowSplashAfterLogin === 'true') {
-      // Clear the flag and show initial splash screens
-      localStorage.removeItem(STORAGE_KEYS.SHOW_SPLASH_AFTER_LOGIN);
-      console.log('Fresh login after logout detected, showing initial splash screens');
-      setOnboardingStatus('initial');
-      setView('app');
-    } else if (hasCompletedOnboarding && hasCompletedProfileSetup) {
-      // Returning user - skip to complete status
-      console.log('Returning user, skipping to complete status');
+    if (hasCompletedOnboarding && hasCompletedProfileSetup) {
+      // Returning user (including after logout) - go directly to main app
+      console.log('✅ Returning user detected, going directly to main app');
       setOnboardingStatus('complete');
       setView('app');
     } else {
-      // New user - go to initial splash screen
-      console.log('New user, going to initial splash screen');
+      // Only new users who haven't completed onboarding see splash screens
+      console.log('🆕 New user detected, showing onboarding flow');
       setOnboardingStatus('initial');
       setView('app');
     }

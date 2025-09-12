@@ -174,7 +174,7 @@ FREE TIER
 - Basic AI model
 - Standard support
 
-PRO TIER ($9.99/month)
+PRO TIER ($3.99/month)
 ----------------------
 - 1,583 text queries/month
 - 328 image queries/month
@@ -184,7 +184,7 @@ PRO TIER ($9.99/month)
 - In-depth insight tabs
 - Priority support
 
-VANGUARD TIER ($29.99/month)
+VANGUARD TIER ($20.00/month)
 -----------------------------
 - All Pro features
 - Permanent price lock-in

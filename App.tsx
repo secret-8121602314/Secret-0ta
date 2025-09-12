@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
-import { ConnectionStatus, Conversation, Conversations, Insight, UserTier, Usage, ContextMenuState, ContextMenuItem, PendingInsightModification } from './services/types';
+import { ConnectionStatus, Conversation, Conversations, Insight, UserTier, Usage, ContextMenuState, ContextMenuItem, PendingInsightModification, Achievement } from './services/types';
 import { canAccessDeveloperFeatures } from './config/developer';
 import { 
   LazyConnectionModal,
@@ -35,8 +35,8 @@ import { useChat } from './hooks/useChat';
 import { useConnection } from './hooks/useConnection';
 import { useTutorial } from './hooks/useTutorial';
 // Dynamic imports to avoid circular dependencies
-// import { profileService } from './services/profileService';
-// import { longTermMemoryService } from './services/longTermMemoryService';
+import { profileService } from './services/profileService';
+import { longTermMemoryService } from './services/longTermMemoryService';
 import { contextManagementService } from './services/contextManagementService';
 import ConversationTabs from './components/ConversationTabs';
 import ContactUsModal from './components/ContactUsModal';
@@ -44,8 +44,8 @@ import LandingContactUsModal from './components/new-landing/ContactUsModal';
 import HandsFreeToggle from './components/HandsFreeToggle';
 // Dynamic imports to avoid circular dependencies
 import { ttsService } from './services/ttsService';
-// import { unifiedUsageService } from './services/unifiedUsageService';
-// import { addFeedback } from './services/feedbackService';
+import { unifiedUsageService } from './services/unifiedUsageService';
+import { addFeedback } from './services/feedbackService';
 // Lazy loaded components - removed direct imports
 import SubTabs from './components/SubTabs';
 import UITutorial from './components/UITutorial';
@@ -71,39 +71,41 @@ import EditIcon from './components/EditIcon';
 import LogoutIcon from './components/LogoutIcon';
 import UserIcon from './components/UserIcon';
 import { authService, AuthState, supabase } from './services/supabase';
+import { supabaseOnlyDataService } from './services/supabaseOnlyDataService';
 import AuthModal from './components/AuthModal';
 import ErrorBoundary from './components/ErrorBoundary';
 import AuthCallbackHandler from './components/AuthCallbackHandler';
 import PWAInstallBanner from './components/PWAInstallBanner';
 // Dynamic imports to avoid circular dependencies
-// import { pwaNavigationService, PWANavigationState } from './services/pwaNavigationService';
-// import { smartNotificationService } from './services/smartNotificationService';
+import { PWANavigationState } from './services/pwaNavigationService';
+import { smartNotificationService } from './services/smartNotificationService';
 // import { pwaAnalyticsService } from './services/pwaAnalyticsService';
 // import { offlineStorageService } from './services/offlineStorageService';
-// import { unifiedCacheService } from './services/unifiedCacheService';
-// import { unifiedStorageService } from './services/unifiedStorageService';
-// import { aiContextService } from './services/aiContextService';
-// import { unifiedAIService } from './services/unifiedAIService';
-// import { ServiceFactory } from './services/ServiceFactory';
-// import { pushNotificationService } from './services/pushNotificationService';
+import { unifiedCacheService } from './services/unifiedCacheService';
+import { offlineStorageService } from './services/offlineStorageService';
+import { unifiedStorageService } from './services/unifiedStorageService';
+import { aiContextService } from './services/aiContextService';
+import { unifiedAIService } from './services/unifiedAIService';
+import { ServiceFactory } from './services/ServiceFactory';
+import { pushNotificationService } from './services/pushNotificationService';
 // import { appShortcutsService } from './services/appShortcutsService';
-// import { performanceMonitoringService } from './services/performanceMonitoringService';
+import { performanceMonitoringService } from './services/performanceMonitoringService';
 
 
 import DailyCheckinBanner from './components/DailyCheckinBanner';
-
+import SessionContinuationModal from './components/SessionContinuationModal';
 
 import AchievementNotification from './components/AchievementNotification';
 // Dynamic imports to avoid circular dependencies
 import dailyEngagementService from './services/dailyEngagementService';
 import { playerProfileService } from './services/playerProfileService';
-// import { suggestedPromptsService } from './services/suggestedPromptsService';
+import { suggestedPromptsService } from './services/suggestedPromptsService';
 import { ProactiveInsightsPanel } from './components/ProactiveInsightsPanel';
 import { useEnhancedInsights } from './hooks/useEnhancedInsights';
 // Dynamic imports to avoid circular dependencies
 // import { proactiveInsightService } from './services/proactiveInsightService';
 import { databaseService } from './services/databaseService';
-// import { supabaseDataService } from './services/supabaseDataService';
+import { supabaseDataService } from './services/supabaseDataService';
 import ScreenshotButton from './components/ScreenshotButton';
 import CharacterImmersionTest from './components/CharacterImmersionTest';
 // OtakuDiaryModal and WishlistModal now lazy loaded
@@ -182,30 +184,9 @@ type ActiveModal = 'about' | 'privacy' | 'refund' | 'contact' | null;
 
 
 const AppComponent: React.FC = () => {
-    const [view, setView] = useState<'landing' | 'app'>(() => 'landing');
+    const [view, setView] = useState<'landing' | 'app'>(() => 'app');
     const [onboardingStatus, setOnboardingStatus] = useState<'login' | 'initial' | 'features' | 'pro-features' | 'how-to-use' | 'tier-splash' | 'complete'>(() => {
-        if (typeof window !== 'undefined' && window.localStorage) {
-            const authMethod = localStorage.getItem('otakonAuthMethod');
-            const isDeveloperMode = localStorage.getItem('otakon_developer_mode') === 'true';
-            const isDeveloperAuth = authMethod === 'skip';
-            const hasCompletedOnboarding = localStorage.getItem('otakonOnboardingComplete');
-            const hasCompletedProfileSetup = localStorage.getItem('otakon_profile_setup_completed');
-            const hasSeenSplashScreens = localStorage.getItem('otakon_has_seen_splash_screens') === 'true';
-
-            // Developer mode: respect first-run vs returning dev
-            if (isDeveloperMode || isDeveloperAuth) {
-                const devReturning = hasCompletedOnboarding && hasCompletedProfileSetup && hasSeenSplashScreens;
-                return devReturning ? 'complete' : 'initial';
-            }
-
-            // Returning authenticated users
-            if (hasCompletedOnboarding && hasCompletedProfileSetup) {
-                return 'complete';
-            }
-
-            // New users
-            return 'login';
-        }
+        // Initialize with login status - will be updated after Supabase data loads
         return 'login';
     });
     const [isConnectionModalOpen, setIsConnectionModalOpen] = useState(false);
@@ -251,7 +232,13 @@ const AppComponent: React.FC = () => {
     // PWA Navigation State
     const [pwaNavigationState, setPwaNavigationState] = useState<PWANavigationState>(() => {
       // Initialize with default state, will be updated in useEffect
-      return { shouldShowLogin: false, shouldShowChat: false };
+      return { 
+        isPWAInstalled: false,
+        isRunningInPWA: false,
+        shouldShowLogin: false, 
+        shouldShowChat: false,
+        isHandsFreeEnabled: false
+      };
     });
     
     // OAuth Callback State
@@ -266,6 +253,7 @@ const AppComponent: React.FC = () => {
 
     // Daily Engagement State
     const [showDailyCheckin, setShowDailyCheckin] = useState(false);
+    const [showSessionContinuation, setShowSessionContinuation] = useState(false);
 
     const [currentAchievement, setCurrentAchievement] = useState<Achievement | null>(null);
 
@@ -362,7 +350,6 @@ const AppComponent: React.FC = () => {
             await new Promise(resolve => setTimeout(resolve, 150));
             
             // Get the current tier directly without calling getUsage (which calls checkAndResetUsage)
-            const { unifiedUsageService } = await import('./services/unifiedUsageService');
             const currentTier = await unifiedUsageService.getCurrentTier();
             
             // Get the current usage data
@@ -381,7 +368,7 @@ const AppComponent: React.FC = () => {
         }
     }, []);
 
-    // Authentication effect
+    // Authentication effect - CRITICAL FIX
     useEffect(() => {
         const unsubscribe = authService.subscribe((newAuthState) => {
             // Only log significant auth state changes to reduce console noise
@@ -392,15 +379,95 @@ const AppComponent: React.FC = () => {
                 console.log('📨 App received auth state update:', { 
                     hasUser: !!newAuthState.user, 
                     loading: newAuthState.loading,
-                    error: newAuthState.error?.message 
+                    error: newAuthState.error?.message,
+                    userId: newAuthState.user?.id,
+                    email: newAuthState.user?.email
                 });
             }
             setAuthState(newAuthState);
             
-            // If user is authenticated and we're still on login screen, transition
-            if (newAuthState.user && !newAuthState.loading && onboardingStatus === 'login') {
-                console.log('User authenticated, transitioning from login screen...');
-                setOnboardingStatus('initial');
+            // CRITICAL: Handle authentication state changes properly
+            if (newAuthState.user && !newAuthState.loading) {
+                console.log('✅ User authenticated, checking onboarding status...');
+                
+                // Check for developer mode (this should be checked BEFORE setting auth method)
+                const authMethod = localStorage.getItem('otakonAuthMethod');
+                const isDeveloperMode = authMethod === 'developer';
+                
+                if (isDeveloperMode) {
+                    console.log('🔧 Developer mode detected, handling developer flow...');
+                    
+                    // Check if developer has completed onboarding from Supabase
+                    const hasCompletedOnboarding = supabaseOnlyDataService.get('onboardingComplete');
+                    const hasCompletedProfileSetup = supabaseOnlyDataService.get('profileSetupCompleted');
+                    const hasSeenSplashScreens = supabaseOnlyDataService.get('hasSeenSplashScreens');
+                    
+                    // FIXED: Developers should get full first-time experience
+                    // Only skip onboarding if they've actually completed it
+                    if (hasCompletedOnboarding && hasCompletedProfileSetup && hasSeenSplashScreens) {
+                        console.log('🔧 Returning developer, going to main app');
+                        setOnboardingStatus('complete');
+                        setView('app');
+                        return;
+                    } else {
+                        console.log('🔧 First-time developer, going through full onboarding experience');
+                        // Don't set onboarding status here - let them go through normal flow
+                        // Don't return here - let them go through normal onboarding flow
+                    }
+                }
+                
+                // Regular user authentication flow
+                // Check if user has completed onboarding from Supabase
+                const hasCompletedOnboarding = supabaseOnlyDataService.get('onboardingComplete');
+                const hasCompletedProfileSetup = supabaseOnlyDataService.get('profileSetupCompleted');
+                const hasSeenSplashScreens = supabaseOnlyDataService.get('hasSeenSplashScreens');
+                
+                // Check if user has explicitly chosen to skip landing page
+                const hasSkippedLanding = localStorage.getItem('otakonSkippedLanding') === 'true';
+                
+                // Debug logging
+                console.log('🔍 Auth Debug:', {
+                    hasCompletedOnboarding,
+                    hasCompletedProfileSetup,
+                    hasSeenSplashScreens,
+                    hasSkippedLanding,
+                    isNewUser: !hasCompletedOnboarding && !hasCompletedProfileSetup && !hasSeenSplashScreens
+                });
+                
+                // FIXED: Properly distinguish between new users and data load failures
+                // New users: all flags are false (default values)
+                // Returning users with data issues: some flags might be true but others false
+                const isNewUser = !hasCompletedOnboarding && !hasCompletedProfileSetup && !hasSeenSplashScreens;
+                
+                // PROPER ONBOARDING LOGIC: Distinguish between new and returning users
+                if (hasCompletedOnboarding && hasCompletedProfileSetup && hasSkippedLanding) {
+                    console.log('✅ Returning user, going to main app');
+                    setOnboardingStatus('complete');
+                    setView('app');
+                } else if (hasCompletedOnboarding && hasCompletedProfileSetup && !hasSkippedLanding) {
+                    console.log('✅ Returning user, showing landing page');
+                    setOnboardingStatus('complete');
+                    setView('landing');
+                } else if (isNewUser) {
+                    console.log('🆕 New user detected, going to initial splash screen');
+                    setOnboardingStatus('initial');
+                    setView('app');
+                } else {
+                    // Edge case: user has partial data (some flags true, some false)
+                    // This could be a returning user with incomplete data
+                    console.log('🔄 Returning user with incomplete data, showing landing page');
+                    setOnboardingStatus('complete');
+                    setView('landing');
+                }
+                
+                // Add a small delay to ensure all auth state is processed
+                setTimeout(() => {
+                    console.log('🔄 Auth state processing complete, current view:', view);
+                }, 100);
+            } else if (!newAuthState.user && !newAuthState.loading) {
+                console.log('❌ User not authenticated, staying on landing page');
+                setView('landing');
+                setOnboardingStatus('login');
             }
         });
         return () => {
@@ -408,11 +475,27 @@ const AppComponent: React.FC = () => {
                 unsubscribe();
             }
         };
-    }, [onboardingStatus]);
+    }, [authState.user, authState.loading, onboardingStatus]);
+
+    // Initialize Supabase data service on app startup
+    useEffect(() => {
+        const initializeSupabaseData = async () => {
+            // Handle OAuth callback first if needed
+            const isOAuthCallback = await authService.handleOAuthCallback();
+            if (isOAuthCallback) {
+                console.log('🔄 OAuth callback handled, initializing data service...');
+            }
+            
+            await supabaseOnlyDataService.initialize();
+        };
+        
+        initializeSupabaseData();
+    }, []); // Only run once on app startup
 
     // NEW: Long-term session restoration on app startup - MOVED TO AFTER useChat
 
-    // Handle authentication success - SIMPLIFIED navigation flow
+    // Handle authentication success - DISABLED (handled by auth subscription above)
+    /*
     useEffect(() => {
         console.log('Auth state change detected:', { 
             hasUser: !!authState.user, 
@@ -536,7 +619,6 @@ const AppComponent: React.FC = () => {
             }
             
             try {
-                const { unifiedUsageService } = await import('./services/unifiedUsageService');
                 const usageData = await unifiedUsageService.getUsage();
                 setUsage(usageData);
             } catch (error) {
@@ -666,15 +748,27 @@ const AppComponent: React.FC = () => {
         }
     }, [pwaNavigationState.isPWAInstalled, pwaNavigationState.isRunningInPWA, authState.user, authState.loading]);
     
-    // Initialize performance monitoring
+    // Initialize performance monitoring ONLY after authentication
     useEffect(() => {
+        // Only initialize performance monitoring if user is authenticated or in developer mode
+        const shouldInitializePerformance = authState.user || 
+            localStorage.getItem('otakon_developer_mode') === 'true' ||
+            localStorage.getItem('otakonAuthMethod') === 'skip';
+
+        if (!shouldInitializePerformance) {
+            console.log('🚫 Skipping performance monitoring - user not authenticated');
+            return;
+        }
+
         const initializePerformanceMonitoring = async () => {
             const { performanceMonitoringService } = await import('./services/performanceMonitoringService');
             performanceMonitoringService.initialize();
             console.log('🚀 Performance monitoring initialized');
         };
+        
+        // Initialize performance monitoring after authentication
         initializePerformanceMonitoring();
-    }, []);
+    }, [authState.user, authState.loading]);
 
     // Check for OAuth callback on component mount - SIMPLIFIED AND FIXED
     useEffect(() => {
@@ -706,86 +800,75 @@ const AppComponent: React.FC = () => {
                 console.log('OAuth callback detected, processing...');
                 
                 try {
-                    // Don't clear URL immediately - let Supabase process it first
                     console.log('Processing OAuth callback...');
-                    // Wait for Supabase to process the OAuth response with retry logic
-                    let session = null;
-                    let attempts = 0;
-                    const maxAttempts = 5;
                     
-                    while (attempts < maxAttempts && !session) {
-                        attempts++;
-                        console.log(`OAuth session check attempt ${attempts}/${maxAttempts}...`);
-                        
-                        // Wait progressively longer between attempts
-                        await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
-                        
-                        try {
-                            const { data: { session: currentSession }, error } = await supabase.auth.getSession();
-                            
-                            console.log(`Session check attempt ${attempts}:`, {
-                                hasSession: !!currentSession,
-                                hasUser: !!(currentSession?.user),
-                                userId: currentSession?.user?.id,
-                                email: currentSession?.user?.email,
-                                error: error?.message
-                            });
-                            
-                            if (error) {
-                                console.error(`Error getting session after OAuth callback (attempt ${attempts}):`, error);
-                            } else if (currentSession && currentSession.user) {
-                                session = currentSession;
-                                console.log('✅ OAuth session found, transitioning to app...');
-                                break;
-                            } else {
-                                console.log(`No session found on attempt ${attempts}`);
-                            }
-                        } catch (error) {
-                            console.error(`Error on attempt ${attempts}:`, error);
-                        }
-                    }
+                    // Use the proper OAuth callback handler from AuthService
+                    const { authService } = await import('./services/supabase');
+                    const callbackResult = await authService.handleOAuthCallback();
                     
-                    if (session && session.user) {
-                        // Clear the URL now that we have the session
-                        console.log('Clearing OAuth parameters from URL...');
-                        window.history.replaceState({}, document.title, window.location.pathname);
-                        
-                        // Clear auth method and transition to app
-                        localStorage.removeItem('otakonAuthMethod');
-                        
-                        // Ensure user record exists in database
-                        try {
-                            await ensureUserRecordExists(session.user);
-                        } catch (error) {
-                            console.error('Error ensuring user record exists:', error);
-                        }
-                        
-                        // Check if user has completed onboarding
-                        const hasCompletedOnboarding = localStorage.getItem('otakonOnboardingComplete');
-                        const hasCompletedProfileSetup = localStorage.getItem('otakon_profile_setup_completed');
-                        
-                        // Decide target onboarding step BEFORE switching view to avoid brief return to login
-                        if (hasCompletedOnboarding && hasCompletedProfileSetup) {
-                            setOnboardingStatus('complete');
-                        } else {
-                            setOnboardingStatus('initial');
-                        }
-                        setView('app');
-                        
-                        // Force auth state update
-                        setAuthState({ user: session.user, session, loading: false, error: null });
+                    if (callbackResult) {
+                        console.log('✅ OAuth callback processed successfully');
+                        // The auth state will be updated by the AuthService
+                        // The auth subscription above will handle the transition
+                        return;
                     } else {
-                        console.log('No session found after OAuth callback after all attempts');
-                        // Show error to user
-                        setAuthState({ user: null, session: null, loading: false, error: null });
+                        console.log('❌ OAuth callback processing failed');
+                        // Fallback to the old method if the new one fails
+                        console.log('Falling back to manual session processing...');
+                        
+                        // Wait for Supabase to process the OAuth response with retry logic
+                        let session = null;
+                        let attempts = 0;
+                        const maxAttempts = 5;
+                        
+                        while (attempts < maxAttempts && !session) {
+                            attempts++;
+                            console.log(`OAuth session check attempt ${attempts}/${maxAttempts}...`);
+                            
+                            // Wait progressively longer between attempts
+                            await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
+                            
+                            try {
+                                const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+                                
+                                console.log(`Session check attempt ${attempts}:`, {
+                                    hasSession: !!currentSession,
+                                    hasUser: !!(currentSession?.user),
+                                    userId: currentSession?.user?.id,
+                                    email: currentSession?.user?.email,
+                                    error: error?.message
+                                });
+                                
+                                if (error) {
+                                    console.error(`Error getting session after OAuth callback (attempt ${attempts}):`, error);
+                                } else if (currentSession && currentSession.user) {
+                                    session = currentSession;
+                                    console.log('✅ OAuth session found, transitioning to app...');
+                                    break;
+                                } else {
+                                    console.log(`No session found on attempt ${attempts}`);
+                                }
+                            } catch (error) {
+                                console.error(`Error on attempt ${attempts}:`, error);
+                            }
+                        }
+                        
+                        if (session && session.user) {
+                            console.log('✅ Fallback session processing successful');
+                            // The auth subscription will handle the transition
+                        }
                     }
+                    
+                    // If we reach here, the OAuth callback processing failed
+                    console.log('❌ OAuth callback processing completed but no session found');
+                    
                 } catch (error: unknown) {
                     const err = error as { message?: string } | undefined;
                     console.error('Error processing OAuth callback:', err?.message || error);
                 }
-        } else {
-            console.log('No OAuth callback parameters found');
-        }
+            } else {
+                console.log('No OAuth callback parameters found');
+            }
         };
         
         // Only check for OAuth callback if we're on the login screen
@@ -834,6 +917,7 @@ const AppComponent: React.FC = () => {
             setView('landing');
         }
     }, [authState.user, authState.loading, pwaNavigationState.isRunningInPWA, onboardingStatus]);
+    */
 
     // Sync usage with Supabase when authenticated
     useEffect(() => {
@@ -858,28 +942,53 @@ const AppComponent: React.FC = () => {
         return () => window.removeEventListener('beforeinstallprompt', handler);
     }, []);
 
-    // Initialize PWA-related services
+    // Initialize PWA-related services ONLY after authentication
     useEffect(() => {
+        // Only initialize PWA services if user is authenticated or in developer mode
+        const shouldInitializePWA = authState.user || 
+            localStorage.getItem('otakon_developer_mode') === 'true' ||
+            localStorage.getItem('otakonAuthMethod') === 'skip';
+
+        if (!shouldInitializePWA) {
+            console.log('🚫 Skipping PWA initialization - user not authenticated');
+            return;
+        }
+
         const initializePWAServices = async () => {
             try {
+                console.log('🚀 Initializing PWA services for authenticated user...');
+                
+                // Initialize services in parallel to reduce blocking time
+                const [offlineStorageModule, appShortcutsModule, pwaAnalyticsModule] = await Promise.allSettled([
+                    import('./services/offlineStorageService'),
+                    import('./services/appShortcutsService'),
+                    import('./services/pwaAnalyticsService')
+                ]);
+
                 // Initialize offline storage
-                const { offlineStorageService } = await import('./services/offlineStorageService');
-                if (offlineStorageService.isAvailable()) {
-                    await offlineStorageService.initialize();
-                    console.log('Offline storage initialized');
+                if (offlineStorageModule.status === 'fulfilled') {
+                    const { offlineStorageService } = offlineStorageModule.value;
+                    if (offlineStorageService.isAvailable()) {
+                        await offlineStorageService.initialize();
+                        console.log('Offline storage initialized');
+                    }
                 }
 
                 // Initialize app shortcuts
-                const { appShortcutsService } = await import('./services/appShortcutsService');
-                if (appShortcutsService.isSupported()) {
-                    await appShortcutsService.installShortcuts();
-                    console.log('App shortcuts initialized');
+                if (appShortcutsModule.status === 'fulfilled') {
+                    const { appShortcutsService } = appShortcutsModule.value;
+                    if (appShortcutsService.isSupported()) {
+                        await appShortcutsService.installShortcuts();
+                        console.log('App shortcuts initialized');
+                    }
                 }
 
                 // Track session start
-                const { pwaAnalyticsService } = await import('./services/pwaAnalyticsService');
-                pwaAnalyticsService.trackSessionStart();
-                console.log('PWA analytics initialized');
+                if (pwaAnalyticsModule.status === 'fulfilled') {
+                    const { pwaAnalyticsService } = pwaAnalyticsModule.value;
+                    pwaAnalyticsService.trackSessionStart();
+                    console.log('PWA analytics initialized');
+                }
 
                 // Note: Notification services are initialized on-demand, not at startup
                 // to avoid confusing permission requests
@@ -893,11 +1002,22 @@ const AppComponent: React.FC = () => {
             }
         };
 
+        // Initialize PWA services after authentication
         initializePWAServices();
-    }, []);
+    }, [authState.user, authState.loading]);
 
-    // Daily Engagement Effects
+    // Daily Engagement Effects - ONLY after authentication
     useEffect(() => {
+        // Only run daily engagement if user is authenticated or in developer mode
+        const shouldRunDailyEngagement = authState.user || 
+            localStorage.getItem('otakon_developer_mode') === 'true' ||
+            localStorage.getItem('otakonAuthMethod') === 'skip';
+
+        if (!shouldRunDailyEngagement) {
+            console.log('🚫 Skipping daily engagement - user not authenticated');
+            return;
+        }
+
         const handleDailyEngagement = async () => {
             console.log('Daily Engagement Effect - view:', view, 'onboardingStatus:', onboardingStatus, 'usage.tier:', usage.tier);
             
@@ -906,17 +1026,40 @@ const AppComponent: React.FC = () => {
                 console.log('Checking daily engagement conditions...');
                 
                 // Check if we should show daily check-in (unchanged behavior)
-                const { dailyEngagementService } = await import('./services/dailyEngagementService');
+                // Use statically imported dailyEngagementService
                 const shouldShowCheckin = dailyEngagementService.shouldShowDailyCheckin();
                 console.log('Should show daily checkin:', shouldShowCheckin);
                 if (shouldShowCheckin) {
                     console.log('Setting showDailyCheckin to true');
                     setShowDailyCheckin(true);
                 }
+
+                // Check if we should show session continuation modal
+                // Show if user has recent conversations and it's been less than 24 hours
+                const lastSessionTime = localStorage.getItem('otakon_last_session_time');
+                if (lastSessionTime) {
+                    const timeSinceLastSession = Date.now() - parseInt(lastSessionTime);
+                    const twentyFourHours = 24 * 60 * 60 * 1000;
+                    
+                    // Check if user has any conversations stored
+                    const hasConversations = localStorage.getItem('otakon_conversations');
+                    if (timeSinceLastSession < twentyFourHours && hasConversations) {
+                        console.log('Should show session continuation modal');
+                        setShowSessionContinuation(true);
+                    }
+                }
             }
         };
         handleDailyEngagement();
-    }, [view, onboardingStatus, usage.tier]);
+    }, [authState.user, authState.loading, view, onboardingStatus, usage.tier]);
+
+    // Track session time when user interacts with conversations
+    useEffect(() => {
+        const hasConversations = localStorage.getItem('otakon_conversations');
+        if (hasConversations && view === 'app' && onboardingStatus === 'complete') {
+            localStorage.setItem('otakon_last_session_time', Date.now().toString());
+        }
+    }, [view, onboardingStatus]);
 
     // Player Profile Setup Check - Show for first-time and returning users, once per session
     useEffect(() => {
@@ -924,47 +1067,13 @@ const AppComponent: React.FC = () => {
             const profileSetupShown = sessionStorage.getItem('otakon_profile_setup_shown_this_session') === 'true';
             const hasCompletedProfileSetup = localStorage.getItem('otakon_profile_setup_completed') === 'true';
             
-            // First-time or incomplete profile -> show immediately once per session
+            // SIMPLIFIED PROFILE SETUP LOGIC
             if (!profileSetupShown && !hasCompletedProfileSetup) {
-                console.log('✅ Profile setup required - showing modal (first-time/incomplete)');
+                console.log('✅ Profile setup required - showing modal');
                 sessionStorage.setItem('otakon_profile_setup_shown_this_session', 'true');
                 setIsFirstTime(true);
                 setShowProfileSetup(true);
                 return;
-            }
-
-            // Returning users: run needsProfileSetup() once per session for safety
-            const hasCheckedThisSession = sessionStorage.getItem('otakon_profile_checked_this_session') === 'true';
-            if (!hasCheckedThisSession) {
-                sessionStorage.setItem('otakon_profile_checked_this_session', 'true');
-                console.log('🔍 Starting profile setup verification for returning user');
-                const checkProfileSetup = async () => {
-                    let attempts = 0;
-                    const maxAttempts = 3;
-                    while (attempts < maxAttempts) {
-                        try {
-                            const needsProfile = await playerProfileService.needsProfileSetup();
-                            console.log('🔍 Profile setup check result:', { needsProfile, isFirstTime });
-                            if (needsProfile) {
-                                console.log('✅ User needs profile setup - showing modal');
-                                setIsFirstTime(true);
-                                setShowProfileSetup(true);
-                            }
-                            return;
-                        } catch (error) {
-                            attempts++;
-                            console.error(`❌ Error checking profile setup (attempt ${attempts}/${maxAttempts}):`, error);
-                            if (attempts >= maxAttempts && !profileSetupShown && !hasCompletedProfileSetup) {
-                                console.log('⚠️ Max attempts reached, showing profile setup as fallback');
-                                setIsFirstTime(true);
-                                setShowProfileSetup(true);
-                            } else if (attempts < maxAttempts) {
-                                await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
-                            }
-                        }
-                    }
-                };
-                checkProfileSetup();
             } else {
                 console.log('🔍 Profile setup check skipped - already checked this session');
             }
@@ -1003,8 +1112,18 @@ const AppComponent: React.FC = () => {
 
     } = useChat(isHandsFreeMode);
     
-    // NEW: Long-term session restoration on app startup
+    // NEW: Long-term session restoration ONLY after authentication (optimized for performance)
     useEffect(() => {
+        // Only restore sessions if user is authenticated or in developer mode
+        const shouldRestoreSessions = authState.user || 
+            localStorage.getItem('otakon_developer_mode') === 'true' ||
+            localStorage.getItem('otakonAuthMethod') === 'skip';
+
+        if (!shouldRestoreSessions) {
+            console.log('🚫 Skipping long-term session restoration - user not authenticated');
+            return;
+        }
+
         const restoreLongTermSessions = async () => {
             if (authState.user && !authState.loading) {
                 try {
@@ -1012,20 +1131,34 @@ const AppComponent: React.FC = () => {
                     
                     // Use statically imported services
                     
-                    // Restore sessions for all active conversations
-                    for (const [conversationId, conversation] of Object.entries(conversations)) {
-                        if (conversationId !== 'everything-else') {
-                            try {
-                                // Initialize long-term session
-                                await longTermMemoryService.initializeLongTermSession(conversationId, conversationId);
-                                
-                                // Restore context from database
-                                await contextManagementService.restoreLongTermSession(conversationId);
-                                
-                                console.log(`✅ Restored long-term session for: ${conversationId}`);
-                            } catch (error) {
-                                console.warn(`⚠️ Failed to restore session for ${conversationId}:`, error);
-                            }
+                    // Restore sessions for all active conversations (with batching to avoid long tasks)
+                    const conversationEntries = Object.entries(conversations).filter(([id]) => id !== 'everything-else');
+                    
+                    // Process conversations in smaller batches to avoid long tasks
+                    const batchSize = 2;
+                    for (let i = 0; i < conversationEntries.length; i += batchSize) {
+                        const batch = conversationEntries.slice(i, i + batchSize);
+                        
+                        // Process batch in parallel
+                        await Promise.allSettled(
+                            batch.map(async ([conversationId, conversation]) => {
+                                try {
+                                    // Initialize long-term session
+                                    await longTermMemoryService.initializeLongTermSession(conversationId, conversationId);
+                                    
+                                    // Restore context from database
+                                    await contextManagementService.restoreLongTermSession(conversationId);
+                                    
+                                    console.log(`✅ Restored long-term session for: ${conversationId}`);
+                                } catch (error) {
+                                    console.warn(`⚠️ Failed to restore session for ${conversationId}:`, error);
+                                }
+                            })
+                        );
+                        
+                        // Yield control to prevent long tasks
+                        if (i + batchSize < conversationEntries.length) {
+                            await new Promise(resolve => setTimeout(resolve, 10));
                         }
                     }
                     
@@ -1036,7 +1169,9 @@ const AppComponent: React.FC = () => {
             }
         };
 
-        restoreLongTermSessions();
+        // Delay restoration to avoid blocking initial render
+        const timeoutId = setTimeout(restoreLongTermSessions, 100);
+        return () => clearTimeout(timeoutId);
     }, [authState.user, authState.loading, conversations]);
     
     // Tutorial hook for first-time users
@@ -1097,13 +1232,20 @@ const AppComponent: React.FC = () => {
                         console.warn('Failed to get user name for welcome message:', error);
                     }
                     
-                    const welcomeMessage = `${timeGreeting}Welcome to Otagon${firstName}!\n\n**Your Personal Gaming Companion**\n\n**What I can help you with:**\n• Upload screenshots from games you're playing\n• Get spoiler-free guidance and hints\n• Discover secrets and strategies\n• Track your gaming progress\n• Answer questions about any game\n\n**Let's get started!** Upload a screenshot from a game you're currently playing, or just tell me what you'd like help with.`;
+                    // Check if welcome message already added this session
+                    const alreadyAdded = sessionStorage.getItem('otakon_welcome_added_this_session') === 'true';
+                    if (!alreadyAdded) {
+                        const welcomeMessage = `${timeGreeting}Welcome to Otagon${firstName}!\n\n**Your Personal Gaming Companion**\n\n**What I can help you with:**\n• Upload screenshots from games you're playing\n• Get spoiler-free guidance and hints\n• Discover secrets and strategies\n• Track your gaming progress\n• Answer questions about any game\n\n**Let's get started!** Upload a screenshot from a game you're currently playing, or just tell me what you'd like help with.`;
+                        
+                        console.log('Adding first-time welcome message:', welcomeMessage);
+                        addSystemMessage(welcomeMessage, 'everything-else', false);
+                        
+                        // Mark that we've added a welcome message this session
+                        sessionStorage.setItem('otakon_welcome_added_this_session', 'true');
+                    } else {
+                        console.log('⚠️ Welcome message already added this session, skipping');
+                    }
                     
-                    console.log('Adding first-time welcome message:', welcomeMessage);
-                    addSystemMessage(welcomeMessage, 'everything-else', false);
-                    
-                    // Mark that we've added a welcome message this session
-                    sessionStorage.setItem('otakon_welcome_added_this_session', 'true');
                     setWelcomeMessageShownThisSession(true);
                     
                     // Update welcome message shown in Supabase
@@ -1124,8 +1266,9 @@ const AppComponent: React.FC = () => {
                 }
             } catch (error) {
                 console.error('Error checking first-time experience:', error);
-                // Fallback: show welcome message if there's an error
-                if (isFirstTime && !sessionStorage.getItem('otakon_welcome_added_this_session')) {
+                // Fallback: show welcome message if there's an error (only if not already added)
+                const alreadyAdded = sessionStorage.getItem('otakon_welcome_added_this_session') === 'true';
+                if (isFirstTime && !alreadyAdded) {
                     const timeGreeting = getTimeGreeting();
                     const welcomeMessage = `${timeGreeting}Welcome to Otagon!\n\n**Your Personal Gaming Companion**\n\n**What I can help you with:**\n• Upload screenshots from games you're playing\n• Get spoiler-free guidance and hints\n• Discover secrets and strategies\n• Track your gaming progress\n• Answer questions about any game\n\n**Let's get started!** Upload a screenshot from a game you're currently playing, or just tell me what you'd like help with.`;
                     
@@ -1135,9 +1278,11 @@ const AppComponent: React.FC = () => {
                     // Mark that we've added a welcome message this session
                     sessionStorage.setItem('otakon_welcome_added_this_session', 'true');
                     setWelcomeMessageShownThisSession(true);
-                    
-                    setIsFirstTime(false);
+                } else if (alreadyAdded) {
+                    console.log('⚠️ Fallback welcome message skipped - already added this session');
                 }
+                    
+                setIsFirstTime(false);
             }
         };
         
@@ -1148,8 +1293,8 @@ const AppComponent: React.FC = () => {
     const insightsUpdateTimeout = useRef<NodeJS.Timeout | null>(null);
     const lastInsightsUpdate = useRef<string>('');
     
-    // Only initialize enhanced insights when in app view AND user is authenticated or in developer mode
-    const enhancedInsights = (view === 'app' && isUserAuthenticatedOrDeveloper()) ? useEnhancedInsights(
+    // Always call useEnhancedInsights to avoid conditional hook calls
+    const enhancedInsights = useEnhancedInsights(
         activeConversationId,
         activeConversation?.id,
         activeConversation?.genre,
@@ -1229,7 +1374,7 @@ const AppComponent: React.FC = () => {
                 }, 100); // 100ms debounce
             }
         }
-    ) : null; // Return null when not in app view
+    );
     
     // 🔥 CRITICAL INTEGRATION: Ensure all game conversations have Otaku Diary tab
     useEffect(() => {
@@ -2182,31 +2327,15 @@ const AppComponent: React.FC = () => {
             console.warn('Failed to destroy services:', e);
         }
         
-        // Clear localStorage - complete reset for fresh first run experience
-        localStorage.removeItem('lastConnectionCode');
-        localStorage.removeItem('otakonOnboardingComplete');
-        localStorage.removeItem('otakon_profile_setup_completed');
-        localStorage.removeItem('otakonHasConnectedBefore');
+        // Clear localStorage - only keep essential flags
         localStorage.removeItem('otakonAuthMethod');
-        localStorage.removeItem('otakonInstallDismissed');
-        localStorage.removeItem('otakon_developer_mode'); // Clear developer mode flag
-        
-        // Clear any splash screen flags to force first run experience
-        localStorage.removeItem('otakon_show_splash_after_login');
-        
-        // Clear all conversation data for fresh start
-        localStorage.removeItem('otakon_conversations');
-        localStorage.removeItem('otakon_conversations_order');
-        localStorage.removeItem('otakon_active_conversation');
+        localStorage.removeItem('otakon_developer_mode');
             
-            // Reset welcome message tracking so it shows again on next login
-            localStorage.removeItem('otakon_welcome_message_shown');
-            localStorage.removeItem('otakon_last_welcome_time');
-            localStorage.removeItem('otakon_app_closed_time');
-            localStorage.removeItem('otakon_first_run_completed');
+            // Clear Supabase data service
+            await supabaseOnlyDataService.clearAllData();
             
-            // Now sign out from Supabase (after all authenticated operations are done)
-            await authService.signOut();
+            // Now sign out from Supabase AND DELETE THE USER
+            await authService.signOut(true); // true = delete user
             
             // Reset app state and return to login screen
             setOnboardingStatus('login');
@@ -2283,8 +2412,8 @@ const AppComponent: React.FC = () => {
                         localStorage.removeItem('otakonAuthMethod');
                         sessionStorage.clear();
                         
-                        // Set flag to show splash screens on next login
-                        localStorage.setItem('otakon_show_splash_after_login', 'true');
+                        // REMOVED: Counter-intuitive splash screen flag
+                        // Users who log back in should go directly to main app, not see splash screens
                         
                         console.log('✅ User logged out successfully (data preserved)');
                     };
@@ -2652,43 +2781,63 @@ const AppComponent: React.FC = () => {
         try {
             console.log('🎯 Starting profile setup completion...', profile);
             
-            // Save profile first
-            console.log('💾 Saving profile...');
-            await playerProfileService.saveProfile(profile);
-            console.log('✅ Profile saved successfully');
-            
-            // Complete first time setup
-            console.log('🎉 Completing first time setup...');
-            playerProfileService.completeFirstTimeSetup();
-            console.log('✅ First time setup completed');
-            
-            // Close modal immediately
-            console.log('🚪 Closing profile setup modal...');
+            // IMMEDIATE UI UPDATES (no delay)
+            console.log('🚪 Closing profile setup modal immediately...');
             setShowProfileSetup(false);
             setIsFirstTime(false);
-            console.log('✅ Modal closed');
+            console.log('✅ Modal closed immediately');
             
-            // Mark onboarding as complete (profile setup is handled by Supabase)
+            // Mark onboarding as complete immediately
             localStorage.setItem('otakonOnboardingComplete', 'true');
             console.log('✅ Onboarding marked as complete');
             
-            // Mark first run completed in Supabase with localStorage fallback
-            console.log('🏁 Marking first run as completed...');
-            await playerProfileService.markFirstRunCompleted();
-            console.log('✅ First run marked as completed');
+            // ASYNC OPERATIONS (non-blocking, run in background)
+            setTimeout(async () => {
+                try {
+                    console.log('💾 Saving profile in background...');
+                    await playerProfileService.saveProfile(profile);
+                    console.log('✅ Profile saved successfully');
+                    
+                    console.log('🎉 Completing first time setup in background...');
+                    playerProfileService.completeFirstTimeSetup();
+                    console.log('✅ First time setup completed');
+                    
+                    console.log('🏁 Marking first run as completed in background...');
+                    await playerProfileService.markFirstRunCompleted();
+                    console.log('✅ First run marked as completed');
+                    
+                } catch (error) {
+                    console.error('❌ Error in background profile operations:', error);
+                }
+            }, 100); // Small delay to ensure UI updates first
             
-            // Add welcome message immediately for first-time users
-            const timeGreeting = getTimeGreeting();
-            addSystemMessage(
-                `${timeGreeting}Welcome to Otagon!\n\n**Profile Setup Complete!** Your gaming experience is now personalized.\n\n**Next Steps:**\n• Upload a screenshot from a game you're playing\n• Tell me about a game you want help with\n• I'll create a dedicated conversation tab for each game\n• Get spoiler-free guidance tailored to your progress\n\nWhat game would you like to start with today?`,
-                'everything-else',
-                false
-            );
-            console.log('✅ Welcome message added');
+            // Add welcome message immediately for first-time users (only if not already added)
+            const alreadyAdded = sessionStorage.getItem('otakon_welcome_added_this_session') === 'true';
+            if (!alreadyAdded) {
+                const timeGreeting = getTimeGreeting();
+                addSystemMessage(
+                    `${timeGreeting}Welcome to Otagon!\n\n**Profile Setup Complete!** Your gaming experience is now personalized.\n\n**Next Steps:**\n• Upload a screenshot from a game you're playing\n• Tell me about a game you want help with\n• I'll create a dedicated conversation tab for each game\n• Get spoiler-free guidance tailored to your progress\n\nWhat game would you like to start with today?`,
+                    'everything-else',
+                    false
+                );
+                console.log('✅ Welcome message added');
+                
+                // Mark that we've added a welcome message this session
+                sessionStorage.setItem('otakon_welcome_added_this_session', 'true');
+            } else {
+                console.log('⚠️ Welcome message already added this session, skipping');
+            }
             
-            // Update welcome message tracking in Supabase with localStorage fallback
-            await playerProfileService.updateWelcomeMessageShown('profile_setup');
-            console.log('✅ Welcome message tracking updated');
+            // Update welcome message tracking in background
+            setTimeout(async () => {
+                try {
+                    console.log('📝 Updating welcome message tracking in background...');
+                    await playerProfileService.updateWelcomeMessageShown('profile_setup');
+                    console.log('✅ Welcome message tracking updated');
+                } catch (error) {
+                    console.error('❌ Error updating welcome message tracking:', error);
+                }
+            }, 200);
             
             // Trigger tutorial immediately after profile setup
             console.log('🎯 Profile setup complete - opening tutorial now');
@@ -2735,6 +2884,36 @@ const AppComponent: React.FC = () => {
         }
     }, [openTutorial]);
 
+    // Session Continuation Modal Handlers
+    const handleContinueSession = useCallback(() => {
+        console.log('🔄 Continuing previous session');
+        setShowSessionContinuation(false);
+        
+        // Find the most recent conversation (not "everything-else")
+        const conversationsData = localStorage.getItem('otakon_conversations');
+        if (conversationsData) {
+            try {
+                const parsedConversations = JSON.parse(conversationsData);
+                const recentConversation = parsedConversations.find((conv: any) => conv.id !== 'everything-else');
+                if (recentConversation) {
+                    switchConversation(recentConversation.id);
+                    console.log(`✅ Switched to conversation: ${recentConversation.id}`);
+                }
+            } catch (error) {
+                console.error('Error parsing conversations:', error);
+            }
+        }
+    }, [switchConversation]);
+
+    const handleStartNewGameChat = useCallback(() => {
+        console.log('🆕 Starting new game chat');
+        setShowSessionContinuation(false);
+        
+        // Switch to "everything-else" conversation for general chat
+        switchConversation('everything-else');
+        console.log('✅ Switched to general chat');
+    }, [switchConversation]);
+
     const handleCloseUpgradeScreen = useCallback(() => setShowUpgradeScreen(false), []);
     
     // Function to reset welcome message tracking (useful for testing or user preference)
@@ -2770,18 +2949,42 @@ const AppComponent: React.FC = () => {
         // Reset suggested prompts on new login
         suggestedPromptsService.resetUsedPrompts();
         
-        // Check if user has already completed onboarding
-        const hasCompletedOnboarding = localStorage.getItem('otakonOnboardingComplete');
-        const hasCompletedProfileSetup = localStorage.getItem('otakon_profile_setup_completed');
+        // FIXED: Use the same logic as the main authentication flow
+        // Check if user has completed onboarding from Supabase (not localStorage)
+        const hasCompletedOnboarding = supabaseOnlyDataService.get('onboardingComplete');
+        const hasCompletedProfileSetup = supabaseOnlyDataService.get('profileSetupCompleted');
+        const hasSeenSplashScreens = supabaseOnlyDataService.get('hasSeenSplashScreens');
         
-        if (hasCompletedOnboarding && hasCompletedProfileSetup) {
-            // Returning user - skip to complete status to allow profile setup check and welcome message
+        // Check if user has explicitly chosen to skip landing page
+        const hasSkippedLanding = localStorage.getItem('otakonSkippedLanding') === 'true';
+        
+        console.log('🔍 handleAuthSuccess Debug:', {
+            hasCompletedOnboarding,
+            hasCompletedProfileSetup,
+            hasSeenSplashScreens,
+            hasSkippedLanding,
+            isNewUser: !hasCompletedOnboarding && !hasCompletedProfileSetup && !hasSeenSplashScreens
+        });
+        
+        // Use the same logic as the main authentication flow
+        const isNewUser = !hasCompletedOnboarding && !hasCompletedProfileSetup && !hasSeenSplashScreens;
+        
+        if (hasCompletedOnboarding && hasCompletedProfileSetup && hasSkippedLanding) {
+            console.log('✅ handleAuthSuccess: Returning user, going to main app');
             setOnboardingStatus('complete');
             setView('app');
-        } else {
-            // New user - go through onboarding flow
+        } else if (hasCompletedOnboarding && hasCompletedProfileSetup && !hasSkippedLanding) {
+            console.log('✅ handleAuthSuccess: Returning user, showing landing page');
+            setOnboardingStatus('complete');
+            setView('landing');
+        } else if (isNewUser) {
+            console.log('🆕 handleAuthSuccess: New user detected, going to initial splash screen');
             setOnboardingStatus('initial');
             setView('app');
+        } else {
+            console.log('🔄 handleAuthSuccess: Returning user with incomplete data, showing landing page');
+            setOnboardingStatus('complete');
+            setView('landing');
         }
     }, []);
 
@@ -2870,9 +3073,24 @@ const AppComponent: React.FC = () => {
 
     // Landing page handlers
     const handleLandingGetStarted = () => {
+        // Mark that user has chosen to skip landing page for future sessions
+        localStorage.setItem('otakonSkippedLanding', 'true');
         setView('app');
         setOnboardingStatus('login');
     };
+
+    // Add global function for testing - allows clearing landing page preference
+    useEffect(() => {
+        (window as any).resetLandingPagePreference = () => {
+            localStorage.removeItem('otakonSkippedLanding');
+            console.log('🔄 Landing page preference cleared. Refresh the page to see the landing page.');
+        };
+        (window as any).showLandingPage = () => {
+            localStorage.removeItem('otakonSkippedLanding');
+            setView('landing');
+            console.log('🔄 Showing landing page now.');
+        };
+    }, []);
 
     const handleLandingOpenAbout = () => {
         setIsLandingAboutModalOpen(true);
@@ -2904,7 +3122,13 @@ const AppComponent: React.FC = () => {
             case '/contact':
                 setIsLandingContactModalOpen(true);
                 break;
+            case '/reset-landing':
+                // Reset landing page preference - useful for testing
+                localStorage.removeItem('otakonSkippedLanding');
+                console.log('🔄 Landing page preference reset - will show landing page on next visit');
+                break;
             default:
+                console.log('Unknown landing page navigation path:', path);
                 break;
         }
     };
@@ -3330,22 +3554,24 @@ const AppComponent: React.FC = () => {
                 </Suspense>
                 
                 {/* Landing Page Modals */}
-                <AboutModal 
-                    isOpen={isLandingAboutModalOpen} 
-                    onClose={() => handleLandingModalClose('about')} 
-                />
-                <PrivacyPolicyModal 
-                    isOpen={isLandingPrivacyModalOpen} 
-                    onClose={() => handleLandingModalClose('privacy')} 
-                />
-                <RefundPolicyModal 
-                    isOpen={isLandingRefundModalOpen} 
-                    onClose={() => handleLandingModalClose('refund')} 
-                />
-                <LandingContactUsModal 
-                    isOpen={isLandingContactModalOpen} 
-                    onClose={() => handleLandingModalClose('contact')} 
-                />
+                <>
+                    <AboutModal 
+                        isOpen={isLandingAboutModalOpen} 
+                        onClose={() => handleLandingModalClose('about')} 
+                    />
+                    <PrivacyPolicyModal 
+                        isOpen={isLandingPrivacyModalOpen} 
+                        onClose={() => handleLandingModalClose('privacy')} 
+                    />
+                    <RefundPolicyModal 
+                        isOpen={isLandingRefundModalOpen} 
+                        onClose={() => handleLandingModalClose('refund')} 
+                    />
+                    <LandingContactUsModal 
+                        isOpen={isLandingContactModalOpen} 
+                        onClose={() => handleLandingModalClose('contact')} 
+                    />
+                </>
             </>
         );
     }
@@ -3506,13 +3732,13 @@ const AppComponent: React.FC = () => {
             )}
 
             {/* Daily Engagement Components */}
-            {/* {showDailyCheckin && (
+            {showDailyCheckin && (
               <DailyCheckinBanner
                 onClose={() => setShowDailyCheckin(false)}
                 autoDismiss={false}
                 dismissDelay={0}
               />
-            )} */}
+            )}
 
 
 
@@ -3525,6 +3751,19 @@ const AppComponent: React.FC = () => {
                   onSkip={handleProfileSetupSkip}
                 />
               </Suspense>
+            )}
+
+            {/* Session Continuation Modal - Show for returning users with recent activity */}
+            {showSessionContinuation && !showProfileSetup && (
+              <SessionContinuationModal
+                isOpen={showSessionContinuation}
+                onClose={() => setShowSessionContinuation(false)}
+                onContinueSession={handleContinueSession}
+                onStartNewGameChat={handleStartNewGameChat}
+                gameTitle={activeConversation?.title || "Your Game"}
+                lastLocation="Last played location"
+                progressPercentage={75} // This could be calculated from actual progress data
+              />
             )}
 
             {currentAchievement && (

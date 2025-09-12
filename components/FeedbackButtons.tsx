@@ -36,10 +36,10 @@ const FeedbackButtons: React.FC<FeedbackButtonsProps> = ({ onFeedback, feedbackS
     }
   };
 
-  const handleFeedback = (type: 'up' | 'down') => {
+  const handleFeedback = async (type: 'up' | 'down') => {
     // Track user behavior for AI learning
     const { aiContextService } = await import('../services/aiContextService');
-    aiContextService.trackUserBehavior(
+    await aiContextService.trackUserBehavior(
       'feedback_given',
       { 
         feedback_type: type, 

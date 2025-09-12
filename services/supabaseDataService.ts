@@ -4,10 +4,12 @@ export interface UserUsageData {
   tier: string;
   textCount: number;
   imageCount: number;
-  lastMonth: string;
-  usageHistory: any[];
-  tierHistory: any[];
-  lastReset: string;
+  textLimit: number;
+  imageLimit: number;
+  lastMonth?: string;
+  usageHistory?: any[];
+  tierHistory?: any[];
+  lastReset?: string;
 }
 
 export interface UserAppState {
@@ -21,6 +23,8 @@ export interface UserAppState {
   otakuDiary?: any;
   apiCostRecords?: any;
   proactiveInsights?: any;
+  onboardingData?: any;
+  profileData?: any;
   pwaInstalled?: boolean;
   pwaGlobalInstalled?: boolean;
 }
@@ -104,11 +108,10 @@ class SupabaseDataService {
         // Return default usage data if function doesn't exist
         return {
           tier: 'free',
-          queries_used: 0,
-          queries_limit: 50,
-          last_reset: new Date().toISOString(),
-          monthly_queries: 0,
-          monthly_limit: 50
+          textCount: 0,
+          imageCount: 0,
+          textLimit: 50,
+          imageLimit: 10
         };
       }
       return data;
@@ -117,11 +120,10 @@ class SupabaseDataService {
       // Return default usage data if function doesn't exist
       return {
         tier: 'free',
-        queries_used: 0,
-        queries_limit: 50,
-        last_reset: new Date().toISOString(),
-        monthly_queries: 0,
-        monthly_limit: 50
+        textCount: 0,
+        imageCount: 0,
+        textLimit: 50,
+        imageLimit: 10
       };
     }
   }
@@ -179,8 +181,11 @@ class SupabaseDataService {
         console.error('Supabase app state fetch failed:', error);
         // Return default app state if function doesn't exist
         return {
+          lastVisited: new Date().toISOString(),
           appSettings: {},
-          preferences: {},
+          uiPreferences: {},
+          featureFlags: {},
+          lastInteraction: new Date().toISOString(),
           onboardingData: {},
           profileData: {}
         };
@@ -190,8 +195,11 @@ class SupabaseDataService {
       console.error('Supabase app state fetch failed:', error);
       // Return default app state if function doesn't exist
       return {
+        lastVisited: new Date().toISOString(),
         appSettings: {},
-        preferences: {},
+        uiPreferences: {},
+        featureFlags: {},
+        lastInteraction: new Date().toISOString(),
         onboardingData: {},
         profileData: {}
       };
@@ -583,6 +591,8 @@ class SupabaseDataService {
       tier: 'free',
       textCount: 0,
       imageCount: 0,
+      textLimit: 50,
+      imageLimit: 10,
       lastMonth: new Date().toISOString().slice(0, 7),
       usageHistory: [],
       tierHistory: [],

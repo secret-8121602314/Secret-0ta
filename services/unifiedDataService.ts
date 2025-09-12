@@ -229,6 +229,8 @@ export class UnifiedDataService {
         tier: 'free',
         textCount: 0,
         imageCount: 0,
+        textLimit: 50,
+        imageLimit: 10,
         lastMonth: new Date().toISOString().slice(0, 7),
         usageHistory: [],
         tierHistory: [],

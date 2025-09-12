@@ -18,6 +18,11 @@ export const DEVELOPER_EMAILS = [
 export const isDeveloperAccount = (email?: string): boolean => {
   if (!email) return false;
   
+  // Check if it's the special developer account
+  if (email === 'developer@otakon.app') {
+    return true;
+  }
+  
   // Check if email is in developer list
   if (DEVELOPER_EMAILS.includes(email.toLowerCase())) {
     return true;
@@ -40,12 +45,41 @@ export const isDevelopmentEnvironment = (): boolean => {
   return process.env.NODE_ENV === 'development' || import.meta.env.DEV;
 };
 
+// Synchronous version for backward compatibility
 export const canAccessDeveloperFeatures = (email?: string): boolean => {
   // Check if developer mode was activated via password authentication
-  const isDeveloperModeActive = localStorage.getItem('otakon_developer_mode') === 'true';
+  const authMethod = localStorage.getItem('otakonAuthMethod');
+  const isDeveloperModeActive = authMethod === 'developer';
+  const isFallbackMode = localStorage.getItem('otakon_dev_fallback_mode') === 'true';
   
-  if (isDeveloperModeActive) {
+  if (isDeveloperModeActive || isFallbackMode) {
     console.log('🔧 Developer mode active - allowing developer features');
+    return true;
+  }
+  
+  // Check if it's the special developer account
+  if (email === 'developer@otakon.app') {
+    return true;
+  }
+  
+  // Fallback: Check if email is in developer list (for production)
+  return isDeveloperAccount(email);
+};
+
+// Async version for new code that needs to check Supabase
+export const canAccessDeveloperFeaturesAsync = async (email?: string): Promise<boolean> => {
+  // Check if developer mode was activated via password authentication
+  const authMethod = localStorage.getItem('otakonAuthMethod');
+  const isDeveloperModeActive = authMethod === 'developer';
+  const isFallbackMode = localStorage.getItem('otakon_dev_fallback_mode') === 'true';
+  
+  if (isDeveloperModeActive || isFallbackMode) {
+    console.log('🔧 Developer mode active - allowing developer features');
+    return true;
+  }
+  
+  // Check if it's the special developer account
+  if (email === 'developer@otakon.app') {
     return true;
   }
   

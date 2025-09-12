@@ -9,12 +9,27 @@ interface ProactiveInsightsPanelProps {
     onInsightAction?: (insight: ProactiveInsightSuggestion) => void;
 }
 
+interface ProactiveInsightSuggestion {
+  id: string;
+  title: string;
+  description: string;
+  type: 'tip' | 'warning' | 'suggestion';
+  priority: 'low' | 'medium' | 'high';
+  gameId?: string;
+  createdAt: number;
+  isRead: boolean;
+  timestamp?: number;
+  content?: string;
+  actionRequired?: boolean;
+  actionText?: string;
+}
+
 export const ProactiveInsightsPanel: React.FC<ProactiveInsightsPanelProps> = ({
-    isOpen,
-    onClose,
-    onInsightAction
+  isOpen,
+  onClose,
+  onInsightAction
 }) => {
-    const [insights, setInsights] = useState<ProactiveInsightSuggestion[]>([]);
+  const [insights, setInsights] = useState<ProactiveInsightSuggestion[]>([]);
     const [filter, setFilter] = useState<'all' | 'unread' | 'high-priority'>('all');
     const [isLoading, setIsLoading] = useState(false);
 
@@ -30,7 +45,7 @@ export const ProactiveInsightsPanel: React.FC<ProactiveInsightsPanelProps> = ({
         try {
             const { proactiveInsightService } = await import('../services/proactiveInsightService');
             const allInsights = proactiveInsightService.getProactiveInsights();
-            setInsights(allInsights);
+            setInsights(allInsights as unknown as ProactiveInsightSuggestion[]);
         } catch (error) {
             console.error('Error loading insights:', error);
         } finally {
@@ -38,32 +53,46 @@ export const ProactiveInsightsPanel: React.FC<ProactiveInsightsPanelProps> = ({
         }
     };
 
-    const handleInsightAction = (insight: ProactiveInsightSuggestion) => {
-        // Mark as read
-        proactiveInsightService.markInsightAsRead(insight.id);
-        
-        // Reload insights
-        loadInsights();
-        
-        // Call parent action handler if provided
-        if (onInsightAction) {
-            onInsightAction(insight);
+  const handleInsightAction = async (insight: ProactiveInsightSuggestion) => {
+    try {
+      const { proactiveInsightService } = await import('../services/proactiveInsightService');
+      await proactiveInsightService.markInsightAsRead(insight.id);
+      
+      // Reload insights
+      loadInsights();
+      
+      // Call parent action handler if provided
+      if (onInsightAction) {
+        onInsightAction(insight);
+      }
+    } catch (error) {
+      console.error('Failed to handle insight action:', error);
+    }
+  };
+
+  const handleDeleteInsight = async (insightId: string) => {
+    try {
+      const { proactiveInsightService } = await import('../services/proactiveInsightService');
+      await proactiveInsightService.deleteInsight(insightId);
+      loadInsights();
+    } catch (error) {
+      console.error('Failed to delete insight:', error);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      const { proactiveInsightService } = await import('../services/proactiveInsightService');
+      for (const insight of insights) {
+        if (!insight.isRead) {
+          await proactiveInsightService.markInsightAsRead(insight.id);
         }
-    };
-
-    const handleDeleteInsight = (insightId: string) => {
-        proactiveInsightService.deleteInsight(insightId);
-        loadInsights();
-    };
-
-    const handleMarkAllAsRead = () => {
-        insights.forEach(insight => {
-            if (!insight.isRead) {
-                proactiveInsightService.markInsightAsRead(insight.id);
-            }
-        });
-        loadInsights();
-    };
+      }
+      loadInsights();
+    } catch (error) {
+      console.error('Failed to mark all as read:', error);
+    }
+  };
 
     const getFilteredInsights = () => {
         switch (filter) {

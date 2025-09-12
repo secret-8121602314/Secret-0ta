@@ -49,7 +49,11 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
             }
         });
 
-        return unsubscribe;
+        return () => {
+            if (unsubscribe) {
+                unsubscribe();
+            }
+        };
     }, []);
 
     // Start tracking onboarding step
@@ -213,12 +217,32 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
         setDeveloperPassword('');
     };
 
-    const handleSkip = () => {
+    const handleSkip = async () => {
         if (developerPassword === 'zircon123') {
-            // Set developer mode flag in localStorage
-            localStorage.setItem('otakon_developer_mode', 'true');
-            console.log('🔧 Developer mode activated successfully!');
-            onComplete();
+            setIsLoading(true);
+            setErrorMessage('');
+            
+            try {
+                // Use the developer mode authentication from authService
+                const result = await authService.signInWithDeveloperMode(developerPassword);
+                
+                if (result.success) {
+                    // Set developer mode flags
+                    localStorage.setItem('otakon_developer_mode', 'true');
+                    localStorage.setItem('otakonAuthMethod', 'developer');
+                    console.log('🔧 Developer mode activated successfully!');
+                    onComplete();
+                } else {
+                    setErrorMessage(result.error || 'Developer authentication failed.');
+                    setDeveloperPassword(''); // Clear password on error
+                }
+            } catch (error) {
+                console.error('Developer mode error:', error);
+                setErrorMessage('An unexpected error occurred. Please try again.');
+                setDeveloperPassword(''); // Clear password on error
+            } finally {
+                setIsLoading(false);
+            }
         } else {
             setErrorMessage('Incorrect developer password.');
             setDeveloperPassword(''); // Clear password on error

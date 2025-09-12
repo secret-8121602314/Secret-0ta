@@ -137,7 +137,7 @@ const UpgradeModal = () => {
       toTier,
       attemptSource: 'upgrade_modal',
       success: false, // Will be updated when payment succeeds
-      amount: 9.99,
+      amount: 3.99,
       metadata: { source: 'UpgradeModal' }
     });
     

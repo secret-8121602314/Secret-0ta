@@ -37,6 +37,55 @@ export const useAuthFlow = ({
 }: UseAuthFlowProps) => {
   
   // Function to logout only (keep data) - for settings modal
+  const executeFullReset = useCallback(async () => {
+    try {
+      // First, clear local data and reset services while still authenticated
+      if (send) {
+        send({ type: 'clear_history' });
+      }
+      ttsService.cancel();
+      disconnect?.();
+      resetConversations?.();
+      
+      // Reset services while still authenticated to avoid 403 errors
+      try {
+        await unifiedUsageService.reset();
+      } catch (error) {
+        console.warn('Failed to reset usage service:', error);
+      }
+      
+      try {
+        await playerProfileService.resetWelcomeMessageTracking();
+      } catch (error) {
+        console.warn('Failed to reset welcome message tracking in Supabase:', error);
+      }
+      
+      // Clear localStorage
+      localStorage.removeItem('lastConnectionCode');
+      localStorage.removeItem('otakonOnboardingComplete');
+      localStorage.removeItem('otakon_profile_setup_completed');
+      localStorage.removeItem('otakonSkippedLanding');
+      localStorage.removeItem('otakonAuthMethod');
+      localStorage.removeItem('otakon_welcome_added_this_session');
+      localStorage.removeItem('otakon_profile_setup_shown_this_session');
+      localStorage.removeItem('otakon_profile_checked_this_session');
+      localStorage.removeItem('otakon_dev_fallback_mode'); // Clear fallback mode flag
+      
+      // Clear sessionStorage
+      sessionStorage.clear();
+      
+      // Reset app state
+      setOnboardingStatus('login');
+      setIsHandsFreeMode(false);
+      setIsConnectionModalOpen(false);
+      setView('landing');
+      
+      console.log('Full reset completed');
+    } catch (error) {
+      console.error('Error during full reset:', error);
+    }
+  }, [send, disconnect, resetConversations]);
+
   const handleLogoutOnly = useCallback(async () => {
     const isDeveloperMode = canAccessDeveloperFeatures(authState?.user?.email);
     
@@ -106,6 +155,7 @@ export const useAuthFlow = ({
           localStorage.removeItem('otakonAuthMethod');
           localStorage.removeItem('otakonInstallDismissed');
           localStorage.removeItem('otakon_developer_mode'); // Clear developer mode flag
+          localStorage.removeItem('otakon_dev_fallback_mode'); // Clear fallback mode flag
           
           // Clear any splash screen flags to force first run experience
           localStorage.removeItem('otakon_show_splash_after_login');
@@ -140,65 +190,6 @@ export const useAuthFlow = ({
     });
   }, [setConfirmationModal, send, disconnect, resetConversations, executeFullReset]);
 
-  const executeFullReset = useCallback(async () => {
-    try {
-      // First, clear local data and reset services while still authenticated
-      if (send) {
-        send({ type: 'clear_history' });
-      }
-      ttsService.cancel();
-      disconnect?.();
-      resetConversations?.();
-      
-      // Reset services while still authenticated to avoid 403 errors
-      try {
-        await unifiedUsageService.reset();
-      } catch (error) {
-        console.warn('Failed to reset usage service:', error);
-      }
-      
-      try {
-        await playerProfileService.resetWelcomeMessageTracking();
-      } catch (error) {
-        console.warn('Failed to reset welcome message tracking in Supabase:', error);
-      }
-      
-      // Clear localStorage
-      localStorage.removeItem('lastConnectionCode');
-      localStorage.removeItem('otakonOnboardingComplete');
-      localStorage.removeItem('otakon_profile_setup_completed');
-      localStorage.removeItem('otakonHasConnectedBefore');
-      localStorage.removeItem('otakonAuthMethod');
-      localStorage.removeItem('otakonInstallDismissed');
-      
-      // Set flag to indicate fresh login should show splash screens
-      localStorage.setItem('otakon_show_splash_after_login', 'true');
-      
-      // Reset welcome message tracking so it shows again on next login
-      localStorage.removeItem('otakon_welcome_message_shown');
-      localStorage.removeItem('otakon_last_welcome_time');
-      localStorage.removeItem('otakon_app_closed_time');
-      localStorage.removeItem('otakon_first_run_completed');
-      
-      // Now sign out from Supabase (after all authenticated operations are done)
-      await authService.signOut();
-      
-      // Reset app state and return to login screen
-      setOnboardingStatus('login');
-      setIsHandsFreeMode(false);
-      setIsConnectionModalOpen(false);
-      setView('landing');
-      
-      console.log('Full reset completed successfully');
-    } catch (error) {
-      console.error('Full reset error:', error);
-      // Even if there's an error, try to clear local state
-      setOnboardingStatus('login');
-      setIsHandsFreeMode(false);
-      setIsConnectionModalOpen(false);
-      setView('landing');
-    }
-  }, [send, disconnect, resetConversations, setOnboardingStatus, setIsHandsFreeMode, setIsConnectionModalOpen, setView]);
 
   const handleResetApp = useCallback(() => {
     setConfirmationModal({

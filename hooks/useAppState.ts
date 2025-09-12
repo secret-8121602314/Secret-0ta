@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ConnectionStatus, Conversation, Conversations, Insight, UserTier, Usage, ContextMenuState, ContextMenuItem, PendingInsightModification } from '../services/types';
 import { AuthState } from '../services/supabase';
 import { PWANavigationState } from '../services/pwaNavigationService';
-import { Achievement } from '../services/dailyEngagementService';
+// import type { Achievement } from '../services/dailyEngagementService';
 
 export type ImageFile = { base64: string; mimeType: string; dataUrl: string };
 
@@ -48,7 +48,7 @@ export interface AppState {
   usage: Usage;
   imagesForReview: ImageFile[];
   otakuDiaryGameInfo: { id: string; title: string } | null;
-  currentAchievement: Achievement | null;
+  currentAchievement: any | null;
   
   // Authentication State
   authState: AuthState;
@@ -99,7 +99,7 @@ export interface AppStateActions {
   setUsage: (usage: Usage) => void;
   setImagesForReview: (images: ImageFile[]) => void;
   setOtakuDiaryGameInfo: (info: { id: string; title: string } | null) => void;
-  setCurrentAchievement: (achievement: Achievement | null) => void;
+  setCurrentAchievement: (achievement: any | null) => void;
   
   // Authentication State
   setAuthState: (state: AuthState) => void;
@@ -159,7 +159,7 @@ export const useAppState = (): AppState & AppStateActions => {
   });
   const [imagesForReview, setImagesForReview] = useState<ImageFile[]>([]);
   const [otakuDiaryGameInfo, setOtakuDiaryGameInfo] = useState<{ id: string; title: string } | null>(null);
-  const [currentAchievement, setCurrentAchievement] = useState<Achievement | null>(null);
+  const [currentAchievement, setCurrentAchievement] = useState<any | null>(null);
   
   // Authentication State
   const [authState, setAuthState] = useState<AuthState>(() => {

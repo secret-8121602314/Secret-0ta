@@ -1,31 +1,31 @@
 # 🚀 Otakon Bundle Analysis Report
 
-Generated: 9/9/2025, 11:08:31 PM
+Generated: 9/12/2025, 4:03:42 PM
 
 ## 📊 Bundle Overview
 
 - **Total Size**: 2.07 MB
-- **File Count**: 19
+- **File Count**: 21
 
 ## 📁 Largest Files
 
 | File | Size |
 |------|------|
-| assets/vendor-react-DDiQJZJu.js | 705.1 KB |
-| assets/app-services-BxckFHlq.js | 265.92 KB |
-| assets/vendor-ai-D1HLwCFd.js | 231.84 KB |
-| assets/app-components-bVWhoZyo.js | 172.1 KB |
-| assets/vendor-misc-RuuARQvY.js | 159.39 KB |
-| assets/app-modals-BeXIgdqo.js | 133.14 KB |
-| assets/vendor-supabase-CQ9XfNpl.js | 122.06 KB |
-| assets/main-bEQpkz5z.js | 103.16 KB |
-| assets/app-ai-services-C5yuiujS.js | 93.5 KB |
-| assets/app-landing-DnSX1GC4.js | 50.01 KB |
+| assets/vendor-ui-CuQFruUP.js | 515.35 KB |
+| assets/app-services-DKjOTBB1.js | 258.67 KB |
+| assets/vendor-ai-7J4LelS0.js | 225.83 KB |
+| assets/app-components-BHwqb5F-.js | 177.89 KB |
+| assets/vendor-react-dom-gHWwUqtj.js | 169.66 KB |
+| assets/vendor-misc-CpD40AO2.js | 159.77 KB |
+| assets/app-modals-BcWo6ReQ.js | 138.69 KB |
+| assets/vendor-supabase-2vvxAEl0.js | 121.04 KB |
+| assets/main-CoCrh2Jw.js | 100.85 KB |
+| assets/app-ai-services-B1aptAQZ.js | 93.46 KB |
 
 ## 💡 Optimization Suggestions
 
 
-### Found 8 large files that could be optimized.
+### Found 9 large files that could be optimized.
 
 **Priority**: MEDIUM
 

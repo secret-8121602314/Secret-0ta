@@ -93,7 +93,7 @@ const TierSplashScreen: React.FC<TierSplashScreenProps> = ({
                 Vanguard
               </h3>
               <div className="text-right">
-                <div className="text-4xl font-bold text-white">$9.99</div>
+                <div className="text-4xl font-bold text-white">$20.00</div>
                 <div className="text-base text-neutral-300">/month</div>
               </div>
             </div>

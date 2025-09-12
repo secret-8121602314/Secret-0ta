@@ -122,7 +122,7 @@ export { default as PerformanceOptimizations } from './PerformanceOptimizations'
 // export { default as MigrationManager } from './MigrationManager'; // Component doesn't exist
 // export { default as MigrationModal } from './MigrationModal'; // Component doesn't exist
 // export { default as MigrationStatus } from './MigrationStatus'; // Component doesn't exist
-export { default as SupabaseMigrationStatus } from './SupabaseMigrationStatus';
+// export { default as SupabaseMigrationStatus } from './SupabaseMigrationStatus';
 
 // Feature Components
 export { ProactiveInsightsPanel } from './ProactiveInsightsPanel';

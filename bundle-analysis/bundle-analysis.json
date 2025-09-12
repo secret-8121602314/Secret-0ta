@@ -1,65 +1,65 @@
 {
-  "timestamp": "2025-09-09T17:38:31.537Z",
+  "timestamp": "2025-09-12T10:33:42.332Z",
   "bundleInfo": {
-    "totalSize": 2168469,
-    "fileCount": 19,
+    "totalSize": 2166496,
+    "fileCount": 21,
     "largestFiles": [
       {
-        "path": "assets/vendor-react-DDiQJZJu.js",
-        "size": 722025,
-        "sizeFormatted": "705.1 KB"
+        "path": "assets/vendor-ui-CuQFruUP.js",
+        "size": 527719,
+        "sizeFormatted": "515.35 KB"
       },
       {
-        "path": "assets/app-services-BxckFHlq.js",
-        "size": 272305,
-        "sizeFormatted": "265.92 KB"
+        "path": "assets/app-services-DKjOTBB1.js",
+        "size": 264879,
+        "sizeFormatted": "258.67 KB"
       },
       {
-        "path": "assets/vendor-ai-D1HLwCFd.js",
-        "size": 237400,
-        "sizeFormatted": "231.84 KB"
+        "path": "assets/vendor-ai-7J4LelS0.js",
+        "size": 231248,
+        "sizeFormatted": "225.83 KB"
       },
       {
-        "path": "assets/app-components-bVWhoZyo.js",
-        "size": 176227,
-        "sizeFormatted": "172.1 KB"
+        "path": "assets/app-components-BHwqb5F-.js",
+        "size": 182159,
+        "sizeFormatted": "177.89 KB"
       },
       {
-        "path": "assets/vendor-misc-RuuARQvY.js",
-        "size": 163213,
-        "sizeFormatted": "159.39 KB"
+        "path": "assets/vendor-react-dom-gHWwUqtj.js",
+        "size": 173727,
+        "sizeFormatted": "169.66 KB"
       },
       {
-        "path": "assets/app-modals-BeXIgdqo.js",
-        "size": 136335,
-        "sizeFormatted": "133.14 KB"
+        "path": "assets/vendor-misc-CpD40AO2.js",
+        "size": 163600,
+        "sizeFormatted": "159.77 KB"
       },
       {
-        "path": "assets/vendor-supabase-CQ9XfNpl.js",
-        "size": 124990,
-        "sizeFormatted": "122.06 KB"
+        "path": "assets/app-modals-BcWo6ReQ.js",
+        "size": 142021,
+        "sizeFormatted": "138.69 KB"
       },
       {
-        "path": "assets/main-bEQpkz5z.js",
-        "size": 105634,
-        "sizeFormatted": "103.16 KB"
+        "path": "assets/vendor-supabase-2vvxAEl0.js",
+        "size": 123949,
+        "sizeFormatted": "121.04 KB"
       },
       {
-        "path": "assets/app-ai-services-C5yuiujS.js",
-        "size": 95747,
-        "sizeFormatted": "93.5 KB"
+        "path": "assets/main-CoCrh2Jw.js",
+        "size": 103275,
+        "sizeFormatted": "100.85 KB"
       },
       {
-        "path": "assets/app-landing-DnSX1GC4.js",
-        "size": 51208,
-        "sizeFormatted": "50.01 KB"
+        "path": "assets/app-ai-services-B1aptAQZ.js",
+        "size": 95708,
+        "sizeFormatted": "93.46 KB"
       }
     ],
     "fileTypes": {
       ".md": 6298,
-      ".js": 2129001,
+      ".js": 2126317,
       ".css": 15683,
-      ".html": 12620,
+      ".html": 13331,
       ".json": 2145,
       ".xml": 2722
     },
@@ -217,7 +217,7 @@
     {
       "type": "large_files",
       "priority": "medium",
-      "message": "Found 8 large files that could be optimized.",
+      "message": "Found 9 large files that could be optimized.",
       "actions": [
         "Compress images and assets",
         "Consider lazy loading for large components",

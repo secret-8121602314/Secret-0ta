@@ -5,6 +5,12 @@ import MicIcon from './MicIcon';
 import MicOffIcon from './MicOffIcon';
 import SendIcon from './SendIcon';
 
+interface VoiceCommand {
+  transcript: string;
+  command: string;
+  confidence: number;
+}
+
 interface VoiceChatInputProps {
   onSendMessage: (message: string) => void;
   onVoiceCommand?: (command: VoiceCommand) => void;
@@ -28,45 +34,61 @@ const VoiceChatInput: React.FC<VoiceChatInputProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    // Check if voice features are supported
-    const { voiceService } = await import('../services/voiceService');
-    setVoiceSupported(voiceService.isSupported());
+    const initializeVoiceService = async () => {
+      try {
+        const { voiceService } = await import('../services/voiceService');
+        setVoiceSupported(voiceService.isSupported());
 
-    // Set up voice command callback
-    const { voiceService } = await import('../services/voiceService');
-    voiceService.onCommand((command) => {
-      setLastVoiceCommand(command);
-      setIsListening(false);
-      
-      // Process the voice command
-      if (onVoiceCommand) {
-        onVoiceCommand(command);
-      } else {
-        // Default behavior: send the transcript as a message
-        setMessage(command.transcript);
-        onSendMessage(command.transcript);
+        // Set up voice command callback
+        voiceService.onCommand((command) => {
+          setLastVoiceCommand(command);
+          setIsListening(false);
+          
+          // Process the voice command
+          if (onVoiceCommand) {
+            onVoiceCommand(command);
+          } else {
+            // Default behavior: send the transcript as a message
+            setMessage(command.transcript);
+            onSendMessage(command.transcript);
+          }
+        });
+
+        // Set up error callback
+        voiceService.onError((error) => {
+          console.error('Voice service error:', error);
+          setIsListening(false);
+        });
+
+        return voiceService;
+      } catch (error) {
+        console.error('Failed to initialize voice service:', error);
+        return null;
       }
-    });
+    };
 
-    // Set up error callback
-    const { voiceService } = await import('../services/voiceService');
-    voiceService.onError((error) => {
-      console.error('Voice service error:', error);
-      setIsListening(false);
+    let voiceService: any = null;
+    initializeVoiceService().then((service) => {
+      voiceService = service;
     });
 
     return () => {
-      const { voiceService } = await import('../services/voiceService');
-      voiceService.destroy();
+      if (voiceService) {
+        voiceService.destroy();
+      }
     };
   }, [onVoiceCommand, onSendMessage]);
 
   useEffect(() => {
     // Update listening state from voice service
-    const interval = setInterval(() => {
-      const { voiceService } = await import('../services/voiceService');
-      setIsListening(voiceService.getListeningState());
-      setIsSpeaking(voiceService.getSpeakingState());
+    const interval = setInterval(async () => {
+      try {
+        const { voiceService } = await import('../services/voiceService');
+        setIsListening(voiceService.getListeningState());
+        setIsSpeaking(voiceService.getSpeakingState());
+      } catch (error) {
+        // Service not available, ignore
+      }
     }, 100);
 
     return () => clearInterval(interval);
@@ -100,7 +122,7 @@ const VoiceChatInput: React.FC<VoiceChatInputProps> = ({
     textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
   };
 
-  const toggleVoiceListening = () => {
+  const toggleVoiceListening = async () => {
     if (isListening) {
       const { voiceService } = await import('../services/voiceService');
       voiceService.stopListening();

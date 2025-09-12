@@ -4,10 +4,11 @@ import React, { useEffect } from 'react';
 
 const CharacterImmersionTest: React.FC = () => {
   useEffect(() => {
-    // Disabled excessive logging - only run tests in development mode
-    if (process.env.NODE_ENV !== 'development') {
-      return;
-    }
+    const runTests = async () => {
+      // Disabled excessive logging - only run tests in development mode
+      if (process.env.NODE_ENV !== 'development') {
+        return;
+      }
     
     console.log('🧪 Starting Character Immersion Tests...');
     
@@ -24,18 +25,23 @@ const CharacterImmersionTest: React.FC = () => {
       { id: '8', role: 'user' as const, text: "I'm playing as a character named Shadow in Cyberpunk 2077." }
     ];
     
-    mockMessages.forEach((message, index) => {
+    const testCharacterDetection = async () => {
       const { characterDetectionService } = await import('../services/characterDetectionService');
-      const detectedCharacter = characterDetectionService.detectCharacterFromMessages([message]);
-      if (detectedCharacter) {
-        console.log(`✅ Message ${index + 1}: Character detected: ${detectedCharacter.name} (${detectedCharacter.confidence} confidence)`);
-        console.log(`   Source: ${detectedCharacter.source}, Context: ${detectedCharacter.context}`);
-        console.log(`   Original text: "${message.text}"`);
-      } else {
-        console.log(`❌ Message ${index + 1}: No character detected`);
-        console.log(`   Text: "${message.text}"`);
-      }
-    });
+      
+      mockMessages.forEach((message, index) => {
+        const detectedCharacter = characterDetectionService.detectCharacterFromMessages([message]);
+        if (detectedCharacter) {
+          console.log(`✅ Message ${index + 1}: Character detected: ${detectedCharacter.name} (${detectedCharacter.confidence} confidence)`);
+          console.log(`   Source: ${detectedCharacter.source}, Context: ${detectedCharacter.context}`);
+          console.log(`   Original text: "${message.text}"`);
+        } else {
+          console.log(`❌ Message ${index + 1}: No character detected`);
+          console.log(`   Text: "${message.text}"`);
+        }
+      });
+    };
+    
+    testCharacterDetection();
     
     // Test 2: Game language profiles
     console.log('\n🧪 Test 2: Game Language Profiles');
@@ -47,18 +53,23 @@ const CharacterImmersionTest: React.FC = () => {
       'God of War Ragnarök'
     ];
     
-    testGames.forEach(gameTitle => {
-      const gameId = gameTitle.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    const testGameProfiles = async () => {
       const { characterDetectionService } = await import('../services/characterDetectionService');
-      const gameProfile = characterDetectionService.getGameLanguageProfile(gameId, gameTitle);
       
-      console.log(`✅ ${gameProfile.gameName}:`);
-      console.log(`   Genre: ${gameProfile.genre}`);
-      console.log(`   Language Style: ${gameProfile.languageStyle}`);
-      console.log(`   Tone: ${gameProfile.tone}`);
-      console.log(`   Character Address Style: ${gameProfile.characterAddressStyle}`);
-      console.log(`   Immersion Level: ${gameProfile.immersionLevel}`);
-    });
+      testGames.forEach(gameTitle => {
+        const gameId = gameTitle.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+        const gameProfile = characterDetectionService.getGameLanguageProfile(gameId, gameTitle);
+        
+        console.log(`✅ ${gameProfile.gameName}:`);
+        console.log(`   Genre: ${gameProfile.genre}`);
+        console.log(`   Language Style: ${gameProfile.languageStyle}`);
+        console.log(`   Tone: ${gameProfile.tone}`);
+        console.log(`   Character Address Style: ${gameProfile.characterAddressStyle}`);
+        console.log(`   Immersion Level: ${gameProfile.immersionLevel}`);
+      });
+    };
+    
+    testGameProfiles();
     
     // Test 3: Character address formats
     console.log('\n🧪 Test 3: Character Address Formats');
@@ -69,7 +80,6 @@ const CharacterImmersionTest: React.FC = () => {
       console.log(`\n🎮 ${gameTitle}:`);
       
       testCharacters.forEach(characterName => {
-        const { characterDetectionService } = await import('../services/characterDetectionService');
         const addressFormat = characterDetectionService.getCharacterAddressFormat(gameId, characterName);
         console.log(`   ${characterName} → ${addressFormat}`);
       });
@@ -79,7 +89,6 @@ const CharacterImmersionTest: React.FC = () => {
     console.log('\n🧪 Test 4: Immersive Language Patterns');
     testGames.slice(0, 3).forEach(gameTitle => {
       const gameId = gameTitle.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-      const { characterDetectionService } = await import('../services/characterDetectionService');
       const languagePatterns = characterDetectionService.getImmersiveLanguagePatterns(gameId);
       
       console.log(`\n🎭 ${gameTitle} Language Patterns:`);
@@ -100,7 +109,6 @@ const CharacterImmersionTest: React.FC = () => {
     ];
     
     mockImageDescriptions.forEach((description, index) => {
-      const { characterDetectionService } = await import('../services/characterDetectionService');
       const detectedCharacter = characterDetectionService.detectCharacterFromImageContext(description);
       if (detectedCharacter) {
         console.log(`✅ Image ${index + 1}: Character detected: ${detectedCharacter.name} (${detectedCharacter.confidence} confidence)`);
@@ -153,7 +161,9 @@ const CharacterImmersionTest: React.FC = () => {
     console.log('\n🎉 Character Immersion Tests Complete!');
     console.log('📖 Check the console above for detailed test results.');
     console.log('🔧 The system is now ready to provide immersive, character-aware AI responses.');
+    };
     
+    runTests();
   }, []);
 
   // Return null - no UI, just console logs
