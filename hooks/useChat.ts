@@ -226,6 +226,14 @@ export const useChat = (isHandsFreeMode: boolean) => {
         
         const loadConversations = async () => {
             try {
+                // Check if user is authenticated before loading conversations
+                const { data: { user } } = await supabase.auth.getUser();
+                
+                if (!user) {
+                    console.log('🔐 User not authenticated, skipping conversation loading');
+                    return;
+                }
+                
                 const result = await secureConversationService.loadConversations();
                 
                 if (isMounted && result.success && result.conversations) {
@@ -283,6 +291,51 @@ export const useChat = (isHandsFreeMode: boolean) => {
         };
     }, [secureConversationService]);
 
+    // Listen for authentication state changes to reload conversations when user logs in
+    useEffect(() => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'SIGNED_IN' && session?.user) {
+                console.log('🔐 User signed in, reloading conversations...');
+                try {
+                    const result = await secureConversationService.loadConversations();
+                    
+                    if (result.success && result.conversations) {
+                        const conversations = result.conversations as any;
+                        const order = Object.keys(conversations).sort(sortConversations(conversations));
+                        const activeId = order.length > 0 ? order[0] : EVERYTHING_ELSE_ID;
+                        
+                        setChatState({
+                            conversations: conversations as any,
+                            order,
+                            activeId
+                        });
+                        
+                        console.log(`💾 Conversations reloaded after authentication`);
+                    }
+                } catch (error) {
+                    console.error('Failed to reload conversations after authentication:', error);
+                }
+            } else if (event === 'SIGNED_OUT') {
+                console.log('🔐 User signed out, resetting conversations to default state');
+                setChatState({
+                    conversations: {
+                        [EVERYTHING_ELSE_ID]: {
+                            id: EVERYTHING_ELSE_ID,
+                            title: 'Everything else',
+                            messages: [],
+                            createdAt: Date.now(),
+                        }
+                    },
+                    order: [EVERYTHING_ELSE_ID],
+                    activeId: EVERYTHING_ELSE_ID
+                });
+            }
+        });
+
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, []);
 
     // Use debounced save instead of the old timeout approach
     useEffect(() => {
