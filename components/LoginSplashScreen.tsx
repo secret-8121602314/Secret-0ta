@@ -12,12 +12,15 @@ interface LoginSplashScreenProps {
     onComplete: () => void;
     onOpenPrivacy?: () => void;
     onOpenTerms?: () => void;
+    onOpenAbout?: () => void;
+    onOpenRefund?: () => void;
+    onOpenContact?: () => void;
     onBackToLanding?: () => void;
 }
 
 type EmailMode = 'options' | 'signin' | 'signup' | 'forgot-password';
 
-const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpenPrivacy, onOpenTerms, onBackToLanding }) => {
+const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpenPrivacy, onOpenTerms, onOpenAbout, onOpenRefund, onOpenContact, onBackToLanding }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -622,6 +625,34 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
                     )}
                     .
                 </p>
+                
+                {/* Additional Footer Links */}
+                <div className="mt-4 flex flex-wrap justify-center gap-4 text-xs text-[#A3A3A3]">
+                    {onOpenAbout && (
+                        <button
+                            onClick={onOpenAbout}
+                            className="hover:text-white transition-colors"
+                        >
+                            About
+                        </button>
+                    )}
+                    {onOpenRefund && (
+                        <button
+                            onClick={onOpenRefund}
+                            className="hover:text-white transition-colors"
+                        >
+                            Refund Policy
+                        </button>
+                    )}
+                    {onOpenContact && (
+                        <button
+                            onClick={onOpenContact}
+                            className="hover:text-white transition-colors"
+                        >
+                            Contact Us
+                        </button>
+                    )}
+                </div>
             </div>
             
             {/* Developer Mode - In normal document flow */}

@@ -21,6 +21,7 @@ import UpgradeSplashScreen from './components/UpgradeSplashScreen';
 import SplashScreen from './components/SplashScreen';
 import ErrorBoundary from './components/ErrorBoundary';
 import { LoadingSpinner } from './components/ui/LoadingStates';
+import RefundPolicyPage from './components/RefundPolicyPage';
 import ErrorMessage from './components/ErrorMessage';
 
 // Import modal components
@@ -365,7 +366,16 @@ const App: React.FC = () => {
     canMakeQuery,
     recordQuery,
   } = useUsageTracking({ 
-    usage: { textQueries: 0, imageQueries: 0, insights: 0 }, 
+    usage: { 
+      textQueries: 0, 
+      imageQueries: 0, 
+      insights: 0,
+      textCount: 0,
+      imageCount: 0,
+      textLimit: 0,
+      imageLimit: 0,
+      tier: 'free'
+    }, 
     setUsage: () => {} 
   });
 
@@ -425,7 +435,7 @@ const App: React.FC = () => {
     handleProfileSetupComplete,
     handleSkipProfileSetup,
   } = useAuthFlow({
-    authState: { user: appState.userState?.user || null, loading: false },
+    authState: { user: appState.userState || null, loading: false },
     setAuthState: () => {},
     setOnboardingStatus: (status: string) => {
       setAppState(prev => ({
@@ -580,7 +590,7 @@ const App: React.FC = () => {
   if (appState.loading || !appState.initialized) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <LoadingSpinner size="large" />
+        <LoadingSpinner size="xl" />
       </div>
     );
   }
@@ -623,22 +633,12 @@ const App: React.FC = () => {
         return (
           <InitialSplashScreen
             onComplete={() => handleOnboardingUpdate('features')}
-            onProfileSetupComplete={handleProfileSetupComplete}
-            onSplashScreensComplete={handleSplashScreensComplete}
-            onWelcomeMessageShown={handleWelcomeMessageComplete}
-            onFirstRunComplete={handleFirstRunComplete}
-            userState={appState.userState}
           />
         );
       case 'features':
         return (
           <HowToUseSplashScreen
             onComplete={() => handleOnboardingUpdate('pro-features')}
-            onProfileSetupComplete={handleProfileSetupComplete}
-            onSplashScreensComplete={handleSplashScreensComplete}
-            onWelcomeMessageShown={handleWelcomeMessageComplete}
-            onFirstRunComplete={handleFirstRunComplete}
-            userState={appState.userState}
           />
         );
       case 'pro-features':
@@ -791,7 +791,6 @@ const App: React.FC = () => {
       return (
         <ErrorBoundary>
           {/* Modals - Outside Router to avoid interference */}
-          {console.log('LOGIN PAGE CONTEXT - Current activeModal:', appState.activeModal)}
           {appState.activeModal === 'about' && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={closeModal}>
               <div className="bg-[#1C1C1C] border border-[#424242] rounded-2xl shadow-2xl w-full max-w-4xl m-4 relative flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
@@ -888,6 +887,9 @@ const App: React.FC = () => {
             }}
             onOpenPrivacy={() => openModal('privacy')}
             onOpenTerms={() => openModal('terms')}
+            onOpenAbout={() => openModal('about')}
+            onOpenRefund={() => openModal('refund')}
+            onOpenContact={() => openModal('contact')}
             onBackToLanding={() => {
               console.log('Back to landing clicked');
               handleOnboardingUpdate('complete');
@@ -901,7 +903,6 @@ const App: React.FC = () => {
     return (
       <ErrorBoundary>
         {/* Modals - Outside Router to avoid interference */}
-        {console.log('Current activeModal:', appState.activeModal)}
         {appState.activeModal === 'about' && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={closeModal}>
             <div className="bg-[#1C1C1C] border border-[#424242] rounded-2xl shadow-2xl w-full max-w-4xl m-4 relative max-h-[90vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
@@ -1058,7 +1059,7 @@ const App: React.FC = () => {
             onLogout={handleLogoutOnly}
             onResetApp={handleResetApp}
             onShowHowToUse={() => handleOnboardingUpdate('how-to-use')}
-            userEmail={appState.userState?.user?.email || ''}
+            userEmail={appState.userState?.email || ''}
             onClearFirstRunCache={() => {}}
             refreshUsage={refreshUsage}
           />
