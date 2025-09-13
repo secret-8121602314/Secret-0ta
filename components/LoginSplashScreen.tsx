@@ -46,7 +46,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
         const unsubscribe = authService.subscribe((authState) => {
             if (authState.error && !authState.loading) {
                 console.error('Authentication error detected:', authState.error);
-                setErrorMessage(authState.error || 'Authentication failed. Please try again.');
+                setErrorMessage(authState.error?.message || 'Authentication failed. Please try again.');
                 // Reset button animations on error
                 setButtonAnimations({ google: false, discord: false, email: false });
             }

@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { Usage, UserTier } from '../services/types';
+import { ResponsiveModal, ResponsiveContainer, ResponsiveFlex, ResponsiveText } from './layout/ResponsiveComponents';
+import { useResponsive } from '../utils/responsive';
 import UserCircleIcon from './UserCircleIcon';
 import CreditCardIcon from './CreditCardIcon';
 import QuestionMarkCircleIcon from './QuestionMarkCircleIcon';
@@ -311,22 +313,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, usage, o
   }, [activeTab, handleTabChange]);
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-black/80 to-[#0A0A0A]/80 backdrop-blur-xl flex items-center justify-center z-50 animate-fade-in" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="settings-title">
-      <div
-        className="bg-gradient-to-r from-[#1C1C1C]/95 to-[#0A0A0A]/95 backdrop-blur-xl border-2 border-[#424242]/60 rounded-3xl shadow-2xl w-full max-w-6xl m-4 md:m-6 relative animate-scale-in flex flex-col max-h-[95vh] h-auto md:h-[80vh] hover:border-[#424242]/80 transition-all duration-500"
-        onClick={(e) => e.stopPropagation()}
-        ref={modalRef}
+    <ResponsiveModal isOpen={isOpen} onClose={onClose}>
+      <button
+        onClick={onClose}
+        className="absolute top-3 right-3 md:top-6 md:right-6 text-neutral-400 hover:text-white transition-all duration-300 z-20 hover:scale-110 p-2"
+        aria-label="Close settings"
       >
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 md:top-6 md:right-6 text-neutral-400 hover:text-white transition-all duration-300 z-20 hover:scale-110 p-2"
-          aria-label="Close settings"
-        >
-          <svg className="w-8 h-8 md:w-9 md:h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
+        <svg className="w-8 h-8 md:w-9 md:h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
 
-        <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
-            <nav className="flex-shrink-0 w-full md:w-72 p-6 md:p-8 border-b-2 md:border-b-0 md:border-r-2 border-neutral-800/60 flex flex-row md:flex-col justify-between">
+      <ResponsiveFlex direction={{ mobile: 'col', tablet: 'row' }} className="flex-1 overflow-hidden">
+        <nav className="flex-shrink-0 w-full md:w-72 p-6 md:p-8 border-b-2 md:border-b-0 md:border-r-2 border-neutral-800/60 flex flex-row md:flex-col justify-between">
                 <div className="w-full">
                     <h2 id="settings-title" className="text-2xl font-bold text-white mb-8 px-2 hidden md:block leading-tight">Settings</h2>
                     <ul className="grid grid-cols-4 md:flex md:flex-col gap-2 md:gap-4 w-full pr-20 md:pr-0 mt-8 md:mt-0">
@@ -395,10 +392,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, usage, o
                     </div>
                 )}
             </main>
-        </div>
-      </div>
-    </div>
-  );
-};
+          </ResponsiveFlex>
+        </ResponsiveModal>
+      );
+    };
 
 export default React.memo(SettingsModal);

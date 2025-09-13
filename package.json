@@ -19,7 +19,11 @@
     "optimize:images": "node scripts/optimize-images.cjs",
     "optimize:all": "npm run optimize:images && npm run analyze:build",
     "deploy:firebase": "node scripts/firebase-deploy.js",
-    "deploy": "npm run build && npm run deploy:firebase"
+    "deploy": "npm run build && npm run deploy:firebase",
+    "deploy:production": "npm run build && firebase deploy --only hosting",
+    "deploy:full": "npm run build && npm run deploy:production",
+    "setup:secrets": "./scripts/setup-secrets.sh",
+    "deploy:backend": "./scripts/deploy-production.sh"
   },
   "dependencies": {
     "@google/genai": "^1.12.0",

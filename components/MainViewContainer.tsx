@@ -100,6 +100,7 @@ const MainViewContainer: React.FC<MainViewContainerProps> = ({
         return () => clearTimeout(delayedScroll);
       }
     }
+    return undefined;
   }, [messages, loadingMessages, activeSubView]);
 
 

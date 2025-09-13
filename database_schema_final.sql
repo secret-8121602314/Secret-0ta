@@ -235,6 +235,24 @@ CREATE TABLE IF NOT EXISTS public.analytics (
 );
 
 -- ========================================
+-- ANALYTICS_EVENTS TABLE - Detailed Analytics Events
+-- ========================================
+
+CREATE TABLE IF NOT EXISTS public.analytics_events (
+    id TEXT PRIMARY KEY,
+    event_type TEXT NOT NULL,
+    category TEXT NOT NULL,
+    timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    session_id TEXT NOT NULL,
+    metadata JSONB DEFAULT '{}',
+    user_tier TEXT DEFAULT 'free' CHECK (user_tier IN ('free', 'pro', 'vanguard_pro')),
+    platform TEXT DEFAULT 'web',
+    version TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ========================================
 -- ADMIN TABLE - Admin Data
 -- ========================================
 
@@ -349,6 +367,13 @@ CREATE INDEX IF NOT EXISTS idx_analytics_user_id ON public.analytics(user_id);
 CREATE INDEX IF NOT EXISTS idx_analytics_event_type ON public.analytics(event_type);
 CREATE INDEX IF NOT EXISTS idx_analytics_created_at ON public.analytics(created_at);
 CREATE INDEX IF NOT EXISTS idx_analytics_session_id ON public.analytics(session_id);
+
+-- Analytics events indexes
+CREATE INDEX IF NOT EXISTS idx_analytics_events_user_id ON public.analytics_events(user_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_event_type ON public.analytics_events(event_type);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_category ON public.analytics_events(category);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_timestamp ON public.analytics_events(timestamp);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_session_id ON public.analytics_events(session_id);
 
 -- ========================================
 -- 4. CREATE SECURE TRIGGERS
@@ -540,6 +565,20 @@ CREATE POLICY "Users can insert own analytics" ON public.analytics
         SELECT id FROM public.users WHERE auth_user_id = (select auth.uid()) AND deleted_at IS NULL
     ));
 
+-- Analytics events table policies (drop existing first to avoid conflicts)
+DROP POLICY IF EXISTS "Users can view own analytics events" ON public.analytics_events;
+DROP POLICY IF EXISTS "Users can view their own analytics events" ON public.analytics_events;
+DROP POLICY IF EXISTS "Users can insert own analytics events" ON public.analytics_events;
+DROP POLICY IF EXISTS "Users can insert their own analytics events" ON public.analytics_events;
+DROP POLICY IF EXISTS "analytics_events_select_policy" ON public.analytics_events;
+DROP POLICY IF EXISTS "analytics_events_insert_policy" ON public.analytics_events;
+
+CREATE POLICY "analytics_events_select_policy" ON public.analytics_events
+    FOR SELECT USING (user_id = (select auth.uid()));
+
+CREATE POLICY "analytics_events_insert_policy" ON public.analytics_events
+    FOR INSERT WITH CHECK (user_id = (select auth.uid()));
+
 -- Admin table policies (OPTIMIZED with direct joins for performance)
 CREATE POLICY "Admins can view admin data" ON public.admin
     FOR SELECT USING (user_id IN (
@@ -569,6 +608,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.conversations TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.tasks TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.cache TO authenticated;
 GRANT SELECT, INSERT ON public.analytics TO authenticated;
+GRANT SELECT, INSERT ON public.analytics_events TO authenticated;
 GRANT SELECT ON public.waitlist TO authenticated;
 GRANT SELECT ON public.app_level TO authenticated;
 

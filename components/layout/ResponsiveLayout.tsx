@@ -166,7 +166,7 @@ const ResponsiveFlex: React.FC<ResponsiveFlexProps> = ({
   };
 
   const getDirectionClasses = () => {
-    const dirClasses = [];
+    const dirClasses: string[] = [];
     if (direction.xs) dirClasses.push(`flex-${direction.xs}`);
     if (direction.sm) dirClasses.push(`sm:flex-${direction.sm}`);
     if (direction.md) dirClasses.push(`md:flex-${direction.md}`);
@@ -324,7 +324,7 @@ const ResponsiveText: React.FC<ResponsiveTextProps> = ({
   };
 
   const getSizeClasses = () => {
-    const sizeClasses = [];
+    const sizeClasses: string[] = [];
     if (size.xs) sizeClasses.push(`text-${size.xs}`);
     if (size.sm) sizeClasses.push(`sm:text-${size.sm}`);
     if (size.md) sizeClasses.push(`md:text-${size.md}`);
@@ -389,7 +389,7 @@ const ResponsiveSpacing: React.FC<ResponsiveSpacingProps> = ({
 
   const getPaddingClasses = () => {
     if (!padding) return '';
-    const classes = [];
+    const classes: string[] = [];
     if (padding.xs) classes.push(spacingClasses[padding.xs]);
     if (padding.sm) classes.push(`sm:${spacingClasses[padding.sm]}`);
     if (padding.md) classes.push(`md:${spacingClasses[padding.md]}`);
@@ -399,7 +399,7 @@ const ResponsiveSpacing: React.FC<ResponsiveSpacingProps> = ({
 
   const getMarginClasses = () => {
     if (!margin) return '';
-    const classes = [];
+    const classes: string[] = [];
     if (margin.xs) classes.push(marginClasses[margin.xs]);
     if (margin.sm) classes.push(`sm:${marginClasses[margin.sm]}`);
     if (margin.md) classes.push(`md:${marginClasses[margin.md]}`);

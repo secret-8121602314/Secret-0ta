@@ -3,6 +3,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import responsive design system */
+@import '../styles/responsive.css';
+
 /* Base styles for Otakon app */
 body {
   margin: 0;

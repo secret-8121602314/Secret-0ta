@@ -93,7 +93,7 @@ const UniversalResponsiveGrid: React.FC<UniversalResponsiveGridProps> = ({
   };
 
   const getGridCols = () => {
-    const colClasses = [];
+    const colClasses: string[] = [];
     if (cols.xs) colClasses.push(`grid-cols-${cols.xs}`);
     if (cols.sm) colClasses.push(`sm:grid-cols-${cols.sm}`);
     if (cols.md) colClasses.push(`md:grid-cols-${cols.md}`);
@@ -164,7 +164,7 @@ const UniversalResponsiveFlex: React.FC<UniversalResponsiveFlexProps> = ({
   };
 
   const getDirectionClasses = () => {
-    const directionClasses = [];
+    const directionClasses: string[] = [];
     if (direction.xs) directionClasses.push(`flex-${direction.xs}`);
     if (direction.sm) directionClasses.push(`sm:flex-${direction.sm}`);
     if (direction.md) directionClasses.push(`md:flex-${direction.md}`);
@@ -245,7 +245,7 @@ const UniversalResponsiveText: React.FC<UniversalResponsiveTextProps> = ({
   as: Component = 'p'
 }) => {
   const getSizeClasses = () => {
-    const sizeClasses = [];
+    const sizeClasses: string[] = [];
     if (size.xs) sizeClasses.push(`text-${size.xs}`);
     if (size.sm) sizeClasses.push(`sm:text-${size.sm}`);
     if (size.md) sizeClasses.push(`md:text-${size.md}`);
@@ -339,7 +339,7 @@ const UniversalResponsiveSpacing: React.FC<UniversalResponsiveSpacingProps> = ({
   const getSpacingClasses = (spacing: typeof padding, prefix: 'p' | 'm') => {
     if (!spacing) return '';
     
-    const classes = [];
+    const classes: string[] = [];
     if (spacing.xs) classes.push(`${prefix}-${spacing.xs}`);
     if (spacing.sm) classes.push(`sm:${prefix}-${spacing.sm}`);
     if (spacing.md) classes.push(`md:${prefix}-${spacing.md}`);

@@ -366,6 +366,7 @@ export const useChat = (isHandsFreeMode: boolean) => {
             const timer = setTimeout(() => setIsCooldownActive(false), timeRemaining > 0 ? timeRemaining : 0);
             return () => clearTimeout(timer);
         }
+        return undefined;
     }, []);
 
     const activeConversation = useMemo(() => conversations[activeConversationId], [conversations, activeConversationId]);
@@ -821,15 +822,41 @@ export const useChat = (isHandsFreeMode: boolean) => {
                 setLoadingMessages(prev => prev.filter(id => id !== modelMessageId));
             };
 
+            const onErrorString = (error: string) => {
+                hasError = true;
+                if (error === 'QUOTA_EXCEEDED') {
+                    handleQuotaError(modelMessageId);
+                } else {
+                    updateMessageInConversation(activeConversationId, modelMessageId, msg => ({ ...msg, text: error }));
+                    if (isHandsFreeMode) ttsService.speak(error).catch(() => {});
+                }
+                setLoadingMessages(prev => prev.filter(id => id !== modelMessageId));
+            };
+
             if (isProUser) {
                 const imageParts = images ? images.map(img => ({ base64: img.base64, mimeType: img.mimeType })) : null;
-                rawTextResponse = await generateInitialProHint(promptText, imageParts, sourceConversation, history, onError, controller.signal) || "";
+                const historyMessages = history.messages.map(msg => ({ 
+                    ...msg, 
+                    text: msg.content, 
+                    role: msg.role === 'assistant' ? 'model' as const : msg.role as 'user' | 'system' 
+                }));
+                rawTextResponse = await generateInitialProHint(promptText, imageParts, sourceConversation, historyMessages, onErrorString, controller.signal) || "";
             } else {
                 if (images && images.length > 0) {
                     const imageParts = images.map(img => ({ base64: img.base64, mimeType: img.mimeType }));
-                    await sendMessageWithImages(promptText, imageParts, sourceConversation, controller.signal, onChunk, onStreamingError, history);
+                    const historyMessages = history.messages.map(msg => ({ 
+                    ...msg, 
+                    text: msg.content, 
+                    role: msg.role === 'assistant' ? 'model' as const : msg.role as 'user' | 'system' 
+                }));
+                    await sendMessageWithImages(promptText, imageParts, sourceConversation, controller.signal, onChunk, onErrorString, historyMessages);
                 } else {
-                    await sendTextToGemini(promptText, sourceConversation, controller.signal, onChunk, onStreamingError, history);
+                    const historyMessages = history.messages.map(msg => ({ 
+                    ...msg, 
+                    text: msg.content, 
+                    role: msg.role === 'assistant' ? 'model' as const : msg.role as 'user' | 'system' 
+                }));
+                    await sendTextToGemini(promptText, sourceConversation, controller.signal, onChunk, onErrorString, historyMessages);
                 }
             }
             
@@ -992,7 +1019,7 @@ export const useChat = (isHandsFreeMode: boolean) => {
                         userTier,
                         centralTasks,
                         aiGeneratedTasks
-                    );
+                    ) || undefined;
                 } catch (error) {
                     console.warn('Failed to generate task completion prompt:', error);
                 }
@@ -1341,23 +1368,8 @@ Progress: ${conversation.progress}%`;
                     const prompt = `${insightTabConfig.instruction || ''} for ${conversation.title}`;
                     fullContent = await generateInsightWithSearch(
                         prompt,
-                        conversation,
-                        controller.signal,
-                        (chunk) => {
-                            if (controller.signal.aborted) return;
-                            fullContent += chunk;
-                            updateConversation(conversationId, convo => ({
-                                ...convo,
-                                insights: { ...convo.insights!, [insightId]: { ...convo.insights![insightId], content: fullContent, status: 'streaming' } }
-                            }), true);
-                        },
-                        (error) => {
-                            console.error(`Error generating insight ${insightId}:`, error);
-                            updateConversation(conversationId, convo => ({
-                                ...convo,
-                                insights: { ...convo.insights!, [insightId]: { ...convo.insights![insightId], content: `Error: ${error.message}`, status: 'error' } }
-                            }));
-                        }
+                        'flash',
+                        controller.signal
                     );
                     // Save to cache
                     try {
@@ -1384,9 +1396,11 @@ Progress: ${conversation.progress}%`;
                 let fullContent = '';
                 const prompt = `${insightTabConfig.instruction || ''} for ${conversation.title}`;
                 await generateInsightStream(
-                    prompt,
-                    conversation,
-                    controller.signal,
+                    conversation.title,
+                    conversation.genre || 'Unknown',
+                    conversation.progress || 0,
+                    insightTabConfig.instruction || '',
+                    insightId,
                     (chunk) => {
                         if (controller.signal.aborted) return;
                         fullContent += chunk;
@@ -1399,9 +1413,10 @@ Progress: ${conversation.progress}%`;
                         console.error(`Error streaming insight ${insightId}:`, error);
                         updateConversation(conversationId, convo => ({
                             ...convo,
-                            insights: { ...convo.insights!, [insightId]: { ...convo.insights![insightId], content: `Error: ${error.message}`, status: 'error' } }
+                            insights: { ...convo.insights!, [insightId]: { ...convo.insights![insightId], content: `Error: ${error}`, status: 'error' } }
                         }));
-                    }
+                    },
+                    controller.signal
                 );
 
                 if (controller.signal.aborted) return;
@@ -1478,11 +1493,12 @@ Progress: ${conversation.progress}%`;
             
             // Generate all insights in one API call using the unified service
             const result = await generateUnifiedInsights(
+                gameName,
+                genre,
+                progress,
                 `Generate comprehensive insights for ${gameName} at ${progress}% progress`,
-                { title: gameName, genre, progress },
-                new AbortController().signal,
-                (chunk) => console.log('Insight chunk:', chunk),
-                (error) => console.error('Unified insight generation error:', error)
+                (error) => console.error('Unified insight generation error:', error),
+                new AbortController().signal
             );
             
             if (result && result.insights) {

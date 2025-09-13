@@ -911,7 +911,7 @@ class OtakuDiaryService extends BaseService {
 
       if (error) throw error;
 
-      const gameIds = [...new Set(tasksData.map(task => task.game_id))];
+      const gameIds = [...new Set(tasksData.map(task => task.game_id).filter((id): id is string => typeof id === 'string'))];
       return gameIds;
     } catch (error) {
       console.error('Failed to get game IDs:', error);

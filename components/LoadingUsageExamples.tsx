@@ -16,6 +16,7 @@ const LoadingUsageExamples: React.FC = () => {
       }, 3000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [isLoading]);
 
   useEffect(() => {
@@ -25,6 +26,7 @@ const LoadingUsageExamples: React.FC = () => {
       }, 2000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [showSkeleton]);
 
   useEffect(() => {
@@ -34,6 +36,7 @@ const LoadingUsageExamples: React.FC = () => {
       }, 200);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [progress]);
 
   return (

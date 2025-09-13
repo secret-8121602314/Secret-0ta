@@ -33,14 +33,14 @@ export const useGameAnalytics = () => {
     pillContent: any,
     metadata?: Record<string, any>
   ) => {
-    return gameAnalyticsService.trackPillCreated({
+    return gameAnalyticsService.trackPillCreated(
       gameId,
       gameTitle,
       conversationId,
       pillId,
       pillContent,
       metadata
-    });
+    );
   }, []);
 
   const trackPillDeleted = useCallback((
@@ -52,14 +52,16 @@ export const useGameAnalytics = () => {
     metadata?: Record<string, any>
   ) => {
     return gameAnalyticsService.trackGameActivity({
-      type: 'pill_deleted',
       activityType: 'pill_deleted',
       gameId,
       gameTitle,
+      conversationId,
+      pillId,
+      oldValue: oldPillContent,
       metadata: {
         ...metadata,
-        pillId,
-        oldPillContent
+        timestamp: new Date().toISOString(),
+        deletedAt: new Date().toISOString()
       }
     });
   }, []);
@@ -74,15 +76,17 @@ export const useGameAnalytics = () => {
     metadata?: Record<string, any>
   ) => {
     return gameAnalyticsService.trackGameActivity({
-      type: 'pill_modified',
       activityType: 'pill_modified',
       gameId,
       gameTitle,
+      conversationId,
+      pillId,
+      oldValue: oldPillContent,
+      newValue: newPillContent,
       metadata: {
         ...metadata,
-        pillId,
-        oldPillContent,
-        newPillContent
+        timestamp: new Date().toISOString(),
+        modifiedAt: new Date().toISOString()
       }
     });
   }, []);
@@ -97,14 +101,14 @@ export const useGameAnalytics = () => {
     insightContent: any,
     metadata?: Record<string, any>
   ) => {
-    return gameAnalyticsService.trackInsightCreated({
+    return gameAnalyticsService.trackInsightCreated(
       gameId,
       gameTitle,
       conversationId,
       insightId,
       insightContent,
       metadata
-    });
+    );
   }, []);
 
   const trackInsightDeleted = useCallback((
@@ -116,14 +120,16 @@ export const useGameAnalytics = () => {
     metadata?: Record<string, any>
   ) => {
     return gameAnalyticsService.trackGameActivity({
-      type: 'insight_deleted',
       activityType: 'insight_deleted',
       gameId,
       gameTitle,
+      conversationId,
+      insightId,
+      oldValue: oldInsightContent,
       metadata: {
         ...metadata,
-        insightId,
-        oldInsightContent
+        timestamp: new Date().toISOString(),
+        deletedAt: new Date().toISOString()
       }
     });
   }, []);
@@ -138,15 +144,17 @@ export const useGameAnalytics = () => {
     metadata?: Record<string, any>
   ) => {
     return gameAnalyticsService.trackGameActivity({
-      type: 'insight_modified',
       activityType: 'insight_modified',
       gameId,
       gameTitle,
+      conversationId,
+      insightId,
+      oldValue: oldInsightContent,
+      newValue: newInsightContent,
       metadata: {
         ...metadata,
-        insightId,
-        oldInsightContent,
-        newInsightContent
+        timestamp: new Date().toISOString(),
+        modifiedAt: new Date().toISOString()
       }
     });
   }, []);
@@ -165,13 +173,13 @@ export const useGameAnalytics = () => {
     tabType: InsightTab['tabType'],
     metadata?: Record<string, any>
   ) => {
-    return gameAnalyticsService.trackInsightTabCreated({
+    return gameAnalyticsService.trackInsightTabCreated(
       conversationId,
       tabId,
       tabTitle,
       tabType,
       metadata
-    });
+    );
   }, []);
 
   const trackInsightModification = useCallback((
@@ -196,12 +204,14 @@ export const useGameAnalytics = () => {
     aiResponseContext?: Record<string, any>,
     metadata?: Record<string, any>
   ) => {
-    return gameAnalyticsService.trackAIResponseFeedback({
-      type: 'positive',
+    return gameAnalyticsService.trackAIResponseFeedback(
       conversationId,
+      messageId,
       feedbackType,
-      feedbackText
-    });
+      feedbackText,
+      aiResponseContext,
+      metadata
+    );
   }, []);
 
   const trackInsightFeedback = useCallback((
@@ -212,12 +222,12 @@ export const useGameAnalytics = () => {
     metadata?: Record<string, any>
   ) => {
     return gameAnalyticsService.trackUserFeedback({
-      type: 'positive',
       conversationId,
       targetType: 'insight',
       targetId: insightId,
       feedbackType,
-      feedbackText
+      feedbackText,
+      metadata
     });
   }, []);
 
@@ -246,16 +256,19 @@ export const useGameAnalytics = () => {
     apiCallTimers.current.delete(endpoint);
 
     const apiCall: ApiCall = {
-      id: crypto.randomUUID(),
-      endpoint: endpoint,
-      method: method,
-      status: success ? 200 : 500,
-      timestamp: Date.now(),
       apiEndpoint: endpoint,
       apiMethod: method,
       requestSizeBytes: requestSize,
       responseSizeBytes: responseSize,
-      duration: responseTimeMs
+      responseTimeMs,
+      success,
+      errorMessage,
+      requestMetadata: metadata,
+      responseMetadata: {
+        timestamp: new Date().toISOString(),
+        endpoint,
+        method
+      }
     };
 
     gameAnalyticsService.trackApiCall(apiCall);
@@ -308,14 +321,16 @@ export const useGameAnalytics = () => {
     metadata?: Record<string, any>
   ) => {
     return gameAnalyticsService.trackGameActivity({
-      type: 'game_progress_updated',
       activityType: 'game_progress_updated',
       gameId,
       gameTitle,
+      conversationId,
+      oldValue: oldProgress,
+      newValue: newProgress,
       metadata: {
         ...metadata,
-        oldProgress,
-        newProgress
+        timestamp: new Date().toISOString(),
+        progressUpdatedAt: new Date().toISOString()
       }
     });
   }, []);
@@ -329,14 +344,16 @@ export const useGameAnalytics = () => {
     metadata?: Record<string, any>
   ) => {
     return gameAnalyticsService.trackGameActivity({
-      type: 'inventory_changed',
       activityType: 'inventory_changed',
       gameId,
       gameTitle,
+      conversationId,
+      oldValue: oldInventory,
+      newValue: newInventory,
       metadata: {
         ...metadata,
-        oldInventory,
-        newInventory
+        timestamp: new Date().toISOString(),
+        inventoryChangedAt: new Date().toISOString()
       }
     });
   }, []);
@@ -349,13 +366,15 @@ export const useGameAnalytics = () => {
     metadata?: Record<string, any>
   ) => {
     return gameAnalyticsService.trackGameActivity({
-      type: 'objective_set',
       activityType: 'objective_set',
       gameId,
       gameTitle,
+      conversationId,
+      newValue: objective,
       metadata: {
         ...metadata,
-        objective
+        timestamp: new Date().toISOString(),
+        objectiveSetAt: new Date().toISOString()
       }
     });
   }, []);

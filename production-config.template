@@ -1,0 +1,91 @@
+# Firebase Production Deployment Configuration
+# This file contains all the secrets and configuration needed for production deployment
+
+# ===========================================
+# 🔐 SECRET MANAGER SETUP INSTRUCTIONS
+# ===========================================
+# 
+# Run these commands to create secrets in Google Cloud Secret Manager:
+#
+# 1. Set your project ID
+# export PROJECT_ID=otakon-production
+#
+# 2. Create Supabase secrets
+# echo -n "https://your-project.supabase.co" | gcloud secrets create supabase-url --data-file=-
+# echo -n "your-service-key-here" | gcloud secrets create supabase-service-key --data-file=-
+# echo -n "your-anon-key-here" | gcloud secrets create supabase-anon-key --data-file=-
+#
+# 3. Create Gemini API secret
+# echo -n "your-gemini-api-key-here" | gcloud secrets create gemini-api-key --data-file=-
+#
+# 4. Grant Cloud Run service account access to secrets
+# gcloud secrets add-iam-policy-binding supabase-url \
+#   --member="serviceAccount:otakon-backend@otakon-production.iam.gserviceaccount.com" \
+#   --role="roles/secretmanager.secretAccessor"
+#
+# gcloud secrets add-iam-policy-binding supabase-service-key \
+#   --member="serviceAccount:otakon-backend@otakon-production.iam.gserviceaccount.com" \
+#   --role="roles/secretmanager.secretAccessor"
+#
+# gcloud secrets add-iam-policy-binding supabase-anon-key \
+#   --member="serviceAccount:otakon-backend@otakon-production.iam.gserviceaccount.com" \
+#   --role="roles/secretmanager.secretAccessor"
+#
+# gcloud secrets add-iam-policy-binding gemini-api-key \
+#   --member="serviceAccount:otakon-backend@otakon-production.iam.gserviceaccount.com" \
+#   --role="roles/secretmanager.secretAccessor"
+
+# ===========================================
+# 🌐 FRONTEND BUILD ENVIRONMENT VARIABLES
+# ===========================================
+# These will be injected during the build process
+
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your-anon-key-here
+VITE_GEMINI_API_KEY=your-gemini-api-key-here
+VITE_API_BASE_URL=https://otakon-backend-xyz-uc.a.run.app
+
+# ===========================================
+# 🔧 BACKEND RUNTIME ENVIRONMENT VARIABLES
+# ===========================================
+# These will be set in Cloud Run deployment
+
+NODE_ENV=production
+PORT=8080
+GOOGLE_CLOUD_PROJECT=otakon-production
+GCLOUD_PROJECT=otakon-production
+
+# ===========================================
+# 📊 MONITORING & LOGGING
+# ===========================================
+
+ENABLE_LOGGING=true
+LOG_LEVEL=info
+ENABLE_METRICS=true
+ENABLE_TRACING=true
+
+# ===========================================
+# 🛡️ SECURITY CONFIGURATION
+# ===========================================
+
+CORS_ORIGIN=https://otakon-production.web.app,https://otakon-production.firebaseapp.com
+HELMET_CSP_ENABLED=true
+RATE_LIMIT_ENABLED=true
+RATE_LIMIT_MAX_REQUESTS=100
+RATE_LIMIT_WINDOW_MS=900000
+
+# ===========================================
+# 🚀 DEPLOYMENT CONFIGURATION
+# ===========================================
+
+# Cloud Run Configuration
+CLOUD_RUN_REGION=us-central1
+CLOUD_RUN_MEMORY=1Gi
+CLOUD_RUN_CPU=1
+CLOUD_RUN_MAX_INSTANCES=10
+CLOUD_RUN_MIN_INSTANCES=0
+CLOUD_RUN_TIMEOUT=300
+
+# Firebase Hosting Configuration
+FIREBASE_PROJECT=otakon-production
+FIREBASE_SITE=otagon-0509

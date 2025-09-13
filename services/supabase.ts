@@ -2,6 +2,9 @@ import { createClient } from '@supabase/supabase-js';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { AuthService, AuthState } from './authTypes';
 
+// Re-export AuthState for compatibility
+export type { AuthState } from './authTypes';
+
 // Environment variables for Supabase
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY || process.env.SUPABASE_ANON_KEY;
@@ -32,27 +35,9 @@ export const supabase = createClient(supabaseUrl || fallbackUrl, supabaseKey || 
 // - Rate limiting
 // - Audit logging
 
-export interface AuthState {
-  user: User | null
-  session: Session | null
-  loading: boolean
-  error: string | null
-}
+// AuthState interface is imported from authTypes.ts
 
-export interface AuthService {
-  getCurrentState(): AuthState
-  getCurrentUserId(): string | null
-  getAuthState(): AuthState
-  subscribe(callback: (state: AuthState) => void): () => void
-  signIn(email: string, password: string): Promise<{ success: boolean; error?: string }>
-  signUp(email: string, password: string): Promise<{ success: boolean; error?: string }>
-  signOut(): Promise<{ success: boolean; error?: string }>
-  signInWithDeveloperMode(password: string): Promise<{ success: boolean; error?: string }>
-  handleOAuthCallback(): Promise<boolean>
-  resetPassword(email: string): Promise<{ success: boolean; error?: string }>
-  signInWithGoogle(): Promise<{ success: boolean; error?: string }>
-  signInWithDiscord(): Promise<{ success: boolean; error?: string }>
-}
+// AuthService interface is imported from authTypes.ts
 
 class SecureAuthService implements AuthService {
   private static instance: SecureAuthService
@@ -115,7 +100,7 @@ class SecureAuthService implements AuthService {
     } catch (error) {
       this.error('Auth initialization failed', error);
       this.updateAuthState({ 
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? { message: error.message, name: error.name } as AuthError : { message: String(error), name: 'AuthError' } as AuthError,
         loading: false 
       });
     }
@@ -204,7 +189,7 @@ class SecureAuthService implements AuthService {
       } catch (error) {
         this.error('Auth state change handler error', error);
         this.updateAuthState({ 
-          error: error instanceof Error ? error.message : String(error), 
+          error: error instanceof Error ? { message: error.message, name: error.name } as AuthError : { message: String(error), name: 'AuthError' } as AuthError, 
           loading: false 
         });
       }
