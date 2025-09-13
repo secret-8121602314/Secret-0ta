@@ -791,6 +791,7 @@ const App: React.FC = () => {
       return (
         <ErrorBoundary>
           {/* Modals - Outside Router to avoid interference */}
+          {console.log('LOGIN PAGE CONTEXT - activeModal:', appState.activeModal, 'onboardingStatus:', onboardingStatus)}
           {appState.activeModal === 'about' && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={closeModal}>
               <div className="bg-[#1C1C1C] border border-[#424242] rounded-2xl shadow-2xl w-full max-w-4xl m-4 relative flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
@@ -903,6 +904,7 @@ const App: React.FC = () => {
     return (
       <ErrorBoundary>
         {/* Modals - Outside Router to avoid interference */}
+        {console.log('LANDING PAGE CONTEXT - activeModal:', appState.activeModal)}
         {appState.activeModal === 'about' && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={closeModal}>
             <div className="bg-[#1C1C1C] border border-[#424242] rounded-2xl shadow-2xl w-full max-w-4xl m-4 relative max-h-[90vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
