@@ -521,10 +521,11 @@ interface LandingPageProps {
   onOpenPrivacy: () => void;
   onOpenRefund: () => void;
   onOpenContact: () => void;
+  onOpenTerms: () => void;
   onDirectNavigation: (path: string) => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, onOpenPrivacy, onOpenRefund, onOpenContact, onDirectNavigation }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, onOpenPrivacy, onOpenRefund, onOpenContact, onOpenTerms, onDirectNavigation }) => {
     const [email, setEmail] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitMessage, setSubmitMessage] = useState('');
@@ -918,6 +919,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                         <div className="flex items-center gap-6 text-sm font-medium text-neutral-400 order-1 md:order-2">
                            <a href="#pricing" onClick={handleScrollTo('pricing')} className="hover:text-white transition-colors">Pricing</a>
                            <button type="button" onClick={onOpenAbout} className="hover:text-white transition-colors">About</button>
+                           <button type="button" onClick={onOpenTerms} className="hover:text-white transition-colors">Terms</button>
                            <button type="button" onClick={onOpenPrivacy} className="hover:text-white transition-colors">Privacy</button>
                            <button type="button" onClick={onOpenRefund} className="hover:text-white transition-colors">Refund Policy</button>
                            <button type="button" onClick={() => setShowContactModal(true)} className="hover:text-white transition-colors">Contact Us</button>
