@@ -834,6 +834,27 @@ const App: React.FC = () => {
             </div>
           )}
           
+          {appState.activeModal === 'terms' && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={closeModal}>
+              <div className="bg-[#1C1C1C] border border-[#424242] rounded-2xl shadow-2xl w-full max-w-4xl m-4 relative flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+                <header className="flex-shrink-0 p-6 border-b border-[#2E2E2E]/60 flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-[#F5F5F5]">Terms of Service</h2>
+                  <button onClick={closeModal} className="text-[#6E6E6E] hover:text-[#F5F5F5] transition-colors">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                  </button>
+                </header>
+                <main className="flex-1 overflow-y-auto p-8 min-h-0">
+                  <TermsOfServicePage />
+                </main>
+                <footer className="flex-shrink-0 p-6 border-t border-[#2E2E2E]/60 flex justify-end">
+                  <button onClick={closeModal} className="bg-neutral-600 hover:bg-neutral-700 text-white font-medium py-2 px-6 rounded-md transition-colors">
+                    Back
+                  </button>
+                </footer>
+              </div>
+            </div>
+          )}
+          
           {appState.activeModal === 'contact' && (
             <ContactUsModal isOpen={true} onClose={closeModal} />
           )}
@@ -1016,7 +1037,7 @@ const App: React.FC = () => {
             onLogout={handleLogoutOnly}
             onResetApp={handleResetApp}
             onShowHowToUse={() => handleOnboardingUpdate('how-to-use')}
-            userEmail={appState.userState?.email || ''}
+            userEmail={appState.userState?.user?.email || ''}
             onClearFirstRunCache={() => {}}
             refreshUsage={refreshUsage}
           />
@@ -1187,8 +1208,7 @@ const App: React.FC = () => {
   );
 };
 
-export default App;
-                </button>
+export default App;                </button>
               </header>
               <main className="flex-1 overflow-y-auto p-8">
                 <RefundPolicyPage />
