@@ -19,7 +19,7 @@ export const OtakuDiaryModal: React.FC<OtakuDiaryModalProps> = ({
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={onClose}>
       <div
-        className="bg-gradient-to-br from-[#1C1C1C] to-[#0A0A0A] border border-[#FF4D4D]/30 rounded-2xl shadow-2xl w-full max-w-4xl mx-auto relative animate-scale-in flex flex-col max-h-[90vh] hover:border-[#FF4D4D]/50 transition-all duration-300 overflow-hidden"
+        className="bg-gradient-to-br from-[#1C1C1C] to-[#0A0A0A] border border-[#FF4D4D]/30 rounded-2xl shadow-2xl w-full max-w-4xl mx-auto relative animate-scale-in flex flex-col max-h-[90vh] hover:border-[#FF4D4D]/50 transition-all duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Brand Header */}
@@ -52,7 +52,7 @@ export const OtakuDiaryModal: React.FC<OtakuDiaryModalProps> = ({
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6 min-h-0">
           <OtakuDiaryTab 
             gameId={gameId}
             gameTitle={gameTitle}

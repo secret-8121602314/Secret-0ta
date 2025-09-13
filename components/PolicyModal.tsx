@@ -23,7 +23,7 @@ const PolicyModal: React.FC<PolicyModalProps> = ({ title, onClose, children }) =
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </header>
-        <main className="flex-1 overflow-y-auto p-8">
+        <main className="flex-1 overflow-y-auto p-8 min-h-0">
             <div className="prose prose-invert prose-lg max-w-none prose-p:text-neutral-300 prose-a:text-[#FFAB40]">
                 {children}
             </div>
