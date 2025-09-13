@@ -10,7 +10,7 @@ import LandingPage from './components/LandingPage';
 import MainViewContainer from './components/MainViewContainer';
 import AboutPage from './components/AboutPage';
 import PrivacyPolicyPage from './components/PrivacyPolicyPage';
-import RefundPolicyPage from './components/RefundPolicyPage';
+import TermsOfServicePage from './components/TermsOfServicePage';
 import ContactUsModal from './components/ContactUsModal';
 import OnboardingFlow from './components/onboarding/OnboardingFlow';
 import LoginSplashScreen from './components/LoginSplashScreen';
@@ -68,7 +68,7 @@ interface AppState {
   loading: boolean;
   error: string | null;
   initialized: boolean;
-  activeModal: 'about' | 'privacy' | 'refund' | 'contact' | null;
+  activeModal: 'about' | 'privacy' | 'refund' | 'contact' | 'terms' | null;
   
   // Modal states
   isConnectionModalOpen: boolean;
@@ -591,7 +591,7 @@ const App: React.FC = () => {
               handleAuthStateChange();
             }}
             onOpenPrivacy={() => openModal('privacy')}
-            onOpenTerms={() => openModal('about')}
+            onOpenTerms={() => openModal('terms')}
             onBackToLanding={() => {
               console.log('Back to landing clicked');
               handleOnboardingUpdate('complete');
@@ -845,7 +845,7 @@ const App: React.FC = () => {
               handleAuthStateChange();
             }}
             onOpenPrivacy={() => openModal('privacy')}
-            onOpenTerms={() => openModal('about')}
+            onOpenTerms={() => openModal('terms')}
             onBackToLanding={() => {
               console.log('Back to landing clicked');
               handleOnboardingUpdate('complete');
@@ -1001,13 +1001,22 @@ const App: React.FC = () => {
           <SettingsModal
             isOpen={appState.isSettingsModalOpen}
             onClose={() => setAppState(prev => ({ ...prev, isSettingsModalOpen: false }))}
-            usage={{ textQueries: 0, imageQueries: 0, insights: 0 }}
+            usage={{ 
+              textQueries: 0, 
+              imageQueries: 0, 
+              insights: 0,
+              textCount: 0,
+              imageCount: 0,
+              textLimit: 55,
+              imageLimit: 25,
+              tier: 'free'
+            }}
             onShowUpgrade={handleUpgrade}
             onShowVanguardUpgrade={handleUpgradeToVanguard}
             onLogout={handleLogoutOnly}
             onResetApp={handleResetApp}
             onShowHowToUse={() => handleOnboardingUpdate('how-to-use')}
-            userEmail={appState.userState?.user?.email || ''}
+            userEmail={appState.userState?.email || ''}
             onClearFirstRunCache={() => {}}
             refreshUsage={refreshUsage}
           />
@@ -1016,7 +1025,16 @@ const App: React.FC = () => {
         {appState.isCreditModalOpen && (
           <CreditModal
             onClose={() => setAppState(prev => ({ ...prev, isCreditModalOpen: false }))}
-            usage={{ textQueries: 0, imageQueries: 0, insights: 0 }}
+            usage={{ 
+              textQueries: 0, 
+              imageQueries: 0, 
+              insights: 0,
+              textCount: 0,
+              imageCount: 0,
+              textLimit: 55,
+              imageLimit: 25,
+              tier: 'free'
+            }}
             onUpgrade={handleUpgrade}
           />
         )}
@@ -1130,6 +1148,46 @@ const App: React.FC = () => {
                 <h2 className="text-2xl font-bold text-[#F5F5F5]">Refund Policy</h2>
                 <button onClick={closeModal} className="text-[#6E6E6E] hover:text-[#F5F5F5] transition-colors">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+              </header>
+              <main className="flex-1 overflow-y-auto p-8">
+                <RefundPolicyPage />
+              </main>
+              <footer className="flex-shrink-0 p-6 border-t border-[#2E2E2E]/60 flex justify-end">
+                <button onClick={closeModal} className="bg-neutral-600 hover:bg-neutral-700 text-white font-medium py-2 px-6 rounded-md transition-colors">
+                  Back
+                </button>
+              </footer>
+            </div>
+          </div>
+        )}
+        
+        {appState.activeModal === 'contact' && (
+          <ContactUsModal isOpen={true} onClose={closeModal} />
+        )}
+
+        {/* Banners */}
+        {appState.showDailyCheckin && (
+          <DailyCheckinBanner
+            onClose={() => setAppState(prev => ({ ...prev, showDailyCheckin: false }))}
+          />
+        )}
+
+        {appState.currentAchievement && (
+          <AchievementNotification
+            achievement={appState.currentAchievement}
+            onClose={() => setAppState(prev => ({ ...prev, currentAchievement: null }))}
+          />
+        )}
+
+        {/* PWA Install Banner */}
+        <PWAInstallBanner />
+      </div>
+    </ErrorBoundary>
+  );
+};
+
+export default App;
                 </button>
               </header>
               <main className="flex-1 overflow-y-auto p-8">
