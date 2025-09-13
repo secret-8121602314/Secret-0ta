@@ -201,12 +201,12 @@ const RefactoredApp: React.FC = () => {
     state.setShowUpgradeScreen(true);
   }, [state.setShowUpgradeScreen]);
 
-  const handleFeedbackSubmit = useCallback(async (vote: 'up' | 'down') => {
+  const handleFeedbackSubmit = useCallback(async (feedbackText: string) => {
     if (!feedbackModalState) return;
     
     try {
       // Handle feedback submission
-      console.log('Feedback submitted:', { vote, feedbackModalState });
+      console.log('Feedback submitted:', { feedbackText, feedbackModalState });
       closeFeedbackModal();
     } catch (error) {
       handleError(error as Error, 'feedbackSubmission');

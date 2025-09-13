@@ -64,6 +64,7 @@ const EnhancedModal: React.FC<EnhancedModalProps> = ({
         previousActiveElement.current.focus();
       }
     }
+    return undefined;
   }, [isOpen]);
 
   // Focus trap

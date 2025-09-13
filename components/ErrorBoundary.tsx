@@ -22,7 +22,7 @@ class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error, errorInfo: null };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     this.setState({
       error,
       errorInfo,
@@ -40,7 +40,7 @@ class ErrorBoundary extends Component<Props, State> {
     // Example: logErrorToService(error, errorInfo);
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;

@@ -549,7 +549,7 @@ class AIContextService {
     pattern_data: Record<string, any>;
     confidence_score: number;
   }> {
-    const patterns = [];
+    const patterns: any[] = [];
 
     // Response pattern analysis
     if (feedback.ai_response_context) {

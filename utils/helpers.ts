@@ -269,7 +269,7 @@ export const deepMerge = <T extends Record<string, any>>(target: T, source: Part
           typeof targetValue === 'object' && targetValue !== null && !Array.isArray(targetValue)) {
         result[key] = deepMerge(targetValue, sourceValue);
       } else {
-        result[key] = sourceValue;
+        result[key] = sourceValue!;
       }
     }
   }

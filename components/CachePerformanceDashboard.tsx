@@ -241,7 +241,7 @@ export default function CachePerformanceDashboard({ isOpen, onClose }: CachePerf
                     <div className="ml-4">
                       <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Memory Usage</p>
                       <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                        {formatBytes(metrics.memoryUsage)}
+                        {formatBytes(metrics.memoryUsage || 0)}
                       </p>
                     </div>
                   </div>

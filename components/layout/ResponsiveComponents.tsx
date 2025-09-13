@@ -280,7 +280,7 @@ const ResponsiveGrid: React.FC<ResponsiveGridProps> = ({
     const baseClasses = 'grid';
     
     // Add responsive grid columns
-    const colClasses = [];
+    const colClasses: string[] = [];
     if (cols.mobile) colClasses.push(`grid-cols-${cols.mobile}`);
     if (cols.tablet) colClasses.push(`sm:grid-cols-${cols.tablet}`);
     if (cols.laptop) colClasses.push(`md:grid-cols-${cols.laptop}`);
@@ -339,7 +339,7 @@ const ResponsiveFlex: React.FC<ResponsiveFlexProps> = ({
     const baseClasses = 'flex';
     
     // Add responsive direction classes
-    const directionClasses = [];
+    const directionClasses: string[] = [];
     if (direction.mobile) directionClasses.push(`flex-${direction.mobile}`);
     if (direction.tablet) directionClasses.push(`sm:flex-${direction.tablet}`);
     if (direction.laptop) directionClasses.push(`md:flex-${direction.laptop}`);

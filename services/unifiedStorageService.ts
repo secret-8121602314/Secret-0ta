@@ -721,7 +721,7 @@ export class UnifiedStorageService extends BaseService {
     return stats;
   }
 
-  async cleanup(): Promise<void> {
+  override async cleanup(): Promise<void> {
     try {
       // Clean up old entries
       const cutoffTime = Date.now() - (30 * 24 * 60 * 60 * 1000); // 30 days ago

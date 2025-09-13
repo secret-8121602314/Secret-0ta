@@ -103,6 +103,7 @@ export const useTutorial = () => {
 
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [tutorialState.shouldShowTutorial, tutorialState.isTutorialOpen, openTutorial]);
 
   return {

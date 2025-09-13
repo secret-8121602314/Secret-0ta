@@ -514,11 +514,11 @@ const App: React.FC = () => {
     setAppState(prev => ({ ...prev, showUpgradeScreen: true }));
   }, []);
 
-  const handleFeedbackSubmit = useCallback(async (vote: 'up' | 'down') => {
+  const handleFeedbackSubmit = useCallback(async (feedbackText: string) => {
     if (!appState.feedbackModalState) return;
     
     try {
-      console.log('Feedback submitted:', { vote, feedbackModalState: appState.feedbackModalState });
+      console.log('Feedback submitted:', { feedbackText, feedbackModalState: appState.feedbackModalState });
       closeFeedbackModal();
     } catch (error) {
       handleError(error as Error, 'feedbackSubmission');

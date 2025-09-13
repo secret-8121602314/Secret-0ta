@@ -108,14 +108,15 @@ export const useModals = ({
     }
   }, [setContextMenu]);
 
-  const handleFeedback = useCallback((messageId: string, conversationId: string, originalText: string, type: 'message' | 'insight' = 'message', insightId?: string) => {
+  const handleFeedback = useCallback((type: 'message' | 'insight', convId: string, targetId: string, originalText: string, vote: 'up' | 'down') => {
     setFeedbackModalState({
       isOpen: true,
-      messageId,
-      insightId,
-      conversationId,
+      messageId: targetId,
+      insightId: type === 'insight' ? targetId : undefined,
+      conversationId: convId,
       originalText,
       type,
+      vote,
     });
   }, [setFeedbackModalState]);
 

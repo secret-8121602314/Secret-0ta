@@ -113,6 +113,9 @@ export default defineConfig(({ mode }) => {
               }
               return 'app-components';
             }
+            
+            // Default chunk for unmatched modules
+            return undefined;
           }
         }
       }

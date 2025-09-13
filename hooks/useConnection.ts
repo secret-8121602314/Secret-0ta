@@ -164,6 +164,7 @@ export const useConnection = (onMessage: MessageHandler) => {
             
             return () => clearTimeout(autoConnectDelay);
         }
+        return undefined;
     }, [connect, status]);
 
     // Auto-reconnect when app comes into focus

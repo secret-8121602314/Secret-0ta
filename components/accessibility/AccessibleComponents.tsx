@@ -333,6 +333,7 @@ const AccessibleListbox: React.FC<AccessibleListboxProps> = ({
       const cleanup = focusManagement.trapFocus(listboxRef.current);
       return cleanup;
     }
+    return undefined;
   }, [isOpen]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

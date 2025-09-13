@@ -261,7 +261,7 @@ export const ProactiveInsightsPanel: React.FC<ProactiveInsightsPanelProps> = ({
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <span className="text-xs text-[#A3A3A3]">
-                                                {formatTimestamp(insight.timestamp)}
+                                                {formatTimestamp(insight.timestamp || Date.now())}
                                             </span>
                                             <button
                                                 onClick={() => handleDeleteInsight(insight.id)}

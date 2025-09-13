@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { ChatMessage, Conversations, Conversation, newsPrompts, Insight, insightTabsConfig, InsightStatus, PendingInsightModification, ChatMessageFeedback } from '../services/types';
+import { ChatMessage, Conversations, Conversation, newsPrompts, Insight, insightTabsConfig, InsightStatus, PendingInsightModification, ChatMessageFeedback, TaskCompletionPrompt } from '../services/types';
 import { authService, supabase } from '../services/supabase';
 // Removed databaseService - not used in useChat
 import { secureConversationService } from '../services/secureConversationService';
@@ -1005,7 +1005,7 @@ export const useChat = (isHandsFreeMode: boolean) => {
             }
 
             // NEW: Get task completion prompt from AI response
-            let taskCompletionPrompt = undefined;
+            let taskCompletionPrompt: TaskCompletionPrompt | undefined = undefined;
             if (finalTargetConvoId !== EVERYTHING_ELSE_ID) {
                 try {
                     // Using static imports instead of dynamic imports for Firebase hosting compatibility

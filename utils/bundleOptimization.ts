@@ -169,7 +169,7 @@ export const bundleAnalysis = {
 
   // Get optimization recommendations
   getOptimizationRecommendations: (analysis: any) => {
-    const recommendations = [];
+    const recommendations: any[] = [];
 
     // Large chunks
     const largeChunks = analysis.chunks.filter((chunk: any) => chunk.size > 100 * 1024);
@@ -366,7 +366,7 @@ export const performanceBudgets = {
 export const optimizationRecommendations = {
   // Get recommendations based on analysis
   getRecommendations: (analysis: any) => {
-    const recommendations = [];
+    const recommendations: any[] = [];
 
     // Bundle size recommendations
     if (analysis.bundleSize > performanceBudgets.bundle.js * 1024) {

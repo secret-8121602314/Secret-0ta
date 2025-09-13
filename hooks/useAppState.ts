@@ -13,6 +13,7 @@ export type FeedbackModalState = {
   conversationId?: string;
   originalText?: string;
   type?: 'message' | 'insight';
+  vote?: 'up' | 'down';
 };
 
 export type ActiveModal = 'about' | 'privacy' | 'refund' | 'contact' | 'terms' | null;

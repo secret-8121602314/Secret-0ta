@@ -85,7 +85,7 @@ const ResponsiveGrid: React.FC<ResponsiveGridProps> = ({
   };
 
   const getGridCols = () => {
-    const colClasses = [];
+    const colClasses: string[] = [];
     if (cols.xs) colClasses.push(`grid-cols-${cols.xs}`);
     if (cols.sm) colClasses.push(`sm:grid-cols-${cols.sm}`);
     if (cols.md) colClasses.push(`md:grid-cols-${cols.md}`);

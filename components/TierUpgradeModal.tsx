@@ -184,13 +184,13 @@ export const TierUpgradeModal: React.FC<TierUpgradeModalProps> = ({
                   <div className="space-y-4 mb-8">
                     <div className="text-center">
                         <div className="text-3xl font-bold text-white">
-                            {tier.textLimit.toLocaleString()}
+                            {(tier.textLimit || 0).toLocaleString()}
                         </div>
                         <div className="text-base text-neutral-300">Text Queries</div>
                     </div>
                     <div className="text-center">
                         <div className="text-3xl font-bold text-white">
-                            {tier.imageLimit.toLocaleString()}
+                            {(tier.imageLimit || 0).toLocaleString()}
                         </div>
                         <div className="text-base text-neutral-300">Image Queries</div>
                     </div>

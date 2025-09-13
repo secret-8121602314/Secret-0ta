@@ -367,7 +367,7 @@ export class UnifiedAnalyticsService extends BaseService {
         featureCategory: 'other',
         action: 'complete',
         duration,
-        metadata
+        metadata: metadata || {}
       });
     }
   }
@@ -474,7 +474,7 @@ export class UnifiedAnalyticsService extends BaseService {
       
       return {
         ...event,
-        userId: user,
+        userId: user || undefined,
         userTier: tier,
         platform: this.getPlatform(),
         version: this.getAppVersion()
@@ -558,7 +558,7 @@ export class UnifiedAnalyticsService extends BaseService {
 
   // ===== CLEANUP =====
 
-  async cleanup(): Promise<void> {
+  override async cleanup(): Promise<void> {
     try {
       // Process remaining events
       await this.processEventQueue();

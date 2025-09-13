@@ -234,6 +234,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLoading, onStop, o
             const timer = setTimeout(() => setShowConfetti(false), 4000); // Duration of confetti animation
             return () => clearTimeout(timer);
         }
+        return undefined;
     }, [triumph]);
 
     if (role === 'user') {

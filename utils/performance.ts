@@ -84,7 +84,7 @@ export const bundleAnalysis = {
 
   // Get bundle recommendations
   getRecommendations: (analysis: any) => {
-    const recommendations = [];
+    const recommendations: any[] = [];
 
     if (analysis.jsSize > performanceMetrics.budgets.bundle.js * 1024) {
       recommendations.push({
@@ -133,7 +133,7 @@ export const bundleAnalysis = {
 export const imageOptimization = {
   // Generate responsive image sizes
   generateSizes: (baseWidth: number, baseHeight: number) => {
-    const sizes = [];
+    const sizes: any[] = [];
     const breakpoints = [320, 640, 768, 1024, 1280, 1536];
     
     breakpoints.forEach(width => {

@@ -19,7 +19,7 @@ interface ProgressiveUpdateResult {
 
 class ProgressiveInsightService {
   private static instance: ProgressiveInsightService;
-  private ai: GoogleGenAI;
+  private ai!: GoogleGenAI;
 
   static getInstance(): ProgressiveInsightService {
     if (!ProgressiveInsightService.instance) {

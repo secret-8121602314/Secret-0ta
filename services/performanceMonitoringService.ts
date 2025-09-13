@@ -325,7 +325,6 @@ export const {
 // Add to window for debugging
 declare global {
   interface Window {
-    gtag?: (...args: any[]) => void;
     performanceMonitoringService?: typeof performanceMonitoringService;
   }
 }

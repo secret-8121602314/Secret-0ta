@@ -122,7 +122,7 @@ export interface AIConfig {
 // ===== UNIFIED AI SERVICE =====
 
 export class UnifiedAIService extends BaseService {
-  private ai: GoogleGenAI;
+  private ai!: GoogleGenAI;
   private chatSessions: Record<string, { chat: Chat, model: GeminiModel }> = {};
   private config: AIConfig;
   private usedPrompts: Set<string> = new Set();
@@ -300,7 +300,7 @@ export class UnifiedAIService extends BaseService {
             userTier,
             centralTasks,
             aiGeneratedTasks
-          );
+          ) || undefined;
           
           if (taskCompletionPrompt) {
             console.log(`📝 Generated task completion prompt for ${conversation.title}: ${taskCompletionPrompt.tasks.length} tasks`);
@@ -555,7 +555,7 @@ export class UnifiedAIService extends BaseService {
             gameName,
             genre,
             progress,
-            tab.instruction,
+            tab.instruction || '',
             tab.id,
             undefined,
             signal
@@ -1743,7 +1743,7 @@ Return a JSON array of tasks with:
     return Promise.resolve();
   }
 
-  cleanup(): void {
+  override cleanup(): void {
     console.log('🧹 UnifiedAIService: Cleanup called');
     this.chatSessions = {};
     this.insightCache.clear();

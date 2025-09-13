@@ -43,6 +43,7 @@ export const PerformanceDashboard: React.FC = () => {
 
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [autoRefresh, refreshInterval]);
 
   useEffect(() => {
