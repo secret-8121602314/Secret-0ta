@@ -223,7 +223,9 @@ const App: React.FC = () => {
   // Debug modal state changes
   useEffect(() => {
     console.log('Modal state changed:', appState.activeModal);
-  }, [appState.activeModal]);
+    console.log('App view:', appState.appView);
+    console.log('User state:', appState.userState);
+  }, [appState.activeModal, appState.appView, appState.userState]);
 
   // Handle onboarding status updates
   const handleOnboardingUpdate = useCallback(async (status: string) => {
@@ -404,7 +406,10 @@ const App: React.FC = () => {
   } = useModals({
     setContextMenu: (menu: any) => setAppState(prev => ({ ...prev, contextMenu: menu })),
     setFeedbackModalState: (state: any) => setAppState(prev => ({ ...prev, feedbackModalState: state })),
-    setActiveModal: (modal: any) => setAppState(prev => ({ ...prev, activeModal: modal })),
+    setActiveModal: (modal: any) => {
+      console.log('Setting active modal to:', modal);
+      setAppState(prev => ({ ...prev, activeModal: modal }));
+    },
   });
 
   // Handle ESC key to close modal
