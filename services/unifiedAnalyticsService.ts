@@ -88,7 +88,6 @@ export interface PerformanceEvent extends AnalyticsEvent {
 
 export interface UserBehaviorEvent extends AnalyticsEvent {
   category: 'user_behavior';
-  behaviorType: 'session_start' | 'session_end' | 'feature_discovery' | 'conversion_attempt';
   sessionDuration?: number;
   featuresUsed?: string[];
   conversionType?: string;
@@ -186,7 +185,6 @@ export class UnifiedAnalyticsService extends BaseService {
         category: 'user_behavior',
         timestamp: Date.now(),
         sessionId: this.sessionId,
-        behaviorType: 'session_start',
         metadata: {
           platform: this.getPlatform(),
           version: this.getAppVersion(),
@@ -544,9 +542,23 @@ export class UnifiedAnalyticsService extends BaseService {
 
       // Batch insert events to Supabase
       if (events.length > 0) {
+        // Map interface fields to database column names
+        const mappedEvents = events.map(event => ({
+          id: event.id,
+          event_type: event.eventType,
+          category: event.category,
+          timestamp: new Date(event.timestamp).toISOString(),
+          user_id: event.userId || null,
+          session_id: event.sessionId,
+          metadata: event.metadata,
+          user_tier: event.userTier || 'free',
+          platform: event.platform || 'web',
+          version: event.version
+        }));
+
         const { error } = await supabase
-          .from('analytics_events')
-          .insert(events);
+          .from('analytics_new')
+          .insert(mappedEvents);
 
         if (error) {
           console.error('Failed to insert analytics events:', error);
@@ -590,7 +602,6 @@ export class UnifiedAnalyticsService extends BaseService {
         category: 'user_behavior',
         timestamp: Date.now(),
         sessionId: this.sessionId,
-        behaviorType: 'session_end',
         sessionDuration,
         metadata: { sessionDuration }
       });

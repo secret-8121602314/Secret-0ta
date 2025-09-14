@@ -300,14 +300,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, usage, o
     return (
       <button
         onClick={handleClick}
-        className={`w-full flex items-center justify-center md:justify-start gap-2 md:gap-4 px-3 py-3 md:px-5 md:py-5 text-sm md:text-base font-medium rounded-xl transition-all duration-300 ${
+        className={`w-full flex items-center justify-center md:justify-start gap-1 sm:gap-2 md:gap-4 px-2 py-2 sm:px-3 sm:py-3 md:px-5 md:py-5 text-xs sm:text-sm md:text-base font-medium rounded-lg sm:rounded-xl transition-all duration-300 ${
           isActive
             ? 'bg-gradient-to-r from-[#E53A3A]/20 to-[#D98C1F]/20 text-white border-2 border-[#E53A3A]/40 shadow-lg shadow-[#E53A3A]/10'
             : 'text-neutral-400 hover:bg-gradient-to-r hover:from-neutral-700/50 hover:to-neutral-600/50 hover:text-white hover:scale-105'
         }`}
       >
-        {icon}
-        <span className="hidden md:inline">{label}</span>
+        <div className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-7 lg:h-7 flex-shrink-0">
+          {icon}
+        </div>
+        <span className="hidden sm:inline md:inline">{label}</span>
       </button>
     );
   }, [activeTab, handleTabChange]);
@@ -323,10 +325,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, usage, o
       </button>
 
       <ResponsiveFlex direction={{ mobile: 'col', tablet: 'row' }} className="flex-1 overflow-hidden">
-        <nav className="flex-shrink-0 w-full md:w-72 p-6 md:p-8 border-b-2 md:border-b-0 md:border-r-2 border-neutral-800/60 flex flex-row md:flex-col justify-between">
+        <nav className="flex-shrink-0 w-full md:w-72 p-3 sm:p-4 md:p-6 lg:p-8 border-b-2 md:border-b-0 md:border-r-2 border-neutral-800/60 flex flex-row md:flex-col justify-between">
                 <div className="w-full">
-                    <h2 id="settings-title" className="text-2xl font-bold text-white mb-8 px-2 hidden md:block leading-tight">Settings</h2>
-                    <ul className="grid grid-cols-4 md:flex md:flex-col gap-2 md:gap-4 w-full pr-20 md:pr-0 mt-8 md:mt-0">
+                    <h2 id="settings-title" className="text-lg sm:text-xl md:text-2xl font-bold text-white mb-4 sm:mb-6 md:mb-8 px-2 hidden md:block leading-tight">Settings</h2>
+                    <ul className="grid grid-cols-4 md:flex md:flex-col gap-1 sm:gap-2 md:gap-4 w-full pr-16 sm:pr-20 md:pr-0 mt-4 sm:mt-6 md:mt-8 md:mt-0">
                         <li className="md:flex-none"><TabButton id="general" label="General" icon={<UserCircleIcon className="w-6 h-6 md:w-7 md:h-7" />} /></li>
                         <li className="md:flex-none"><TabButton id="preferences" label="AI Preferences" icon={<SettingsIcon className="w-6 h-6 md:w-7 md:h-7" />} /></li>
                         <li className="md:flex-none"><TabButton id="subscription" label="Subscription" icon={<CreditCardIcon className="w-6 h-6 md:w-7 md:h-7" />} /></li>
@@ -355,7 +357,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, usage, o
                 </div>
             </nav>
 
-            <main className="flex-1 overflow-y-auto p-6 md:p-8 lg:p-12">
+            <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-8 xl:p-12">
 
                 {activeTab === 'general' && (
                     <GeneralSettingsTab
@@ -367,6 +369,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, usage, o
                         onShowHowToUse={() => { onShowHowToUse(); onClose(); }}
                         userEmail={userEmail}
                         isDeveloperMode={canAccessDeveloperFeatures(userEmail)}
+                        onTierChanged={refreshUsage}
                     />
                 )}
                 {activeTab === 'preferences' && <UserPreferencesTab />}

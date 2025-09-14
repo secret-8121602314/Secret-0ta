@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { authService } from './supabase';
+import { UserTier } from './types';
 
 // ========================================
 // 🛡️ SECURE APP STATE SERVICE
@@ -240,10 +241,27 @@ class SecureAppStateService implements AppStateService {
           isNewUser
         });
         
+        // Get the current tier from localStorage (set by DevTierSwitcher)
+        const currentTier = (localStorage.getItem('otakonUserTier') as UserTier) || 'free';
+        
+        // Get usage limits based on current tier
+        const { unifiedUsageService } = await import('./unifiedUsageService');
+        const usageData = await unifiedUsageService.getUsage();
+        
+        // Transform usage data to match expected format
+        const transformedUsage = {
+          textCount: usageData.textCount,
+          imageCount: usageData.imageCount,
+          textLimit: usageData.textLimit,
+          imageLimit: usageData.imageLimit,
+          totalRequests: (usageData as any).textQueries + (usageData as any).imageQueries,
+          lastReset: Date.now() // Use current time as last reset
+        };
+        
         const userState: UserState = {
           id: authState.user.id,
           email: authState.user.email || 'developer@otakon.app',
-          tier: 'vanguard_pro' as const, // Developer gets highest tier
+          tier: currentTier, // Use actual tier from localStorage
           isAuthenticated: true,
           isDeveloper: true,
           hasProfileSetup: hasProfileSetup, // Use actual developer mode flags
@@ -252,14 +270,7 @@ class SecureAppStateService implements AppStateService {
           isNewUser: isNewUser, // Use the computed isNewUser value
           lastActivity: Date.now(),
           preferences: parsedData.userPreferences || {},
-          usage: {
-            textCount: 0,
-            imageCount: 0,
-            textLimit: 1000,
-            imageLimit: 100,
-            totalRequests: 0,
-            lastReset: 0
-          }
+          usage: transformedUsage // Use transformed usage data
         };
         
         console.log('🔧 [AppStateService] Returning developer user state:', userState);

@@ -1,5 +1,4 @@
 import { ConversationContext, ChatMessage } from './types';
-import { supabase } from './supabase';
 
 class ContextManagementService {
   private static instance: ContextManagementService;
@@ -154,9 +153,9 @@ class ContextManagementService {
     const context = this.conversationContexts.get(conversationId);
     if (!context) return false;
     
-    // EXTENDED: If more than 30 days have passed, consider it a new session (was 30 minutes)
+    // If more than 30 minutes have passed, consider it a new session
     const timeSinceLastInteraction = Date.now() - context.lastInteraction;
-    return timeSinceLastInteraction < 30 * 24 * 60 * 60 * 1000; // 30 days
+    return timeSinceLastInteraction < 30 * 60 * 1000; // 30 minutes
   }
 
   // Get session summary
@@ -183,113 +182,15 @@ class ContextManagementService {
     return Array.from(this.conversationContexts.values());
   }
 
-  // Clean up old contexts (older than 30 days)
+  // Clean up old contexts (older than 24 hours)
   cleanupOldContexts(): void {
     const now = Date.now();
-    const thirtyDays = 30 * 24 * 60 * 60 * 1000; // EXTENDED: 30 days instead of 24 hours
+    const oneDay = 24 * 60 * 60 * 1000;
     
     for (const [conversationId, context] of this.conversationContexts.entries()) {
-      if (now - context.lastInteraction > thirtyDays) {
+      if (now - context.lastInteraction > oneDay) {
         this.conversationContexts.delete(conversationId);
       }
-    }
-  }
-
-  // NEW: Long-term session restoration from database
-  async restoreLongTermSession(conversationId: string): Promise<ConversationContext | null> {
-    try {
-      // Try to restore from database first
-      const dbContext = await this.getContextFromDatabase(conversationId);
-      if (dbContext) {
-        this.conversationContexts.set(conversationId, dbContext);
-        return dbContext;
-      }
-      
-      // Fallback to localStorage
-      const localContext = this.getContextFromLocalStorage(conversationId);
-      if (localContext) {
-        this.conversationContexts.set(conversationId, localContext);
-        return localContext;
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('Error restoring long-term session:', error);
-      return null;
-    }
-  }
-
-  // NEW: Save context to database for long-term persistence
-  async saveContextToDatabase(conversationId: string): Promise<void> {
-    const context = this.conversationContexts.get(conversationId);
-    if (!context) return;
-    
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      
-      // Save to conversations.context JSONB field
-      await supabase
-        .from('conversations')
-        .update({
-          context: {
-            ...context,
-            lastSaved: Date.now(),
-            version: '2.0' // Version for future updates
-          }
-        })
-        .eq('id', conversationId)
-        .eq('user_id', user.id);
-        
-    } catch (error) {
-      console.error('Error saving context to database:', error);
-    }
-  }
-
-  // NEW: Get context from database
-  private async getContextFromDatabase(conversationId: string): Promise<ConversationContext | null> {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
-      
-      const { data, error } = await supabase
-        .from('conversations')
-        .select('context')
-        .eq('id', conversationId)
-        .eq('user_id', user.id)
-        .single();
-      
-      if (error || !data?.context) return null;
-      
-      return data.context as ConversationContext;
-    } catch (error) {
-      console.error('Error getting context from database:', error);
-      return null;
-    }
-  }
-
-  // NEW: Get context from localStorage (fallback)
-  private getContextFromLocalStorage(conversationId: string): ConversationContext | null {
-    try {
-      const key = `otakon_context_${conversationId}`;
-      const stored = localStorage.getItem(key);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-      return null;
-    } catch (error) {
-      console.error('Error getting context from localStorage:', error);
-      return null;
-    }
-  }
-
-  // NEW: Save context to localStorage (fallback)
-  private saveContextToLocalStorage(conversationId: string, context: ConversationContext): void {
-    try {
-      const key = `otakon_context_${conversationId}`;
-      localStorage.setItem(key, JSON.stringify(context));
-    } catch (error) {
-      console.error('Error saving context to localStorage:', error);
     }
   }
 }

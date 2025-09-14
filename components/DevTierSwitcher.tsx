@@ -16,12 +16,12 @@ const TIER_NAMES: Record<UserTier, string> = {
 
 const DevTierSwitcher: React.FC<DevTierSwitcherProps> = ({ currentTier, onSwitch }) => {
   const tiers: UserTier[] = ['free', 'pro', 'vanguard_pro'];
-  const [localTier, setLocalTier] = useState<UserTier>(currentTier);
+  const [localTier, setLocalTier] = useState<UserTier>(currentTier || 'free');
   const [isSwitching, setIsSwitching] = useState(false);
 
   // Sync local state with prop changes
   useEffect(() => {
-    setLocalTier(currentTier);
+    setLocalTier(currentTier || 'free');
   }, [currentTier]);
 
   const handleCycleTier = async () => {
@@ -97,12 +97,12 @@ const DevTierSwitcher: React.FC<DevTierSwitcherProps> = ({ currentTier, onSwitch
   const displayTier = localTier;
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1 sm:gap-2">
       <button
         type="button"
         onClick={handleCycleTier}
         disabled={isSwitching}
-        className={`flex items-center justify-center gap-2 px-3 h-12 rounded-xl text-sm font-medium transition-all duration-200 ${
+        className={`flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-3 h-10 sm:h-12 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 ${
           isSwitching 
             ? 'bg-[#424242] text-[#6E6E6E] cursor-not-allowed' 
             : 'bg-gradient-to-r from-[#2E2E2E] to-[#1C1C1C] border-2 border-[#424242]/60 text-[#CFCFCF] hover:from-[#424242] hover:to-[#2E2E2E] hover:border-[#5A5A5A] hover:scale-105'
@@ -110,15 +110,15 @@ const DevTierSwitcher: React.FC<DevTierSwitcherProps> = ({ currentTier, onSwitch
         title={`Dev Tier: ${TIER_NAMES[displayTier]}. Click to cycle. (Developer Only)`}
       >
         {isSwitching ? (
-          <div className="flex items-center gap-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#CFCFCF]"></div>
-            <span>Switching...</span>
+          <div className="flex items-center gap-1 sm:gap-2">
+            <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-[#CFCFCF]"></div>
+            <span className="text-xs sm:text-sm">Switching...</span>
           </div>
         ) : (
           <>
             <span className="hidden sm:inline">Tier:</span>
-            <span className="font-bold">{TIER_NAMES[displayTier]}</span>
-            <span className="text-xs bg-yellow-600 text-black px-1.5 py-0.5 rounded-full font-medium">DEV</span>
+            <span className="font-bold text-xs sm:text-sm">{TIER_NAMES[displayTier]}</span>
+            <span className="text-xs bg-yellow-600 text-black px-1 sm:px-1.5 py-0.5 rounded-full font-medium">DEV</span>
           </>
         )}
       </button>

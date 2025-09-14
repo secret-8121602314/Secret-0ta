@@ -654,7 +654,7 @@ export class UnifiedAIService extends BaseService {
   }
 
   private async getSystemInstruction(conversation: Conversation, hasImages: boolean): Promise<string> {
-    const userFirstName = await profileService.getFirstName();
+    const userFirstName = await profileService.getName();
     const baseDirectives = `You are Otakon, an AI gaming assistant. Address the user as ${userFirstName || 'friend'}.`;
     
     if (hasImages) {

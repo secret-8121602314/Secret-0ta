@@ -1,4 +1,5 @@
 import { Usage, UserTier } from './types';
+import { usageService } from './usageService';
 import { databaseService } from './databaseService';
 import { authService } from './supabase';
 import { supabaseDataService } from './supabaseDataService';
@@ -52,13 +53,6 @@ const checkAndResetUsage = async (): Promise<void> => {
 
 const getTier = async (): Promise<UserTier> => {
     try {
-        // Check if user is authenticated before trying to fetch from Supabase
-        const authState = authService.getCurrentState();
-        if (!authState.user) {
-            // User not authenticated, use localStorage fallback
-            return (localStorage.getItem(TIER_KEY) as UserTier) || 'free';
-        }
-        
         // Try to get tier from Supabase first
         const supabaseUsage = await supabaseDataService.getUserUsageData();
         return (supabaseUsage.tier as UserTier) || 'free';
@@ -96,14 +90,14 @@ const getUsage = async (): Promise<Usage> => {
         const { text: textLimit, image: imageLimit } = LIMITS[tier];
         
         return { 
-          textQueries: 0, // Not available in UserUsageData
-          imageQueries: 0, // Not available in UserUsageData
-          insights: 0, // Not available in UserUsageData
-          textCount, 
-          imageCount, 
-          textLimit, 
-          imageLimit, 
-          tier 
+            textQueries: textCount,
+            imageQueries: imageCount,
+            insights: 0, // Not tracked in this service
+            textCount, 
+            imageCount, 
+            textLimit, 
+            imageLimit, 
+            tier 
         };
     } catch (error) {
         console.warn('Supabase usage fetch failed, using localStorage fallback:', error);
@@ -114,14 +108,14 @@ const getUsage = async (): Promise<Usage> => {
         const { text: textLimit, image: imageLimit } = LIMITS[tier];
         
         return { 
-          textQueries: parseInt(localStorage.getItem('textQueries') || '0', 10),
-          imageQueries: parseInt(localStorage.getItem('imageQueries') || '0', 10),
-          insights: parseInt(localStorage.getItem('insights') || '0', 10),
-          textCount, 
-          imageCount, 
-          textLimit, 
-          imageLimit, 
-          tier 
+            textQueries: textCount,
+            imageQueries: imageCount,
+            insights: 0, // Not tracked in this service
+            textCount, 
+            imageCount, 
+            textLimit, 
+            imageLimit, 
+            tier 
         };
     }
 };

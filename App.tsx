@@ -8,8 +8,31 @@ import AuthCallbackHandler from './components/AuthCallbackHandler';
 import { pwaNavigationService, PWANavigationState } from './services/pwaNavigationService';
 import { supabaseDataService } from './services/supabaseDataService';
 import { suggestedPromptsService } from './services/suggestedPromptsService';
+import { profileService } from './services/profileService';
+import { longTermMemoryService } from './services/longTermMemoryService';
+import { contextManagementService } from './services/contextManagementService';
+import { ttsService } from './services/ttsService';
+import { unifiedUsageService } from './services/unifiedUsageService';
+import { addFeedback } from './services/feedbackService';
+import { smartNotificationService } from './services/smartNotificationService';
+import { pwaAnalyticsService } from './services/pwaAnalyticsService';
+import { offlineStorageService } from './services/offlineStorageService';
+import { pushNotificationService } from './services/pushNotificationService';
+import { appShortcutsService } from './services/appShortcutsService';
+import { performanceMonitoringService } from './services/performanceMonitoringService';
+import dailyEngagementService from './services/dailyEngagementService';
+import { Achievement } from './services/types';
+import { playerProfileService } from './services/playerProfileService';
+import { proactiveInsightService } from './services/proactiveInsightService';
+import { usageService } from './services/usageService';
+import { enhancedInsightService } from './services/enhancedInsightService';
+import { profileAwareInsightService } from './services/profileAwareInsightService';
+import { advancedCacheService } from './services/advancedCacheService';
+import { feedbackAnalyticsService } from './services/feedbackAnalyticsService';
+import { structuredResponseService } from './services/structuredResponseService';
 import { useChat } from './hooks/useChat';
 import { useConnection } from './hooks/useConnection';
+import { useAdvancedCache } from './hooks/useAdvancedCache';
 import { ConnectionStatus, Conversations, Conversation } from './services/types';
 
 // Import components
@@ -19,11 +42,17 @@ import ConversationTabs from './components/ConversationTabs';
 import ChatInput from './components/ChatInput';
 import Logo from './components/Logo';
 import SettingsIcon from './components/SettingsIcon';
+import LogoutIcon from './components/LogoutIcon';
+import TrashIcon from './components/TrashIcon';
 import AdBanner from './components/AdBanner';
+import HandsFreeToggle from './components/HandsFreeToggle';
+import CreditIndicator from './components/CreditIndicator';
+import DesktopIcon from './components/DesktopIcon';
 import AboutPage from './components/AboutPage';
 import PrivacyPolicyPage from './components/PrivacyPolicyPage';
 import TermsOfServicePage from './components/TermsOfServicePage';
 import ContactUsModal from './components/ContactUsModal';
+import ContextMenu from './components/ContextMenu';
 import OnboardingFlow from './components/onboarding/OnboardingFlow';
 import LoginSplashScreen from './components/LoginSplashScreen';
 import InitialSplashScreen from './components/InitialSplashScreen';
@@ -42,8 +71,10 @@ import HandsFreeModal from './components/HandsFreeModal';
 import SettingsModal from './components/SettingsModal';
 import ConfirmationModal from './components/ConfirmationModal';
 import FeedbackModal from './components/FeedbackModal';
-import ContextMenu from './components/ContextMenu';
 import CreditModal from './components/CreditModal';
+import InsightActionModal from './components/InsightActionModal';
+import PolicyModal from './components/PolicyModal';
+import AuthModal from './components/AuthModal';
 import PWAInstallBanner from './components/PWAInstallBanner';
 import DailyCheckinBanner from './components/DailyCheckinBanner';
 import AchievementNotification from './components/AchievementNotification';
@@ -58,6 +89,7 @@ import { useErrorHandling } from './hooks/useErrorHandling';
 import { useModals } from './hooks/useModals';
 import { useAuthFlow } from './hooks/useAuthFlow';
 import { useTutorial } from './hooks/useTutorial';
+import { useEnhancedInsights } from './hooks/useEnhancedInsights';
 
 // Import types and services
 import { canAccessDeveloperFeatures } from './config/developer';
@@ -176,8 +208,7 @@ const App: React.FC = () => {
     stopMessage: handleStopMessage,
     switchConversation: handleSwitchConversation,
     handleSubViewChange,
-    handleFeedback,
-    handleRetry,
+    retryMessage: handleRetry,
     resetConversations,
     addSystemMessage
   } = useChat(appState.isHandsFreeMode);
@@ -188,7 +219,10 @@ const App: React.FC = () => {
     connectionCode, 
     status: connectionStatus, 
     lastSuccessfulConnection 
-  } = useConnection();
+  } = useConnection((data) => {
+    // Handle incoming messages from PC client
+    console.log('Received message from PC client:', data);
+  });
 
   // Missing handlers
   const handleUpgradeClick = useCallback(() => {
@@ -198,6 +232,54 @@ const App: React.FC = () => {
   const handleOpenWishlistModal = useCallback(() => {
     setAppState(prev => ({ ...prev, isWishlistModalOpen: true }));
   }, []);
+
+  // Handle sign out
+  const handleSignOut = useCallback(async () => {
+    try {
+      await authService.signOut();
+      setAppState(prev => ({
+        ...prev,
+        userState: null,
+        appView: { view: 'landing', onboardingStatus: 'login' },
+        activeConversation: null,
+        conversations: {},
+        conversationsOrder: [],
+        activeConversationId: 'everything-else'
+      }));
+    } catch (error) {
+      console.error('Failed to sign out:', error);
+    }
+  }, []);
+
+  // Handle reset (developer mode only)
+  const handleReset = useCallback(async () => {
+    if (!appState.userState?.isDeveloper) return;
+    
+    try {
+      // Clear all local storage
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Reset app state
+      setAppState(prev => ({
+        ...prev,
+        userState: null,
+        appView: { view: 'landing', onboardingStatus: 'login' },
+        activeConversation: null,
+        conversations: {},
+        conversationsOrder: [],
+        activeConversationId: 'everything-else',
+        isFirstTime: true
+      }));
+      
+      // Reset conversations
+      resetConversations();
+      
+      console.log('✅ Developer reset completed');
+    } catch (error) {
+      console.error('Failed to reset:', error);
+    }
+  }, [appState.userState?.isDeveloper, resetConversations]);
 
   // Initialize app state - FIXED AND SIMPLIFIED
   const initializeApp = useCallback(async () => {
@@ -214,7 +296,10 @@ const App: React.FC = () => {
       let onboardingStatus = 'complete';
       
       if (userState.isAuthenticated) {
-        if (userState.isNewUser || !userState.hasSeenSplashScreens || !userState.hasProfileSetup) {
+        // Skip splash screens if user has completed onboarding
+        if (userState.hasSeenSplashScreens && userState.hasProfileSetup && !userState.isNewUser) {
+          onboardingStatus = 'complete';
+        } else if (userState.isNewUser || !userState.hasSeenSplashScreens || !userState.hasProfileSetup) {
           // First-time user needs full onboarding
           onboardingStatus = 'initial';
         } else if (!userState.hasProfileSetup) {
@@ -258,6 +343,9 @@ const App: React.FC = () => {
         loadingMessages: [],
         isCooldownActive: false,
         isFirstTime: userState.isNewUser,
+        conversations: {},
+        conversationsOrder: [],
+        activeConversationId: 'everything-else',
         contextMenu: null,
         feedbackModalState: null,
         confirmationModal: null
@@ -299,7 +387,10 @@ const App: React.FC = () => {
       let onboardingStatus = 'complete';
       
       if (userState.isAuthenticated) {
-        if (userState.isNewUser || !userState.hasSeenSplashScreens || !userState.hasProfileSetup) {
+        // Skip splash screens if user has completed onboarding
+        if (userState.hasSeenSplashScreens && userState.hasProfileSetup && !userState.isNewUser) {
+          onboardingStatus = 'complete';
+        } else if (userState.isNewUser || !userState.hasSeenSplashScreens || !userState.hasProfileSetup) {
           // First-time user needs full onboarding
           onboardingStatus = 'initial';
         } else if (!userState.hasProfileSetup) {
@@ -436,8 +527,8 @@ const App: React.FC = () => {
       // Mark splash screens as seen
       await secureAppStateService.markSplashScreensSeen();
       
-      // For the last step, complete onboarding
-      if (step === 'tier-splash') {
+      // For the last step (pro-features), complete onboarding
+      if (step === 'pro-features') {
         await handleOnboardingComplete();
       } else {
         // Move to next step
@@ -462,7 +553,7 @@ const App: React.FC = () => {
 
   // Helper function to get next onboarding step
   const getNextOnboardingStep = (currentStep: string): string => {
-    const steps = ['initial', 'features', 'how-to-use', 'features-connected', 'pro-features', 'tier-splash'];
+    const steps = ['initial', 'features', 'how-to-use', 'features-connected', 'pro-features'];
     const currentIndex = steps.indexOf(currentStep);
     return currentIndex < steps.length - 1 ? steps[currentIndex + 1] : 'complete';
   };
@@ -506,11 +597,6 @@ const App: React.FC = () => {
     await handleSplashScreenComplete('initial');
   }, [handleSplashScreenComplete]);
 
-  const handleFeaturesSplashComplete = useCallback(async () => {
-    console.log('🔧 [App] Features splash completed');
-    await handleSplashScreenComplete('features');
-  }, [handleSplashScreenComplete]);
-
   const handleFeaturesConnectedComplete = useCallback(async () => {
     console.log('🔧 [App] Features connected splash completed');
     await handleSplashScreenComplete('features-connected');
@@ -519,16 +605,6 @@ const App: React.FC = () => {
   const handleHowToUseComplete = useCallback(async () => {
     console.log('🔧 [App] How to use splash completed');
     await handleSplashScreenComplete('how-to-use');
-  }, [handleSplashScreenComplete]);
-
-  const handleProFeaturesComplete = useCallback(async () => {
-    console.log('🔧 [App] Pro features splash completed');
-    await handleSplashScreenComplete('pro-features');
-  }, [handleSplashScreenComplete]);
-
-  const handleTierSplashComplete = useCallback(async () => {
-    console.log('🔧 [App] Tier splash completed');
-    await handleSplashScreenComplete('tier-splash');
   }, [handleSplashScreenComplete]);
 
 
@@ -981,10 +1057,37 @@ const App: React.FC = () => {
             onComplete={handleInitialSplashComplete}
           />
         );
-      case 'features': // Splash Screen 2 - 3 Feature Slides
+      case 'features': // Skip this step - go directly to PC connection
         return (
-          <HowToUseSplashScreen
-            onComplete={handleFeaturesSplashComplete}
+          <SplashScreen
+            onComplete={handleHowToUseComplete}
+            onSkipConnection={() => {
+              // If user skips PC connection, go directly to pro features
+              setAppState(prev => ({
+                ...prev,
+                appView: {
+                  ...prev.appView!,
+                  onboardingStatus: 'pro-features'
+                }
+              }));
+            }}
+            onConnect={(code) => {
+              // Handle PC connection
+              console.log('PC connection code:', code);
+            }}
+            status={ConnectionStatus.DISCONNECTED}
+            error={null}
+            connectionCode={null}
+            onConnectionSuccess={() => {
+              // After successful connection, go to pro features
+              setAppState(prev => ({
+                ...prev,
+                appView: {
+                  ...prev.appView!,
+                  onboardingStatus: 'pro-features'
+                }
+              }));
+            }}
           />
         );
       case 'how-to-use': // Splash Screen 3 - PC Connection
@@ -1023,25 +1126,17 @@ const App: React.FC = () => {
             onComplete={handleFeaturesConnectedComplete}
           />
         );
-      case 'pro-features': // Splash Screen 5 - "Supercharge"
+      case 'pro-features': // Final splash screen - "Supercharge" then go to main app
         return (
           <ProFeaturesSplashScreen
-            onComplete={handleProFeaturesComplete}
+            onComplete={handleOnboardingComplete}
             onUpgrade={handleUpgradeAndContinue}
             onUpgradeToVanguard={handleUpgradeToVanguardAndContinue}
           />
         );
-      case 'tier-splash': // Splash Screen 6 - Tier/Upgrade
-        return (
-          <UpgradeSplashScreen
-            onUpgrade={handleUpgrade}
-            onUpgradeToVanguard={handleUpgradeToVanguard}
-            onClose={handleTierSplashComplete}
-          />
-        );
       case 'profile-setup': // Profile Setup - After all splash screens
         return (
-          <div className="min-h-screen bg-[#1A1A1A] flex items-center justify-center">
+          <div className="min-h-screen bg-[#000000] flex items-center justify-center">
             <PlayerProfileSetupModal
               isOpen={true}
               onComplete={handleOnboardingComplete}
@@ -1304,7 +1399,7 @@ const App: React.FC = () => {
           <ContactUsModal isOpen={true} onClose={closeModal} />
         )}
         
-        <div className="min-h-screen bg-[#1A1A1A] text-white flex flex-col">
+        <div className="min-h-screen bg-[#000000] text-white flex flex-col">
           {/* Main App View */}
           {activeConversation ? (
             <>
@@ -1316,22 +1411,84 @@ const App: React.FC = () => {
                     <h1 className="text-lg sm:text-xl font-bold text-white">Otagon</h1>
                   </div>
                   
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setAppState(prev => ({ ...prev, isSettingsModalOpen: true }))}
-                      className="flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-2 sm:px-3 h-10 sm:h-12 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold bg-gradient-to-r from-[#2E2E2E] to-[#1C1C1C] border-2 border-[#424242]/60 text-white/90 transition-all duration-300 hover:from-[#424242] hover:to-[#2E2E2E] hover:scale-105 hover:shadow-lg"
-                      aria-label="Open settings"
-                    >
-                      <SettingsIcon className="w-5 h-5 flex-shrink-0" />
-                      <span className="hidden sm:inline font-medium">Settings</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {/* Credit Indicator */}
+                      {appState.userState?.usage && (
+                        <CreditIndicator
+                          usage={{
+                            textQueries: appState.userState.usage.textCount,
+                            imageQueries: appState.userState.usage.imageCount,
+                            insights: 0,
+                            textCount: appState.userState.usage.textCount,
+                            imageCount: appState.userState.usage.imageCount,
+                            textLimit: appState.userState.usage.textLimit,
+                            imageLimit: appState.userState.usage.imageLimit,
+                            tier: appState.userState.tier
+                          }}
+                          onClick={() => setAppState(prev => ({ ...prev, isCreditModalOpen: true }))}
+                        />
+                      )}
+                      
+                      {/* Hands-Free Toggle */}
+                      <HandsFreeToggle
+                        isHandsFree={appState.isHandsFreeMode}
+                        onToggle={() => setAppState(prev => ({ ...prev, isHandsFreeMode: !prev.isHandsFreeMode }))}
+                      />
+                      
+                      {/* Connect to PC Button */}
+                      <button
+                        type="button"
+                        onClick={() => setAppState(prev => ({ ...prev, isConnectionModalOpen: true }))}
+                        className="flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-2 sm:px-3 h-10 sm:h-12 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold bg-gradient-to-r from-[#2E2E2E] to-[#1C1C1C] border-2 border-[#424242]/60 text-white/90 transition-all duration-300 hover:from-[#424242] hover:to-[#2E2E2E] hover:scale-105 hover:shadow-lg"
+                        aria-label="Connect to PC"
+                      >
+                        <DesktopIcon className="w-5 h-5 flex-shrink-0" />
+                        <span className="hidden sm:inline font-medium">Connect PC</span>
+                      </button>
+                      
+                      {/* Settings Button */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          setAppState(prev => ({ 
+                            ...prev, 
+                            contextMenu: { 
+                              targetRect: rect,
+                              items: [
+                                {
+                                  label: 'Settings',
+                                  icon: SettingsIcon,
+                                  action: () => setAppState(prev => ({ ...prev, isSettingsModalOpen: true }))
+                                },
+                                {
+                                  label: 'Sign Out',
+                                  icon: LogoutIcon,
+                                  action: handleSignOut,
+                                  isDestructive: true
+                                },
+                                ...(appState.userState?.isDeveloper ? [{
+                                  label: 'Reset (Dev)',
+                                  icon: TrashIcon,
+                                  action: handleReset,
+                                  isDestructive: true
+                                }] : [])
+                              ]
+                            } 
+                          }));
+                        }}
+                        className="flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-2 sm:px-3 h-10 sm:h-12 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold bg-gradient-to-r from-[#2E2E2E] to-[#1C1C1C] border-2 border-[#424242]/60 text-white/90 transition-all duration-300 hover:from-[#424242] hover:to-[#2E2E2E] hover:scale-105 hover:shadow-lg"
+                        aria-label="Open settings"
+                      >
+                        <SettingsIcon className="w-5 h-5 flex-shrink-0" />
+                        <span className="hidden sm:inline font-medium">Settings</span>
+                      </button>
                   </div>
                 </div>
               </header>
 
-              {/* Ad Banner for free users */}
-              {appState.userState?.tier === 'free' && (
+              {/* Ad Banner for free users and developer mode */}
+              {(appState.userState?.tier === 'free' || appState.userState?.isDeveloper) && (
                 <div className="px-3 sm:px-4 md:px-6 py-2">
                   <AdBanner />
                 </div>
@@ -1349,7 +1506,7 @@ const App: React.FC = () => {
               />
 
               {/* Main Content Area */}
-              <main className="flex-1 flex flex-col min-h-0">
+              <main className="flex-1 flex flex-col min-h-0 bg-[#000000]">
                 <MainViewContainer
                   activeConversation={activeConversation}
                   activeSubView={activeSubView}
@@ -1357,10 +1514,19 @@ const App: React.FC = () => {
                   onSendMessage={handleSendMessage}
                   stopMessage={handleStopMessage}
                   isInputDisabled={isCooldownActive}
-                  messages={activeConversation.messages || []}
+                  messages={activeConversation?.messages || []}
                   loadingMessages={loadingMessages}
                   onUpgradeClick={handleUpgradeClick}
-                  onFeedback={handleFeedback}
+                  onFeedback={(type, convId, targetId, originalText, vote) => {
+                    // Handle feedback - this would integrate with feedback service
+                    console.log('Feedback received:', { type, convId, targetId, vote });
+                    addFeedback({
+                      conversationId: convId,
+                      targetId: targetId,
+                      originalText: originalText,
+                      feedbackText: `${type}: ${vote}`
+                    });
+                  }}
                   onRetry={handleRetry}
                   isFirstTime={appState.isFirstTime}
                   onOpenWishlistModal={handleOpenWishlistModal}
@@ -1370,11 +1536,39 @@ const App: React.FC = () => {
               {/* Chat Input */}
               <div className="flex-shrink-0 px-3 sm:px-4 md:px-6 py-3 sm:py-4 border-t border-[#2E2E2E]/20">
                 <ChatInput
+                  value=""
+                  onChange={() => {}}
                   onSendMessage={handleSendMessage}
-                  isDisabled={isCooldownActive}
+                  isCooldownActive={isCooldownActive}
+                  onImageProcessingError={(error) => console.error('Image processing error:', error)}
+                  usage={appState.userState?.usage ? {
+                    textQueries: appState.userState.usage.textCount,
+                    imageQueries: appState.userState.usage.imageCount,
+                    insights: 0,
+                    textCount: appState.userState.usage.textCount,
+                    imageCount: appState.userState.usage.imageCount,
+                    textLimit: appState.userState.usage.textLimit,
+                    imageLimit: appState.userState.usage.imageLimit,
+                    tier: appState.userState.tier
+                  } : {
+                    textQueries: 0,
+                    imageQueries: 0,
+                    insights: 0,
+                    textCount: 0,
+                    imageCount: 0,
+                    textLimit: 55,
+                    imageLimit: 25,
+                    tier: 'free'
+                  }}
+                  imagesForReview={[]}
+                  onImagesReviewed={() => {}}
+                  isManualUploadMode={false}
+                  onToggleManualUploadMode={() => {}}
                   connectionStatus={connectionStatus}
-                  usage={appState.userState?.usage}
-                  onUpgradeClick={handleUpgradeClick}
+                  textareaRef={{ current: null }}
+                  onBatchUploadAttempt={() => {}}
+                  hasInsights={!!activeConversation?.insights}
+                  activeConversation={activeConversation}
                 />
               </div>
             </>
@@ -1414,7 +1608,16 @@ const App: React.FC = () => {
             <SettingsModal
               isOpen={appState.isSettingsModalOpen}
               onClose={() => setAppState(prev => ({ ...prev, isSettingsModalOpen: false }))}
-              usage={{ 
+              usage={appState.userState?.usage ? {
+                textQueries: appState.userState.usage.textCount,
+                imageQueries: appState.userState.usage.imageCount,
+                insights: 0,
+                textCount: appState.userState.usage.textCount,
+                imageCount: appState.userState.usage.imageCount,
+                textLimit: appState.userState.usage.textLimit,
+                imageLimit: appState.userState.usage.imageLimit,
+                tier: appState.userState.tier
+              } : { 
                 textQueries: 0, 
                 imageQueries: 0, 
                 insights: 0,
@@ -1525,6 +1728,7 @@ const App: React.FC = () => {
             />
           )}
 
+
           {/* PWA Install Banner */}
           <PWAInstallBanner />
         </div>
@@ -1535,7 +1739,7 @@ const App: React.FC = () => {
   // Default return for app view
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-[#1A1A1A] text-white">
+      <div className="min-h-screen bg-[#000000] text-white">
         {renderSplashScreen()}
       </div>
     </ErrorBoundary>

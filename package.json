@@ -28,7 +28,7 @@
   "dependencies": {
     "@google/genai": "^1.12.0",
     "@heroicons/react": "^2.2.0",
-    "@lottiefiles/dotlottie-react": "^0.15.1",
+    "@lottiefiles/dotlottie-react": "^0.15.2",
     "@supabase/supabase-js": "^2.55.0",
     "clsx": "^2.1.1",
     "lottie-react": "^2.4.1",

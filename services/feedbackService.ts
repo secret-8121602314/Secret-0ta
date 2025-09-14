@@ -1,8 +1,5 @@
-
-
 import { supabase } from './supabase';
 import { aiContextService } from './aiContextService';
-import { feedbackSecurityService } from './feedbackSecurityService';
 
 const FEEDBACK_STORAGE_KEY = 'otakonFeedbackData';
 
@@ -34,66 +31,34 @@ const saveFeedbackData = (data: Feedback[]) => {
 };
 
 export const addFeedback = async (feedback: Omit<Feedback, 'id' | 'timestamp'>) => {
-  // SECURITY VALIDATION: Ensure feedback only affects AI responses and insights
-  const securityContext = {
-    feedbackType: 'message' as const, // Default, will be updated based on context
-    targetId: feedback.targetId,
-    conversationId: feedback.conversationId,
-    originalText: feedback.originalText,
-    feedbackText: feedback.feedbackText,
-    userId: 'current_user', // Will be set by aiContextService
-    timestamp: Date.now()
-  };
-
-  const securityValidation = feedbackSecurityService.validateFeedbackSecurity(securityContext);
-
-  // If feedback contains forbidden content, block it
-  if (!securityValidation.isValid) {
-    console.error('🚨 FEEDBACK BLOCKED: Contains forbidden system modification attempts', {
-      forbiddenAttempts: securityValidation.forbiddenAttempts,
-      securityWarnings: securityValidation.securityWarnings
-    });
-    throw new Error('Feedback contains content that could affect system settings. Only AI responses and insight content can be influenced by feedback.');
-  }
-
-  // Use sanitized feedback text
-  const sanitizedFeedback = {
-    ...feedback,
-    feedbackText: securityValidation.sanitizedFeedback
-  };
-
   // Store in localStorage for backward compatibility
   const allFeedback = getFeedbackData();
   const newFeedback: Feedback = {
-    ...sanitizedFeedback,
+    ...feedback,
     id: crypto.randomUUID(),
     timestamp: Date.now(),
   };
   allFeedback.push(newFeedback);
   saveFeedbackData(allFeedback);
 
-  // Store in Supabase for AI learning (with security validation)
+  // Store in Supabase for AI learning
   try {
     await aiContextService.storeAIFeedback({
       user_id: '', // Will be set by aiContextService
-      conversation_id: sanitizedFeedback.conversationId,
-      message_id: sanitizedFeedback.targetId,
+      conversation_id: feedback.conversationId,
+      message_id: feedback.targetId,
       feedback_type: 'submitted',
-      feedback_text: sanitizedFeedback.feedbackText,
+      feedback_text: feedback.feedbackText,
       ai_response_context: {
-        original_text: sanitizedFeedback.originalText,
-        feedback_text: sanitizedFeedback.feedbackText,
+        original_text: feedback.originalText,
+        feedback_text: feedback.feedbackText,
         timestamp: Date.now(),
-        feedback_category: categorizeFeedback(sanitizedFeedback.feedbackText),
-        severity: analyzeFeedbackSeverity(sanitizedFeedback.feedbackText),
-        security_validation: {
-          allowedInfluences: securityValidation.allowedInfluences,
-          sanitized: securityValidation.sanitizedFeedback !== feedback.feedbackText
-        }
+        feedback_category: categorizeFeedback(feedback.feedbackText),
+        severity: analyzeFeedbackSeverity(feedback.feedbackText)
       },
       user_context: {
         feedback_type: 'submitted',
-        conversation_id: sanitizedFeedback.conversationId,
+        conversation_id: feedback.conversationId,
         feedback_timestamp: Date.now()
       }
     });

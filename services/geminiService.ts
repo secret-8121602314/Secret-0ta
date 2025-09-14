@@ -63,7 +63,7 @@ You MUST use your web search tool if the request requires current information (e
 ${insightInstruction}`;
 
 const getSystemInstruction = async (conversation: Conversation, hasImages: boolean): Promise<string> => {
-  const userFirstName = await profileService.getFirstName();
+  const userFirstName = await profileService.getName();
   const personalizationDirective = userFirstName
     ? `- **PERSONALIZE:** You know the player's first name is ${userFirstName}. Use it very sparingly—only when it feels natural and encouraging—to build a friendly, companion-like rapport.`
     : '';
@@ -1220,6 +1220,13 @@ const handleError = (error: any, onError: (error: string) => void) => {
         return;
     }
 
+    // Handle 503 Service Unavailable / Model Overloaded errors
+    if (error?.httpError?.status === 503 || errorMessage.includes('503') || 
+        errorMessage.includes('overloaded') || errorMessage.includes('UNAVAILABLE')) {
+        onError("The AI is currently experiencing high traffic and is temporarily unavailable. Please wait a moment and try again. This usually resolves within a few minutes.");
+        return;
+    }
+
     let message = "An unknown error occurred while contacting the AI.";
     if (error instanceof Error) {
         if (error.message.includes('API key not valid')) {
@@ -1229,7 +1236,12 @@ const handleError = (error: any, onError: (error: string) => void) => {
                 // The error message from Gemini is often a JSON string itself
                 const parsedError = JSON.parse(error.message);
                 if (parsedError.error && parsedError.error.message) {
-                    message = `Error: ${parsedError.error.message}`;
+                    // Handle 503 errors from parsed JSON
+                    if (parsedError.error.code === 503 || parsedError.error.status === 'UNAVAILABLE') {
+                        message = "The AI is currently experiencing high traffic and is temporarily unavailable. Please wait a moment and try again. This usually resolves within a few minutes.";
+                    } else {
+                        message = `Error: ${parsedError.error.message}`;
+                    }
                 }
             } catch (e) {
                 // Fallback if the message is not JSON

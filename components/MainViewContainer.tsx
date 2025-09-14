@@ -7,6 +7,7 @@ import { Conversation, ChatMessage as ChatMessageType } from '../services/types'
 import ChatMessage from './ChatMessage';
 import SuggestedPrompts from './SuggestedPrompts';
 import ActionButtons from './ActionButtons';
+import Logo from './Logo';
 import { useState } from 'react';
 import { useResponsive } from '../utils/responsive';
 import { UniversalResponsiveContainer, UniversalResponsiveFlex, UniversalResponsiveText } from './layout/UniversalResponsiveLayout';
@@ -204,9 +205,27 @@ const MainViewContainer: React.FC<MainViewContainerProps> = ({
             className="w-full"
           >
             {messages.length === 0 ? (
-            <div className="flex-1 flex flex-col justify-center items-center h-full">
+            <div className="flex flex-col gap-4 sm:gap-6 md:gap-8 lg:gap-10 w-full max-w-[95%] sm:max-w-4xl md:max-w-5xl mx-auto my-4 sm:my-6 md:my-8 lg:my-10">
+              {/* Welcome Message styled as system message */}
+              <div className="flex items-start gap-2 sm:gap-3">
+                <Logo className="w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0" />
+                <div className="bg-gradient-to-r from-[#1C1C1C]/80 to-[#0A0A0A]/80 border border-[#424242]/60 rounded-xl sm:rounded-2xl rounded-tl-none py-3 sm:py-4 px-4 sm:px-6 relative overflow-hidden backdrop-blur-sm">
+                  <div className="ai-response max-w-none text-[#CFCFCF] text-sm sm:text-base">
+                    <p className="text-gray-300 text-base sm:text-lg mb-3">
+                      Hey there! 👋 I'm Otagon, your gaming companion. I'm here to help you with anything gaming-related - whether you're stuck on a boss fight, need recommendations for your next game, want to discuss strategies, or just want to chat about your favorite games.
+                    </p>
+                    <p className="text-gray-400 text-sm mb-2">
+                      What would you like to do today?
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Suggested Prompts aligned to the left of the chat bubble */}
               {loadingMessages.length === 0 && (
-                <SuggestedPrompts onPromptClick={onSendMessage} isInputDisabled={isInputDisabled} isFirstTime={isFirstTime} />
+                <div className="ml-0">
+                  <SuggestedPrompts onPromptClick={onSendMessage} isInputDisabled={isInputDisabled} isFirstTime={isFirstTime} />
+                </div>
               )}
             </div>
           ) : (

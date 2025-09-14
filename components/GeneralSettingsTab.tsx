@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Usage, UserTier } from '../services/types';
 import StarIcon from './StarIcon';
 import { TierUpgradeModal } from './TierUpgradeModal';
-import GuestTierSwitcher from './GuestTierSwitcher';
+import DevTierSwitcher from './DevTierSwitcher';
 import { devModeMigrationService, MigrationResult } from '../services/devModeMigrationService';
 // Dynamic import to avoid circular dependency
 // import { profileService } from '../services/profileService';
@@ -16,6 +16,7 @@ interface GeneralSettingsTabProps {
     onShowHowToUse: () => void;
     userEmail?: string;
     isDeveloperMode?: boolean;
+    onTierChanged?: () => void; // Add callback for tier changes
 }
 
 const TIER_NAMES: Record<UserTier, string> = {
@@ -24,7 +25,7 @@ const TIER_NAMES: Record<UserTier, string> = {
     vanguard_pro: 'Founder (Vanguard Pro)'
 };
 
-const GeneralSettingsTab: React.FC<GeneralSettingsTabProps> = ({ usage, onShowUpgrade, onShowVanguardUpgrade, onResetApp, onLogout, onShowHowToUse, userEmail, isDeveloperMode = false }) => {
+const GeneralSettingsTab: React.FC<GeneralSettingsTabProps> = ({ usage, onShowUpgrade, onShowVanguardUpgrade, onResetApp, onLogout, onShowHowToUse, userEmail, isDeveloperMode = false, onTierChanged }) => {
     const [showTierUpgrade, setShowTierUpgrade] = useState(false);
     const [displayName, setDisplayName] = useState<string>('');
     const [isEditingName, setIsEditingName] = useState(false);
@@ -307,14 +308,20 @@ const GeneralSettingsTab: React.FC<GeneralSettingsTabProps> = ({ usage, onShowUp
                                 You're in testing mode. Tier switching is enabled for development purposes.
                             </p>
                             
-                            {/* Guest Mode Tier Switcher */}
+                            {/* Dev Mode Tier Switcher */}
                             <div className="mt-3 pt-3 border-t border-yellow-500/30">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-sm text-yellow-200 font-medium">Quick Tier Switch</p>
                                         <p className="text-xs text-yellow-300">Click to cycle through tiers for testing</p>
                                     </div>
-                                    <GuestTierSwitcher currentTier={usage.tier} onSwitch={() => window.location.reload()} />
+                                    <DevTierSwitcher currentTier={usage.tier} onSwitch={() => {
+                                        // Call the tier changed callback to refresh app state
+                                        if (onTierChanged) {
+                                            onTierChanged();
+                                        }
+                                        console.log('🔄 Tier switched, refreshing app state...');
+                                    }} />
                                 </div>
                             </div>
                         </div>

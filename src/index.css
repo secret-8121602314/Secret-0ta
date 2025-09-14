@@ -1,10 +1,10 @@
+/* Import responsive design system */
+@import '../styles/responsive.css';
+
 /* Tailwind CSS imports */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Import responsive design system */
-@import '../styles/responsive.css';
 
 /* Base styles for Otakon app */
 body {
@@ -13,7 +13,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #000000;
+  background-color: #000000 !important;
 }
 
 /* Mobile-first touch optimizations */

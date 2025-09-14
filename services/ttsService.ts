@@ -1,23 +1,11 @@
-
 import { getTier } from './unifiedUsageService';
 import { supabaseDataService } from './supabaseDataService';
 
 let synth: SpeechSynthesis;
 let voices: SpeechSynthesisVoice[] = [];
-// Removed isInitialized flag for Firebase hosting compatibility
+let isInitialized = false;
 
 const SPEECH_RATE_KEY = 'otakonSpeechRate';
-
-// Initialize TTS service immediately for Firebase hosting compatibility
-const initializeTTS = (): void => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        synth = window.speechSynthesis;
-        // Don't call populateVoiceList here to avoid hoisting issues
-    }
-};
-
-// Initialize immediately
-initializeTTS();
 
 // Function to populate voices, returns a promise that resolves when voices are loaded.
 const populateVoiceList = (): Promise<void> => {
@@ -69,7 +57,8 @@ const setupMediaSession = () => {
 
 const init = async () => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        // TTS is already initialized in module scope for Firebase hosting compatibility
+        if (isInitialized) return;
+        isInitialized = true;
         synth = window.speechSynthesis;
         await populateVoiceList();
         setupMediaSession();

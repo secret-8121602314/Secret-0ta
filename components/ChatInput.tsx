@@ -179,12 +179,12 @@ const ChatInput: React.FC<ChatInputProps> = React.memo(({ value, onChange, onSen
     const [suggestionStartPosition, setSuggestionStartPosition] = useState<number | null>(null);
 
     useLayoutEffect(() => {
-        const textarea = textareaRef.current;
+        const textarea = textareaRef?.current;
         if (textarea) {
             const MAX_HEIGHT = 120; // Reduced for mobile (approx 5 lines)
             const MIN_HEIGHT = 24; // Single line height
 
-            if (value.trim() === '' && selectedImages.length === 0) {
+            if ((value?.trim() || '') === '' && selectedImages.length === 0) {
                  textarea.style.height = `${MIN_HEIGHT}px`;
             } else {
                 textarea.style.height = 'auto';
@@ -251,10 +251,10 @@ const ChatInput: React.FC<ChatInputProps> = React.memo(({ value, onChange, onSen
     };
     
     const submitMessage = () => {
-        if (!value.trim() && selectedImages.length === 0) return;
+        if (!(value?.trim()) && selectedImages.length === 0) return;
         
         // Check if this is a tab management command
-        const trimmedValue = value.trim();
+        const trimmedValue = (value || '').trim();
         if (trimmedValue.toLowerCase().includes('tab') && 
             (trimmedValue.toLowerCase().includes('add') || 
              trimmedValue.toLowerCase().includes('create') || 
@@ -267,7 +267,7 @@ const ChatInput: React.FC<ChatInputProps> = React.memo(({ value, onChange, onSen
             onSendMessage(`[TAB_MANAGEMENT] ${trimmedValue}`, selectedImages.length > 0 ? selectedImages : undefined);
         } else {
             // Regular message
-            onSendMessage(value, selectedImages.length > 0 ? selectedImages : undefined);
+            onSendMessage(value || '', selectedImages.length > 0 ? selectedImages : undefined);
         }
         
         setSelectedImages([]);
@@ -286,14 +286,14 @@ const ChatInput: React.FC<ChatInputProps> = React.memo(({ value, onChange, onSen
     const handleSelectSuggestion = (suggestion: string) => {
         if (suggestionStartPosition === null) return;
 
-        const textBefore = value.substring(0, suggestionStartPosition);
-        const textAfter = value.substring(suggestionStartPosition + suggestionQuery.length + 1); // +1 for the @
+        const textBefore = (value || '').substring(0, suggestionStartPosition);
+        const textAfter = (value || '').substring(suggestionStartPosition + suggestionQuery.length + 1); // +1 for the @
 
         const newValue = `${textBefore}@${suggestion} ${textAfter.trimStart()}`;
         onChange(newValue);
 
         setShowSuggestions(false);
-        setTimeout(() => textareaRef.current?.focus(), 0);
+        setTimeout(() => textareaRef?.current?.focus(), 0);
     };
     
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -369,7 +369,7 @@ const ChatInput: React.FC<ChatInputProps> = React.memo(({ value, onChange, onSen
     };
     
     const isProcessing = isCooldownActive;
-    const canSubmit = (!!value.trim() || selectedImages.length > 0) && !isProcessing;
+    const canSubmit = (!!(value?.trim()) || selectedImages.length > 0) && !isProcessing;
     const showReviewToggle = connectionStatus === ConnectionStatus.CONNECTED;
 
     const getPlaceholderText = () => {
@@ -423,7 +423,7 @@ const ChatInput: React.FC<ChatInputProps> = React.memo(({ value, onChange, onSen
                         />
                          <button
                             type="button"
-                            onClick={() => fileInputRef.current?.click()}
+                            onClick={() => fileInputRef?.current?.click()}
                             aria-label="Upload screenshot"
                             disabled={isProcessing || selectedImages.length >= maxImages}
                             className="flex-shrink-0 flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-lg sm:rounded-xl text-[#FF4D4D] hover:bg-[#2E2E2E]/60 hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:scale-100 border border-[#424242]/40 hover:border-[#FF4D4D]/40"

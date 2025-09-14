@@ -108,6 +108,7 @@ export const useChat = (isHandsFreeMode: boolean) => {
     
     const [loadingMessages, setLoadingMessages] = useState<string[]>([]);
     const [isCooldownActive, setIsCooldownActive] = useState(false);
+    const [activeSubView, setActiveSubView] = useState<string>('chat');
     const [pendingModification, setPendingModification] = useState<PendingInsightModification | null>(null);
     const abortControllersRef = useRef<Record<string, AbortController>>({});
     const hasLoggedUnauthenticatedRef = useRef(false);
@@ -608,7 +609,7 @@ export const useChat = (isHandsFreeMode: boolean) => {
     
     const sendMessage = useCallback(async (text: string, images?: ImageFile[], isFromPC?: boolean): Promise<{ success: boolean; reason?: string }> => {
         // Check if this is a tab management command
-        if (text.startsWith('[TAB_MANAGEMENT] ')) {
+        if (text && text.startsWith('[TAB_MANAGEMENT] ')) {
             const commandText = text.replace('[TAB_MANAGEMENT] ', '');
             const result = await handleTabManagementCommand(commandText);
             
@@ -1982,12 +1983,18 @@ Progress: ${conversation.progress}%`;
         }
     }, [activeConversationId, conversations, updateConversation]);
 
+    // Handle sub view changes (for switching between chat and insights)
+    const handleSubViewChange = useCallback((viewId: string) => {
+        setActiveSubView(viewId);
+    }, []);
+
     return {
         conversations,
         conversationsOrder,
         reorderConversations,
         activeConversationId,
         activeConversation,
+        activeSubView,
         loadingMessages,
         isCooldownActive,
         sendMessage,
@@ -1996,6 +2003,7 @@ Progress: ${conversation.progress}%`;
         addSystemMessage,
         restoreHistory,
         switchConversation,
+        handleSubViewChange,
         fetchInsightContent,
         markInsightAsRead,
         saveConversationToLocalStorage,

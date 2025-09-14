@@ -410,7 +410,7 @@ class SecureAuthService implements AuthService {
       
       // Create mock user for developer mode
       const mockUser: User = {
-        id: 'dev-user-' + Date.now(),
+        id: '00000000-0000-0000-0000-000000000001', // Fixed UUID for developer mode
         email: 'developer@otakon.app',
         user_metadata: {
           name: 'Developer Account',
