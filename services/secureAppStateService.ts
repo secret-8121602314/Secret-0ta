@@ -57,6 +57,8 @@ class SecureAppStateService implements AppStateService {
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
   private readonly MAX_RETRIES = 3;
   private readonly RETRY_DELAY = 1000; // 1 second
+  private lastUserState: UserState | null = null;
+  private lastOnboardingStatus: string | null = null;
 
   static getInstance(): SecureAppStateService {
     if (!SecureAppStateService.instance) {
@@ -179,9 +181,10 @@ class SecureAppStateService implements AppStateService {
 
   async getUserState(): Promise<UserState> {
     try {
-      // Check cache first
+      // Check cache first, but not for developer mode
+      const isDevMode = localStorage.getItem('otakon_developer_mode') === 'true';
       const cached = this.getCachedData<UserState>('userState');
-      if (cached) {
+      if (cached && !isDevMode) {
         return cached;
       }
 
@@ -212,24 +215,41 @@ class SecureAppStateService implements AppStateService {
         };
       }
 
-      // Check if developer mode
-      const isDeveloper = localStorage.getItem('otakon_developer_mode') === 'true';
-      
-      if (isDeveloper) {
+      // Check if developer mode (using isDevMode from line 183)
+      if (isDevMode) {
+        console.log('🔧 [AppStateService] Developer mode detected in getUserState');
+        
         // Return developer mode state
         const devData = localStorage.getItem('otakon_dev_data');
         const parsedData = devData ? JSON.parse(devData) : {};
         
-        return {
+        // Check if this is the first time using developer mode
+        const isFirstTimeDeveloper = !localStorage.getItem('otakon_dev_first_run_completed');
+        const hasSeenSplashScreens = localStorage.getItem('otakon_dev_splash_screens_seen') === 'true';
+        const hasProfileSetup = localStorage.getItem('otakon_dev_profile_setup_completed') === 'true';
+        const hasWelcomeMessage = localStorage.getItem('otakon_dev_welcome_message_shown') === 'true';
+        
+        // If developer has completed all onboarding steps, they're not a new user
+        const isNewUser = isFirstTimeDeveloper && (!hasSeenSplashScreens || !hasProfileSetup || !hasWelcomeMessage);
+        
+        console.log('🔧 [AppStateService] Developer mode flags:', {
+          isFirstTimeDeveloper,
+          hasSeenSplashScreens,
+          hasProfileSetup,
+          hasWelcomeMessage,
+          isNewUser
+        });
+        
+        const userState: UserState = {
           id: authState.user.id,
           email: authState.user.email || 'developer@otakon.app',
-          tier: 'vanguard_pro', // Developer gets highest tier
+          tier: 'vanguard_pro' as const, // Developer gets highest tier
           isAuthenticated: true,
           isDeveloper: true,
-          hasProfileSetup: true,
-          hasSeenSplashScreens: true,
-          hasWelcomeMessage: true,
-          isNewUser: false,
+          hasProfileSetup: hasProfileSetup, // Use actual developer mode flags
+          hasSeenSplashScreens: hasSeenSplashScreens, // Use actual developer mode flags
+          hasWelcomeMessage: hasWelcomeMessage, // Use actual developer mode flags
+          isNewUser: isNewUser, // Use the computed isNewUser value
           lastActivity: Date.now(),
           preferences: parsedData.userPreferences || {},
           usage: {
@@ -241,6 +261,9 @@ class SecureAppStateService implements AppStateService {
             lastReset: 0
           }
         };
+        
+        console.log('🔧 [AppStateService] Returning developer user state:', userState);
+        return userState;
       }
 
       // Get user data from Supabase
@@ -318,16 +341,46 @@ class SecureAppStateService implements AppStateService {
 
       // Check if developer mode
       if (localStorage.getItem('otakon_developer_mode') === 'true') {
-        this.log('Developer mode: Skipping onboarding status update');
+        this.log('Developer mode: Updating local onboarding status only');
+        console.log('🔧 [AppStateService] Developer mode updateOnboardingStatus called with:', status);
+        
+        // For developer mode, update local storage to track onboarding progress
+        localStorage.setItem('otakon_onboarding_status', status);
+        
+        // Also update the steps completed in local storage
+        const currentSteps = JSON.parse(localStorage.getItem('otakon_onboarding_steps') || '[]');
+        console.log('🔧 [AppStateService] Current steps before update:', currentSteps);
+        
+        if (!currentSteps.includes(status)) {
+          currentSteps.push(status);
+          localStorage.setItem('otakon_onboarding_steps', JSON.stringify(currentSteps));
+          console.log('🔧 [AppStateService] Added step to completed steps:', status);
+        } else {
+          console.log('🔧 [AppStateService] Step already completed:', status);
+        }
+        
+        console.log('🔧 [AppStateService] Final steps after update:', JSON.parse(localStorage.getItem('otakon_onboarding_steps') || '[]'));
         return;
       }
 
+      // For regular users, update the onboarding data with completed steps
+      const currentData = await this.getSupabaseData('onboarding_data') || {};
+      const stepsCompleted = currentData.stepsCompleted || [];
+      
+      // Add the current step to completed steps if not already there
+      if (!stepsCompleted.includes(status)) {
+        stepsCompleted.push(status);
+      }
+      
       await this.retryOperation(
-        () => this.setSupabaseData('onboarding_data', { currentStep: status }),
+        () => this.setSupabaseData('onboarding_data', { 
+          currentStep: status,
+          stepsCompleted: stepsCompleted
+        }),
         'updateOnboardingStatus'
       );
 
-      this.log('Onboarding status updated', { status });
+      this.log('Onboarding status updated', { status, stepsCompleted });
 
     } catch (error) {
       this.error('Failed to update onboarding status', error);
@@ -345,7 +398,9 @@ class SecureAppStateService implements AppStateService {
 
       // Check if developer mode
       if (localStorage.getItem('otakon_developer_mode') === 'true') {
-        this.log('Developer mode: Skipping onboarding completion');
+        // Mark developer mode onboarding as complete
+        localStorage.setItem('otakon_dev_onboarding_completed', 'true');
+        this.log('Developer mode: Onboarding marked as complete');
         return;
       }
 
@@ -375,7 +430,9 @@ class SecureAppStateService implements AppStateService {
 
       // Check if developer mode
       if (localStorage.getItem('otakon_developer_mode') === 'true') {
-        this.log('Developer mode: Skipping profile setup completion');
+        // Mark developer mode profile setup as complete
+        localStorage.setItem('otakon_dev_profile_setup_completed', 'true');
+        this.log('Developer mode: Profile setup marked as complete');
         return;
       }
 
@@ -405,7 +462,9 @@ class SecureAppStateService implements AppStateService {
 
       // Check if developer mode
       if (localStorage.getItem('otakon_developer_mode') === 'true') {
-        this.log('Developer mode: Skipping splash screens completion');
+        // Mark developer mode splash screens as seen
+        localStorage.setItem('otakon_dev_splash_screens_seen', 'true');
+        this.log('Developer mode: Splash screens marked as seen');
         return;
       }
 
@@ -435,7 +494,9 @@ class SecureAppStateService implements AppStateService {
 
       // Check if developer mode
       if (localStorage.getItem('otakon_developer_mode') === 'true') {
-        this.log('Developer mode: Skipping welcome message completion');
+        // Mark developer mode welcome message as shown
+        localStorage.setItem('otakon_dev_welcome_message_shown', 'true');
+        this.log('Developer mode: Welcome message marked as shown');
         return;
       }
 
@@ -466,7 +527,9 @@ class SecureAppStateService implements AppStateService {
 
       // Check if developer mode
       if (localStorage.getItem('otakon_developer_mode') === 'true') {
-        this.log('Developer mode: Skipping first run completion');
+        // Mark developer mode first run as complete
+        localStorage.setItem('otakon_dev_first_run_completed', 'true');
+        this.log('Developer mode: First run marked as complete');
         return;
       }
 
@@ -489,18 +552,31 @@ class SecureAppStateService implements AppStateService {
   determineView(userState: UserState): AppView {
     try {
       if (!userState.isAuthenticated) {
+        // Only log when transitioning from authenticated to unauthenticated
+        if (this.lastUserState?.isAuthenticated) {
+          console.log('🔧 [AppStateService] User logged out, returning landing page');
+        }
         return {
           view: 'landing',
-          onboardingStatus: 'login'
+          onboardingStatus: 'complete'
         };
       }
 
       const onboardingStatus = this.determineOnboardingStatus(userState);
       
-      return {
-        view: 'app',
+      // Only log meaningful onboarding status changes
+      if (this.lastOnboardingStatus !== onboardingStatus) {
+        console.log('🔧 [AppStateService] Onboarding status changed:', this.lastOnboardingStatus, '->', onboardingStatus);
+        this.lastOnboardingStatus = onboardingStatus;
+      }
+      
+      const appView: AppView = {
+        view: 'app' as const,
         onboardingStatus
       };
+      
+      this.lastUserState = userState;
+      return appView;
 
     } catch (error) {
       this.error('Failed to determine view', error);
@@ -514,36 +590,64 @@ class SecureAppStateService implements AppStateService {
 
   determineOnboardingStatus(userState: UserState): string {
     try {
+      console.log('🔧 [AppStateService] determineOnboardingStatus called with userState:', userState);
+      
       if (!userState.isAuthenticated) {
+        console.log('🔧 [AppStateService] User not authenticated, returning login status');
         return 'login';
       }
 
-      if (userState.isDeveloper) {
-        return 'complete';
-      }
-
-      // Check onboarding steps in order
-      if (!userState.hasSeenSplashScreens) {
+      // SIMPLIFIED: Check if user needs onboarding
+      if (userState.isNewUser || !userState.hasSeenSplashScreens || !userState.hasProfileSetup) {
+        console.log('🔧 [AppStateService] User needs onboarding');
+        
+        // For developer mode, check if onboarding is complete
+        if (userState.isDeveloper) {
+          const isOnboardingComplete = localStorage.getItem('otakon_dev_onboarding_complete') === 'true';
+          if (isOnboardingComplete) {
+            return 'complete';
+          }
+          return 'initial';
+        }
+        
+        // For regular users, start with initial splash
         return 'initial';
       }
 
-      if (!userState.hasProfileSetup) {
-        return 'profile';
-      }
-
-      if (!userState.hasWelcomeMessage) {
-        return 'welcome';
-      }
-
-      if (userState.isNewUser) {
-        return 'features';
-      }
-
+      console.log('🔧 [AppStateService] User onboarding complete');
       return 'complete';
 
     } catch (error) {
       this.error('Failed to determine onboarding status', error);
       return 'initial';
+    }
+  }
+
+  // Reset developer mode first run experience (useful for testing)
+  resetDeveloperModeFirstRun(): void {
+    try {
+      localStorage.removeItem('otakon_dev_first_run_completed');
+      localStorage.removeItem('otakon_dev_splash_screens_seen');
+      localStorage.removeItem('otakon_dev_profile_setup_completed');
+      localStorage.removeItem('otakon_dev_welcome_message_shown');
+      localStorage.removeItem('otakon_dev_onboarding_completed');
+      
+      // Clear user state cache
+      this.cache.delete(this.getCacheKey('userState'));
+      
+      this.log('Developer mode first run experience reset');
+    } catch (error) {
+      this.error('Failed to reset developer mode first run experience', error);
+    }
+  }
+
+  // Clear user state cache (useful when switching between regular and developer mode)
+  clearUserStateCache(): void {
+    try {
+      this.cache.delete(this.getCacheKey('userState'));
+      this.log('User state cache cleared');
+    } catch (error) {
+      this.error('Failed to clear user state cache', error);
     }
   }
 

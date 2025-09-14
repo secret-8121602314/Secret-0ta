@@ -9,12 +9,23 @@ export type { AuthState } from './authTypes';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY || process.env.SUPABASE_ANON_KEY;
 
+// Debug environment variables
+console.log('🔧 [Supabase] Environment check:', {
+  hasUrl: !!supabaseUrl,
+  hasKey: !!supabaseKey,
+  urlPrefix: supabaseUrl?.substring(0, 20) + '...',
+  keyPrefix: supabaseKey?.substring(0, 10) + '...'
+});
+
 // For now, use placeholder values to prevent crashes
 const fallbackUrl = 'https://placeholder.supabase.co';
 const fallbackKey = 'placeholder-key';
 
 if (!supabaseUrl || !supabaseKey) {
-  console.warn('Missing Supabase environment variables, using fallback values');
+  console.warn('⚠️ [Supabase] Missing environment variables, using fallback values');
+  console.warn('⚠️ [Supabase] Make sure you have VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY in your .env.local file');
+} else {
+  console.log('✅ [Supabase] Environment variables loaded successfully');
 }
 
 export const supabase = createClient(supabaseUrl || fallbackUrl, supabaseKey || fallbackKey, {
@@ -314,6 +325,12 @@ class SecureAuthService implements AuthService {
 
       if (error) {
         this.error('Sign up failed', error);
+        console.error('🔧 [Supabase] Sign up error details:', {
+          message: error.message,
+          status: error.status,
+          statusText: error.message,
+          details: error
+        });
         return { success: false, error: error.message };
       }
 
@@ -418,6 +435,10 @@ class SecureAuthService implements AuthService {
       // Initialize developer mode data
       await this.initializeDeveloperModeData();
 
+      // Clear user state cache to ensure fresh developer mode state
+      const { secureAppStateService } = await import('./secureAppStateService');
+      secureAppStateService.clearUserStateCache();
+
       // Update auth state with mock user
       this.updateAuthState({ 
         user: mockUser, 
@@ -464,6 +485,7 @@ class SecureAuthService implements AuthService {
 
   async handleOAuthCallback(): Promise<boolean> {
     try {
+      // Use Supabase's built-in OAuth callback handling
       const { data, error } = await supabase.auth.getSession();
       
       if (error) {
@@ -473,6 +495,22 @@ class SecureAuthService implements AuthService {
 
       if (data.session) {
         this.log('OAuth callback successful', { userId: data.session.user?.id });
+        // Set auth method for proper flow handling
+        localStorage.setItem('otakonAuthMethod', 'google');
+        return true;
+      }
+
+      // If no session, try to get the user directly
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        this.error('OAuth callback user error', userError);
+        return false;
+      }
+
+      if (userData.user) {
+        this.log('OAuth callback user found', { userId: userData.user.id });
+        localStorage.setItem('otakonAuthMethod', 'google');
         return true;
       }
 
@@ -521,6 +559,12 @@ class SecureAuthService implements AuthService {
 
       if (error) {
         this.error('Google sign-in failed', error);
+        console.error('🔧 [Supabase] Google OAuth error details:', {
+          message: error.message,
+          status: error.status,
+          statusText: error.message,
+          details: error
+        });
         return { success: false, error: error.message };
       }
 

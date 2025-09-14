@@ -132,12 +132,16 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
         setErrorMessage('');
         
         try {
+            console.log('🔧 [LoginSplashScreen] Attempting email authentication with:', email);
             const result = await authService.signIn(email, password);
+            console.log('🔧 [LoginSplashScreen] Email authentication result:', result);
             if (result.success) {
                 localStorage.setItem('otakonAuthMethod', 'email');
                 completeOnboardingStep('login', 1, { method: 'email', success: true });
+                console.log('🔧 [LoginSplashScreen] Email authentication successful, calling onComplete');
                 onComplete();
             } else {
+                console.log('🔧 [LoginSplashScreen] Email authentication failed:', result.error);
                 setErrorMessage(result.error || 'Sign in failed. Please check your credentials.');
                 trackOnboardingDropOff('login', 1, 'email_signin_failed', { error: result.error });
             }
@@ -167,7 +171,9 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
         setErrorMessage('');
         
         try {
+            console.log('🔧 [LoginSplashScreen] Attempting email sign up with:', email);
             const result = await authService.signUp(email, password);
+            console.log('🔧 [LoginSplashScreen] Email sign up result:', result);
             if (result.success) {
                 setSuccessMessage('Account created successfully! Please check your email to verify your account.');
                 setTimeout(() => {
@@ -175,6 +181,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
                     setSuccessMessage('');
                 }, 3000);
             } else {
+                console.log('🔧 [LoginSplashScreen] Email sign up failed:', result.error);
                 setErrorMessage(result.error || 'Sign up failed. Please try again.');
             }
         } catch (error) {
@@ -226,16 +233,24 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
             setErrorMessage('');
             
             try {
+                console.log('🔧 [LoginSplashScreen] Attempting developer mode authentication with password:', developerPassword);
                 // Use the developer mode authentication from authService
                 const result = await authService.signInWithDeveloperMode(developerPassword);
+                console.log('🔧 [LoginSplashScreen] Developer mode authentication result:', result);
                 
                 if (result.success) {
                     // Set developer mode flags
                     localStorage.setItem('otakon_developer_mode', 'true');
                     localStorage.setItem('otakonAuthMethod', 'developer');
                     console.log('🔧 Developer mode activated successfully!');
-                    onComplete();
+                    
+                    // Add a small delay to ensure localStorage flags are set before calling onComplete
+                    setTimeout(() => {
+                        console.log('🔧 [LoginSplashScreen] Calling onComplete callback');
+                        onComplete();
+                    }, 50);
                 } else {
+                    console.log('🔧 [LoginSplashScreen] Developer authentication failed:', result.error);
                     setErrorMessage(result.error || 'Developer authentication failed.');
                     setDeveloperPassword(''); // Clear password on error
                 }

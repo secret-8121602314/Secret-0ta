@@ -110,6 +110,7 @@ export const useChat = (isHandsFreeMode: boolean) => {
     const [isCooldownActive, setIsCooldownActive] = useState(false);
     const [pendingModification, setPendingModification] = useState<PendingInsightModification | null>(null);
     const abortControllersRef = useRef<Record<string, AbortController>>({});
+    const hasLoggedUnauthenticatedRef = useRef(false);
     
     // Use refs to avoid unnecessary re-renders and memory leaks
     const conversationsRef = useRef(conversations);
@@ -137,6 +138,17 @@ export const useChat = (isHandsFreeMode: boolean) => {
 
         // Prevent concurrent saves
         if (isSavingRef.current) {
+            return;
+        }
+
+        // Check if user is authenticated before saving
+        const authState = authService.getCurrentState();
+        if (!authState.user) {
+            // Only log once per session to reduce console noise
+            if (!hasLoggedUnauthenticatedRef.current) {
+                console.log('🔐 User not authenticated, skipping conversation save');
+                hasLoggedUnauthenticatedRef.current = true;
+            }
             return;
         }
 
@@ -172,6 +184,14 @@ export const useChat = (isHandsFreeMode: boolean) => {
     // Legacy functions for backward compatibility (deprecated)
     const saveConversationToSupabase = useCallback(async () => {
         console.warn('saveConversationToSupabase is deprecated. Use secureConversationService instead.');
+        
+        // Check if user is authenticated before saving
+        const authState = authService.getCurrentState();
+        if (!authState.user) {
+            console.log('🔐 User not authenticated, skipping conversation save');
+            return;
+        }
+        
         try {
             // Save each conversation individually
             for (const [conversationId, conversation] of Object.entries(conversations)) {
@@ -225,11 +245,35 @@ export const useChat = (isHandsFreeMode: boolean) => {
         
         const loadConversations = async () => {
             try {
+                // SIMPLIFIED: Always create default conversation for immediate chat access
+                const defaultConversations = {
+                    [EVERYTHING_ELSE_ID]: {
+                        id: EVERYTHING_ELSE_ID,
+                        title: 'Everything else',
+                        messages: [],
+                        createdAt: Date.now(),
+                    }
+                };
+                
+                // Set default state immediately
+                if (isMounted) {
+                    setChatState({
+                        conversations: defaultConversations,
+                        order: [EVERYTHING_ELSE_ID],
+                        activeId: EVERYTHING_ELSE_ID
+                    });
+                    console.log('💬 [useChat] Default conversation created immediately');
+                }
+                
                 // Check if user is authenticated before loading conversations
                 const { data: { user } } = await supabase.auth.getUser();
                 
                 if (!user) {
-                    console.log('🔐 User not authenticated, skipping conversation loading');
+                    // Only log once per session to reduce console noise
+                    if (!hasLoggedUnauthenticatedRef.current) {
+                        console.log('🔐 User not authenticated, using default conversation');
+                        hasLoggedUnauthenticatedRef.current = true;
+                    }
                     return;
                 }
                 
@@ -247,26 +291,12 @@ export const useChat = (isHandsFreeMode: boolean) => {
                     });
                     
                     console.log(`💾 Conversations loaded successfully`);
-                } else if (isMounted) {
-                    // Fallback to default state
-                    setChatState({
-                        conversations: {
-                            [EVERYTHING_ELSE_ID]: {
-                                id: EVERYTHING_ELSE_ID,
-                                title: 'Everything else',
-                                messages: [],
-                                createdAt: Date.now(),
-                            }
-                        },
-                        order: [EVERYTHING_ELSE_ID],
-                        activeId: EVERYTHING_ELSE_ID
-                    });
                 }
             } catch (error) {
                 console.error('Failed to load conversations:', error);
                 
                 if (isMounted) {
-                    // Fallback to default state
+                    // Ensure we always have a default conversation
                     setChatState({
                         conversations: {
                             [EVERYTHING_ELSE_ID]: {
@@ -1237,6 +1267,31 @@ export const useChat = (isHandsFreeMode: boolean) => {
             if (saveTimeoutRef.current) {
                 clearTimeout(saveTimeoutRef.current);
                 saveTimeoutRef.current = null;
+            }
+            
+            // Check if user is authenticated before saving
+            const authState = authService.getCurrentState();
+            if (!authState.user) {
+                console.log('🔐 User not authenticated, skipping conversation reset save');
+                // Still update local state even if not authenticated
+                const defaultConversations = {
+                    [EVERYTHING_ELSE_ID]: {
+                        id: EVERYTHING_ELSE_ID,
+                        title: 'Everything else',
+                        messages: [],
+                        createdAt: Date.now(),
+                    }
+                };
+                
+                setChatState({
+                    conversations: defaultConversations,
+                    order: [EVERYTHING_ELSE_ID],
+                    activeId: EVERYTHING_ELSE_ID
+                });
+                
+                setLoadingMessages([]);
+                console.log('✅ Conversations reset successfully (local only)');
+                return;
             }
             
             // Reset using atomic service

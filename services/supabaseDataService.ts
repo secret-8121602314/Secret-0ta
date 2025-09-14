@@ -109,11 +109,25 @@ class SupabaseDataService {
   async getUserUsageData(): Promise<UserUsageData> {
     try {
       if (!(await this.isAuthenticated())) {
-        throw new Error('User not authenticated');
+        // Return default usage data for unauthenticated users
+        return {
+          tier: 'free',
+          textCount: 0,
+          imageCount: 0,
+          textLimit: 50,
+          imageLimit: 10
+        };
       }
       const userId = await this.getUserId();
       if (!userId) {
-        throw new Error('User not authenticated');
+        // Return default usage data if no user ID
+        return {
+          tier: 'free',
+          textCount: 0,
+          imageCount: 0,
+          textLimit: 50,
+          imageLimit: 10
+        };
       }
       const { data, error } = await supabase.rpc('migrate_user_usage_data', {
         p_user_id: userId
@@ -183,11 +197,29 @@ class SupabaseDataService {
   async getUserAppState(): Promise<UserAppState> {
     try {
       if (!(await this.isAuthenticated())) {
-        throw new Error('User not authenticated');
+        // Return default app state for unauthenticated users
+        return {
+          lastVisited: new Date().toISOString(),
+          appSettings: {},
+          uiPreferences: {},
+          featureFlags: {},
+          lastInteraction: new Date().toISOString(),
+          onboardingData: {},
+          profileData: {}
+        };
       }
       const userId = await this.getUserId();
       if (!userId) {
-        throw new Error('User not authenticated');
+        // Return default app state if no user ID
+        return {
+          lastVisited: new Date().toISOString(),
+          appSettings: {},
+          uiPreferences: {},
+          featureFlags: {},
+          lastInteraction: new Date().toISOString(),
+          onboardingData: {},
+          profileData: {}
+        };
       }
       const { data, error } = await supabase.rpc('migrate_user_app_state', {
         p_user_id: userId

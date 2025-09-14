@@ -1,13 +1,25 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { authService } from './services/supabase';
-import { secureAppStateService } from './services/fixedAppStateService';
+import { secureAppStateService } from './services/secureAppStateService';
 import { secureConversationService } from './services/atomicConversationService';
-import { UserState, AppView } from './services/fixedAppStateService';
+import { UserState, AppView } from './services/secureAppStateService';
+import AuthCallbackHandler from './components/AuthCallbackHandler';
+import { pwaNavigationService, PWANavigationState } from './services/pwaNavigationService';
+import { supabaseDataService } from './services/supabaseDataService';
+import { suggestedPromptsService } from './services/suggestedPromptsService';
+import { useChat } from './hooks/useChat';
+import { useConnection } from './hooks/useConnection';
+import { ConnectionStatus, Conversations, Conversation } from './services/types';
 
 // Import components
 import LandingPage from './components/LandingPage';
 import MainViewContainer from './components/MainViewContainer';
+import ConversationTabs from './components/ConversationTabs';
+import ChatInput from './components/ChatInput';
+import Logo from './components/Logo';
+import SettingsIcon from './components/SettingsIcon';
+import AdBanner from './components/AdBanner';
 import AboutPage from './components/AboutPage';
 import PrivacyPolicyPage from './components/PrivacyPolicyPage';
 import TermsOfServicePage from './components/TermsOfServicePage';
@@ -41,8 +53,6 @@ import WishlistModal from './components/WishlistModal';
 import CachePerformanceDashboard from './components/CachePerformanceDashboard';
 
 // Import hooks
-import { useChat } from './hooks/useChat';
-import { useConnection } from './hooks/useConnection';
 import { useUsageTracking } from './hooks/useUsageTracking';
 import { useErrorHandling } from './hooks/useErrorHandling';
 import { useModals } from './hooks/useModals';
@@ -50,7 +60,6 @@ import { useAuthFlow } from './hooks/useAuthFlow';
 import { useTutorial } from './hooks/useTutorial';
 
 // Import types and services
-import { ConnectionStatus } from './services/types';
 import { canAccessDeveloperFeatures } from './config/developer';
 
 // ========================================
@@ -93,6 +102,9 @@ interface AppState {
   loadingMessages: string[];
   isCooldownActive: boolean;
   isFirstTime: boolean;
+  conversations: Conversations;
+  conversationsOrder: string[];
+  activeConversationId: string;
   
   // Context menu and feedback
   contextMenu: any | null;
@@ -131,14 +143,63 @@ const App: React.FC = () => {
     loadingMessages: [],
     isCooldownActive: false,
     isFirstTime: false,
+    conversations: {},
+    conversationsOrder: [],
+    activeConversationId: 'everything-else',
     
     // Context menu and feedback
     contextMenu: null,
     feedbackModalState: null,
     confirmationModal: null
   });
+  const [isOAuthCallback, setIsOAuthCallback] = useState(false);
+  
+  // Additional state variables from backup for full feature parity
+  const [hasRestored, setHasRestored] = useState(false);
+  const [isManualUploadMode, setIsManualUploadMode] = useState(false);
+  const [imagesForReview, setImagesForReview] = useState<any[]>([]);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  
+  // PWA Navigation State
+  const [pwaNavigationState, setPwaNavigationState] = useState<PWANavigationState>(() => pwaNavigationService.getNavigationState());
 
-  // Initialize app state
+  // Chat and connection hooks
+  const { 
+    conversations, 
+    conversationsOrder, 
+    activeConversationId, 
+    activeConversation, 
+    activeSubView,
+    loadingMessages,
+    isCooldownActive,
+    sendMessage: handleSendMessage,
+    stopMessage: handleStopMessage,
+    switchConversation: handleSwitchConversation,
+    handleSubViewChange,
+    handleFeedback,
+    handleRetry,
+    resetConversations,
+    addSystemMessage
+  } = useChat(appState.isHandsFreeMode);
+
+  const { 
+    connect, 
+    disconnect, 
+    connectionCode, 
+    status: connectionStatus, 
+    lastSuccessfulConnection 
+  } = useConnection();
+
+  // Missing handlers
+  const handleUpgradeClick = useCallback(() => {
+    setAppState(prev => ({ ...prev, showUpgradeScreen: true }));
+  }, []);
+
+  const handleOpenWishlistModal = useCallback(() => {
+    setAppState(prev => ({ ...prev, isWishlistModalOpen: true }));
+  }, []);
+
+  // Initialize app state - FIXED AND SIMPLIFIED
   const initializeApp = useCallback(async () => {
     try {
       setAppState(prev => ({ ...prev, loading: true, error: null }));
@@ -149,9 +210,33 @@ const App: React.FC = () => {
       // Determine app view
       const appView = secureAppStateService.determineView(userState);
 
+      // FIXED: Clear logic for first-time vs returning users
+      let onboardingStatus = 'complete';
+      
+      if (userState.isAuthenticated) {
+        if (userState.isNewUser || !userState.hasSeenSplashScreens || !userState.hasProfileSetup) {
+          // First-time user needs full onboarding
+          onboardingStatus = 'initial';
+        } else if (!userState.hasProfileSetup) {
+          // Returning user needs profile setup
+          onboardingStatus = 'profile-setup';
+        }
+      }
+
+      // Only log user state for authenticated users or non-landing views
+      if (userState.isAuthenticated || appView.view !== 'landing') {
+        console.log('🔧 [App] User state:', {
+          isAuthenticated: userState.isAuthenticated,
+          isNewUser: userState.isNewUser,
+          hasSeenSplashScreens: userState.hasSeenSplashScreens,
+          hasProfileSetup: userState.hasProfileSetup,
+          onboardingStatus
+        });
+      }
+
       setAppState({
         userState,
-        appView,
+        appView: { ...appView, onboardingStatus },
         loading: false,
         error: null,
         initialized: true,
@@ -163,16 +248,16 @@ const App: React.FC = () => {
         isOtakuDiaryModalOpen: false,
         isWishlistModalOpen: false,
         isCacheDashboardOpen: false,
-        showProfileSetup: false,
+        showProfileSetup: userState.isAuthenticated && !userState.hasProfileSetup,
         isHandsFreeMode: false,
         showUpgradeScreen: false,
         showDailyCheckin: false,
         currentAchievement: null,
-        activeConversation: null,
+        activeConversation: null, // Will be set by useChat hook
         activeSubView: 'chat',
         loadingMessages: [],
         isCooldownActive: false,
-        isFirstTime: true,
+        isFirstTime: userState.isNewUser,
         contextMenu: null,
         feedbackModalState: null,
         confirmationModal: null
@@ -192,18 +277,42 @@ const App: React.FC = () => {
   // Handle authentication state changes
   const handleAuthStateChange = useCallback(async () => {
     try {
-      if (!appState.initialized) return;
+      if (!appState.initialized) {
+        return;
+      }
 
       // Get updated user state
       const userState = await secureAppStateService.getUserState();
       
+      // Only log if there's a meaningful change
+      if (!appState.userState || appState.userState.isAuthenticated !== userState.isAuthenticated) {
+        console.log('🔧 [App] Auth state changed:', {
+          wasAuthenticated: appState.userState?.isAuthenticated,
+          isAuthenticated: userState.isAuthenticated
+        });
+      }
+      
       // Determine app view
       const appView = secureAppStateService.determineView(userState);
+
+      // Apply same onboarding logic for auth state changes
+      let onboardingStatus = 'complete';
+      
+      if (userState.isAuthenticated) {
+        if (userState.isNewUser || !userState.hasSeenSplashScreens || !userState.hasProfileSetup) {
+          // First-time user needs full onboarding
+          onboardingStatus = 'initial';
+        } else if (!userState.hasProfileSetup) {
+          // Returning user needs profile setup
+          onboardingStatus = 'profile-setup';
+        }
+        // Returning users with complete profile go straight to chat (onboardingStatus = 'complete')
+      }
 
       setAppState(prev => ({
         ...prev,
         userState,
-        appView,
+        appView: { ...appView, onboardingStatus },
         error: null
       }));
 
@@ -220,24 +329,63 @@ const App: React.FC = () => {
 
   // Handle ESC key to close modal (moved after useModals hook)
 
-  // Debug modal state changes
+  // Debug modal state changes (only log when modal is actually active)
   useEffect(() => {
-    console.log('Modal state changed:', appState.activeModal);
+    if (appState.activeModal) {
+      console.log('Modal state changed:', appState.activeModal);
+    }
   }, [appState.activeModal]);
+
+  // Debug function to check localStorage (temporary)
+  const debugLocalStorage = useCallback(() => {
+    console.log('🔧 [App] LocalStorage Debug:', {
+      onboardingStatus: localStorage.getItem('otakon_onboarding_status'),
+      onboardingSteps: JSON.parse(localStorage.getItem('otakon_onboarding_steps') || '[]'),
+      developerMode: localStorage.getItem('otakon_developer_mode'),
+      authMethod: localStorage.getItem('otakonAuthMethod')
+    });
+  }, []);
+
+  // Add debug function to window for easy access
+  useEffect(() => {
+    (window as any).debugLocalStorage = debugLocalStorage;
+  }, [debugLocalStorage]);
 
   // Handle onboarding status updates
   const handleOnboardingUpdate = useCallback(async (status: string) => {
     try {
-      // Only update onboarding status if user is authenticated
+      console.log('🔧 [App] handleOnboardingUpdate called with status:', status);
+      console.log('🔧 [App] Current app state:', {
+        isAuthenticated: appState.userState?.isAuthenticated,
+        isDeveloper: appState.userState?.isDeveloper,
+        currentOnboardingStatus: appState.appView?.onboardingStatus
+      });
+      
+      // Update onboarding status if user is authenticated
       if (appState.userState?.isAuthenticated) {
+        console.log('🔧 [App] User is authenticated, updating onboarding status');
         await secureAppStateService.updateOnboardingStatus(status);
-        // Refresh app state
-        await handleAuthStateChange();
-      } else {
-        // For unauthenticated users, just update local state
+        // Also update local app state immediately for better UX
         setAppState(prev => ({
           ...prev,
-          appView: prev.appView ? { ...prev.appView, onboardingStatus: status } : null
+          appView: {
+            view: 'app',
+            onboardingStatus: status
+          }
+        }));
+        // Refresh app state to get updated user state
+        await handleAuthStateChange();
+      } else {
+        console.log('🔧 [App] User not authenticated, updating local state only');
+        // For unauthenticated users, update both view and onboarding status
+        // Keep user in 'app' view for all onboarding steps including 'complete'
+        // Only go to 'landing' when explicitly requested (like 'back to landing')
+        setAppState(prev => ({
+          ...prev,
+          appView: {
+            view: 'app', // Always stay in app view during onboarding
+            onboardingStatus: status
+          }
         }));
       }
       
@@ -250,16 +398,25 @@ const App: React.FC = () => {
     }
   }, [handleAuthStateChange, appState.userState?.isAuthenticated]);
 
-  // Handle onboarding completion
+  // SIMPLIFIED: Handle onboarding completion
   const handleOnboardingComplete = useCallback(async () => {
     try {
+      console.log('🔧 [App] Completing onboarding for user');
+      
+      // Mark all onboarding steps as complete
       await secureAppStateService.markOnboardingComplete();
       await secureAppStateService.markProfileSetupComplete();
       await secureAppStateService.markSplashScreensSeen();
       await secureAppStateService.markWelcomeMessageShown();
       await secureAppStateService.markFirstRunComplete();
       
-      // Refresh app state
+      // For developer mode, also update localStorage
+      if (appState.userState?.isDeveloper) {
+        localStorage.setItem('otakon_dev_onboarding_complete', 'true');
+        localStorage.setItem('otakon_dev_profile_setup', 'true');
+      }
+      
+      // Refresh app state to get updated user state
       await handleAuthStateChange();
       
     } catch (error) {
@@ -269,60 +426,111 @@ const App: React.FC = () => {
         error: error instanceof Error ? error.message : 'Failed to complete onboarding'
       }));
     }
-  }, [handleAuthStateChange]);
+  }, [handleAuthStateChange, appState.userState?.isDeveloper]);
 
-  // Handle profile setup completion (now provided by useAuthFlow hook)
-
-  // Handle splash screens completion
-  const handleSplashScreensComplete = useCallback(async () => {
+  // SIMPLIFIED: Handle splash screen completion
+  const handleSplashScreenComplete = useCallback(async (step: string) => {
     try {
+      console.log(`🔧 [App] Completing splash screen step: ${step}`);
+      
+      // Mark splash screens as seen
       await secureAppStateService.markSplashScreensSeen();
       
-      // Refresh app state
-      await handleAuthStateChange();
+      // For the last step, complete onboarding
+      if (step === 'tier-splash') {
+        await handleOnboardingComplete();
+      } else {
+        // Move to next step
+        const nextStep = getNextOnboardingStep(step);
+        setAppState(prev => ({
+          ...prev,
+          appView: {
+            ...prev.appView!,
+            onboardingStatus: nextStep
+          }
+        }));
+      }
       
     } catch (error) {
-      console.error('Failed to complete splash screens:', error);
+      console.error('Failed to complete splash screen:', error);
       setAppState(prev => ({
         ...prev,
-        error: error instanceof Error ? error.message : 'Failed to complete splash screens'
+        error: error instanceof Error ? error.message : 'Failed to complete splash screen'
+      }));
+    }
+  }, [handleOnboardingComplete]);
+
+  // Helper function to get next onboarding step
+  const getNextOnboardingStep = (currentStep: string): string => {
+    const steps = ['initial', 'features', 'how-to-use', 'features-connected', 'pro-features', 'tier-splash'];
+    const currentIndex = steps.indexOf(currentStep);
+    return currentIndex < steps.length - 1 ? steps[currentIndex + 1] : 'complete';
+  };
+
+  // Missing authentication handlers from backup
+  const handleAuthSuccess = useCallback(async () => {
+    console.log('🔧 [App] handleAuthSuccess called');
+    try {
+      // Refresh app state to get updated user state
+      await handleAuthStateChange();
+      
+      // The app state will automatically determine the correct onboarding status
+      // based on the user's authentication state and onboarding flags
+      
+    } catch (error) {
+      console.error('Failed to handle auth success:', error);
+      setAppState(prev => ({
+        ...prev,
+        error: error instanceof Error ? error.message : 'Failed to handle authentication success'
       }));
     }
   }, [handleAuthStateChange]);
 
-  // Handle welcome message completion
-  const handleWelcomeMessageComplete = useCallback(async () => {
+  const handleLoginComplete = useCallback(async () => {
+    console.log('🔧 [App] handleLoginComplete called');
     try {
-      await secureAppStateService.markWelcomeMessageShown();
-      
-      // Refresh app state
+      // Refresh app state to get updated user state
       await handleAuthStateChange();
       
     } catch (error) {
-      console.error('Failed to complete welcome message:', error);
+      console.error('Failed to handle login completion:', error);
       setAppState(prev => ({
         ...prev,
-        error: error instanceof Error ? error.message : 'Failed to complete welcome message'
+        error: error instanceof Error ? error.message : 'Failed to handle login completion'
       }));
     }
   }, [handleAuthStateChange]);
 
-  // Handle first run completion
-  const handleFirstRunComplete = useCallback(async () => {
-    try {
-      await secureAppStateService.markFirstRunComplete();
-      
-      // Refresh app state
-      await handleAuthStateChange();
-      
-    } catch (error) {
-      console.error('Failed to complete first run:', error);
-      setAppState(prev => ({
-        ...prev,
-        error: error instanceof Error ? error.message : 'Failed to complete first run'
-      }));
-    }
-  }, [handleAuthStateChange]);
+  const handleInitialSplashComplete = useCallback(async () => {
+    console.log('🔧 [App] Initial splash completed');
+    await handleSplashScreenComplete('initial');
+  }, [handleSplashScreenComplete]);
+
+  const handleFeaturesSplashComplete = useCallback(async () => {
+    console.log('🔧 [App] Features splash completed');
+    await handleSplashScreenComplete('features');
+  }, [handleSplashScreenComplete]);
+
+  const handleFeaturesConnectedComplete = useCallback(async () => {
+    console.log('🔧 [App] Features connected splash completed');
+    await handleSplashScreenComplete('features-connected');
+  }, [handleSplashScreenComplete]);
+
+  const handleHowToUseComplete = useCallback(async () => {
+    console.log('🔧 [App] How to use splash completed');
+    await handleSplashScreenComplete('how-to-use');
+  }, [handleSplashScreenComplete]);
+
+  const handleProFeaturesComplete = useCallback(async () => {
+    console.log('🔧 [App] Pro features splash completed');
+    await handleSplashScreenComplete('pro-features');
+  }, [handleSplashScreenComplete]);
+
+  const handleTierSplashComplete = useCallback(async () => {
+    console.log('🔧 [App] Tier splash completed');
+    await handleSplashScreenComplete('tier-splash');
+  }, [handleSplashScreenComplete]);
+
 
   // Handle error recovery
   const handleErrorRecovery = useCallback(() => {
@@ -333,30 +541,6 @@ const App: React.FC = () => {
   }, []);
 
   // Custom hooks for app functionality
-  const {
-    conversations,
-    activeConversation,
-    loadingMessages,
-    isCooldownActive,
-    sendMessage,
-    stopMessage,
-    resetConversations,
-    addSystemMessage,
-    restoreHistory,
-    switchConversation,
-    fetchInsightContent,
-  } = useChat(appState.isHandsFreeMode);
-
-  const {
-    connect,
-    disconnect,
-    connectionCode,
-    send,
-    lastSuccessfulConnection,
-    forceReconnect,
-  } = useConnection((screenshot: string) => {
-    console.log('Screenshot received from PC client');
-  });
 
   const {
     refreshUsage,
@@ -379,6 +563,35 @@ const App: React.FC = () => {
     setUsage: () => {} 
   });
 
+  // Additional handler functions that depend on handleUpgrade and handleUpgradeToVanguard
+  const handleUpgradeAndContinue = useCallback(async () => {
+    console.log('🔧 [App] handleUpgradeAndContinue called');
+    try {
+      // Handle upgrade and continue to next step
+      await handleUpgrade();
+      // Mark pro-features step as completed
+      await handleOnboardingUpdate('pro-features');
+      // Move to next onboarding step
+      await handleOnboardingUpdate('how-to-use');
+    } catch (error) {
+      console.error('Failed to handle upgrade and continue:', error);
+    }
+  }, [handleUpgrade, handleOnboardingUpdate]);
+
+  const handleUpgradeToVanguardAndContinue = useCallback(async () => {
+    console.log('🔧 [App] handleUpgradeToVanguardAndContinue called');
+    try {
+      // Handle vanguard upgrade and continue to next step
+      await handleUpgradeToVanguard();
+      // Mark pro-features step as completed
+      await handleOnboardingUpdate('pro-features');
+      // Move to next onboarding step
+      await handleOnboardingUpdate('how-to-use');
+    } catch (error) {
+      console.error('Failed to handle vanguard upgrade and continue:', error);
+    }
+  }, [handleUpgradeToVanguard, handleOnboardingUpdate]);
+
   const {
     handleError,
     handleDatabaseError,
@@ -395,7 +608,7 @@ const App: React.FC = () => {
     confirmationModal,
     handleSettingsClick,
     handleContextMenuAction,
-    handleFeedback,
+    handleFeedback: handleFeedbackModal,
     closeFeedbackModal,
     openModal,
     closeModal,
@@ -457,7 +670,7 @@ const App: React.FC = () => {
     setIsConnectionModalOpen: (open: boolean) => setAppState(prev => ({ ...prev, isConnectionModalOpen: open })),
     setShowProfileSetup: (show: boolean) => setAppState(prev => ({ ...prev, showProfileSetup: show })),
     setConfirmationModal: (modal: any) => setAppState(prev => ({ ...prev, confirmationModal: modal })),
-    send,
+    send: handleSendMessage,
     disconnect,
     resetConversations,
     refreshUsage,
@@ -478,42 +691,6 @@ const App: React.FC = () => {
     console.log('Screenshot received from PC client');
   }, []);
 
-  const handleSendMessage = useCallback(async (text: string, images?: any[]) => {
-    if (!text.trim() && (!images || images.length === 0)) return;
-    
-    try {
-      // Check if user can make the query
-      const canMakeTextQuery = await canMakeQuery('text', 1);
-      const canMakeImageQuery = images && images.length > 0 ? await canMakeQuery('image', images.length) : true;
-      
-      if (!canMakeTextQuery || !canMakeImageQuery) {
-        setAppState(prev => ({ ...prev, showUpgradeScreen: true }));
-        return;
-      }
-      
-      // Record the query
-      if (text.trim()) {
-        await recordQuery('text', 1);
-      }
-      if (images && images.length > 0) {
-        await recordQuery('image', images.length);
-      }
-      
-      // Send the message
-      await sendMessage(text, images);
-    } catch (error) {
-      handleError(error as Error, 'sendMessage');
-    }
-  }, [canMakeQuery, recordQuery, sendMessage, handleError]);
-
-  const handleStopMessage = useCallback((messageId: string) => {
-    stopMessage(messageId);
-  }, [stopMessage]);
-
-  const handleUpgradeClick = useCallback(() => {
-    setAppState(prev => ({ ...prev, showUpgradeScreen: true }));
-  }, []);
-
   const handleFeedbackSubmit = useCallback(async (feedbackText: string) => {
     if (!appState.feedbackModalState) return;
     
@@ -525,18 +702,6 @@ const App: React.FC = () => {
     }
   }, [appState.feedbackModalState, closeFeedbackModal, handleError]);
 
-  const handleRetry = useCallback((messageId: string) => {
-    console.log('Retrying message:', messageId);
-  }, []);
-
-  const handleSubViewChange = useCallback((subView: string) => {
-    setAppState(prev => ({ ...prev, activeSubView: subView }));
-  }, []);
-
-  const handleOpenWishlistModal = useCallback(() => {
-    setAppState(prev => ({ ...prev, isWishlistModalOpen: true }));
-  }, []);
-
   // Initialize app on mount
   useEffect(() => {
     initializeApp();
@@ -547,6 +712,129 @@ const App: React.FC = () => {
     const unsubscribe = authService.subscribe(handleAuthStateChange);
     return unsubscribe;
   }, [handleAuthStateChange]);
+
+  // OAuth callback handling
+  useEffect(() => {
+    const handleOAuthCallback = async () => {
+      const url = window.location.href;
+      const urlParams = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+
+      if (hashParams.has('access_token') || urlParams.has('access_token')) {
+        console.log('OAuth callback detected, parameters:', Object.fromEntries(hashParams.entries()));
+        
+        // Clear OAuth parameters from URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        setIsOAuthCallback(true);
+        
+        // Handle OAuth callback
+        try {
+          const { authService } = await import('./services/supabase');
+          await authService.handleOAuthCallback();
+          console.log('OAuth callback handled successfully');
+        } catch (error) {
+          console.error('OAuth callback handling failed:', error);
+        }
+      }
+    };
+
+    handleOAuthCallback();
+  }, [setIsOAuthCallback]);
+
+  // Critical authentication state management effects from backup
+  useEffect(() => {
+    // Reset suggested prompts on app initialization
+    suggestedPromptsService.resetUsedPrompts();
+    // Only log for authenticated users to reduce console noise
+    if (appState.userState?.isAuthenticated) {
+      console.log('🔄 Suggested prompts reset on app initialization');
+    }
+  }, []);
+
+  // Authentication state management - automatically transition from login to initial when authenticated
+  useEffect(() => {
+    // Only transition if user just became authenticated and we're on login screen
+    if (appState.userState?.isAuthenticated && appState.appView?.onboardingStatus === 'login') {
+      console.log('🔧 [App] User authenticated on login screen, checking for recent auth...');
+      
+      // Check if this is a fresh authentication (not a page reload with existing session)
+      const authMethod = localStorage.getItem('otakonAuthMethod');
+      const hasRecentAuth = authMethod && (authMethod === 'google' || authMethod === 'discord' || authMethod === 'developer');
+      
+      if (hasRecentAuth) {
+        console.log('🔧 [App] Authentication successful, transitioning to initial splash screen...');
+        
+        // Clear the auth method to prevent re-triggering
+        localStorage.removeItem('otakonAuthMethod');
+        
+        // Transition to initial splash screen
+        handleOnboardingUpdate('initial');
+      }
+    }
+  }, [appState.userState?.isAuthenticated, appState.appView?.onboardingStatus, handleOnboardingUpdate]);
+
+  // PWA Navigation Service Integration
+  useEffect(() => {
+    const setupPwaNavigationSubscription = async () => {
+      try {
+        const unsubscribe = await pwaNavigationService.subscribe((newState) => {
+          // Only log PWA navigation changes for authenticated users
+          if (appState.userState?.isAuthenticated) {
+            console.log('🔧 [App] PWA navigation state updated:', newState);
+          }
+          setPwaNavigationState(newState);
+        });
+        
+        return unsubscribe;
+      } catch (error) {
+        console.error('Failed to setup PWA navigation subscription:', error);
+        return () => {}; // Return empty unsubscribe function
+      }
+    };
+    
+    setupPwaNavigationSubscription();
+  }, [setPwaNavigationState]);
+
+  // Welcome message logic for first-time users
+  useEffect(() => {
+    const checkWelcomeMessage = async () => {
+      try {
+        // Only check for authenticated users who have completed onboarding
+        if (appState.userState?.isAuthenticated && appState.appView?.onboardingStatus === 'complete') {
+          console.log('🔧 [App] Checking welcome message for authenticated user...');
+          
+          const shouldShow = await supabaseDataService.shouldShowWelcomeMessage();
+          const hasCompletedProfileSetup = await supabaseDataService.getUserAppState().then(state => state.appSettings?.profileSetupCompleted) || localStorage.getItem('otakon_profile_setup_completed') === 'true';
+          
+          console.log('🔧 [App] Welcome message check:', { shouldShow, hasCompletedProfileSetup });
+          
+          if (shouldShow && hasCompletedProfileSetup) {
+            console.log('🔧 [App] Showing welcome message to user...');
+            
+            // Add system message for welcome
+            if (addSystemMessage) {
+              addSystemMessage('Welcome to Otakon! I\'m here to help you with your anime and gaming needs. Feel free to ask me anything!');
+            }
+            
+            // Mark welcome message as shown
+            await supabaseDataService.updateWelcomeMessageShown('first_time');
+            console.log('✅ Welcome message tracking updated via Supabase service');
+          } else {
+            console.log('❌ Welcome message not shown - conditions not met:', {
+              hasCompletedProfileSetup,
+              shouldShow
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error checking welcome message:', error);
+      }
+    };
+    
+    // Execute the welcome message check
+    checkWelcomeMessage();
+  }, [appState.userState?.isAuthenticated, appState.appView?.onboardingStatus, addSystemMessage]);
 
   // Handle window focus/blur for session management
   useEffect(() => {
@@ -612,19 +900,23 @@ const App: React.FC = () => {
     );
   }
 
-  // Render splash screens based on onboarding status
+  // Render splash screens based on onboarding status - FIXED WITH CLEAR NAMES
   const renderSplashScreen = () => {
     const onboardingStatus = appState.appView?.onboardingStatus || 'login';
+    console.log('🔧 [App] renderSplashScreen called with onboardingStatus:', onboardingStatus);
+    console.log('🔧 [App] renderSplashScreen appState.appView:', appState.appView);
     
     switch (onboardingStatus) {
       case 'login':
         return (
           <>
             <LoginSplashScreen
+              key={`login-${appState.userState?.isAuthenticated ? appState.userState.id : 'anonymous'}`}
               onComplete={() => {
-                console.log('Login completed, refreshing app state');
-                // After login, refresh the app state to determine correct onboarding status
-                handleAuthStateChange();
+                console.log('🔧 [App] Login completed, calling handleLoginComplete');
+                console.log('🔧 [App] Current app state before refresh:', appState);
+                // After login, call the proper login completion handler
+                handleLoginComplete();
               }}
               onOpenPrivacy={() => openModal('privacy')}
               onOpenTerms={() => openModal('terms')}
@@ -682,45 +974,80 @@ const App: React.FC = () => {
             )}
           </>
         );
-      case 'initial':
+      case 'initial': // Splash Screen 1 - Initial Welcome
         return (
           <InitialSplashScreen
-            onComplete={() => handleOnboardingUpdate('features')}
+            key={`splash1-${appState.userState?.id || 'anonymous'}`}
+            onComplete={handleInitialSplashComplete}
           />
         );
-      case 'features':
+      case 'features': // Splash Screen 2 - 3 Feature Slides
         return (
           <HowToUseSplashScreen
-            onComplete={() => handleOnboardingUpdate('pro-features')}
+            onComplete={handleFeaturesSplashComplete}
           />
         );
-      case 'pro-features':
-        return (
-          <ProFeaturesSplashScreen
-            onComplete={() => handleOnboardingUpdate('how-to-use')}
-            onUpgrade={handleUpgrade}
-            onUpgradeToVanguard={handleUpgradeToVanguard}
-          />
-        );
-      case 'how-to-use':
+      case 'how-to-use': // Splash Screen 3 - PC Connection
         return (
           <SplashScreen
-            onComplete={() => handleOnboardingUpdate('tier-splash')}
-            onSkipConnection={() => handleOnboardingUpdate('complete')}
+            onComplete={handleHowToUseComplete}
+            onSkipConnection={() => {
+              // If user skips PC connection, go directly to pro features
+              setAppState(prev => ({
+                ...prev,
+                appView: {
+                  ...prev.appView!,
+                  onboardingStatus: 'pro-features'
+                }
+              }));
+            }}
             onConnect={connect}
             status={ConnectionStatus.DISCONNECTED}
             error={null}
             connectionCode={connectionCode}
-            onConnectionSuccess={() => handleOnboardingUpdate('tier-splash')}
+            onConnectionSuccess={() => {
+              // If PC connection is successful, show "You're Connected" screen
+              setAppState(prev => ({
+                ...prev,
+                appView: {
+                  ...prev.appView!,
+                  onboardingStatus: 'features-connected'
+                }
+              }));
+            }}
           />
         );
-      case 'tier-splash':
+      case 'features-connected': // Splash Screen 4 - "You're Connected!" (only if PC connected)
+        return (
+          <HowToUseSplashScreen
+            onComplete={handleFeaturesConnectedComplete}
+          />
+        );
+      case 'pro-features': // Splash Screen 5 - "Supercharge"
+        return (
+          <ProFeaturesSplashScreen
+            onComplete={handleProFeaturesComplete}
+            onUpgrade={handleUpgradeAndContinue}
+            onUpgradeToVanguard={handleUpgradeToVanguardAndContinue}
+          />
+        );
+      case 'tier-splash': // Splash Screen 6 - Tier/Upgrade
         return (
           <UpgradeSplashScreen
             onUpgrade={handleUpgrade}
             onUpgradeToVanguard={handleUpgradeToVanguard}
-            onClose={() => handleOnboardingUpdate('complete')}
+            onClose={handleTierSplashComplete}
           />
+        );
+      case 'profile-setup': // Profile Setup - After all splash screens
+        return (
+          <div className="min-h-screen bg-[#1A1A1A] flex items-center justify-center">
+            <PlayerProfileSetupModal
+              isOpen={true}
+              onComplete={handleOnboardingComplete}
+              onSkip={handleOnboardingComplete}
+            />
+          </div>
         );
       default:
         return null;
@@ -728,6 +1055,11 @@ const App: React.FC = () => {
   };
 
   // Render app based on view and onboarding status
+  // Only log rendering for non-landing views to reduce console noise
+  if (appState.appView?.view !== 'landing') {
+    console.log('🔧 [App] Rendering app with appView:', appState.appView);
+  }
+  
   if (appState.appView?.view === 'landing') {
     // If onboarding is complete, show the actual landing page
     if (appState.appView?.onboardingStatus === 'complete') {
@@ -864,123 +1196,19 @@ const App: React.FC = () => {
 
   // Render main app with onboarding
   if (appState.appView?.view === 'app') {
+    console.log('🔧 [App] Rendering main app with onboarding status:', appState.appView?.onboardingStatus);
     // Check if we need to show onboarding flow
     const onboardingStatus = appState.appView?.onboardingStatus;
     
     if (onboardingStatus && onboardingStatus !== 'complete') {
       return (
         <ErrorBoundary>
-          {/* Modals - Outside Router to avoid interference */}
-          {appState.activeModal === 'about' && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={closeModal}>
-              <div className="bg-[#1C1C1C] border border-[#424242] rounded-2xl shadow-2xl w-full max-w-4xl m-4 relative flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
-                <header className="flex-shrink-0 p-6 border-b border-[#2E2E2E]/60 flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-[#F5F5F5]">About Otagon</h2>
-                  <button onClick={closeModal} className="text-[#6E6E6E] hover:text-[#F5F5F5] transition-colors">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                  </button>
-                </header>
-                <main className="flex-1 overflow-y-auto p-8 min-h-0">
-                  <AboutPage />
-                </main>
-                <footer className="flex-shrink-0 p-6 border-t border-[#2E2E2E]/60 flex justify-end">
-                  <button onClick={closeModal} className="bg-neutral-600 hover:bg-neutral-700 text-white font-medium py-2 px-6 rounded-md transition-colors">
-                    Back
-                  </button>
-                </footer>
-              </div>
-            </div>
-          )}
-          
-          {appState.activeModal === 'privacy' && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={closeModal}>
-              <div className="bg-[#1C1C1C] border border-[#424242] rounded-2xl shadow-2xl w-full max-w-4xl m-4 relative flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
-                <header className="flex-shrink-0 p-6 border-b border-[#2E2E2E]/60 flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-[#F5F5F5]">Privacy Policy</h2>
-                  <button onClick={closeModal} className="text-[#6E6E6E] hover:text-[#F5F5F5] transition-colors">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                  </button>
-                </header>
-                <main className="flex-1 overflow-y-auto p-8 min-h-0">
-                  <PrivacyPolicyPage />
-                </main>
-                <footer className="flex-shrink-0 p-6 border-t border-[#2E2E2E]/60 flex justify-end">
-                  <button onClick={closeModal} className="bg-neutral-600 hover:bg-neutral-700 text-white font-medium py-2 px-6 rounded-md transition-colors">
-                    Back
-                  </button>
-                </footer>
-              </div>
-            </div>
-          )}
-          
-          {appState.activeModal === 'refund' && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={closeModal}>
-              <div className="bg-[#1C1C1C] border border-[#424242] rounded-2xl shadow-2xl w-full max-w-4xl m-4 relative flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
-                <header className="flex-shrink-0 p-6 border-b border-[#2E2E2E]/60 flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-[#F5F5F5]">Refund Policy</h2>
-                  <button onClick={closeModal} className="text-[#6E6E6E] hover:text-[#F5F5F5] transition-colors">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                  </button>
-                </header>
-                <main className="flex-1 overflow-y-auto p-8 min-h-0">
-                  <RefundPolicyPage />
-                </main>
-                <footer className="flex-shrink-0 p-6 border-t border-[#2E2E2E]/60 flex justify-end">
-                  <button onClick={closeModal} className="bg-neutral-600 hover:bg-neutral-700 text-white font-medium py-2 px-6 rounded-md transition-colors">
-                    Back
-                  </button>
-                </footer>
-              </div>
-            </div>
-          )}
-          
-          {appState.activeModal === 'terms' && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={closeModal} data-modal="true">
-              <div className="bg-[#1C1C1C] border border-[#424242] rounded-2xl shadow-2xl w-full max-w-4xl m-4 relative flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
-                <header className="flex-shrink-0 p-6 border-b border-[#2E2E2E]/60 flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-[#F5F5F5]">Terms of Service</h2>
-                  <button onClick={closeModal} className="text-[#6E6E6E] hover:text-[#F5F5F5] transition-colors">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                  </button>
-                </header>
-                <main className="flex-1 overflow-y-auto p-8 min-h-0">
-                  <div className="text-white">
-                    <h3 className="text-xl font-bold mb-4">Terms of Service</h3>
-                    <p>This is a test to see if the modal renders.</p>
-                    <TermsOfServicePage />
-                  </div>
-                </main>
-                <footer className="flex-shrink-0 p-6 border-t border-[#2E2E2E]/60 flex justify-end">
-                  <button onClick={closeModal} className="bg-neutral-600 hover:bg-neutral-700 text-white font-medium py-2 px-6 rounded-md transition-colors">
-                    Back
-                  </button>
-                </footer>
-              </div>
-            </div>
-          )}
-          
-          {appState.activeModal === 'contact' && (
-            <ContactUsModal isOpen={true} onClose={closeModal} />
-          )}
-          
-          <LoginSplashScreen
-            onComplete={() => {
-              console.log('Login completed, refreshing app state');
-              // After login, refresh the app state to determine correct onboarding status
-              handleAuthStateChange();
-            }}
-            onOpenPrivacy={() => openModal('privacy')}
-            onOpenTerms={() => openModal('terms')}
-            onBackToLanding={() => {
-              console.log('Back to landing clicked');
-              handleOnboardingUpdate('complete');
-            }}
-          />
+          {renderSplashScreen()}
         </ErrorBoundary>
       );
     }
     
-    // Show landing page
+    // Show main chat interface when onboarding is complete
     return (
       <ErrorBoundary>
         {/* Modals - Outside Router to avoid interference */}
@@ -1076,287 +1304,239 @@ const App: React.FC = () => {
           <ContactUsModal isOpen={true} onClose={closeModal} />
         )}
         
-        <Router>
-          <Routes>
-            <Route 
-              path="/" 
-              element={
-                <LandingPage 
-                  onGetStarted={() => {
-                    // Navigate to login screen
-                    console.log('Get Started clicked - navigating to login screen');
-                    handleOnboardingUpdate('login');
-                  }}
-                  onOpenAbout={() => openModal('about')}
-                  onOpenPrivacy={() => openModal('privacy')}
-                  onOpenRefund={() => openModal('refund')}
-                  onOpenContact={() => openModal('contact')}
-                  onOpenTerms={() => openModal('terms')}
-                  onDirectNavigation={(path: string) => console.log('Navigate to:', path)}
+        <div className="min-h-screen bg-[#1A1A1A] text-white flex flex-col">
+          {/* Main App View */}
+          {activeConversation ? (
+            <>
+              {/* Header */}
+              <header className="flex-shrink-0 px-3 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-6 pb-2 sm:pb-3 border-b border-[#2E2E2E]/20">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Logo className="w-8 h-8 sm:w-10 sm:h-10" />
+                    <h1 className="text-lg sm:text-xl font-bold text-white">Otagon</h1>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setAppState(prev => ({ ...prev, isSettingsModalOpen: true }))}
+                      className="flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-2 sm:px-3 h-10 sm:h-12 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold bg-gradient-to-r from-[#2E2E2E] to-[#1C1C1C] border-2 border-[#424242]/60 text-white/90 transition-all duration-300 hover:from-[#424242] hover:to-[#2E2E2E] hover:scale-105 hover:shadow-lg"
+                      aria-label="Open settings"
+                    >
+                      <SettingsIcon className="w-5 h-5 flex-shrink-0" />
+                      <span className="hidden sm:inline font-medium">Settings</span>
+                    </button>
+                  </div>
+                </div>
+              </header>
+
+              {/* Ad Banner for free users */}
+              {appState.userState?.tier === 'free' && (
+                <div className="px-3 sm:px-4 md:px-6 py-2">
+                  <AdBanner />
+                </div>
+              )}
+
+              {/* Conversation Tabs */}
+              <ConversationTabs
+                conversations={conversations}
+                conversationsOrder={conversationsOrder}
+                activeConversationId={activeConversationId}
+                activeConversation={activeConversation}
+                onSwitchConversation={handleSwitchConversation}
+                onContextMenu={() => {}} // TODO: Add context menu handler
+                onReorder={() => {}} // TODO: Add reorder handler
+              />
+
+              {/* Main Content Area */}
+              <main className="flex-1 flex flex-col min-h-0">
+                <MainViewContainer
+                  activeConversation={activeConversation}
+                  activeSubView={activeSubView}
+                  onSubViewChange={handleSubViewChange}
+                  onSendMessage={handleSendMessage}
+                  stopMessage={handleStopMessage}
+                  isInputDisabled={isCooldownActive}
+                  messages={activeConversation.messages || []}
+                  loadingMessages={loadingMessages}
+                  onUpgradeClick={handleUpgradeClick}
+                  onFeedback={handleFeedback}
+                  onRetry={handleRetry}
+                  isFirstTime={appState.isFirstTime}
+                  onOpenWishlistModal={handleOpenWishlistModal}
                 />
-              } 
+              </main>
+
+              {/* Chat Input */}
+              <div className="flex-shrink-0 px-3 sm:px-4 md:px-6 py-3 sm:py-4 border-t border-[#2E2E2E]/20">
+                <ChatInput
+                  onSendMessage={handleSendMessage}
+                  isDisabled={isCooldownActive}
+                  connectionStatus={connectionStatus}
+                  usage={appState.userState?.usage}
+                  onUpgradeClick={handleUpgradeClick}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-center min-h-screen">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+                <p className="text-gray-400">Initializing chat...</p>
+              </div>
+            </div>
+          )}
+
+          {/* Modals */}
+          {appState.isConnectionModalOpen && (
+            <ConnectionModal
+              isOpen={appState.isConnectionModalOpen}
+              onClose={() => setAppState(prev => ({ ...prev, isConnectionModalOpen: false }))}
+              onConnect={connect}
+              onDisconnect={disconnect}
+              status={ConnectionStatus.DISCONNECTED}
+              error={null}
+              connectionCode={connectionCode}
+              lastSuccessfulConnection={lastSuccessfulConnection ? new Date(lastSuccessfulConnection) : null}
+              onShowHowToUse={() => handleOnboardingUpdate('how-to-use')}
             />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Router>
+          )}
+
+          {appState.isHandsFreeModalOpen && (
+            <HandsFreeModal
+              onClose={() => setAppState(prev => ({ ...prev, isHandsFreeModalOpen: false }))}
+              isHandsFree={appState.isHandsFreeMode}
+              onToggleHandsFree={() => setAppState(prev => ({ ...prev, isHandsFreeMode: !prev.isHandsFreeMode }))}
+            />
+          )}
+
+          {appState.isSettingsModalOpen && (
+            <SettingsModal
+              isOpen={appState.isSettingsModalOpen}
+              onClose={() => setAppState(prev => ({ ...prev, isSettingsModalOpen: false }))}
+              usage={{ 
+                textQueries: 0, 
+                imageQueries: 0, 
+                insights: 0,
+                textCount: 0,
+                imageCount: 0,
+                textLimit: 55,
+                imageLimit: 25,
+                tier: 'free'
+              }}
+              onShowUpgrade={handleUpgrade}
+              onShowVanguardUpgrade={handleUpgradeToVanguard}
+              onLogout={handleLogoutOnly}
+              onResetApp={handleResetApp}
+              onShowHowToUse={() => handleOnboardingUpdate('how-to-use')}
+              userEmail={appState.userState?.email || ''}
+              onClearFirstRunCache={() => {}}
+              refreshUsage={refreshUsage}
+            />
+          )}
+
+          {appState.isCreditModalOpen && (
+            <CreditModal
+              onClose={() => setAppState(prev => ({ ...prev, isCreditModalOpen: false }))}
+              usage={{ 
+                textQueries: 0, 
+                imageQueries: 0, 
+                insights: 0,
+                textCount: 0,
+                imageCount: 0,
+                textLimit: 55,
+                imageLimit: 25,
+                tier: 'free'
+              }}
+              onUpgrade={handleUpgrade}
+            />
+          )}
+
+          {appState.showProfileSetup && (
+            <PlayerProfileSetupModal
+              isOpen={appState.showProfileSetup}
+              onComplete={handleProfileSetupComplete}
+              onSkip={handleSkipProfileSetup}
+            />
+          )}
+
+          {appState.isOtakuDiaryModalOpen && (
+            <OtakuDiaryModal
+              isOpen={appState.isOtakuDiaryModalOpen}
+              gameId=""
+              gameTitle=""
+              onClose={() => setAppState(prev => ({ ...prev, isOtakuDiaryModalOpen: false }))}
+            />
+          )}
+
+          {appState.isWishlistModalOpen && (
+            <WishlistModal
+              isOpen={appState.isWishlistModalOpen}
+              onClose={() => setAppState(prev => ({ ...prev, isWishlistModalOpen: false }))}
+            />
+          )}
+
+          {appState.isCacheDashboardOpen && (
+            <CachePerformanceDashboard
+              isOpen={appState.isCacheDashboardOpen}
+              onClose={() => setAppState(prev => ({ ...prev, isCacheDashboardOpen: false }))}
+            />
+          )}
+
+          {/* Context Menu */}
+          {appState.contextMenu && (
+            <ContextMenu
+              targetRect={appState.contextMenu.targetRect}
+              items={appState.contextMenu.items}
+              onClose={() => setAppState(prev => ({ ...prev, contextMenu: null }))}
+            />
+          )}
+
+          {/* Confirmation Modal */}
+          {appState.confirmationModal && (
+            <ConfirmationModal
+              title={appState.confirmationModal.title}
+              message={appState.confirmationModal.message}
+              onConfirm={appState.confirmationModal.onConfirm}
+              onCancel={() => setAppState(prev => ({ ...prev, confirmationModal: null }))}
+            />
+          )}
+
+          {/* Feedback Modal */}
+          {appState.feedbackModalState && (
+            <FeedbackModal
+              onClose={closeFeedbackModal}
+              onSubmit={handleFeedbackSubmit}
+              originalText={appState.feedbackModalState.originalText || ''}
+            />
+          )}
+
+          {/* Banners */}
+          {appState.showDailyCheckin && (
+            <DailyCheckinBanner
+              onClose={() => setAppState(prev => ({ ...prev, showDailyCheckin: false }))}
+            />
+          )}
+
+          {appState.currentAchievement && (
+            <AchievementNotification
+              achievement={appState.currentAchievement}
+              onClose={() => setAppState(prev => ({ ...prev, currentAchievement: null }))}
+            />
+          )}
+
+          {/* PWA Install Banner */}
+          <PWAInstallBanner />
+        </div>
       </ErrorBoundary>
     );
   }
 
-  // Render main app with all functionality
+  // Default return for app view
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-[#1A1A1A] text-white">
-        {/* Main App View */}
-        <MainViewContainer
-          activeConversation={activeConversation}
-          activeSubView={appState.activeSubView}
-          onSubViewChange={handleSubViewChange}
-          onSendMessage={handleSendMessage}
-          stopMessage={handleStopMessage}
-          isInputDisabled={isCooldownActive}
-          messages={activeConversation?.messages || []}
-          loadingMessages={loadingMessages}
-          onUpgradeClick={handleUpgradeClick}
-          onFeedback={handleFeedback}
-          onRetry={handleRetry}
-          isFirstTime={appState.isFirstTime}
-          onOpenWishlistModal={handleOpenWishlistModal}
-        />
-
-        {/* Modals */}
-        {appState.isConnectionModalOpen && (
-          <ConnectionModal
-            isOpen={appState.isConnectionModalOpen}
-            onClose={() => setAppState(prev => ({ ...prev, isConnectionModalOpen: false }))}
-            onConnect={connect}
-            onDisconnect={disconnect}
-            status={ConnectionStatus.DISCONNECTED}
-            error={null}
-            connectionCode={connectionCode}
-            lastSuccessfulConnection={lastSuccessfulConnection ? new Date(lastSuccessfulConnection) : null}
-            onShowHowToUse={() => handleOnboardingUpdate('how-to-use')}
-          />
-        )}
-
-        {appState.isHandsFreeModalOpen && (
-          <HandsFreeModal
-            onClose={() => setAppState(prev => ({ ...prev, isHandsFreeModalOpen: false }))}
-            isHandsFree={appState.isHandsFreeMode}
-            onToggleHandsFree={() => setAppState(prev => ({ ...prev, isHandsFreeMode: !prev.isHandsFreeMode }))}
-          />
-        )}
-
-        {appState.isSettingsModalOpen && (
-          <SettingsModal
-            isOpen={appState.isSettingsModalOpen}
-            onClose={() => setAppState(prev => ({ ...prev, isSettingsModalOpen: false }))}
-            usage={{ 
-              textQueries: 0, 
-              imageQueries: 0, 
-              insights: 0,
-              textCount: 0,
-              imageCount: 0,
-              textLimit: 55,
-              imageLimit: 25,
-              tier: 'free'
-            }}
-            onShowUpgrade={handleUpgrade}
-            onShowVanguardUpgrade={handleUpgradeToVanguard}
-            onLogout={handleLogoutOnly}
-            onResetApp={handleResetApp}
-            onShowHowToUse={() => handleOnboardingUpdate('how-to-use')}
-            userEmail={appState.userState?.email || ''}
-            onClearFirstRunCache={() => {}}
-            refreshUsage={refreshUsage}
-          />
-        )}
-
-        {appState.isCreditModalOpen && (
-          <CreditModal
-            onClose={() => setAppState(prev => ({ ...prev, isCreditModalOpen: false }))}
-            usage={{ 
-              textQueries: 0, 
-              imageQueries: 0, 
-              insights: 0,
-              textCount: 0,
-              imageCount: 0,
-              textLimit: 55,
-              imageLimit: 25,
-              tier: 'free'
-            }}
-            onUpgrade={handleUpgrade}
-          />
-        )}
-
-        {appState.showProfileSetup && (
-          <PlayerProfileSetupModal
-            isOpen={appState.showProfileSetup}
-            onComplete={handleProfileSetupComplete}
-            onSkip={handleSkipProfileSetup}
-          />
-        )}
-
-        {appState.isOtakuDiaryModalOpen && (
-          <OtakuDiaryModal
-            isOpen={appState.isOtakuDiaryModalOpen}
-            gameId=""
-            gameTitle=""
-            onClose={() => setAppState(prev => ({ ...prev, isOtakuDiaryModalOpen: false }))}
-          />
-        )}
-
-        {appState.isWishlistModalOpen && (
-          <WishlistModal
-            isOpen={appState.isWishlistModalOpen}
-            onClose={() => setAppState(prev => ({ ...prev, isWishlistModalOpen: false }))}
-          />
-        )}
-
-        {appState.isCacheDashboardOpen && (
-          <CachePerformanceDashboard
-            isOpen={appState.isCacheDashboardOpen}
-            onClose={() => setAppState(prev => ({ ...prev, isCacheDashboardOpen: false }))}
-          />
-        )}
-
-        {/* Context Menu */}
-        {appState.contextMenu && (
-          <ContextMenu
-            targetRect={appState.contextMenu.targetRect}
-            items={appState.contextMenu.items}
-            onClose={() => setAppState(prev => ({ ...prev, contextMenu: null }))}
-          />
-        )}
-
-        {/* Confirmation Modal */}
-        {appState.confirmationModal && (
-          <ConfirmationModal
-            title={appState.confirmationModal.title}
-            message={appState.confirmationModal.message}
-            onConfirm={appState.confirmationModal.onConfirm}
-            onCancel={() => setAppState(prev => ({ ...prev, confirmationModal: null }))}
-          />
-        )}
-
-        {/* Feedback Modal */}
-        {appState.feedbackModalState && (
-          <FeedbackModal
-            onClose={closeFeedbackModal}
-            onSubmit={handleFeedbackSubmit}
-            originalText={appState.feedbackModalState.originalText || ''}
-          />
-        )}
-
-        {/* Policy Modals */}
-        {appState.activeModal === 'about' && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={closeModal}>
-            <div className="bg-[#1C1C1C] border border-[#424242] rounded-2xl shadow-2xl w-full max-w-4xl m-4 relative max-h-[90vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
-              <header className="flex-shrink-0 p-6 border-b border-[#2E2E2E]/60 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-[#F5F5F5]">About Otakon</h2>
-                <button onClick={closeModal} className="text-[#6E6E6E] hover:text-[#F5F5F5] transition-colors">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-              </header>
-              <main className="flex-1 overflow-y-auto p-8">
-                <AboutPage />
-              </main>
-              <footer className="flex-shrink-0 p-6 border-t border-[#2E2E2E]/60 flex justify-end">
-                <button onClick={closeModal} className="bg-neutral-600 hover:bg-neutral-700 text-white font-medium py-2 px-6 rounded-md transition-colors">
-                  Back
-                </button>
-              </footer>
-            </div>
-          </div>
-        )}
-        
-        {appState.activeModal === 'privacy' && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={closeModal}>
-            <div className="bg-[#1C1C1C] border border-[#424242] rounded-2xl shadow-2xl w-full max-w-4xl m-4 relative max-h-[90vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
-              <header className="flex-shrink-0 p-6 border-b border-[#2E2E2E]/60 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-[#F5F5F5]">Privacy Policy</h2>
-                <button onClick={closeModal} className="text-[#6E6E6E] hover:text-[#F5F5F5] transition-colors">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-              </header>
-              <main className="flex-1 overflow-y-auto p-8">
-                <PrivacyPolicyPage />
-              </main>
-              <footer className="flex-shrink-0 p-6 border-t border-[#2E2E2E]/60 flex justify-end">
-                <button onClick={closeModal} className="bg-neutral-600 hover:bg-neutral-700 text-white font-medium py-2 px-6 rounded-md transition-colors">
-                  Back
-                </button>
-              </footer>
-            </div>
-          </div>
-        )}
-        
-        {appState.activeModal === 'refund' && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={closeModal}>
-            <div className="bg-[#1C1C1C] border border-[#424242] rounded-2xl shadow-2xl w-full max-w-4xl m-4 relative max-h-[90vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
-              <header className="flex-shrink-0 p-6 border-b border-[#2E2E2E]/60 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-[#F5F5F5]">Refund Policy</h2>
-                <button onClick={closeModal} className="text-[#6E6E6E] hover:text-[#F5F5F5] transition-colors">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-              </header>
-              <main className="flex-1 overflow-y-auto p-8">
-                <RefundPolicyPage />
-              </main>
-              <footer className="flex-shrink-0 p-6 border-t border-[#2E2E2E]/60 flex justify-end">
-                <button onClick={closeModal} className="bg-neutral-600 hover:bg-neutral-700 text-white font-medium py-2 px-6 rounded-md transition-colors">
-                  Back
-                </button>
-              </footer>
-            </div>
-          </div>
-        )}
-        
-        {appState.activeModal === 'terms' && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={closeModal} data-modal="true">
-            <div className="bg-[#1C1C1C] border border-[#424242] rounded-2xl shadow-2xl w-full max-w-4xl m-4 relative max-h-[90vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
-              <header className="flex-shrink-0 p-6 border-b border-[#2E2E2E]/60 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-[#F5F5F5]">Terms of Service</h2>
-                <button onClick={closeModal} className="text-[#6E6E6E] hover:text-[#F5F5F5] transition-colors">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-              </header>
-              <main className="flex-1 overflow-y-auto p-8">
-                <div className="text-white">
-                  <h3 className="text-xl font-bold mb-4">Terms of Service</h3>
-                  <p>This is a test to see if the modal renders.</p>
-                  <TermsOfServicePage />
-                </div>
-              </main>
-              <footer className="flex-shrink-0 p-6 border-t border-[#2E2E2E]/60 flex justify-end">
-                <button onClick={closeModal} className="bg-neutral-600 hover:bg-neutral-700 text-white font-medium py-2 px-6 rounded-md transition-colors">
-                  Back
-                </button>
-              </footer>
-            </div>
-          </div>
-        )}
-        
-        {appState.activeModal === 'contact' && (
-          <ContactUsModal isOpen={true} onClose={closeModal} />
-        )}
-
-        {/* Banners */}
-        {appState.showDailyCheckin && (
-          <DailyCheckinBanner
-            onClose={() => setAppState(prev => ({ ...prev, showDailyCheckin: false }))}
-          />
-        )}
-
-        {appState.currentAchievement && (
-          <AchievementNotification
-            achievement={appState.currentAchievement}
-            onClose={() => setAppState(prev => ({ ...prev, currentAchievement: null }))}
-          />
-        )}
-
-        {/* PWA Install Banner */}
-        <PWAInstallBanner />
+        {renderSplashScreen()}
       </div>
     </ErrorBoundary>
   );

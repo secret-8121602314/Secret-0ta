@@ -1,5 +1,6 @@
 import { supabaseDataService } from './supabaseDataService';
 import { unifiedDataService, STORAGE_KEYS } from './unifiedDataService';
+import { authService } from './supabase';
 
 export interface InstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -154,9 +155,19 @@ class PWAInstallService implements PWAInstallServiceInterface {
       let hasGlobalInstallFlag = false;
       
       try {
-        const appState = await supabaseDataService.getUserAppState();
-        hasInstalledPWA = appState.pwaInstalled === true;
-        hasGlobalInstallFlag = appState.pwaGlobalInstalled === true;
+        // Check if user is authenticated before trying to fetch from Supabase
+        const authState = authService.getCurrentState();
+        if (!authState.user) {
+          // User not authenticated, will use localStorage fallback
+          // Only log in development mode to reduce console noise
+          if (import.meta.env.DEV) {
+            console.log('PWA: User not authenticated, using localStorage fallback');
+          }
+        } else {
+          const appState = await supabaseDataService.getUserAppState();
+          hasInstalledPWA = appState.pwaInstalled === true;
+          hasGlobalInstallFlag = appState.pwaGlobalInstalled === true;
+        }
       } catch (error) {
         // User not authenticated, will use localStorage fallback
         // Only log in development mode to reduce console noise

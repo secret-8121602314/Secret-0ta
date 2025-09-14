@@ -21,6 +21,7 @@ class PWANavigationService {
   };
 
   private listeners: Set<(state: PWANavigationState) => void> = new Set();
+  private hasLoggedPWADetection: boolean = false;
 
   static getInstance(): PWANavigationService {
     if (!PWANavigationService.instance) {
@@ -63,7 +64,11 @@ class PWANavigationService {
     this.navigationState.isPWAInstalled = isRunningInPWA;
     this.navigationState.isRunningInPWA = isRunningInPWA;
     
-    console.log('PWA Navigation: PWA mode detected:', isRunningInPWA);
+    // Only log PWA detection once
+    if (!this.hasLoggedPWADetection) {
+      console.log('PWA Navigation: PWA mode detected:', isRunningInPWA);
+      this.hasLoggedPWADetection = true;
+    }
     
     this.notifyListeners();
   }
@@ -72,10 +77,13 @@ class PWANavigationService {
     const shouldShowLogin = !authState.user && !authState.loading;
     const shouldShowChat = !!authState.user && !authState.loading;
     
+    // Only log when there's an actual change
+    if (this.navigationState.shouldShowLogin !== shouldShowLogin || this.navigationState.shouldShowChat !== shouldShowChat) {
+      console.log('PWA Navigation: Auth state changed:', { shouldShowLogin, shouldShowChat });
+    }
+    
     this.navigationState.shouldShowLogin = shouldShowLogin;
     this.navigationState.shouldShowChat = shouldShowChat;
-    
-    console.log('PWA Navigation: Auth state changed:', { shouldShowLogin, shouldShowChat });
     
     this.notifyListeners();
   }

@@ -52,6 +52,13 @@ const checkAndResetUsage = async (): Promise<void> => {
 
 const getTier = async (): Promise<UserTier> => {
     try {
+        // Check if user is authenticated before trying to fetch from Supabase
+        const authState = authService.getCurrentState();
+        if (!authState.user) {
+            // User not authenticated, use localStorage fallback
+            return (localStorage.getItem(TIER_KEY) as UserTier) || 'free';
+        }
+        
         // Try to get tier from Supabase first
         const supabaseUsage = await supabaseDataService.getUserUsageData();
         return (supabaseUsage.tier as UserTier) || 'free';

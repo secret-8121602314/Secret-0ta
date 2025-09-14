@@ -53,13 +53,25 @@ const MainViewContainer: React.FC<MainViewContainerProps> = ({
   isFirstTime,
   onOpenWishlistModal,
 }) => {
+  // Safety check to prevent rendering when activeConversation is undefined
+  if (!activeConversation) {
+    return (
+      <div className="min-h-screen bg-[#1A1A1A] text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading chat...</p>
+        </div>
+      </div>
+    );
+  }
+
   const { isMobile, isTablet, isLaptop, isDesktop, isUltrawide, deviceType } = useResponsive();
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  const orderedInsightIds = activeConversation.insightsOrder || Object.keys(activeConversation.insights || {});
+  const orderedInsightIds = activeConversation?.insightsOrder || Object.keys(activeConversation?.insights || {});
 
   const views = useMemo(() => {
     return ['chat', ...orderedInsightIds];

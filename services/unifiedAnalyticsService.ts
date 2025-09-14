@@ -469,6 +469,19 @@ export class UnifiedAnalyticsService extends BaseService {
 
   private async enrichEvent(event: AnalyticsEvent): Promise<AnalyticsEvent> {
     try {
+      // Check if user is authenticated before trying to get user data
+      const authState = authService.getCurrentState();
+      if (!authState.user) {
+        // User not authenticated, return event without user data
+        return {
+          ...event,
+          userId: undefined,
+          userTier: 'free',
+          platform: this.getPlatform(),
+          version: this.getAppVersion()
+        };
+      }
+      
       const user = await authService.getCurrentUserId();
       const tier = await unifiedUsageService.getTier();
       
@@ -481,7 +494,13 @@ export class UnifiedAnalyticsService extends BaseService {
       };
     } catch (error) {
       console.warn('Failed to enrich event:', error);
-      return event;
+      return {
+        ...event,
+        userId: undefined,
+        userTier: 'free',
+        platform: this.getPlatform(),
+        version: this.getAppVersion()
+      };
     }
   }
 
