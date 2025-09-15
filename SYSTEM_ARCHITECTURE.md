@@ -421,6 +421,9 @@ Before implementing any change, verify:
 | 2025-01-15 | Documentation | Added comprehensive behavior tracking system | Medium | ✅ User |
 | 2025-01-15 | User Flow | Clarified splash screen logic for first-time vs returning users | High | ✅ User |
 | 2025-01-15 | Tier System Fix | Fixed developer mode tier switching persistence issue | High | ✅ User |
+| 2025-01-15 | Tier Gating | Implemented comprehensive tier-based feature gating | High | ✅ User |
+| 2025-01-15 | Critical Bug Fix | Fixed refreshUsage callback TypeError preventing tier switching | Critical | ✅ User |
+| 2025-01-15 | UI Consistency | Fixed CreditModal showing wrong tier limits | High | ✅ User |
 
 ### **Current Behavior State**
 - **Navigation**: ✅ Landing ↔ Login ↔ Chat flow working correctly
@@ -431,6 +434,9 @@ Before implementing any change, verify:
 - **Data Storage**: ✅ localStorage and Supabase patterns stable
 - **Tier System**: ✅ Free → Pro → Vanguard cycling working correctly
 - **Developer Mode Tier Switching**: ✅ Tier changes persist after settings modal close
+- **Tier-Based Feature Gating**: ✅ All premium features properly gated by tier
+- **Usage Limits Display**: ✅ CreditIndicator and CreditModal show correct tier-based limits
+- **Cache Management**: ✅ User state cache properly cleared on tier changes
 
 ### **Technical Fix Details**
 
@@ -452,11 +458,133 @@ refreshUsage={async () => {
 
 **Impact**: Tier switching now works correctly in developer mode with proper persistence.
 
+#### **Critical TypeError Fix (2025-01-15)**
+**Problem**: Tier switching was completely broken due to `TypeError: secureAppStateService2.getInstance is not a function`.
+
+**Root Cause**: The `refreshUsage` callback was incorrectly trying to call `getInstance()` on the imported service. The `secureAppStateService` is imported as a default export, not a class with a `getInstance()` method.
+
+**Solution**: Removed the incorrect `getInstance()` call and used the direct service method.
+
+**Code Changes**:
+```typescript
+// ❌ OLD (BROKEN) CODE
+const { secureAppStateService } = await import('./services/secureAppStateService');
+secureAppStateService.getInstance().clearUserStateCache();
+
+// ✅ NEW (FIXED) CODE  
+secureAppStateService.clearUserStateCache();
+```
+
+**Impact**: Tier switching functionality restored, cache clearing works properly.
+
+#### **CreditModal Limits Fix (2025-01-15)**
+**Problem**: CreditModal was showing hardcoded limits (55/25) instead of tier-based limits (1583/328 for pro/vanguard).
+
+**Root Cause**: CreditModal was using hardcoded usage data instead of `appState.userState.usage` like CreditIndicator does.
+
+**Solution**: Updated CreditModal to use the same data source as CreditIndicator.
+
+**Code Changes**:
+```typescript
+// ❌ OLD (BROKEN) CODE - Hardcoded limits
+usage={{ 
+  textLimit: 55,        // Always 55
+  imageLimit: 25,       // Always 25  
+  tier: 'free'          // Always free
+}}
+
+// ✅ NEW (FIXED) CODE - Uses actual tier data
+usage={appState.userState?.usage ? {
+  textLimit: appState.userState.usage.textLimit,    // ✅ Tier-based (55 or 1583)
+  imageLimit: appState.userState.usage.imageLimit,  // ✅ Tier-based (25 or 328)
+  tier: appState.userState.tier                     // ✅ Actual tier (free/pro/vanguard)
+} : { /* fallback */ }}
+```
+
+**Impact**: CreditModal now shows correct tier-based limits matching CreditIndicator.
+
+#### **Comprehensive Tier-Based Feature Gating (2025-01-15)**
+**Problem**: Several premium features were accessible to free users.
+
+**Root Cause**: Missing tier gating on hands-free mode, tab management, and other premium features.
+
+**Solution**: Implemented comprehensive tier gating across all premium features.
+
+**Features Gated**:
+- **Hands-Free Mode**: Pro/Vanguard only (HandsFreeToggle, HandsFreeModal)
+- **Tab Management**: Pro/Vanguard only (drag-and-drop, context menu)
+- **Usage Limits**: Properly calculated based on tier
+- **Ad Banner**: Free tier only (developer mode users on pro/vanguard don't see ads)
+
+**Code Changes**:
+```typescript
+// Hands-Free Toggle - Pro/Vanguard only
+{(appState.userState?.tier === 'pro' || appState.userState?.tier === 'vanguard_pro') && (
+  <HandsFreeToggle ... />
+)}
+
+// Tab drag-and-drop - Pro/Vanguard only
+draggable={!isChatTab && userTier !== 'free'}
+
+// Ad Banner - Free tier only
+{appState.userState?.tier === 'free' && (
+  <AdBanner />
+)}
+```
+
+**Impact**: All premium features properly gated by tier, consistent behavior across developer mode and authenticated accounts.
+
+---
+
+## 🔄 **Authenticated Account Behavior Consistency**
+
+### **Tier System Behavior for Authenticated Users**
+The tier system behavior implemented in developer mode **MUST** be identical for authenticated users:
+
+#### **Usage Limits**
+- **Free Tier**: 55 text queries, 25 image queries per month
+- **Pro Tier**: 1583 text queries, 328 image queries per month  
+- **Vanguard Tier**: 1583 text queries, 328 image queries per month (12-month subscription)
+
+#### **Feature Gating**
+- **Free Users**: Basic features only, see ads, limited usage
+- **Pro Users**: All premium features, no ads, high usage limits
+- **Vanguard Users**: All premium features, no ads, high usage limits (12-month subscription)
+
+#### **UI Component Behavior**
+- **CreditIndicator**: Shows tier-based limits and usage
+- **CreditModal**: Shows tier-based limits and usage (matches CreditIndicator)
+- **Ad Banner**: Only visible for free tier users
+- **Hands-Free Toggle**: Only visible for pro/vanguard users
+- **Tab Management**: Drag-and-drop only for pro/vanguard users
+
+#### **Data Sources**
+- **Developer Mode**: Uses `localStorage` for tier data, bypasses Supabase
+- **Authenticated Users**: Uses Supabase database for tier data
+- **Both Modes**: Use `unifiedUsageService.getUsage()` for consistent limit calculation
+
+### **Critical Consistency Requirements**
+1. **Same Tier Limits**: Free (55/25), Pro/Vanguard (1583/328)
+2. **Same Feature Gating**: Premium features only for pro/vanguard
+3. **Same UI Behavior**: CreditIndicator and CreditModal show identical data
+4. **Same Cache Management**: User state cache cleared on tier changes
+5. **Same Error Handling**: Graceful fallbacks for network issues
+
+### **Testing Requirements**
+Before deploying to production, verify:
+- [ ] Authenticated free users see 55/25 limits
+- [ ] Authenticated pro users see 1583/328 limits  
+- [ ] Authenticated vanguard users see 1583/328 limits
+- [ ] Free users see ads, pro/vanguard users don't
+- [ ] Hands-free mode only available for pro/vanguard
+- [ ] Tab management features only for pro/vanguard
+- [ ] CreditModal matches CreditIndicator values
+
 ### **Pending Behavior Reviews**
 *No pending reviews - all behaviors are approved and stable*
 
 ---
 
 *Last Updated: January 15, 2025*
-*Version: 1.5*
-*Updated: Fixed developer mode tier switching persistence, added technical fix documentation*
+*Version: 1.6*
+*Updated: Fixed critical tier switching bugs, implemented comprehensive feature gating, ensured authenticated account consistency*
