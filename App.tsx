@@ -1750,7 +1750,16 @@ const App: React.FC = () => {
           {appState.isCreditModalOpen && (
             <CreditModal
               onClose={() => setAppState(prev => ({ ...prev, isCreditModalOpen: false }))}
-              usage={{ 
+              usage={appState.userState?.usage ? {
+                textQueries: appState.userState.usage.textCount,
+                imageQueries: appState.userState.usage.imageCount,
+                insights: 0,
+                textCount: appState.userState.usage.textCount,
+                imageCount: appState.userState.usage.imageCount,
+                textLimit: appState.userState.usage.textLimit,
+                imageLimit: appState.userState.usage.imageLimit,
+                tier: appState.userState.tier
+              } : { 
                 textQueries: 0, 
                 imageQueries: 0, 
                 insights: 0,
