@@ -188,12 +188,12 @@ const SubTabs: React.FC<SubTabsProps> = ({
                         return (
                             <button
                                 key={tab.id}
-                                draggable={!isChatTab}
-                                onDragStart={(e) => handleDragStart(e, index - 1)} // Adjust index for chat tab
-                                onDragEnter={() => handleDragEnter(index - 1)}
+                                draggable={!isChatTab && userTier !== 'free'} // Pro/Vanguard only
+                                onDragStart={(e) => userTier !== 'free' && handleDragStart(e, index - 1)} // Adjust index for chat tab
+                                onDragEnter={() => userTier !== 'free' && handleDragEnter(index - 1)}
                                 onDragEnd={handleDragEnd}
                                 onDragOver={(e) => e.preventDefault()}
-                                {...longPressEvents(isChatTab ? () => {} : (e: any) => handleContextMenu(e, tab.id, tab.title))}
+                                {...longPressEvents(isChatTab ? () => {} : (e: any) => userTier !== 'free' && handleContextMenu(e, tab.id, tab.title))}
                                 onClick={() => handleTabClick(tab.id)}
                                 disabled={isLoading}
                                 className={`select-none relative flex-shrink-0 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 border-2 flex items-center active:scale-95 shadow-lg

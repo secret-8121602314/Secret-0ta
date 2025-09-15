@@ -1510,11 +1510,13 @@ const App: React.FC = () => {
                         </>
                       )}
                       
-                      {/* Hands-Free Toggle */}
-                      <HandsFreeToggle
-                        isHandsFree={appState.isHandsFreeMode}
-                        onToggle={() => setAppState(prev => ({ ...prev, isHandsFreeMode: !prev.isHandsFreeMode }))}
-                      />
+                      {/* Hands-Free Toggle - Pro/Vanguard only */}
+                      {(appState.userState?.tier === 'pro' || appState.userState?.tier === 'vanguard_pro') && (
+                        <HandsFreeToggle
+                          isHandsFree={appState.isHandsFreeMode}
+                          onToggle={() => setAppState(prev => ({ ...prev, isHandsFreeMode: !prev.isHandsFreeMode }))}
+                        />
+                      )}
                       
                       {/* Connect to PC Button */}
                       <button
@@ -1686,7 +1688,7 @@ const App: React.FC = () => {
             />
           )}
 
-          {appState.isHandsFreeModalOpen && (
+          {appState.isHandsFreeModalOpen && (appState.userState?.tier === 'pro' || appState.userState?.tier === 'vanguard_pro') && (
             <HandsFreeModal
               onClose={() => setAppState(prev => ({ ...prev, isHandsFreeModalOpen: false }))}
               isHandsFree={appState.isHandsFreeMode}
