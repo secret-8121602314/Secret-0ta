@@ -6,6 +6,7 @@ import DiscordIcon from './DiscordIcon';
 import { authService } from '../services/supabase';
 import Button from './ui/Button';
 import { useAnalytics } from '../hooks/useAnalytics';
+import { errorRecoveryService } from '../services/errorRecoveryService';
 import PWAInstallBanner from './PWAInstallBanner';
 
 interface LoginSplashScreenProps {
@@ -103,7 +104,18 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
                 } else {
                     console.error('Google OAuth failed:', result.error);
                     trackOnboardingDropOff('login', 1, 'google_oauth_failed', { error: result.error });
-                    setButtonAnimations(prev => ({ ...prev, [method]: false }));
+                    
+                    // Use error recovery service for proper error handling
+                    const buttonState = await errorRecoveryService.handleOAuthError(
+                        new Error(result.error), 
+                        'google',
+                        { resetButtonStates: true, showUserMessage: true }
+                    );
+                    
+                    setButtonAnimations(prev => ({ ...prev, [method]: buttonState.isLoading }));
+                    if (buttonState.errorMessage) {
+                        setErrorMessage(buttonState.errorMessage);
+                    }
                 }
             } else if (method === 'discord') {
                 const result = await authService.signInWithDiscord();
@@ -114,13 +126,35 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
                 } else {
                     console.error('Discord OAuth failed:', result.error);
                     trackOnboardingDropOff('login', 1, 'discord_oauth_failed', { error: result.error });
-                    setButtonAnimations(prev => ({ ...prev, [method]: false }));
+                    
+                    // Use error recovery service for proper error handling
+                    const buttonState = await errorRecoveryService.handleOAuthError(
+                        new Error(result.error), 
+                        'discord',
+                        { resetButtonStates: true, showUserMessage: true }
+                    );
+                    
+                    setButtonAnimations(prev => ({ ...prev, [method]: buttonState.isLoading }));
+                    if (buttonState.errorMessage) {
+                        setErrorMessage(buttonState.errorMessage);
+                    }
                 }
             }
         } catch (error) {
             console.error('Auth error:', error);
             trackOnboardingDropOff('login', 1, 'auth_error', { error: String(error) });
-            setButtonAnimations(prev => ({ ...prev, [method]: false }));
+            
+            // Use error recovery service for comprehensive error handling
+            const buttonState = await errorRecoveryService.handleAuthError(
+                error, 
+                `LoginSplashScreen-${method}`,
+                { resetButtonStates: true, showUserMessage: true }
+            );
+            
+            setButtonAnimations(prev => ({ ...prev, [method]: buttonState.isLoading }));
+            if (buttonState.errorMessage) {
+                setErrorMessage(buttonState.errorMessage);
+            }
         }
     };
 

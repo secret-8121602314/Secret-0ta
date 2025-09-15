@@ -424,19 +424,25 @@ Before implementing any change, verify:
 | 2025-01-15 | Tier Gating | Implemented comprehensive tier-based feature gating | High | ✅ User |
 | 2025-01-15 | Critical Bug Fix | Fixed refreshUsage callback TypeError preventing tier switching | Critical | ✅ User |
 | 2025-01-15 | UI Consistency | Fixed CreditModal showing wrong tier limits | High | ✅ User |
+| 2025-01-15 | Auth Architecture | Implemented unified OAuth callback handling to prevent race conditions | High | ✅ User |
+| 2025-01-15 | Error Recovery | Added comprehensive error recovery system for authentication | High | ✅ User |
+| 2025-01-15 | Session Management | Implemented automatic session refresh to prevent unexpected logouts | High | ✅ User |
 
 ### **Current Behavior State**
 - **Navigation**: ✅ Landing ↔ Login ↔ Chat flow working correctly
-- **Authentication**: ✅ Dev mode and regular auth flows stable
+- **Authentication**: ✅ Dev mode and regular auth flows stable with enhanced error handling
 - **User States**: ✅ First-time vs returning user detection working
 - **UI Components**: ✅ Settings modal, chat interface, trial system stable
-- **Error Handling**: ✅ All error patterns documented and working
+- **Error Handling**: ✅ All error patterns documented and working with comprehensive recovery
 - **Data Storage**: ✅ localStorage and Supabase patterns stable
 - **Tier System**: ✅ Free → Pro → Vanguard cycling working correctly
 - **Developer Mode Tier Switching**: ✅ Tier changes persist after settings modal close
 - **Tier-Based Feature Gating**: ✅ All premium features properly gated by tier
 - **Usage Limits Display**: ✅ CreditIndicator and CreditModal show correct tier-based limits
 - **Cache Management**: ✅ User state cache properly cleared on tier changes
+- **OAuth Callback Handling**: ✅ Unified service prevents race conditions
+- **Error Recovery**: ✅ Comprehensive error handling with proper UI state management
+- **Session Management**: ✅ Automatic session refresh prevents unexpected logouts
 
 ### **Technical Fix Details**
 
@@ -536,7 +542,74 @@ draggable={!isChatTab && userTier !== 'free'}
 
 ---
 
-## 🔄 **Authenticated Account Behavior Consistency**
+## 🔐 **ENHANCED AUTHENTICATION ARCHITECTURE**
+
+### **Unified OAuth Callback Handling**
+**Problem Solved**: Multiple OAuth callback handlers causing race conditions and duplicate processing.
+
+**Solution**: Centralized `unifiedOAuthService` that:
+- **Single Entry Point**: Only one OAuth callback handler per app load
+- **Queue Management**: Prevents race conditions by queuing multiple calls
+- **Consistent Processing**: Same logic for all OAuth providers (Google, Discord)
+- **Error Handling**: Comprehensive error categorization and recovery
+- **URL Cleanup**: Automatic cleanup of OAuth parameters from URL
+
+**Implementation**:
+```typescript
+// Single OAuth callback handler in App.tsx
+const result = await unifiedOAuthService.handleOAuthCallback({
+  onSuccess: (user, session) => { /* handle success */ },
+  onError: (error) => { /* handle error */ }
+});
+```
+
+### **Comprehensive Error Recovery System**
+**Problem Solved**: UI getting stuck in loading states and inconsistent error handling.
+
+**Solution**: `errorRecoveryService` that provides:
+- **Error Categorization**: Automatic error type detection (network, OAuth, validation, etc.)
+- **Recovery Strategies**: Different strategies based on error type
+- **Button State Management**: Proper reset of loading/disabled states
+- **User-Friendly Messages**: Context-aware error messages
+- **Retry Logic**: Smart retry mechanisms for temporary errors
+
+**Error Types Handled**:
+- **User Cancelled**: No error message shown, allow retry
+- **Access Denied**: Show message, allow retry
+- **Network Errors**: Show message, allow retry
+- **Rate Limited**: Show message, disable retry temporarily
+- **Unauthorized**: Show message, redirect to login
+
+### **Automatic Session Refresh**
+**Problem Solved**: Users getting logged out unexpectedly due to session expiration.
+
+**Solution**: `sessionRefreshService` that provides:
+- **Proactive Refresh**: Refreshes session before expiration (10 minutes before)
+- **Automatic Retry**: Retries failed refreshes with exponential backoff
+- **Session Monitoring**: Continuous monitoring of session validity
+- **Graceful Degradation**: Handles session expiration with user-friendly redirects
+
+**Configuration**:
+- **Refresh Interval**: 5 minutes (configurable)
+- **Max Retries**: 3 attempts before giving up
+- **Expiry Threshold**: 10 minutes before expiration triggers refresh
+- **Auto-Redirect**: Redirects to login on session expiration
+
+### **Enhanced Authentication Flow**
+1. **OAuth Initiation**: User clicks Google/Discord button
+2. **Error Recovery**: Comprehensive error handling with user-friendly messages
+3. **Callback Processing**: Single, unified OAuth callback handler
+4. **Session Management**: Automatic session refresh and monitoring
+5. **State Recovery**: Proper UI state management on errors
+
+### **Protected Authentication Behaviors**
+- **OAuth Callback Handling**: Single service, no race conditions
+- **Error Recovery**: Comprehensive error handling with proper UI state reset
+- **Session Refresh**: Automatic session management to prevent unexpected logouts
+- **Button State Management**: Proper loading/disabled states during authentication
+- **User Experience**: Consistent error messages and recovery options
+
+---
 
 ### **Tier System Behavior for Authenticated Users**
 The tier system behavior implemented in developer mode **MUST** be identical for authenticated users:
@@ -586,5 +659,5 @@ Before deploying to production, verify:
 ---
 
 *Last Updated: January 15, 2025*
-*Version: 1.6*
-*Updated: Fixed critical tier switching bugs, implemented comprehensive feature gating, ensured authenticated account consistency*
+*Version: 1.7*
+*Updated: Enhanced authentication architecture with unified OAuth handling, comprehensive error recovery, and automatic session refresh*

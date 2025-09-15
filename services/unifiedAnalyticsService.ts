@@ -540,6 +540,14 @@ export class UnifiedAnalyticsService extends BaseService {
       const events = [...this.eventQueue];
       this.eventQueue = [];
 
+      // Skip Supabase calls in developer mode
+      const isDevMode = localStorage.getItem('otakon_developer_mode') === 'true';
+      
+      if (isDevMode) {
+        console.log('🔧 Developer mode: Skipping analytics events (localStorage only)');
+        return;
+      }
+
       // Batch insert events to Supabase
       if (events.length > 0) {
         // Map interface fields to database column names

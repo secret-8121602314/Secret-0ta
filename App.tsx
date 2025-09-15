@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { authService } from './services/supabase';
+import { unifiedOAuthService } from './services/unifiedOAuthService';
+import { sessionRefreshService } from './services/sessionRefreshService';
 import { secureAppStateService } from './services/secureAppStateService';
 import { secureConversationService } from './services/atomicConversationService';
 import { UserState, AppView } from './services/secureAppStateService';
@@ -854,43 +855,70 @@ const App: React.FC = () => {
     return unsubscribe;
   }, [handleAuthStateChange]);
 
-  // OAuth callback handling
+  // OAuth callback handling - using unified service
   useEffect(() => {
     const handleOAuthCallback = async () => {
-      const url = window.location.href;
-      const urlParams = new URLSearchParams(window.location.search);
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      // Only process if we're in an OAuth callback
+      if (!unifiedOAuthService.isOAuthCallback()) {
+        return;
+      }
 
-      if (hashParams.has('access_token') || urlParams.has('access_token')) {
-        console.log('OAuth callback detected, parameters:', Object.fromEntries(hashParams.entries()));
-        
-        // Clear OAuth parameters from URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-        
-        setIsOAuthCallback(true);
-        
-        // Handle OAuth callback
-        try {
-          const { authService } = await import('./services/supabase');
-          await authService.handleOAuthCallback();
-          console.log('OAuth callback handled successfully');
-        } catch (error) {
-          console.error('OAuth callback handling failed:', error);
+      console.log('🔐 [App] OAuth callback detected, processing...');
+      
+      try {
+        const result = await unifiedOAuthService.handleOAuthCallback({
+          onSuccess: (user, session) => {
+            console.log('🔐 [App] OAuth callback successful, user:', user);
+            setIsOAuthCallback(true);
+            // The auth state change will be handled by the auth service subscription
+          },
+          onError: (error) => {
+            console.error('🔐 [App] OAuth callback failed:', error);
+            setIsOAuthCallback(false);
+            // Error will be handled by the auth service error handling
+          }
+        });
+
+        if (result.success) {
+          console.log('🔐 [App] OAuth callback processed successfully');
+        } else {
+          console.error('🔐 [App] OAuth callback failed:', result.error);
         }
+      } catch (error) {
+        console.error('🔐 [App] OAuth callback handling failed:', error);
+        setIsOAuthCallback(false);
       }
     };
 
     handleOAuthCallback();
   }, [setIsOAuthCallback]);
 
-  // Critical authentication state management effects from backup
+  // Initialize session refresh service
   useEffect(() => {
-    // Reset suggested prompts on app initialization
-    suggestedPromptsService.resetUsedPrompts();
-    // Only log for authenticated users to reduce console noise
-    if (appState.userState?.isAuthenticated) {
-      console.log('🔄 Suggested prompts reset on app initialization');
-    }
+    sessionRefreshService.initialize({
+      autoRefresh: true,
+      refreshInterval: 5 * 60 * 1000, // 5 minutes
+      maxRetries: 3,
+      onRefreshSuccess: (session) => {
+        console.log('🔄 [App] Session refreshed successfully');
+      },
+      onRefreshFailure: (error) => {
+        console.error('🔄 [App] Session refresh failed:', error);
+      },
+      onSessionExpired: () => {
+        console.log('🔄 [App] Session expired, redirecting to login');
+        // Clear auth state and redirect to login
+        setAppState(prev => ({
+          ...prev,
+          appView: { view: 'login', onboardingStatus: 'complete' },
+          userState: null
+        }));
+      }
+    });
+
+    return () => {
+      sessionRefreshService.reset();
+    };
   }, []);
 
   // Authentication state management - automatically transition from login to initial when authenticated

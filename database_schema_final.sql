@@ -74,6 +74,11 @@ CREATE TABLE IF NOT EXISTS public.users (
     tier TEXT DEFAULT 'free' CHECK (tier IN ('free', 'pro', 'vanguard_pro')),
     is_active BOOLEAN DEFAULT true,
     
+    -- Trial tracking
+    trial_started_at TIMESTAMP WITH TIME ZONE NULL,
+    trial_expires_at TIMESTAMP WITH TIME ZONE NULL,
+    has_used_trial BOOLEAN DEFAULT false,
+    
     -- Consolidated user data (was 15+ separate tables)
     profile_data JSONB DEFAULT '{}',     -- user_profiles, player_profiles
     preferences JSONB DEFAULT '{}',      -- user_preferences, app preferences
@@ -442,6 +447,26 @@ SET search_path = ''
 AS $$
 BEGIN
     DELETE FROM public.cache WHERE expires_at < NOW();
+END;
+$$;
+
+-- Function to check and expire trials (SECURE)
+CREATE OR REPLACE FUNCTION public.check_and_expire_trials()
+RETURNS void 
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+    -- Reset users whose trials have expired back to free tier
+    UPDATE public.users 
+    SET 
+        tier = 'free',
+        updated_at = NOW()
+    WHERE 
+        trial_expires_at IS NOT NULL 
+        AND trial_expires_at < NOW() 
+        AND tier = 'pro';
 END;
 $$;
 

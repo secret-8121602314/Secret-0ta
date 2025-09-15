@@ -95,6 +95,108 @@ export class TierService {
   }
 
   /**
+   * Start 14-day free trial for user
+   */
+  async startFreeTrial(userId: string): Promise<boolean> {
+    try {
+      // Check if user has already used their trial
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('has_used_trial, tier')
+        .eq('auth_user_id', userId)
+        .single();
+
+      if (existingUser?.has_used_trial) {
+        console.log('User has already used their free trial');
+        return false;
+      }
+
+      if (existingUser?.tier !== 'free') {
+        console.log('User is not on free tier, cannot start trial');
+        return false;
+      }
+
+      const now = new Date();
+      const trialExpiresAt = new Date(now.getTime() + (14 * 24 * 60 * 60 * 1000)); // 14 days from now
+
+      // Start the trial
+      const { error } = await supabase
+        .from('users')
+        .update({
+          tier: 'pro',
+          trial_started_at: now.toISOString(),
+          trial_expires_at: trialExpiresAt.toISOString(),
+          has_used_trial: true,
+          updated_at: now.toISOString()
+        })
+        .eq('auth_user_id', userId);
+
+      if (error) {
+        console.error('Error starting free trial:', error);
+        return false;
+      }
+
+      console.log('Successfully started 14-day free trial for user:', userId);
+      return true;
+    } catch (error) {
+      console.error('Error in startFreeTrial:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Check if user is eligible for free trial
+   */
+  async isEligibleForTrial(userId: string): Promise<boolean> {
+    try {
+      const { data: user } = await supabase
+        .from('users')
+        .select('has_used_trial, tier')
+        .eq('auth_user_id', userId)
+        .single();
+
+      return user?.tier === 'free' && !user?.has_used_trial;
+    } catch (error) {
+      console.error('Error checking trial eligibility:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get trial status for user
+   */
+  async getTrialStatus(userId: string): Promise<{
+    isOnTrial: boolean;
+    trialExpiresAt: string | null;
+    daysRemaining: number | null;
+  }> {
+    try {
+      const { data: user } = await supabase
+        .from('users')
+        .select('tier, trial_expires_at')
+        .eq('auth_user_id', userId)
+        .single();
+
+      if (!user?.trial_expires_at || user.tier !== 'pro') {
+        return { isOnTrial: false, trialExpiresAt: null, daysRemaining: null };
+      }
+
+      const now = new Date();
+      const expiresAt = new Date(user.trial_expires_at);
+      const daysRemaining = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+      return {
+        isOnTrial: true,
+        trialExpiresAt: user.trial_expires_at,
+        daysRemaining: Math.max(0, daysRemaining)
+      };
+    } catch (error) {
+      console.error('Error getting trial status:', error);
+      return { isOnTrial: false, trialExpiresAt: null, daysRemaining: null };
+    }
+  }
+
+  /**
    * Upgrade user to Pro tier
    */
   async upgradeToPro(userId: string): Promise<boolean> {

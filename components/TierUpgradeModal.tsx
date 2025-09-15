@@ -214,10 +214,15 @@ export const TierUpgradeModal: React.FC<TierUpgradeModalProps> = ({
                       {isLoading ? (
                         <div className="flex items-center justify-center">
                           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                          Upgrading...
+                          Processing...
                         </div>
                       ) : (
-                        `Upgrade to ${tierKey === 'pro' ? 'Pro' : 'Vanguard Pro'}`
+                        <div className="flex flex-col items-center">
+                          <span>{tierKey === 'pro' ? 'Upgrade to Pro' : 'Upgrade to Vanguard Pro'}</span>
+                          <span className="text-sm font-normal opacity-90">
+                            {tierKey === 'pro' ? '$3.99/month' : '$20.00/month'}
+                          </span>
+                        </div>
                       )}
                     </button>
                   )}
@@ -240,7 +245,10 @@ export const TierUpgradeModal: React.FC<TierUpgradeModalProps> = ({
 
           <div className="mt-8 text-center">
             <p className="text-base text-neutral-400 leading-relaxed">
-              * Payment integration coming soon. Upgrades are currently free for testing.
+              * Secure payment processing powered by Stripe. Cancel anytime.
+            </p>
+            <p className="text-sm text-neutral-500 mt-2">
+              Payment integration ready - currently in testing mode
             </p>
           </div>
         </div>

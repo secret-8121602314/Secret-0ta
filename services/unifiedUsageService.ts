@@ -21,6 +21,21 @@ const LIMITS: Record<UserTier, { text: number; image: number }> = {
 
 // Check if we should reset usage based on month change
 const checkAndResetUsage = async (): Promise<void> => {
+    // Skip Supabase calls in developer mode
+    const isDevMode = localStorage.getItem('otakon_developer_mode') === 'true';
+    
+    if (isDevMode) {
+        console.log('🔧 Developer mode: Using localStorage for usage reset');
+        const lastMonth = localStorage.getItem(DATE_KEY);
+        const thisMonth = getThisMonth();
+        if (lastMonth !== thisMonth) {
+            localStorage.setItem(TEXT_COUNT_KEY, '0');
+            localStorage.setItem(IMAGE_COUNT_KEY, '0');
+            localStorage.setItem(DATE_KEY, thisMonth);
+        }
+        return;
+    }
+    
     try {
         // Try to get usage from Supabase first
         const supabaseUsage = await supabaseDataService.getUserUsageData();
@@ -52,6 +67,14 @@ const checkAndResetUsage = async (): Promise<void> => {
 };
 
 const getTier = async (): Promise<UserTier> => {
+    // Skip Supabase calls in developer mode
+    const isDevMode = localStorage.getItem('otakon_developer_mode') === 'true';
+    
+    if (isDevMode) {
+        console.log('🔧 Developer mode: Using localStorage for tier');
+        return (localStorage.getItem(TIER_KEY) as UserTier) || 'free';
+    }
+    
     try {
         // Try to get tier from Supabase first
         const supabaseUsage = await supabaseDataService.getUserUsageData();
@@ -64,6 +87,14 @@ const getTier = async (): Promise<UserTier> => {
 
 // New function to get current tier without calling checkAndResetUsage
 const getCurrentTier = async (): Promise<UserTier> => {
+    // Skip Supabase calls in developer mode
+    const isDevMode = localStorage.getItem('otakon_developer_mode') === 'true';
+    
+    if (isDevMode) {
+        console.log('🔧 Developer mode: Using localStorage for current tier');
+        return (localStorage.getItem(STORAGE_KEYS.USER_TIER) as UserTier) || 'free';
+    }
+    
     try {
         // Use the unified data service for consistent pattern
         const result = await unifiedDataService.getUserUsageData();
@@ -80,6 +111,28 @@ const getCurrentTier = async (): Promise<UserTier> => {
 
 const getUsage = async (): Promise<Usage> => {
     await checkAndResetUsage();
+    
+    // Skip Supabase calls in developer mode
+    const isDevMode = localStorage.getItem('otakon_developer_mode') === 'true';
+    
+    if (isDevMode) {
+        console.log('🔧 Developer mode: Using localStorage for usage data');
+        const tier = (localStorage.getItem(TIER_KEY) as UserTier) || 'free';
+        const textCount = parseInt(localStorage.getItem(TEXT_COUNT_KEY) || '0', 10);
+        const imageCount = parseInt(localStorage.getItem(IMAGE_COUNT_KEY) || '0', 10);
+        const { text: textLimit, image: imageLimit } = LIMITS[tier];
+        
+        return { 
+            textQueries: textCount,
+            imageQueries: imageCount,
+            insights: 0, // Not tracked in this service
+            textCount, 
+            imageCount, 
+            textLimit, 
+            imageLimit, 
+            tier 
+        };
+    }
     
     try {
         // Try to get usage from Supabase first

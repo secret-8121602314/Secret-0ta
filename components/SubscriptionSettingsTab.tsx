@@ -101,7 +101,7 @@ const SubscriptionSettingsTab: React.FC<SubscriptionSettingsTabProps> = ({ usage
                         onClick={handleManageSubscription}
                         className="bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-bold py-2.5 px-6 rounded-lg transition-transform hover:scale-105"
                     >
-                        Upgrade to Pro
+                        Upgrade to Pro - $3.99/month
                     </button>
                 </div>
             )}
@@ -111,13 +111,13 @@ const SubscriptionSettingsTab: React.FC<SubscriptionSettingsTabProps> = ({ usage
                 <div className="bg-[#2E2E2E]/60 p-4 rounded-lg">
                     <h3 className="text-lg font-semibold text-white mb-3">Billing Portal</h3>
                     <p className="text-neutral-300 mb-4">
-                        You can manage your subscription, view invoices, and update your payment method through our secure payment provider portal.
+                        Manage your subscription, view invoices, and update your payment method through our secure Stripe-powered billing portal.
                     </p>
                     <button
                         onClick={handleManageSubscription}
                         className="bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-bold py-2.5 px-6 rounded-lg transition-transform hover:scale-105"
                     >
-                        Go to Billing Portal
+                        Manage Billing & Payment
                     </button>
                 </div>
             )}
