@@ -34,6 +34,15 @@ const CreditBar: React.FC<{
 
 const CreditIndicator: React.FC<CreditIndicatorProps> = ({ usage, onClick }) => {
     const { textCount, textLimit, imageCount, imageLimit } = usage;
+    
+    // Debug logging to see what data CreditIndicator receives
+    console.log('🔧 [CreditIndicator] Received usage data:', {
+        tier: usage.tier,
+        textLimit,
+        imageLimit,
+        textCount,
+        imageCount
+    });
   
     const textPercentRemaining = textLimit > 0 ? Math.max(0, 100 - (textCount / textLimit) * 100) : 0;
     const imagePercentRemaining = imageLimit > 0 ? Math.max(0, 100 - (imageCount / imageLimit) * 100) : 0;

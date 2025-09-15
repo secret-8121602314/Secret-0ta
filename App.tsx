@@ -1729,6 +1729,11 @@ const App: React.FC = () => {
               refreshUsage={async () => {
                 // Refresh app state when tier changes in developer mode
                 console.log('🔄 Refreshing app state after tier change...');
+                
+                // Clear the user state cache to force fresh data
+                const { secureAppStateService } = await import('./services/secureAppStateService');
+                secureAppStateService.getInstance().clearUserStateCache();
+                
                 await handleAuthStateChange();
               }}
             />
