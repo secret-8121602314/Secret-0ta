@@ -367,18 +367,74 @@ async getTrialStatus(userId: string): Promise<TrialStatus>
 
 ---
 
-## 🚨 Warning System
+## 🚨 Behavior Change Detection & Warning System
 
-**Before making any changes to the above features, this system will:**
-1. **Identify** the feature being modified
-2. **Warn** about potential impact
-3. **Request** explicit approval
-4. **Document** the change in this file
+### **Pre-Change Analysis Protocol**
+**Before making ANY changes, this system will:**
+
+1. **🔍 Analyze Impact**: Check if the change affects any approved behaviors
+2. **⚠️ Identify Conflicts**: Detect violations of established patterns
+3. **📋 Report Dependencies**: List all connected behaviors that might be affected
+4. **🛑 Request Approval**: Get explicit user approval before implementation
+5. **📝 Document Changes**: Update this file with the new behavior patterns
+
+### **Protected Behavior Categories**
+- **Navigation Patterns**: All routing and back button behaviors
+- **Authentication Flows**: Login, dev mode, session management
+- **User State Management**: First-time vs returning user logic
+- **UI Component Behaviors**: Settings modal, chat interface, trial system
+- **Error Handling**: Authentication, network, validation patterns
+- **Data Storage**: localStorage keys, Supabase call prevention
+- **Tier System**: Free → Pro → Vanguard cycling logic
+
+### **Change Detection Matrix**
+| Change Type | Behavior Impact | Approval Required |
+|-------------|----------------|-------------------|
+| Navigation Logic | High | ✅ Always |
+| Authentication Flow | High | ✅ Always |
+| User State Logic | High | ✅ Always |
+| UI Component Props | Medium | ✅ If behavior changes |
+| Styling/CSS | Low | ⚠️ If affects layout |
+| New Features | Medium | ✅ If affects existing flow |
+| Bug Fixes | Medium | ✅ If changes behavior |
+
+### **Behavior Validation Checklist**
+Before implementing any change, verify:
+- [ ] Does this change any navigation patterns?
+- [ ] Does this affect authentication flows?
+- [ ] Does this modify user state management?
+- [ ] Does this change UI component behaviors?
+- [ ] Does this affect error handling patterns?
+- [ ] Does this modify data storage patterns?
+- [ ] Does this change tier system logic?
 
 **This ensures system consistency and prevents unintended regressions.**
 
 ---
 
+## 📝 Behavior Change Log
+
+### **Change History**
+| Date | Change Type | Description | Impact Level | Approved By |
+|------|-------------|-------------|--------------|-------------|
+| 2025-01-15 | Navigation Fix | Fixed back button on login screen to return to landing page | High | ✅ User |
+| 2025-01-15 | Documentation | Added comprehensive behavior tracking system | Medium | ✅ User |
+| 2025-01-15 | User Flow | Clarified splash screen logic for first-time vs returning users | High | ✅ User |
+
+### **Current Behavior State**
+- **Navigation**: ✅ Landing ↔ Login ↔ Chat flow working correctly
+- **Authentication**: ✅ Dev mode and regular auth flows stable
+- **User States**: ✅ First-time vs returning user detection working
+- **UI Components**: ✅ Settings modal, chat interface, trial system stable
+- **Error Handling**: ✅ All error patterns documented and working
+- **Data Storage**: ✅ localStorage and Supabase patterns stable
+- **Tier System**: ✅ Free → Pro → Vanguard cycling working
+
+### **Pending Behavior Reviews**
+*No pending reviews - all behaviors are approved and stable*
+
+---
+
 *Last Updated: January 15, 2025*
-*Version: 1.3*
-*Updated: Fixed navigation bug, added comprehensive behavior tracking, clarified user flow patterns*
+*Version: 1.4*
+*Updated: Added behavior change detection system, change log, and validation protocols*
