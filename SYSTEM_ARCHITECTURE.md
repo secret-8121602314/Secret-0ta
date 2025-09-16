@@ -38,6 +38,16 @@ This document defines the core system architecture, user flows, and behavioral p
   3. Sets developer flags in localStorage: `otakon_developer_mode: 'true'`
   4. Initializes developer data structure in localStorage
   5. Bypasses all Supabase authentication calls
+- **OAuth Authentication Flow** (Google, Discord, Email):
+  1. **OAuth Initiation**: User clicks authentication provider button
+  2. **Callback Detection**: `unifiedOAuthService.isOAuthCallback()` detects OAuth parameters
+  3. **Immediate Flag Setting**: `isOAuthCallback = true` prevents landing page flash
+  4. **Loading State**: Black background (`#000000`) with loading spinner during processing
+  5. **Session Establishment**: `supabase.auth.setSession()` establishes proper authentication
+  6. **User Creation**: `userCreationService.ensureUserRecord()` creates user in database
+  7. **Auth State Update**: Authentication state changes trigger app view updates
+  8. **Flag Reset**: `isOAuthCallback = false` when auth state change completes
+  9. **Smooth Transition**: Direct transition to splash screens (first-time) or chat (returning)
 - **Next**: Chat Interface (for returning users) OR Splash Screens (for first-time users)
 
 #### **Phase 3: Splash Screen Sequence (First-Time Users Only)**
@@ -211,7 +221,7 @@ async getTrialStatus(userId: string): Promise<TrialStatus>
 6. **Developer Mode**: Trial option never appears regardless of tier
 
 ### **Payment Integration Ready**
-- **CTAs**: All upgrade buttons show pricing ($3.99/month Pro, $20.00/month Vanguard)
+- **CTAs**: All upgrade buttons show pricing ($3.99/month Pro, $20.00/year Vanguard)
 - **Stripe Ready**: Payment processing mentions "Stripe-powered"
 - **Billing Portal**: Subscription management interface prepared
 
@@ -296,11 +306,14 @@ async getWaitlistCount(): Promise<{ count?: number; error?: string }>
    - Bypasses all Supabase calls
    - Tier switching available in settings
 
-2. **Regular Authentication**:
-   - Google OAuth → Supabase authentication
-   - Discord OAuth → Supabase authentication  
-   - Email/Password → Supabase authentication
-   - Session persistence across browser refreshes
+2. **OAuth Authentication** (Google, Discord, Email):
+   - **Callback Processing**: `unifiedOAuthService.handleOAuthCallback()` handles all OAuth flows
+   - **Session Management**: `supabase.auth.setSession()` establishes proper authentication state
+   - **User Creation**: Automatic user record creation in `public.users` table
+   - **Loading States**: Consistent black background (`#000000`) with loading spinner
+   - **Error Handling**: Comprehensive error recovery with user-friendly messages
+   - **Smooth Transitions**: No landing page flash, direct transition to appropriate screen
+   - **Session Persistence**: Automatic session refresh and monitoring
 
 ### **User State Behaviors**
 1. **First-Time Users**:
@@ -485,10 +498,11 @@ Before implementing any change, verify:
 | 2025-01-15 | Session Management | Implemented automatic session refresh to prevent unexpected logouts | High | ✅ User |
 | 2025-01-15 | Critical Bug Fix | Fixed missing authService import causing app crash | Critical | ✅ User |
 | 2025-01-15 | Feature Addition | Implemented waitlist system with email collection and duplicate prevention | Medium | ✅ User |
+| 2025-01-15 | Authentication Enhancement | Enhanced OAuth authentication flow with smooth transitions and loading states | High | ✅ User |
 
 ### **Current Behavior State**
 - **Navigation**: ✅ Landing ↔ Login ↔ Chat flow working correctly
-- **Authentication**: ✅ Dev mode and regular auth flows stable with enhanced error handling
+- **Authentication**: ✅ Dev mode and OAuth flows stable with enhanced error handling and smooth transitions
 - **User States**: ✅ First-time vs returning user detection working
 - **UI Components**: ✅ Settings modal, chat interface, trial system stable
 - **Waitlist System**: ✅ Email collection, duplicate prevention, and error handling working correctly
@@ -499,11 +513,34 @@ Before implementing any change, verify:
 - **Tier-Based Feature Gating**: ✅ All premium features properly gated by tier
 - **Usage Limits Display**: ✅ CreditIndicator and CreditModal show correct tier-based limits
 - **Cache Management**: ✅ User state cache properly cleared on tier changes
-- **OAuth Callback Handling**: ✅ Unified service prevents race conditions
+- **OAuth Callback Handling**: ✅ Unified service prevents race conditions and landing page flash
 - **Error Recovery**: ✅ Comprehensive error handling with proper UI state management
 - **Session Management**: ✅ Automatic session refresh prevents unexpected logouts
+- **Loading States**: ✅ Consistent background color and loading animation across all states
+- **Smooth Transitions**: ✅ No landing page flash during OAuth authentication
 
 ### **Technical Fix Details**
+
+#### **OAuth Authentication Flow Enhancement (2025-01-15)**
+**Problem**: OAuth authentication was causing landing page flash and inconsistent loading states during authentication.
+
+**Root Causes**:
+1. **Landing Page Flash**: OAuth callback flag was set too late, allowing landing page to render briefly
+2. **Inconsistent Loading States**: Loading spinner used gray background instead of app's black background
+3. **Session Management Issues**: Database constraint violations and SQL syntax errors preventing user creation
+4. **getUserState TypeError**: Wildcard queries returning undefined data
+
+**Solutions Implemented**:
+1. **Immediate Flag Setting**: `setIsOAuthCallback(true)` called immediately when OAuth callback detected
+2. **Consistent Loading States**: Updated all loading states to use `bg-[#000000]` matching app design
+3. **Database Fixes**: 
+   - Removed conversation fields from `app_state` to comply with `check_no_conversations_in_app_state` constraint
+   - Fixed SQL syntax by changing `.eq('deleted_at', null)` to `.is('deleted_at', null)`
+4. **getUserState Fix**: Corrected `getSupabaseData` return logic for wildcard queries (`key === '*' ? data : data[key]`)
+5. **Session Establishment**: Added `supabase.auth.setSession()` to properly establish authentication state
+6. **User Creation Fallback**: Implemented `userCreationService.ensureUserRecord()` as fallback for database trigger failures
+
+**Result**: Smooth OAuth authentication with no landing page flash, consistent loading states, and reliable user creation.
 
 #### **Tier Switching Persistence Fix (2025-01-15)**
 **Problem**: Developer mode tier switching was not persisting after settings modal close. Tier would revert to previous state.
@@ -673,19 +710,58 @@ const result = await unifiedOAuthService.handleOAuthCallback({
 - **Expiry Threshold**: 10 minutes before expiration triggers refresh
 - **Auto-Redirect**: Redirects to login on session expiration
 
-### **Enhanced Authentication Flow**
-1. **OAuth Initiation**: User clicks Google/Discord button
-2. **Error Recovery**: Comprehensive error handling with user-friendly messages
-3. **Callback Processing**: Single, unified OAuth callback handler
-4. **Session Management**: Automatic session refresh and monitoring
-5. **State Recovery**: Proper UI state management on errors
+### **Enhanced OAuth Authentication Flow**
+1. **OAuth Initiation**: User clicks Google/Discord/Email button
+2. **Callback Detection**: `unifiedOAuthService.isOAuthCallback()` detects OAuth parameters in URL
+3. **Immediate Flag Setting**: `setIsOAuthCallback(true)` prevents landing page flash
+4. **Loading State Display**: Black background (`#000000`) with loading spinner
+5. **Session Processing**: `unifiedOAuthService.handleOAuthCallback()` processes OAuth response
+6. **Session Establishment**: `supabase.auth.setSession()` establishes proper authentication
+7. **User Record Creation**: `userCreationService.ensureUserRecord()` ensures user exists in database
+8. **Auth State Update**: Authentication state changes trigger app view updates
+9. **Flag Reset**: `setIsOAuthCallback(false)` when auth state change completes
+10. **Smooth Transition**: Direct transition to splash screens (first-time) or chat (returning)
+
+### **OAuth Callback Handling Architecture**
+```typescript
+// OAuth callback detection and processing
+const handleOAuthCallback = async () => {
+  if (!unifiedOAuthService.isOAuthCallback()) return;
+  
+  // Set flag immediately to prevent landing page flash
+  setIsOAuthCallback(true);
+  
+  try {
+    const result = await unifiedOAuthService.handleOAuthCallback({
+      onSuccess: (user, session) => {
+        // Session established, auth state will update automatically
+      },
+      onError: (error) => {
+        setIsOAuthCallback(false);
+        // Handle error appropriately
+      }
+    });
+  } catch (error) {
+    setIsOAuthCallback(false);
+  }
+};
+```
+
+### **Loading State Management**
+- **Background Color**: Consistent `bg-[#000000]` across all loading states
+- **Loading Spinner**: `LoadingSpinner` component with `size="xl"`
+- **Centering**: `flex items-center justify-center` for proper positioning
+- **Full Screen**: `min-h-screen` for complete coverage
 
 ### **Protected Authentication Behaviors**
-- **OAuth Callback Handling**: Single service, no race conditions
+- **OAuth Callback Handling**: Single service, no race conditions, immediate flag setting
 - **Error Recovery**: Comprehensive error handling with proper UI state reset
 - **Session Refresh**: Automatic session management to prevent unexpected logouts
 - **Button State Management**: Proper loading/disabled states during authentication
 - **User Experience**: Consistent error messages and recovery options
+- **Loading State Management**: Consistent background color and loading animation
+- **Landing Page Prevention**: OAuth callback flag prevents landing page flash
+- **Smooth Transitions**: Direct transition from OAuth to appropriate screen
 
 ---
 
