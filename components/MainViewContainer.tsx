@@ -207,8 +207,8 @@ const MainViewContainer: React.FC<MainViewContainerProps> = ({
           {/* Scrollable Chat Messages Area */}
           <UniversalResponsiveContainer
             maxWidth="full"
-            padding="md"
-            className="flex-1 w-full overflow-y-auto pt-4 sm:pt-6 md:pt-8"
+            padding="none"
+            className="flex-1 w-full overflow-y-auto"
           >
             <div
               ref={chatContainerRef}
@@ -217,7 +217,7 @@ const MainViewContainer: React.FC<MainViewContainerProps> = ({
               role="log"
               className="w-full"
             >
-              <div className="flex flex-col gap-4 sm:gap-6 md:gap-8 lg:gap-10 w-full max-w-[95%] sm:max-w-4xl md:max-w-5xl mx-auto my-4 sm:my-6 md:my-8 lg:my-10">
+              <div className="flex flex-col gap-2 sm:gap-3 md:gap-4 lg:gap-5 w-full max-w-[95%] sm:max-w-4xl md:max-w-5xl mx-auto mt-4 sm:mt-6 md:mt-8 lg:mt-10 mb-0">
                 {messages.map(msg => (
                   <ChatMessage
                     key={msg.id}
@@ -233,24 +233,22 @@ const MainViewContainer: React.FC<MainViewContainerProps> = ({
                   />
                 ))}
                 
-                <div ref={chatEndRef} />
+                {/* Suggested Prompts integrated directly into messages flow */}
+                {loadingMessages.length === 0 && (
+                  <SuggestedPrompts 
+                    onPromptClick={onSendMessage} 
+                    isInputDisabled={isInputDisabled} 
+                    isFirstTime={isFirstTime}
+                    isEverythingElse={activeConversation.id === 'everything-else'}
+                    hasGamePills={false}
+                    aiResponseHasSuggestions={aiResponseHasSuggestions}
+                  />
+                )}
+                
+                <div ref={chatEndRef} className="h-0" />
               </div>
             </div>
           </UniversalResponsiveContainer>
-          
-          {/* Fixed Suggested Prompts Area - Only when not loading */}
-          {loadingMessages.length === 0 && (
-            <div className="flex-shrink-0 px-3 sm:px-4 md:px-6 pb-2 sm:pb-3 md:pb-4">
-              <SuggestedPrompts 
-                onPromptClick={onSendMessage} 
-                isInputDisabled={isInputDisabled} 
-                isFirstTime={isFirstTime}
-                isEverythingElse={activeConversation.id === 'everything-else'}
-                hasGamePills={false}
-                aiResponseHasSuggestions={aiResponseHasSuggestions}
-              />
-            </div>
-          )}
         </div>
       );
     }

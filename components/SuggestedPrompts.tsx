@@ -71,9 +71,9 @@ const SuggestedPrompts: React.FC<SuggestedPromptsProps> = ({
 
     return (
         <div className="flex items-start gap-2 sm:gap-3 animate-fade-in">
-            {/* Logo avatar to match chat message alignment */}
+            {/* Empty space to match logo alignment */}
             <div className="w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0"></div>
-            {/* 2x2 matrix layout for all 4 prompts - integrated with chat flow, matching chat bubble width */}
+            {/* 2x2 matrix layout for all 4 prompts - aligned with chat messages */}
             <div className="bg-[#1A1A1A]/95 backdrop-blur-md border border-[#424242]/40 rounded-xl p-2 sm:p-3 shadow-2xl max-w-[95%] sm:max-w-4xl md:max-w-5xl">
                 {isTinyScreen && (
                     <button

@@ -374,12 +374,48 @@ export const useChat = (isHandsFreeMode: boolean) => {
                         });
                         
                         console.log(`💾 Conversations reloaded after authentication`);
+                    } else {
+                        // If no conversations loaded, check if this is developer mode and restore from localStorage
+                        const isDevMode = localStorage.getItem('otakon_developer_mode') === 'true';
+                        if (isDevMode) {
+                            console.log('🔧 Developer mode detected, attempting to restore conversations from localStorage...');
+                            const devData = localStorage.getItem('otakon_dev_data');
+                            if (devData) {
+                                const parsedData = JSON.parse(devData);
+                                if (parsedData.conversations && Object.keys(parsedData.conversations).length > 0) {
+                                    const conversations = parsedData.conversations;
+                                    const order = parsedData.conversationsOrder || Object.keys(conversations);
+                                    const activeId = parsedData.activeConversation || order[0] || EVERYTHING_ELSE_ID;
+                                    
+                                    setChatState({
+                                        conversations: conversations as any,
+                                        order,
+                                        activeId
+                                    });
+                                    console.log('💾 Developer conversations restored from localStorage after sign in');
+                                }
+                            }
+                        }
                     }
                 } catch (error) {
                     console.error('Failed to reload conversations after authentication:', error);
                 }
             } else if (event === 'SIGNED_OUT') {
-                console.log('🔐 User signed out, resetting conversations to default state');
+                console.log('🔐 User signed out, checking if developer mode data should be preserved...');
+                
+                // Check if this is developer mode - preserve conversations
+                const isDevMode = localStorage.getItem('otakon_developer_mode') === 'true';
+                const devSessionStart = localStorage.getItem('otakon_dev_session_start');
+                const hasActiveDevSession = devSessionStart && (Date.now() - parseInt(devSessionStart, 10)) < (24 * 60 * 60 * 1000); // 24 hours
+                
+                if (isDevMode && hasActiveDevSession) {
+                    console.log('🔧 Developer mode detected - preserving conversations during sign out');
+                    // Don't reset conversations for developer mode - they'll be restored when signing back in
+                    return;
+                }
+                
+                // For regular users, reset to default state
+                console.log('🔐 Regular user signed out, resetting conversations to default state');
                 setChatState({
                     conversations: {
                         [EVERYTHING_ELSE_ID]: {

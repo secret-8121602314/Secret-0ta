@@ -39,6 +39,7 @@ export const useConnection = (onMessage: MessageHandler) => {
     const saveSuccessfulConnection = (code: string) => {
         localStorage.setItem('lastConnectionCode', code);
         localStorage.setItem('lastSuccessfulConnection', Date.now().toString());
+        localStorage.setItem('otakonHasConnectedBefore', 'true');
         setLastSuccessfulConnection(Date.now());
 
     };
@@ -80,7 +81,12 @@ export const useConnection = (onMessage: MessageHandler) => {
                     }
                 } else if (data.type === 'partner_disconnected') {
                     console.log("Partner PC client has disconnected.");
-                    // Don't change status here - just log it
+                    // Update status to disconnected when partner disconnects
+                    if (statusRef.current === ConnectionStatus.CONNECTED) {
+                        setStatus(ConnectionStatus.DISCONNECTED);
+                        setError(null);
+                        console.log("🔄 Connection status updated to DISCONNECTED");
+                    }
                 } else if (data.type === 'waiting_for_client') {
                     console.log("Waiting for PC client to connect...");
                     // This is a status update from the relay server
@@ -118,6 +124,7 @@ export const useConnection = (onMessage: MessageHandler) => {
             },
             () => { // onClose
                 clearConnectionTimeout();
+                console.log("🔌 WebSocket connection closed, current status:", statusRef.current);
                 // If an error has already been set (e.g., by timeout or onError), don't overwrite it.
                 // Only set the generic error if we were connecting and no specific error was provided.
                 if (statusRef.current === ConnectionStatus.CONNECTING) {
@@ -125,6 +132,7 @@ export const useConnection = (onMessage: MessageHandler) => {
                     setError(prev => prev || "Connection failed. Please check the code and ensure the PC client is running.");
                 } else if (statusRef.current !== ConnectionStatus.ERROR) {
                     setStatus(ConnectionStatus.DISCONNECTED);
+                    console.log("🔄 Connection status updated to DISCONNECTED due to WebSocket close");
                 }
             }
         );

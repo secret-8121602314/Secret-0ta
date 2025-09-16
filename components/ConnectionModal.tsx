@@ -1,6 +1,6 @@
 
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ConnectionStatus } from '../services/types';
 
 interface ConnectionModalProps {
@@ -27,20 +27,22 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
   onShowHowToUse
 }) => {
   const [code, setCode] = useState(connectionCode || '');
-
   const [wasManuallyOpened, setWasManuallyOpened] = useState(false);
+  const wasOpenedWhileConnectedRef = useRef(false);
 
   const isConnecting = status === ConnectionStatus.CONNECTING;
   const isConnected = status === ConnectionStatus.CONNECTED;
 
-  // Detect when modal is manually opened (not from auto-connection)
+  // Track if modal was opened while already connected
   useEffect(() => {
-    if (isOpen && isConnected && !wasManuallyOpened) {
-      // Modal was opened while already connected - mark as manually opened
+    if (isOpen && isConnected) {
+      wasOpenedWhileConnectedRef.current = true;
       setWasManuallyOpened(true);
-      console.log('🔍 Connection modal manually opened while connected - will not auto-close');
+      console.log('🔍 Connection modal opened while already connected - will not auto-close');
+    } else if (!isOpen) {
+      wasOpenedWhileConnectedRef.current = false;
     }
-  }, [isOpen, isConnected, wasManuallyOpened]);
+  }, [isOpen, isConnected]);
 
   // Reset manual open flag when connection status changes
   useEffect(() => {
@@ -49,16 +51,22 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
     }
   }, [isConnected]);
 
-  // Auto-close modal after successful connection
+  // Auto-close modal after successful connection (but not if manually opened)
   useEffect(() => {
-    if (isConnected && !wasManuallyOpened) {
+    if (isConnected && !wasOpenedWhileConnectedRef.current) {
       const hasConnectedBefore = localStorage.getItem('otakonHasConnectedBefore') === 'true';
       
       if (!hasConnectedBefore) {
-        // First time connecting - let App.tsx handle onboarding progression
-        console.log('🎉 First connection - App.tsx will handle onboarding progression');
+        // First time connecting - trigger onboarding flow
+        console.log('🎉 First connection - triggering onboarding flow');
+        
+        // Close modal and let App.tsx handle onboarding progression
         setTimeout(() => {
           onClose();
+          // Trigger onboarding update to show how-to-use splash screen
+          if (onShowHowToUse) {
+            onShowHowToUse();
+          }
         }, 1000); // Small delay to show the success message first
       } else {
         // Returning user - auto-close modal and show chat screen
@@ -67,10 +75,10 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
           onClose();
         }, 1500); // Show success message for 1.5 seconds then close
       }
-    } else if (isConnected && wasManuallyOpened) {
+    } else if (isConnected && wasOpenedWhileConnectedRef.current) {
       console.log('🔍 Modal manually opened - will not auto-close');
     }
-  }, [isConnected, onClose, wasManuallyOpened]);
+  }, [isConnected, onClose, onShowHowToUse]);
 
   // Removed auto-connection logic - manual connection only
 
@@ -205,7 +213,7 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
                   </div>
                   
                   {/* Auto-close indicator */}
-                  {localStorage.getItem('otakonHasConnectedBefore') === 'true' && !wasManuallyOpened && (
+                  {localStorage.getItem('otakonHasConnectedBefore') === 'true' && !wasOpenedWhileConnectedRef.current && (
                     <div className="mt-3 pt-3 border-t border-green-600/30">
                       <div className="flex items-center gap-2 text-xs text-green-300">
                         <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
@@ -215,11 +223,21 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
                   )}
                   
                   {/* Manual open indicator */}
-                  {wasManuallyOpened && (
+                  {wasOpenedWhileConnectedRef.current && (
                     <div className="mt-3 pt-3 border-t border-green-600/30">
                       <div className="flex items-center gap-2 text-xs text-green-300">
                         <div className="w-2 h-2 bg-green-400 rounded-full"></div>
                         Modal will stay open - you can close it manually
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* First time connection indicator */}
+                  {localStorage.getItem('otakonHasConnectedBefore') !== 'true' && !wasOpenedWhileConnectedRef.current && (
+                    <div className="mt-3 pt-3 border-t border-green-600/30">
+                      <div className="flex items-center gap-2 text-xs text-green-300">
+                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                        Modal will close automatically in a moment...
                       </div>
                     </div>
                   )}

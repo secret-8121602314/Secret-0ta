@@ -369,19 +369,35 @@ const App: React.FC = () => {
   const handleSignOut = useCallback(async () => {
     try {
       await authService.signOut();
-      setAppState(prev => ({
-        ...prev,
-        userState: null,
-        appView: { view: 'landing', onboardingStatus: 'login' },
-        activeConversation: null,
-        conversations: {},
-        conversationsOrder: [],
-        activeConversationId: 'everything-else'
-      }));
+      
+      // Check if this is developer mode - preserve data for developer mode
+      const isDeveloperMode = appState.userState?.isDeveloper;
+      
+      if (isDeveloperMode) {
+        // For developer mode, just reset auth state but preserve conversations
+        setAppState(prev => ({
+          ...prev,
+          userState: null,
+          appView: { view: 'landing', onboardingStatus: 'login' },
+          // Don't clear conversations for developer mode - they'll be restored from localStorage
+        }));
+        console.log('🔧 Developer mode sign out - conversations preserved');
+      } else {
+        // For regular users, clear everything
+        setAppState(prev => ({
+          ...prev,
+          userState: null,
+          appView: { view: 'landing', onboardingStatus: 'login' },
+          activeConversation: null,
+          conversations: {},
+          conversationsOrder: [],
+          activeConversationId: 'everything-else'
+        }));
+      }
     } catch (error) {
       console.error('Failed to sign out:', error);
     }
-  }, []);
+  }, [appState.userState?.isDeveloper]);
 
   // Handle reset (developer mode only)
   const handleReset = useCallback(async () => {
@@ -1904,11 +1920,11 @@ const App: React.FC = () => {
               onClose={() => setAppState(prev => ({ ...prev, isConnectionModalOpen: false }))}
               onConnect={connect}
               onDisconnect={disconnect}
-              status={ConnectionStatus.DISCONNECTED}
+              status={connectionStatus}
               error={null}
               connectionCode={connectionCode}
               lastSuccessfulConnection={lastSuccessfulConnection ? new Date(lastSuccessfulConnection) : null}
-              onShowHowToUse={() => handleOnboardingUpdate('how-to-use')}
+              onShowHowToUse={() => handleOnboardingUpdate('features-connected')}
             />
           )}
 
