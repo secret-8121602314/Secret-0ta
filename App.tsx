@@ -1208,10 +1208,11 @@ const App: React.FC = () => {
             onConnect={(code) => {
               // Handle PC connection
               console.log('PC connection code:', code);
+              connect(code);
             }}
-            status={ConnectionStatus.DISCONNECTED}
+            status={connectionStatus}
             error={null}
-            connectionCode={null}
+            connectionCode={connectionCode}
             onConnectionSuccess={() => {
               // After successful connection, go to pro features
               setAppState(prev => ({
