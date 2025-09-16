@@ -69,7 +69,7 @@ export const useConnection = (onMessage: MessageHandler) => {
                 wsSend({ type: 'get_history' });
             },
             (data) => { // onMessage
-                if (data.type === 'partner_connected') {
+                if (data.type === 'partner_connected' || data.type === 'connection_alive') {
                     console.log("✅ Partner PC client has connected!");
                     if (statusRef.current === ConnectionStatus.CONNECTING) {
                         clearConnectionTimeout();
@@ -100,6 +100,12 @@ export const useConnection = (onMessage: MessageHandler) => {
                 } else if (data.type === 'connection_test') {
                     console.log("✅ Connection test received from PC client");
                     // Let the main handler process this
+                } else if (data.type === 'ping' && statusRef.current === ConnectionStatus.CONNECTING) {
+                    console.log("✅ Ping received from PC client - connection established!");
+                    clearConnectionTimeout();
+                    setStatus(ConnectionStatus.CONNECTED);
+                    setError(null);
+                    saveSuccessfulConnection(code);
                 }
                 
                 // Always forward all messages to the main handler

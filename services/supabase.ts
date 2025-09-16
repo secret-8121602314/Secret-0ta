@@ -84,14 +84,55 @@ class SecureAuthService implements AuthService {
   }
 
   constructor() {
+    this.cleanupExpiredDeveloperMode();
     this.initializeAuth();
+  }
+
+  private cleanupExpiredDeveloperMode(): void {
+    try {
+      const devSessionStart = localStorage.getItem('otakon_dev_session_start');
+      const devMode = localStorage.getItem('otakon_developer_mode') === 'true';
+      
+      if (devMode && devSessionStart) {
+        const sessionAge = Date.now() - parseInt(devSessionStart, 10);
+        if (sessionAge >= this.DEV_SESSION_TIMEOUT) {
+          this.log('Cleaning up expired developer mode session...');
+          localStorage.removeItem('otakon_developer_mode');
+          localStorage.removeItem('otakon_dev_session_start');
+          localStorage.removeItem('otakon_dev_data');
+          localStorage.removeItem('otakonAuthMethod');
+        }
+      }
+    } catch (error) {
+      this.error('Failed to cleanup expired developer mode', error);
+    }
   }
 
   private async initializeAuth(): Promise<void> {
     try {
       this.log('Initializing secure authentication service...');
       
-      // Check for existing session
+      // Check for developer mode session first
+      const devSessionStart = localStorage.getItem('otakon_dev_session_start');
+      const devMode = localStorage.getItem('otakon_developer_mode') === 'true';
+      
+      if (devMode && devSessionStart) {
+        const sessionAge = Date.now() - parseInt(devSessionStart, 10);
+        if (sessionAge < this.DEV_SESSION_TIMEOUT) {
+          this.log('Restoring developer mode session...');
+          await this.restoreDeveloperModeSession();
+          this.isInitialized = true;
+          this.updateAuthState({ loading: false });
+          return;
+        } else {
+          this.log('Developer session expired, clearing...');
+          localStorage.removeItem('otakon_developer_mode');
+          localStorage.removeItem('otakon_dev_session_start');
+          localStorage.removeItem('otakon_dev_data');
+        }
+      }
+      
+      // Check for existing Supabase session
       const { data: { session }, error } = await supabase.auth.getSession();
       
       if (error) {
@@ -142,6 +183,16 @@ class SecureAuthService implements AuthService {
   private async clearInvalidSession(): Promise<void> {
     try {
       await supabase.auth.signOut();
+      
+      // Clear developer mode session if it exists
+      if (localStorage.getItem('otakon_developer_mode') === 'true') {
+        this.log('Clearing invalid developer mode session');
+        localStorage.removeItem('otakon_developer_mode');
+        localStorage.removeItem('otakonAuthMethod');
+        localStorage.removeItem('otakon_dev_session_start');
+        localStorage.removeItem('otakon_dev_data');
+      }
+      
       this.updateAuthState({ 
         user: null, 
         session: null, 
@@ -453,6 +504,44 @@ class SecureAuthService implements AuthService {
     } catch (error) {
       this.error('Developer mode authentication error', error);
       return { success: false, error: 'Developer mode initialization failed' };
+    }
+  }
+
+  private async restoreDeveloperModeSession(): Promise<void> {
+    try {
+      this.log('Restoring developer mode session...');
+      
+      // Create mock user for developer mode
+      const mockUser: User = {
+        id: '00000000-0000-0000-0000-000000000001', // Fixed UUID for developer mode
+        email: 'developer@otakon.app',
+        user_metadata: {
+          name: 'Developer Account',
+          user_type: 'developer',
+          is_developer: true,
+          developer_features: ['tier_switcher', 'logout', 'reset', 'admin_panel']
+        },
+        app_metadata: {
+          provider: 'developer',
+          providers: ['developer']
+        },
+        aud: 'authenticated',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      // Update auth state with mock user
+      this.updateAuthState({ 
+        user: mockUser, 
+        session: null, 
+        loading: false, 
+        error: null 
+      });
+
+      this.log('Developer mode session restored successfully');
+    } catch (error) {
+      this.error('Failed to restore developer mode session', error);
+      throw error;
     }
   }
 

@@ -9,9 +9,19 @@ interface SuggestedPromptsProps {
     onPromptClick: (prompt: string) => void;
     isInputDisabled: boolean;
     isFirstTime?: boolean;
+    isEverythingElse?: boolean; // Only show in Everything Else tab
+    hasGamePills?: boolean; // Hide if game pills exist
+    aiResponseHasSuggestions?: boolean; // Hide if AI response has its own suggestions
 }
 
-const SuggestedPrompts: React.FC<SuggestedPromptsProps> = ({ onPromptClick, isInputDisabled, isFirstTime = false }) => {
+const SuggestedPrompts: React.FC<SuggestedPromptsProps> = ({ 
+    onPromptClick, 
+    isInputDisabled, 
+    isFirstTime = false,
+    isEverythingElse = false,
+    hasGamePills = false,
+    aiResponseHasSuggestions = false
+}) => {
     const [isTinyScreen, setIsTinyScreen] = React.useState(false);
     const [accordionOpen, setAccordionOpen] = React.useState(true);
     const [unusedPrompts, setUnusedPrompts] = React.useState<string[]>([]);
@@ -54,12 +64,17 @@ const SuggestedPrompts: React.FC<SuggestedPromptsProps> = ({ onPromptClick, isIn
         return null;
     }
 
+    // Show prompts in Everything Else tab, hide if game pills exist or AI response has suggestions
+    if (!isEverythingElse || hasGamePills || aiResponseHasSuggestions) {
+        return null;
+    }
+
     return (
         <div className="flex items-start gap-2 sm:gap-3 animate-fade-in">
             {/* Logo avatar to match chat message alignment */}
             <div className="w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0"></div>
             {/* 2x2 matrix layout for all 4 prompts - integrated with chat flow, matching chat bubble width */}
-            <div className="bg-[#1A1A1A]/95 backdrop-blur-md border border-[#424242]/40 rounded-xl p-2 sm:p-3 shadow-2xl max-w-[95%] sm:max-w-2xl">
+            <div className="bg-[#1A1A1A]/95 backdrop-blur-md border border-[#424242]/40 rounded-xl p-2 sm:p-3 shadow-2xl max-w-[95%] sm:max-w-4xl md:max-w-5xl">
                 {isTinyScreen && (
                     <button
                         type="button"

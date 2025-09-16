@@ -8,6 +8,7 @@ import { secureConversationService } from './services/atomicConversationService'
 import { UserState, AppView } from './services/secureAppStateService';
 import AuthCallbackHandler from './components/AuthCallbackHandler';
 import { pwaNavigationService, PWANavigationState } from './services/pwaNavigationService';
+import { supabase } from './services/supabase';
 import { supabaseDataService } from './services/supabaseDataService';
 import { suggestedPromptsService } from './services/suggestedPromptsService';
 import { profileService } from './services/profileService';
@@ -44,6 +45,8 @@ import { ConnectionStatus, Conversations, Conversation, ImageFile } from './serv
 import LandingPage from './components/LandingPage';
 import MainViewContainer from './components/MainViewContainer';
 import ConversationTabs from './components/ConversationTabs';
+import SubTabs from './components/SubTabs';
+import ScreenshotButton from './components/ScreenshotButton';
 import ChatInput from './components/ChatInput';
 import Logo from './components/Logo';
 import SettingsIcon from './components/SettingsIcon';
@@ -415,6 +418,14 @@ const App: React.FC = () => {
     try {
       setAppState(prev => ({ ...prev, loading: true, error: null }));
 
+      // Wait for auth service to initialize
+      let attempts = 0;
+      const maxAttempts = 10;
+      while (!authService.getCurrentState() && attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+
       // Get user state
       const userState = await secureAppStateService.getUserState();
       
@@ -462,7 +473,9 @@ const App: React.FC = () => {
         isOtakuDiaryModalOpen: false,
         isWishlistModalOpen: false,
         isCacheDashboardOpen: false,
-        showProfileSetup: userState.isAuthenticated && !userState.hasProfileSetup,
+        showProfileSetup: false, // Will be set by handleOnboardingComplete if needed
+        isFreeTrialModalOpen: false,
+        isTierUpgradeModalOpen: false,
         isHandsFreeMode: false,
         showUpgradeScreen: false,
         showDailyCheckin: false,
@@ -477,7 +490,8 @@ const App: React.FC = () => {
         activeConversationId: 'everything-else',
         contextMenu: null,
         feedbackModalState: null,
-        confirmationModal: null
+        confirmationModal: null,
+        trialEligibility: null
       });
 
     } catch (error) {
@@ -579,14 +593,15 @@ const App: React.FC = () => {
 
   // Check trial eligibility when user state changes
   const checkTrialEligibility = useCallback(async () => {
-    if (!appState.userState?.authUserId) return;
+    // Only check trial eligibility for authenticated users
+    if (!appState.userState?.id || !appState.userState?.isAuthenticated) return;
 
     try {
-      const isEligible = await tierService.isEligibleForTrial(appState.userState.authUserId);
-      const { data: user } = await supabaseDataService.supabase
+      const isEligible = await tierService.isEligibleForTrial(appState.userState.id);
+      const { data: user } = await supabase
         .from('users')
         .select('has_used_trial')
-        .eq('auth_user_id', appState.userState.authUserId)
+        .eq('auth_user_id', appState.userState.id)
         .single();
 
       setAppState(prev => ({
@@ -599,7 +614,7 @@ const App: React.FC = () => {
     } catch (error) {
       console.error('Error checking trial eligibility:', error);
     }
-  }, [appState.userState?.authUserId]);
+  }, [appState.userState?.id, appState.userState?.isAuthenticated]);
 
   useEffect(() => {
     checkTrialEligibility();
@@ -607,13 +622,14 @@ const App: React.FC = () => {
 
   // Handle starting free trial
   const handleStartFreeTrial = useCallback(async () => {
-    if (!appState.userState?.authUserId) return;
+    // Only allow free trial for authenticated users
+    if (!appState.userState?.id || !appState.userState?.isAuthenticated) return;
 
     try {
-      const success = await tierService.startFreeTrial(appState.userState.authUserId);
+      const success = await tierService.startFreeTrial(appState.userState.id);
       if (success) {
         // Refresh user state to get updated tier
-        await refreshUserState();
+        await handleAuthStateChange();
         // Recheck trial eligibility
         await checkTrialEligibility();
         console.log('✅ Free trial started successfully');
@@ -623,7 +639,7 @@ const App: React.FC = () => {
     } catch (error) {
       console.error('Error starting free trial:', error);
     }
-  }, [appState.userState?.authUserId]);
+  }, [appState.userState?.id, appState.userState?.isAuthenticated]);
 
   // Handle onboarding status updates
   const handleOnboardingUpdate = useCallback(async (status: string) => {
@@ -677,22 +693,53 @@ const App: React.FC = () => {
     try {
       console.log('🔧 [App] Completing onboarding for user');
       
-      // Mark all onboarding steps as complete
+      // Mark splash screens as seen and onboarding as complete
       await secureAppStateService.markOnboardingComplete();
-      await secureAppStateService.markProfileSetupComplete();
       await secureAppStateService.markSplashScreensSeen();
       await secureAppStateService.markWelcomeMessageShown();
       await secureAppStateService.markFirstRunComplete();
       
-      // For developer mode, also update localStorage
-      if (appState.userState?.isDeveloper) {
-        localStorage.setItem('otakon_dev_onboarding_complete', 'true');
-        localStorage.setItem('otakon_dev_profile_setup', 'true');
+      // Check if user needs profile setup before completing
+      const userState = await secureAppStateService.getUserState();
+      const needsProfileSetup = userState.isAuthenticated && !userState.hasProfileSetup;
+      
+      if (needsProfileSetup) {
+        console.log('🔧 [App] User needs profile setup - adding welcome message first');
+        
+        // Add welcome message BEFORE showing profile setup modal
+        if (addSystemMessage) {
+          console.log('🔧 [App] Adding welcome message before profile setup modal...');
+          addSystemMessage('Welcome to Otagon! I\'m your AI gaming assistant, here to help you get unstuck in games with hints, not spoilers. Upload screenshots, ask questions, or connect your PC for instant help while playing!', 'everything-else');
+          console.log('🔧 [App] Welcome message added successfully');
+        }
+        
+        console.log('🔧 [App] User needs profile setup - showing modal overlay');
+        // Show profile setup modal as overlay
+        setAppState(prev => ({
+          ...prev,
+          showProfileSetup: true,
+          appView: {
+            ...prev.appView!,
+            onboardingStatus: 'complete' // Set to complete so chat screen shows behind modal
+          }
+        }));
+      } else {
+        console.log('🔧 [App] User profile setup already complete - finishing onboarding');
+        // Mark profile setup as complete and finish onboarding
+        await secureAppStateService.markProfileSetupComplete();
+        
+        // For developer mode, also update localStorage
+        if (appState.userState?.isDeveloper) {
+          localStorage.setItem('otakon_dev_onboarding_complete', 'true');
+          localStorage.setItem('otakon_dev_profile_setup', 'true');
+          localStorage.setItem('otakon_dev_profile_setup_completed', 'true');
+        }
+        
+        // Refresh app state to get updated user state
+        await handleAuthStateChange();
       }
       
-      // Refresh app state to get updated user state
-      await handleAuthStateChange();
-      
+      console.log('🔧 [App] Onboarding completed successfully');
     } catch (error) {
       console.error('Failed to complete onboarding:', error);
       setAppState(prev => ({
@@ -1030,7 +1077,7 @@ const App: React.FC = () => {
         // Clear auth state and redirect to login
         setAppState(prev => ({
           ...prev,
-          appView: { view: 'login', onboardingStatus: 'complete' },
+          appView: { view: 'landing', onboardingStatus: 'complete' },
           userState: null
         }));
       }
@@ -1085,69 +1132,8 @@ const App: React.FC = () => {
     setupPwaNavigationSubscription();
   }, [setPwaNavigationState]);
 
-  // Welcome message logic for first-time users
-  useEffect(() => {
-    const checkWelcomeMessage = async () => {
-      try {
-        // Only check for authenticated users who have completed onboarding
-        if (appState.userState?.isAuthenticated && appState.appView?.onboardingStatus === 'complete') {
-          console.log('🔧 [App] Checking welcome message for authenticated user...');
-          
-          // Check if we've already shown welcome message in this session
-          const sessionKey = 'otakon_welcome_shown_session';
-          const hasShownWelcomeThisSession = sessionStorage.getItem(sessionKey) === 'true';
-          
-          if (hasShownWelcomeThisSession) {
-            console.log('🔧 [App] Welcome message already shown this session, skipping...');
-            return;
-          }
-          
-          const shouldShow = await supabaseDataService.shouldShowWelcomeMessage();
-          const hasCompletedProfileSetup = await supabaseDataService.getUserAppState().then(state => state.appSettings?.profileSetupCompleted) || localStorage.getItem('otakon_profile_setup_completed') === 'true';
-          
-          console.log('🔧 [App] Welcome message check:', { shouldShow, hasCompletedProfileSetup });
-          
-          if (shouldShow && hasCompletedProfileSetup) {
-            // Check if there are already messages in the everything-else conversation
-            const everythingElseConversation = conversations?.['everything-else'];
-            const hasExistingMessages = everythingElseConversation?.messages && everythingElseConversation.messages.length > 0;
-            
-            if (hasExistingMessages) {
-              console.log('🔧 [App] Welcome message not shown - conversation already has messages');
-              // Still mark as shown to prevent future attempts
-              sessionStorage.setItem(sessionKey, 'true');
-              return;
-            }
-            
-            console.log('🔧 [App] Showing welcome message to user...');
-            
-            // Add system message for welcome - always in everything-else tab
-            if (addSystemMessage) {
-              addSystemMessage('Welcome to Otakon! I\'m here to help you with your anime and gaming needs. Feel free to ask me anything!', 'everything-else');
-            }
-            
-            // Mark welcome message as shown
-            await supabaseDataService.updateWelcomeMessageShown('first_time');
-            
-            // Mark as shown in this session to prevent duplicates
-            sessionStorage.setItem(sessionKey, 'true');
-            
-            console.log('✅ Welcome message tracking updated via Supabase service');
-          } else {
-            console.log('❌ Welcome message not shown - conditions not met:', {
-              hasCompletedProfileSetup,
-              shouldShow
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Error checking welcome message:', error);
-      }
-    };
-    
-    // Execute the welcome message check
-    checkWelcomeMessage();
-  }, [appState.userState?.isAuthenticated, appState.appView?.onboardingStatus, conversations]);
+  // Welcome message is now handled by profile setup completion handlers in useAuthFlow
+  // This prevents duplicate welcome messages and ensures proper timing
 
   // Handle window focus/blur for session management
   useEffect(() => {
@@ -1324,12 +1310,12 @@ const App: React.FC = () => {
             error={null}
             connectionCode={connectionCode}
             onConnectionSuccess={() => {
-              // After successful connection, go to pro features
+              // After successful connection, show "You're Connected" screen
               setAppState(prev => ({
                 ...prev,
                 appView: {
                   ...prev.appView!,
-                  onboardingStatus: 'pro-features'
+                  onboardingStatus: 'features-connected'
                 }
               }));
             }}
@@ -1779,21 +1765,25 @@ const App: React.FC = () => {
 
               {/* Ad Banner for free users only - developer mode users on pro/vanguard should not see ads */}
               {appState.userState?.tier === 'free' && (
-                <div className="px-3 sm:px-4 md:px-6 py-2">
+                <div className="flex-shrink-0 px-3 sm:px-4 md:px-6 py-2">
                   <AdBanner />
                 </div>
               )}
 
-              {/* Conversation Tabs */}
-              <ConversationTabs
-                conversations={conversations}
-                conversationsOrder={conversationsOrder}
-                activeConversationId={activeConversationId}
-                activeConversation={activeConversation}
-                onSwitchConversation={handleSwitchConversation}
-                onContextMenu={() => {}} // TODO: Add context menu handler
-                onReorder={() => {}} // TODO: Add reorder handler
-              />
+              {/* Conversation Tabs - Fixed Navigation */}
+              <div className="flex-shrink-0 px-3 sm:px-4 md:px-6">
+                <div className="w-full max-w-[95%] sm:max-w-4xl md:max-w-5xl mx-auto">
+                  <ConversationTabs
+                    conversations={conversations}
+                    conversationsOrder={conversationsOrder}
+                    activeConversationId={activeConversationId}
+                    activeConversation={activeConversation}
+                    onSwitchConversation={handleSwitchConversation}
+                    onContextMenu={() => {}} // TODO: Add context menu handler
+                    onReorder={() => {}} // TODO: Add reorder handler
+                  />
+                </div>
+              </div>
 
               {/* Main Content Area */}
               <main className="flex-1 flex flex-col min-h-0 bg-[#000000]">
@@ -1823,43 +1813,79 @@ const App: React.FC = () => {
                 />
               </main>
 
+              {/* SubTabs and Screenshot Button - Fixed above Chat Input */}
+              {((activeConversation?.insights && activeConversation.id !== 'everything-else') || activeConversation?.id === 'everything-else') && (
+                <div className="flex-shrink-0 px-3 sm:px-4 md:px-6 py-2 sm:py-3 border-t border-[#2E2E2E]/20">
+                  <div className="w-full max-w-[95%] sm:max-w-4xl md:max-w-5xl mx-auto">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="flex-1 min-w-0">
+                        <SubTabs
+                          activeConversation={activeConversation}
+                          activeSubView={activeSubView}
+                          onTabClick={handleSubViewChange}
+                          userTier={appState.userState?.tier || 'free'}
+                          onReorder={() => {}} // TODO: Add reorder handler
+                          onContextMenu={() => {}} // TODO: Add context menu handler
+                          connectionStatus={connectionStatus}
+                        />
+                      </div>
+                      <div className="flex-shrink-0">
+                        <ScreenshotButton
+                          isConnected={connectionStatus === ConnectionStatus.CONNECTED}
+                          isProcessing={isCooldownActive}
+                          isManualUploadMode={false}
+                          onRequestConnect={() => setAppState(prev => ({ ...prev, isConnectionModalOpen: true }))}
+                          usage={appState.userState?.usage ? {
+                            tier: appState.userState.tier
+                          } : {
+                            tier: 'free'
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Chat Input */}
               <div className="flex-shrink-0 px-3 sm:px-4 md:px-6 py-3 sm:py-4 border-t border-[#2E2E2E]/20">
-                <ChatInput
-                  value=""
-                  onChange={() => {}}
-                  onSendMessage={handleSendMessage}
-                  isCooldownActive={isCooldownActive}
-                  onImageProcessingError={(error) => console.error('Image processing error:', error)}
-                  usage={appState.userState?.usage ? {
-                    textQueries: appState.userState.usage.textCount,
-                    imageQueries: appState.userState.usage.imageCount,
-                    insights: 0,
-                    textCount: appState.userState.usage.textCount,
-                    imageCount: appState.userState.usage.imageCount,
-                    textLimit: appState.userState.usage.textLimit,
-                    imageLimit: appState.userState.usage.imageLimit,
-                    tier: appState.userState.tier
-                  } : {
-                    textQueries: 0,
-                    imageQueries: 0,
-                    insights: 0,
-                    textCount: 0,
-                    imageCount: 0,
-                    textLimit: 55,
-                    imageLimit: 25,
-                    tier: 'free'
-                  }}
-                  imagesForReview={[]}
-                  onImagesReviewed={() => {}}
-                  isManualUploadMode={false}
-                  onToggleManualUploadMode={() => {}}
-                  connectionStatus={connectionStatus}
-                  textareaRef={{ current: null }}
-                  onBatchUploadAttempt={() => {}}
-                  hasInsights={!!activeConversation?.insights}
-                  activeConversation={activeConversation}
-                />
+                <div className="w-full max-w-[95%] sm:max-w-4xl md:max-w-5xl mx-auto">
+                  <ChatInput
+                    value=""
+                    onChange={() => {}}
+                    onSendMessage={handleSendMessage}
+                    isCooldownActive={isCooldownActive}
+                    onImageProcessingError={(error) => console.error('Image processing error:', error)}
+                    usage={appState.userState?.usage ? {
+                      textQueries: appState.userState.usage.textCount,
+                      imageQueries: appState.userState.usage.imageCount,
+                      insights: 0,
+                      textCount: appState.userState.usage.textCount,
+                      imageCount: appState.userState.usage.imageCount,
+                      textLimit: appState.userState.usage.textLimit,
+                      imageLimit: appState.userState.usage.imageLimit,
+                      tier: appState.userState.tier
+                    } : {
+                      textQueries: 0,
+                      imageQueries: 0,
+                      insights: 0,
+                      textCount: 0,
+                      imageCount: 0,
+                      textLimit: 55,
+                      imageLimit: 25,
+                      tier: 'free'
+                    }}
+                    imagesForReview={[]}
+                    onImagesReviewed={() => {}}
+                    isManualUploadMode={false}
+                    onToggleManualUploadMode={() => {}}
+                    connectionStatus={connectionStatus}
+                    textareaRef={{ current: null }}
+                    onBatchUploadAttempt={() => {}}
+                    hasInsights={!!activeConversation?.insights}
+                    activeConversation={activeConversation}
+                  />
+                </div>
               </div>
             </>
           ) : (

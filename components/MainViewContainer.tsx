@@ -7,7 +7,6 @@ import { Conversation, ChatMessage as ChatMessageType } from '../services/types'
 import ChatMessage from './ChatMessage';
 import SuggestedPrompts from './SuggestedPrompts';
 import ActionButtons from './ActionButtons';
-import Logo from './Logo';
 import { useState } from 'react';
 import { useResponsive } from '../utils/responsive';
 import { UniversalResponsiveContainer, UniversalResponsiveFlex, UniversalResponsiveText } from './layout/UniversalResponsiveLayout';
@@ -28,6 +27,7 @@ interface MainViewContainerProps {
   onRetry: (id: string) => void;
   isFirstTime?: boolean;
   onOpenWishlistModal?: () => void;
+  conversations?: Record<string, Conversation>; // NEW: Pass conversations to check for game pills
 }
 
 const usePrevious = <T,>(value: T) => {
@@ -53,6 +53,7 @@ const MainViewContainer: React.FC<MainViewContainerProps> = ({
   onRetry,
   isFirstTime,
   onOpenWishlistModal,
+  conversations,
 }) => {
   // Safety check to prevent rendering when activeConversation is undefined
   if (!activeConversation) {
@@ -73,6 +74,16 @@ const MainViewContainer: React.FC<MainViewContainerProps> = ({
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const orderedInsightIds = activeConversation?.insightsOrder || Object.keys(activeConversation?.insights || {});
+
+  // NEW: Determine if we should show suggested prompts
+  const isEverythingElse = activeConversation.id === 'everything-else';
+  const hasGamePills = conversations ? Object.keys(conversations).some(id => id !== 'everything-else') : false;
+  
+  // Check if the latest AI response has suggestions
+  const latestMessage = messages[messages.length - 1];
+  const aiResponseHasSuggestions = latestMessage?.role === 'model' && 
+    latestMessage?.suggestions && 
+    latestMessage.suggestions.length > 0;
 
   const views = useMemo(() => {
     return ['chat', ...orderedInsightIds];
@@ -192,70 +203,55 @@ const MainViewContainer: React.FC<MainViewContainerProps> = ({
     
     if (viewId === 'chat') {
       return (
-        <UniversalResponsiveContainer
-          maxWidth="full"
-          padding="md"
-          className="flex-shrink-0 w-full h-full overflow-y-auto pt-4 sm:pt-6 md:pt-8 pb-20 sm:pb-24"
-        >
-          <div
-            ref={chatContainerRef}
-            aria-live="polite"
-            aria-atomic="false"
-            role="log"
-            className="w-full"
+        <div className="flex-1 w-full h-full flex flex-col">
+          {/* Scrollable Chat Messages Area */}
+          <UniversalResponsiveContainer
+            maxWidth="full"
+            padding="md"
+            className="flex-1 w-full overflow-y-auto pt-4 sm:pt-6 md:pt-8"
           >
-            {messages.length === 0 ? (
-            <div className="flex flex-col gap-4 sm:gap-6 md:gap-8 lg:gap-10 w-full max-w-[95%] sm:max-w-4xl md:max-w-5xl mx-auto my-4 sm:my-6 md:my-8 lg:my-10">
-              {/* Welcome Message styled as system message */}
-              <div className="flex items-start gap-2 sm:gap-3">
-                <Logo className="w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0" />
-                <div className="bg-gradient-to-r from-[#1C1C1C]/80 to-[#0A0A0A]/80 border border-[#424242]/60 rounded-xl sm:rounded-2xl rounded-tl-none py-3 sm:py-4 px-4 sm:px-6 relative overflow-hidden backdrop-blur-sm">
-                  <div className="ai-response max-w-none text-[#CFCFCF] text-sm sm:text-base">
-                    <p className="text-gray-300 text-base sm:text-lg mb-3">
-                      Hey there! 👋 I'm Otagon, your gaming companion. I'm here to help you with anything gaming-related - whether you're stuck on a boss fight, need recommendations for your next game, want to discuss strategies, or just want to chat about your favorite games.
-                    </p>
-                    <p className="text-gray-400 text-sm mb-2">
-                      What would you like to do today?
-                    </p>
-                  </div>
-                </div>
+            <div
+              ref={chatContainerRef}
+              aria-live="polite"
+              aria-atomic="false"
+              role="log"
+              className="w-full"
+            >
+              <div className="flex flex-col gap-4 sm:gap-6 md:gap-8 lg:gap-10 w-full max-w-[95%] sm:max-w-4xl md:max-w-5xl mx-auto my-4 sm:my-6 md:my-8 lg:my-10">
+                {messages.map(msg => (
+                  <ChatMessage
+                    key={msg.id}
+                    message={msg}
+                    isLoading={loadingMessages.includes(msg.id)}
+                    onStop={() => stopMessage(msg.id)}
+                    onPromptClick={onSendMessage}
+                    onUpgradeClick={onUpgradeClick}
+                    onFeedback={(vote) => onFeedback('message', activeConversation.id, msg.id, msg.text, vote)}
+                    onRetry={() => onRetry(msg.id)}
+                    conversationId={activeConversation.id}
+                    isEverythingElse={activeConversation.id === 'everything-else'}
+                  />
+                ))}
+                
+                <div ref={chatEndRef} />
               </div>
-              
-              {/* Suggested Prompts aligned to the left of the chat bubble */}
-              {loadingMessages.length === 0 && (
-                <div className="ml-0">
-                  <SuggestedPrompts onPromptClick={onSendMessage} isInputDisabled={isInputDisabled} isFirstTime={isFirstTime} />
-                </div>
-              )}
             </div>
-          ) : (
-            <div className="flex flex-col gap-4 sm:gap-6 md:gap-8 lg:gap-10 w-full max-w-[95%] sm:max-w-4xl md:max-w-5xl mx-auto my-4 sm:my-6 md:my-8 lg:my-10">
-              {messages.map(msg => (
-                <ChatMessage
-                  key={msg.id}
-                  message={msg}
-                  isLoading={loadingMessages.includes(msg.id)}
-                  onStop={() => stopMessage(msg.id)}
-                  onPromptClick={onSendMessage}
-                  onUpgradeClick={onUpgradeClick}
-                  onFeedback={(vote) => onFeedback('message', activeConversation.id, msg.id, msg.text, vote)}
-                  onRetry={() => onRetry(msg.id)}
-                  conversationId={activeConversation.id}
-                  isEverythingElse={activeConversation.id === 'everything-else'}
-                />
-              ))}
-              
-              {/* Show suggested prompts directly below messages as part of chat flow - only when not loading */}
-              {loadingMessages.length === 0 && (
-                <SuggestedPrompts onPromptClick={onSendMessage} isInputDisabled={isInputDisabled} isFirstTime={isFirstTime} />
-              )}
-              
-              <div ref={chatEndRef} />
+          </UniversalResponsiveContainer>
+          
+          {/* Fixed Suggested Prompts Area - Only when not loading */}
+          {loadingMessages.length === 0 && (
+            <div className="flex-shrink-0 px-3 sm:px-4 md:px-6 pb-2 sm:pb-3 md:pb-4">
+              <SuggestedPrompts 
+                onPromptClick={onSendMessage} 
+                isInputDisabled={isInputDisabled} 
+                isFirstTime={isFirstTime}
+                isEverythingElse={activeConversation.id === 'everything-else'}
+                hasGamePills={false}
+                aiResponseHasSuggestions={aiResponseHasSuggestions}
+              />
             </div>
           )}
-          
-          </div>
-        </UniversalResponsiveContainer>
+        </div>
       );
     }
     
@@ -276,7 +272,7 @@ const MainViewContainer: React.FC<MainViewContainerProps> = ({
       if (insight.id === 'otaku-diary') {
         console.log('🎯 Rendering Otaku Diary tab for viewId:', viewId);
         return (
-          <div key={insight.id} className="flex-shrink-0 w-full h-full overflow-y-auto">
+          <div key={insight.id} className="flex-1 w-full h-full overflow-y-auto">
             <OtakuDiaryTab 
               gameId={activeConversation.id}
               gameTitle={activeConversation.title}
@@ -289,7 +285,7 @@ const MainViewContainer: React.FC<MainViewContainerProps> = ({
       if (viewId === 'wishlist' && activeConversation.id === 'everything-else') {
         console.log('🎯 Rendering Wishlist tab for Everything Else conversation');
         return (
-          <div key="wishlist-view" className="flex-shrink-0 w-full h-full overflow-y-auto">
+          <div key="wishlist-view" className="flex-1 w-full h-full overflow-y-auto">
             <WishlistTab 
               onOpenWishlistModal={onOpenWishlistModal || (() => {})}
             />
@@ -299,7 +295,7 @@ const MainViewContainer: React.FC<MainViewContainerProps> = ({
 
       // Regular insight tabs
       return (
-        <div key={insight.id} data-insight-id={insight.id} className="flex-shrink-0 w-full h-full overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-8">
+        <div key={insight.id} data-insight-id={insight.id} className="flex-1 w-full h-full overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-8">
           <div className="prose prose-invert prose-sm sm:prose-base md:prose-lg max-w-none prose-p:text-[#CFCFCF] prose-headings:text-[#F5F5F5] prose-strong:text-white prose-a:text-[#FFAB40] prose-a:no-underline hover:prose-a:underline prose-code:text-[#FFAB40] prose-code:bg-[#1C1C1C] prose-code:p-1 prose-code:rounded-md prose-li:marker:text-[#FFAB40] prose-h2:text-xl sm:text-2xl prose-h3:text-lg sm:text-xl prose-h4:text-base sm:text-lg">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {insight.content}

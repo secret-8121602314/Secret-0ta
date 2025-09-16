@@ -193,6 +193,79 @@ class SecureAppStateService implements AppStateService {
       const authState = authService.getCurrentState();
       
       if (!authState.user) {
+        // Check if we're in developer mode and should restore session
+        // Only restore developer mode if there's an active session
+        const devSessionStart = localStorage.getItem('otakon_dev_session_start');
+        const hasActiveDevSession = devSessionStart && (Date.now() - parseInt(devSessionStart, 10)) < (24 * 60 * 60 * 1000); // 24 hours
+        
+        if (isDevMode && hasActiveDevSession) {
+          console.log('🔧 [AppStateService] Developer mode with active session detected in getUserState');
+          
+          // Return developer mode state
+          const devData = localStorage.getItem('otakon_dev_data');
+          const parsedData = devData ? JSON.parse(devData) : {};
+          
+          // Check if this is the first time using developer mode
+          const isFirstTimeDeveloper = !localStorage.getItem('otakon_dev_first_run_completed');
+          const hasSeenSplashScreens = localStorage.getItem('otakon_dev_splash_screens_seen') === 'true';
+          const hasProfileSetup = localStorage.getItem('otakon_dev_profile_setup_completed') === 'true';
+          const hasWelcomeMessage = localStorage.getItem('otakon_dev_welcome_message_shown') === 'true';
+          
+          // If developer has completed all onboarding steps, they're not a new user
+          const isNewUser = isFirstTimeDeveloper && (!hasSeenSplashScreens || !hasProfileSetup || !hasWelcomeMessage);
+          
+          console.log('🔧 [AppStateService] Developer mode flags:', {
+            isFirstTimeDeveloper,
+            hasSeenSplashScreens,
+            hasProfileSetup,
+            hasWelcomeMessage,
+            isNewUser
+          });
+          
+          // Get the current tier from localStorage (set by DevTierSwitcher)
+          const currentTier = (localStorage.getItem('otakonUserTier') as UserTier) || 'free';
+          
+          // Get usage data from unifiedUsageService (this correctly calculates tier-based limits)
+          const { unifiedUsageService } = await import('./unifiedUsageService');
+          const usageData = await unifiedUsageService.getUsage();
+          
+          console.log('🔧 [AppStateService] Usage data from unifiedUsageService:', {
+            tier: usageData.tier,
+            textLimit: usageData.textLimit,
+            imageLimit: usageData.imageLimit,
+            textCount: usageData.textCount,
+            imageCount: usageData.imageCount
+          });
+          
+          // Transform usage data to match expected format
+          const transformedUsage = {
+            textCount: usageData.textCount,
+            imageCount: usageData.imageCount,
+            textLimit: usageData.textLimit, // ✅ This is now tier-based from unifiedUsageService
+            imageLimit: usageData.imageLimit, // ✅ This is now tier-based from unifiedUsageService
+            totalRequests: (usageData as any).textQueries + (usageData as any).imageQueries,
+            lastReset: Date.now() // Use current time as last reset
+          };
+          
+          const userState: UserState = {
+            id: '00000000-0000-0000-0000-000000000001', // Fixed UUID for developer mode
+            email: 'developer@otakon.app',
+            tier: currentTier, // Use actual tier from localStorage
+            isAuthenticated: true,
+            isDeveloper: true,
+            hasProfileSetup: hasProfileSetup, // Use actual developer mode flags
+            hasSeenSplashScreens: hasSeenSplashScreens, // Use actual developer mode flags
+            hasWelcomeMessage: hasWelcomeMessage, // Use actual developer mode flags
+            isNewUser: isNewUser, // Use the computed isNewUser value
+            lastActivity: Date.now(),
+            preferences: parsedData.userPreferences || {},
+            usage: transformedUsage // Use transformed usage data
+          };
+          
+          console.log('🔧 [AppStateService] Returning developer user state:', userState);
+          return userState;
+        }
+        
         // Return default state for unauthenticated users
         return {
           id: 'anonymous',

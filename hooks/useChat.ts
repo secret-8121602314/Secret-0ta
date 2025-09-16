@@ -246,7 +246,10 @@ export const useChat = (isHandsFreeMode: boolean) => {
         
         const loadConversations = async () => {
             try {
-                // SIMPLIFIED: Always create default conversation for immediate chat access
+                // Check authentication state first
+                const authState = authService.getCurrentState();
+                
+                // Always create default conversation for immediate chat access
                 const defaultConversations = {
                     [EVERYTHING_ELSE_ID]: {
                         id: EVERYTHING_ELSE_ID,
@@ -266,18 +269,48 @@ export const useChat = (isHandsFreeMode: boolean) => {
                     console.log('💬 [useChat] Default conversation created immediately');
                 }
                 
-                // Check if user is authenticated before loading conversations
-                const { data: { user } } = await supabase.auth.getUser();
-                
-                if (!user) {
-                    // Only log once per session to reduce console noise
-                    if (!hasLoggedUnauthenticatedRef.current) {
-                        console.log('🔐 User not authenticated, using default conversation');
-                        hasLoggedUnauthenticatedRef.current = true;
+                // If user is not authenticated, try to restore from localStorage for developer mode
+                if (!authState.user) {
+                    // Check if we're in developer mode with an active session
+                    const isDevMode = localStorage.getItem('otakon_developer_mode') === 'true';
+                    const devSessionStart = localStorage.getItem('otakon_dev_session_start');
+                    const hasActiveDevSession = devSessionStart && (Date.now() - parseInt(devSessionStart, 10)) < (24 * 60 * 60 * 1000); // 24 hours
+                    
+                    if (isDevMode && hasActiveDevSession) {
+                        console.log('🔧 [useChat] Developer mode with active session detected, loading from localStorage');
+                        try {
+                            const devData = localStorage.getItem('otakon_dev_data');
+                            if (devData) {
+                                const parsedData = JSON.parse(devData);
+                                if (parsedData.conversations && Object.keys(parsedData.conversations).length > 0) {
+                                    const conversations = parsedData.conversations;
+                                    const order = parsedData.conversationsOrder || Object.keys(conversations);
+                                    const activeId = parsedData.activeConversation || order[0] || EVERYTHING_ELSE_ID;
+                                    
+                                    if (isMounted) {
+                                        setChatState({
+                                            conversations: conversations as any,
+                                            order,
+                                            activeId
+                                        });
+                                        console.log('💾 [useChat] Developer conversations loaded from localStorage');
+                                    }
+                                }
+                            }
+                        } catch (error) {
+                            console.warn('Failed to load developer conversations from localStorage:', error);
+                        }
+                    } else {
+                        // Only log once per session to reduce console noise
+                        if (!hasLoggedUnauthenticatedRef.current) {
+                            console.log('🔐 User not authenticated, using default conversation');
+                            hasLoggedUnauthenticatedRef.current = true;
+                        }
                     }
                     return;
                 }
                 
+                // Load conversations from secure service
                 const result = await secureConversationService.loadConversations();
                 
                 if (isMounted && result.success && result.conversations) {
@@ -980,7 +1013,7 @@ export const useChat = (isHandsFreeMode: boolean) => {
             const identifiedGameId = identifiedGameName ? generateGameId(identifiedGameName) : null;
             
             // Guardrails for promoting to a dedicated game tab (pill)
-            const canPromotePill = !!identifiedGameId && (hasImages || (!hasImages && isConfidenceHigh));
+            const canPromotePill = !!identifiedGameId && !isGameUnreleased && (hasImages || (!hasImages && isConfidenceHigh));
             if (canPromotePill && (sourceConvoId === EVERYTHING_ELSE_ID || identifiedGameId !== sourceConvoId)) {
                 console.log(`New game detected: "${identifiedGameName}". Creating/switching to new conversation tab.`);
                 finalTargetConvoId = identifiedGameId;
@@ -1007,6 +1040,14 @@ export const useChat = (isHandsFreeMode: boolean) => {
                     addSystemMessage(confirmMsg, sourceConvoId, false);
                 } catch (e) {
                     console.log('Could not add low-confidence confirmation message:', e);
+                }
+            } else if (!!identifiedGameId && isGameUnreleased) {
+                // Unreleased game: keep in Everything Else and inform user
+                try {
+                    const unreleasedMsg = `${identifiedGameName} is an unreleased game. I'll keep our conversation in the Everything Else tab for now.`;
+                    addSystemMessage(unreleasedMsg, sourceConvoId, false);
+                } catch (e) {
+                    console.log('Could not add unreleased game message:', e);
                 }
             }
 

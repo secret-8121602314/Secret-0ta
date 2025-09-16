@@ -1327,6 +1327,50 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible, input:focu
 }
 
 /* Bounce animation variations */
+/* Desktop-specific chat layout optimizations */
+@media (min-width: 1024px) {
+  /* Ensure proper height constraints for desktop chat */
+  .chat-container-desktop {
+    height: calc(100vh - 200px); /* Adjust based on header and input heights */
+    max-height: calc(100vh - 200px);
+  }
+  
+  /* Desktop chat input positioning */
+  .chat-input-desktop {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    background: #000000;
+    border-top: 1px solid rgba(46, 46, 46, 0.2);
+  }
+  
+  /* Ensure proper scrolling behavior on desktop */
+  .chat-messages-desktop {
+    height: 100%;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+  }
+  
+  /* Desktop-specific padding adjustments */
+  .desktop-padding {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+/* Large desktop optimizations */
+@media (min-width: 1536px) {
+  .chat-container-desktop {
+    height: calc(100vh - 180px);
+    max-height: calc(100vh - 180px);
+  }
+  
+  .desktop-padding {
+    padding-left: 3rem;
+    padding-right: 3rem;
+  }
+}
+
 .animate-bounce-slow {
   animation: bounce 2s infinite;
 }

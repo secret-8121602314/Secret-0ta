@@ -187,6 +187,18 @@ export enum ConnectionStatus {
   ERROR = 'ERROR',
 }
 
+export type ImageFile = {
+  id: string;
+  file: File | null;
+  preview: string;
+  name: string;
+  size: number;
+  type: string;
+  base64: string;
+  mimeType: string;
+  dataUrl: string;
+};
+
 export type ChatMessageFeedback = 'up' | 'down' | 'submitted';
 
 export type ChatMessage = {

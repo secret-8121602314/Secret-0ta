@@ -1673,7 +1673,7 @@ const AppComponent: React.FC = () => {
             console.log('✅ Connection test received from PC client');
             addSystemMessage("Connection test successful - PC client is ready!");
             return;
-        } else if (data.type === 'partner_connected') {
+        } else if (data.type === 'partner_connected' || data.type === 'connection_alive') {
             console.log("Partner PC client has connected.");
         } else {
             console.warn("Received unexpected WebSocket message:", data);
@@ -2409,7 +2409,10 @@ const AppComponent: React.FC = () => {
             const checkWelcomeMessage = async () => {
                 try {
                     const shouldShow = await supabaseDataService.shouldShowWelcomeMessage();
-                    const hasCompletedProfileSetup = await supabaseDataService.getUserAppState().then(state => state.appSettings?.profileSetupCompleted) || localStorage.getItem('otakon_profile_setup_completed') === 'true';
+                    // Check profile setup completion - handle both regular and developer mode
+                    const isDeveloperMode = authState.user?.email === 'developer@otakon.app' || localStorage.getItem('otakon_developer_mode') === 'true';
+                    const profileSetupKey = isDeveloperMode ? 'otakon_dev_profile_setup_completed' : 'otakon_profile_setup_completed';
+                    const hasCompletedProfileSetup = await supabaseDataService.getUserAppState().then(state => state.appSettings?.profileSetupCompleted) || localStorage.getItem(profileSetupKey) === 'true';
                     
                     console.log('🔍 Welcome message check:', {
                         view,

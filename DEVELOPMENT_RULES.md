@@ -32,6 +32,9 @@ Before making ANY changes to SYSTEM_ARCHITECTURE.md or protected behaviors:
 - **Chat Interface**: Welcome message + suggested prompts layout
 - **14-Day Trial System**: One-time trial eligibility and expiration logic
 - **Splash Screens**: Only for first-time users, returning users skip entirely
+- **Session Persistence**: Page refresh behavior, conversation restoration, developer mode session management
+- **Screenshot Timeline**: AI context awareness with chronological progression
+- **Game Pill Logic**: Proper handling of unrelated games and unreleased game detection
 
 ### **Medium Priority Protected Behaviors**
 - **OAuth Callback Handling**: Single service, no race conditions
@@ -58,6 +61,9 @@ Before making ANY changes to SYSTEM_ARCHITECTURE.md or protected behaviors:
 - Changing trial button placement or behavior
 - Modifying navigation behavior (back buttons, routing)
 - Changing splash screen logic or requirements
+- Modifying session persistence behavior
+- Changing screenshot timeline system
+- Altering game pill creation logic
 
 ### **Authentication & Security Changes**
 - OAuth callback handling modifications
@@ -118,6 +124,9 @@ Before implementing any change, verify:
 - [ ] Does this affect developer mode behavior?
 - [ ] Does this modify trial system behavior?
 - [ ] Does this change session management?
+- [ ] Does this affect session persistence?
+- [ ] Does this modify screenshot timeline behavior?
+- [ ] Does this change game pill creation logic?
 
 **This ensures system consistency and prevents unintended regressions.**
 
@@ -270,6 +279,6 @@ Before requesting approval for any changes, verify:
 
 ---
 
-*Last Updated: January 15, 2025*
-*Version: 1.0*
-*Purpose: Ensure consistent adherence to development rules and change control protocol*
+*Last Updated: January 16, 2025*
+*Version: 2.0*
+*Purpose: Ensure consistent adherence to development rules and change control protocol with enhanced session persistence and system behavior management*

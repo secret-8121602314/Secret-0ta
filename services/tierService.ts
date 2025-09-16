@@ -99,6 +99,11 @@ export class TierService {
    */
   async startFreeTrial(userId: string): Promise<boolean> {
     try {
+      // Don't start trial for unauthenticated users
+      if (!userId || userId === 'anonymous' || userId === 'error') {
+        return false;
+      }
+
       // Check if user has already used their trial
       const { data: existingUser } = await supabase
         .from('users')
@@ -149,6 +154,11 @@ export class TierService {
    */
   async isEligibleForTrial(userId: string): Promise<boolean> {
     try {
+      // Don't check trial eligibility for unauthenticated users
+      if (!userId || userId === 'anonymous' || userId === 'error') {
+        return false;
+      }
+
       const { data: user } = await supabase
         .from('users')
         .select('has_used_trial, tier')
@@ -171,6 +181,11 @@ export class TierService {
     daysRemaining: number | null;
   }> {
     try {
+      // Don't check trial status for unauthenticated users
+      if (!userId || userId === 'anonymous' || userId === 'error') {
+        return { isOnTrial: false, trialExpiresAt: null, daysRemaining: null };
+      }
+
       const { data: user } = await supabase
         .from('users')
         .select('tier, trial_expires_at')
@@ -251,6 +266,11 @@ export class TierService {
    */
   async getUserTier(userId: string): Promise<TierInfo | null> {
     try {
+      // Don't get tier for unauthenticated users
+      if (!userId || userId === 'anonymous' || userId === 'error') {
+        return null;
+      }
+
       const { data, error } = await supabase
         .from('users')
         .select('tier')

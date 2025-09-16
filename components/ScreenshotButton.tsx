@@ -41,9 +41,8 @@ const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({
       setMode('single');
       localStorage.setItem('otakon_screenshot_mode', 'single');
     }
-    // First-run hint
-    const hintSeen = localStorage.getItem('otakon_screenshot_hint_seen');
-    if (!hintSeen) setShowHint(true);
+    // Don't show hint by default - only show on first interaction
+    setShowHint(false);
   }, [canUseMultishot]);
 
   const setModeAndPersist = (m: Mode) => {
@@ -163,12 +162,12 @@ const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({
         onTouchEnd={clearLongPress}
         onTouchCancel={clearLongPress}
         aria-disabled={!isConnected || isProcessing}
-        className={`${isConnected ? 'text-emerald-400' : 'text-[#8A8A8A]'} w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:w-16 rounded-xl bg-gradient-to-r from-[#2E2E2E]/80 to-[#1C1C1C]/80 border-2 border-[#424242]/60 shadow-lg flex items-center justify-center ${isConnected ? '' : 'opacity-70 cursor-pointer hover:opacity-90'} ${isConnected && !isProcessing ? 'hover:border-emerald-400/60' : ''}`}
+        className={`${isConnected ? 'text-emerald-400' : 'text-[#8A8A8A]'} w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 rounded-xl bg-gradient-to-r from-[#2E2E2E]/80 to-[#1C1C1C]/80 border-2 border-[#424242]/60 shadow-lg flex items-center justify-center transition-all duration-200 ${isConnected ? 'hover:scale-105' : 'opacity-70 cursor-pointer hover:opacity-90'} ${isConnected && !isProcessing ? 'hover:border-emerald-400/60 hover:shadow-emerald-400/20' : ''}`}
         title={isConnected ? 'Screenshot (right-click/long-press to change mode)' : 'Connect your PC to enable screenshots'}
       >
         {mode === 'single' ? (
           // Monitor with capture corner (single)
-          <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 lg:w-8 lg:w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 lg:w-8 lg:h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <rect x="3" y="4" width="18" height="12" rx="2" />
             <path d="M8 20h8" />
             <path d="M7 7h3M7 10h3M14 7h3" />
@@ -176,7 +175,7 @@ const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({
           </svg>
         ) : (
           // Stacked monitors (multi)
-          <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 lg:w-8 lg:w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 lg:w-8 lg:h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <rect x="4" y="5" width="14" height="9" rx="2" />
             <rect x="6" y="10" width="14" height="9" rx="2" />
             <path d="M10 22h6" />
@@ -185,13 +184,15 @@ const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({
       </button>
 
       {showHint && isConnected && (
-        <button
-          type="button"
-          onClick={() => { setShowHint(false); localStorage.setItem('otakon_screenshot_hint_seen', '1'); }}
-          className="absolute left-1/2 -translate-x-1/2 mt-2 top-full text-xs text-[#CFCFCF] bg-[#101010]/95 border border-[#424242]/60 rounded-lg px-3 py-1 shadow-lg whitespace-nowrap"
-        >
-          Press & hold (1.75s) or right-click to change mode
-        </button>
+        <div className="absolute left-1/2 -translate-x-1/2 mt-2 top-full text-xs text-[#CFCFCF] bg-[#101010]/95 border border-[#424242]/60 rounded-lg px-3 py-1 shadow-lg whitespace-nowrap z-50">
+          <button
+            type="button"
+            onClick={() => { setShowHint(false); localStorage.setItem('otakon_screenshot_hint_seen', '1'); }}
+            className="w-full h-full"
+          >
+            Press & hold (1.75s) or right-click to change mode
+          </button>
+        </div>
       )}
 
       {menuOpen && isConnected && (

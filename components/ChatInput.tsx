@@ -1,11 +1,9 @@
 import React, { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import CameraIcon from './CameraIcon';
 import SendIcon from './SendIcon';
-import { ConnectionStatus, Usage, Conversation } from '../services/types';
+import { ConnectionStatus, Usage, Conversation, ImageFile } from '../services/types';
 import ManualUploadToggle from './ManualUploadToggle';
 import CommandSuggestions from './CommandSuggestions';
-
-type ImageFile = { base64: string; mimeType: string, dataUrl: string };
 
 const fileToBase64 = async (file: File): Promise<ImageFile> => {
     try {
@@ -20,6 +18,12 @@ const fileToBase64 = async (file: File): Promise<ImageFile> => {
         const dataUrl = base64;
         
         return {
+            id: crypto.randomUUID(),
+            file: processedFile,
+            preview: dataUrl,
+            name: processedFile.name,
+            size: processedFile.size,
+            type: processedFile.type,
             base64: base64.split(',')[1], // Remove data URL prefix
             mimeType,
             dataUrl
@@ -66,6 +70,12 @@ const convertImage = async (file: File, targetMimeType: 'image/jpeg' | 'image/pn
                         reader.onload = () => {
                             const base64 = reader.result as string;
                             resolve({
+                                id: crypto.randomUUID(),
+                                file: blob,
+                                preview: base64,
+                                name: file.name.replace(/\.[^/.]+$/, `.${targetMimeType.split('/')[1]}`),
+                                size: blob.size,
+                                type: targetMimeType,
                                 base64: base64.split(',')[1],
                                 mimeType: targetMimeType,
                                 dataUrl: base64
@@ -385,8 +395,8 @@ const ChatInput: React.FC<ChatInputProps> = React.memo(({ value, onChange, onSen
     const maxImages = usage.tier !== 'free' ? 5 : 1;
 
             return (
-            <div className="pt-2 sm:pt-3 md:pt-4 px-3 sm:px-4 md:px-6 pb-[calc(env(safe-area-inset-bottom)+12px)] sm:pb-[calc(env(safe-area-inset-bottom)+16px)] md:pb-[calc(env(safe-area-inset-bottom)+24px)]">
-            <form onSubmit={handleSubmit} className="w-full max-w-[95%] sm:max-w-4xl md:max-w-5xl mx-auto flex flex-col gap-2 sm:gap-3 md:gap-4">
+            <div className="pt-2 sm:pt-3 md:pt-4 pb-[calc(env(safe-area-inset-bottom)+12px)] sm:pb-[calc(env(safe-area-inset-bottom)+16px)] md:pb-[calc(env(safe-area-inset-bottom)+24px)]">
+            <form onSubmit={handleSubmit} className="w-full flex flex-col gap-2 sm:gap-3 md:gap-4">
                 {selectedImages.length > 0 && (
                      <div className="flex overflow-x-auto space-x-2 sm:space-x-3 p-2 sm:p-3 scroll-smooth bg-[#1C1C1C]/40 rounded-xl sm:rounded-2xl border border-[#424242]/30">
                         {selectedImages.map((image, index) => (

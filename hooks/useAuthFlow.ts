@@ -5,6 +5,7 @@ import { profileService } from '../services/profileService';
 import { playerProfileService } from '../services/playerProfileService';
 import { unifiedUsageService } from '../services/unifiedUsageService';
 import { ttsService } from '../services/ttsService';
+import { secureAppStateService } from '../services/secureAppStateService';
 
 interface UseAuthFlowProps {
   authState: any;
@@ -19,6 +20,7 @@ interface UseAuthFlowProps {
   disconnect?: () => void;
   resetConversations?: () => void;
   refreshUsage?: () => void;
+  addSystemMessage?: (text: string, convoId?: string, showUpgradeButton?: boolean) => void;
 }
 
 export const useAuthFlow = ({
@@ -34,6 +36,7 @@ export const useAuthFlow = ({
   disconnect,
   resetConversations,
   refreshUsage,
+  addSystemMessage,
 }: UseAuthFlowProps) => {
   
   // Function to logout only (keep data) - for settings modal
@@ -207,13 +210,15 @@ export const useAuthFlow = ({
       setShowProfileSetup(false);
       console.log('Profile setup modal closed');
       
-      // Mark profile setup as completed
-      localStorage.setItem('otakon_profile_setup_completed', 'true');
-      console.log('Profile setup marked as completed in localStorage');
+      // Mark profile setup as completed in Supabase
+      await secureAppStateService.markProfileSetupComplete();
+      console.log('Profile setup marked as completed in Supabase');
       
-      // Update onboarding status to complete
-      setOnboardingStatus('complete');
-      console.log('Onboarding status set to complete');
+      // Mark profile setup as completed in localStorage
+      const isDeveloperMode = authState.user?.email === 'developer@otakon.app' || localStorage.getItem('otakon_developer_mode') === 'true';
+      const profileSetupKey = isDeveloperMode ? 'otakon_dev_profile_setup_completed' : 'otakon_profile_setup_completed';
+      localStorage.setItem(profileSetupKey, 'true');
+      console.log('Profile setup marked as completed in localStorage');
       
       // Mark first run as completed
       await playerProfileService.markFirstRunCompleted();
@@ -223,6 +228,12 @@ export const useAuthFlow = ({
       await playerProfileService.updateWelcomeMessageShown('profile_setup');
       console.log('Welcome message shown updated');
       
+      // Welcome message is now added before profile setup modal shows, not here
+      
+      // Update onboarding status to complete
+      setOnboardingStatus('complete');
+      console.log('Onboarding status set to complete');
+      
       console.log('Profile setup completion successful');
     } catch (error) {
       console.error('Error in profile setup completion:', error);
@@ -230,7 +241,7 @@ export const useAuthFlow = ({
       setShowProfileSetup(false);
       setOnboardingStatus('complete');
     }
-  }, [setShowProfileSetup, setOnboardingStatus]);
+  }, [setShowProfileSetup, setOnboardingStatus, addSystemMessage]);
 
   const handleSkipProfileSetup = useCallback(async () => {
     try {
@@ -239,12 +250,22 @@ export const useAuthFlow = ({
       // Close the modal
       setShowProfileSetup(false);
       
+      // Mark profile setup as completed in Supabase
+      await secureAppStateService.markProfileSetupComplete();
+      console.log('Profile setup marked as completed in Supabase');
+      
       // Set default profile
       const defaultProfile = playerProfileService.getDefaultProfile();
       await playerProfileService.saveProfile(defaultProfile);
       
       // Mark first run as completed
       await playerProfileService.markFirstRunCompleted();
+      
+      // Update welcome message shown
+      await playerProfileService.updateWelcomeMessageShown('profile_setup');
+      console.log('Welcome message shown updated');
+      
+      // Welcome message is now added before profile setup modal shows, not here
       
       // Update onboarding status
       setOnboardingStatus('complete');
@@ -256,7 +277,7 @@ export const useAuthFlow = ({
       setShowProfileSetup(false);
       setOnboardingStatus('complete');
     }
-  }, [setShowProfileSetup, setOnboardingStatus]);
+  }, [setShowProfileSetup, setOnboardingStatus, addSystemMessage]);
 
   return {
     handleLogout,
