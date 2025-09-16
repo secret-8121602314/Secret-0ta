@@ -250,10 +250,36 @@ const App: React.FC = () => {
       const batchData = data.payload || data;
       
       if (batchData.images && batchData.images.length > 0) {
+        // Debug: Log the actual data structure
+        console.log("🔍 Debug - batchData.images structure:", {
+          count: batchData.images.length,
+          firstImageType: typeof batchData.images[0],
+          firstImageLength: batchData.images[0]?.length || 0,
+          firstImageStart: batchData.images[0]?.substring(0, 50) || 'undefined',
+          firstImageEnd: batchData.images[0]?.substring(-50) || 'undefined'
+        });
+        
         // Convert base64 images to ImageFile format
         const imageFiles: ImageFile[] = batchData.images.map((imgSrc: string, index: number) => {
+          // Debug: Log each image processing
+          console.log(`🔍 Debug - Processing image ${index}:`, {
+            originalType: typeof imgSrc,
+            originalLength: imgSrc?.length || 0,
+            startsWithData: imgSrc?.startsWith('data:') || false,
+            firstChars: imgSrc?.substring(0, 20) || 'undefined'
+          });
+          
           // Ensure proper data URL format
           const properDataUrl = imgSrc.startsWith('data:') ? imgSrc : `data:image/png;base64,${imgSrc}`;
+          
+          console.log(`🔍 Debug - Final data URL for image ${index}:`, {
+            finalLength: properDataUrl.length,
+            finalStart: properDataUrl.substring(0, 30),
+            hasMimeType: properDataUrl.includes('data:image/png;base64,')
+          });
+          
+          // Extract base64 data from the data URL
+          const base64Data = properDataUrl.includes(',') ? properDataUrl.split(',')[1] : properDataUrl;
           
           return {
             id: `pc-screenshot-${Date.now()}-${index}`,
@@ -261,7 +287,11 @@ const App: React.FC = () => {
             preview: properDataUrl,
             name: `screenshot-${index + 1}.png`,
             size: 0,
-            type: 'image/png'
+            type: 'image/png',
+            // Add the required fields for ImageFile type
+            base64: base64Data,
+            mimeType: 'image/png',
+            dataUrl: properDataUrl
           };
         });
         
@@ -278,8 +308,25 @@ const App: React.FC = () => {
       console.log("📸 Processing individual screenshot:", data);
       
       if (data.dataUrl) {
+        // Debug: Log the individual screenshot data
+        console.log("🔍 Debug - Individual screenshot data:", {
+          dataUrlType: typeof data.dataUrl,
+          dataUrlLength: data.dataUrl?.length || 0,
+          startsWithData: data.dataUrl?.startsWith('data:') || false,
+          firstChars: data.dataUrl?.substring(0, 20) || 'undefined'
+        });
+        
         // Ensure proper data URL format
         const properDataUrl = data.dataUrl.startsWith('data:') ? data.dataUrl : `data:image/png;base64,${data.dataUrl}`;
+        
+        console.log("🔍 Debug - Final individual data URL:", {
+          finalLength: properDataUrl.length,
+          finalStart: properDataUrl.substring(0, 30),
+          hasMimeType: properDataUrl.includes('data:image/png;base64,')
+        });
+        
+        // Extract base64 data from the data URL
+        const base64Data = properDataUrl.includes(',') ? properDataUrl.split(',')[1] : properDataUrl;
         
         const imageFile: ImageFile = {
           id: `pc-screenshot-${Date.now()}`,
@@ -287,7 +334,11 @@ const App: React.FC = () => {
           preview: properDataUrl,
           name: `screenshot.png`,
           size: 0,
-          type: 'image/png'
+          type: 'image/png',
+          // Add the required fields for ImageFile type
+          base64: base64Data,
+          mimeType: 'image/png',
+          dataUrl: properDataUrl
         };
         
         // Send message with screenshot
