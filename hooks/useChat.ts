@@ -71,7 +71,28 @@ const allOtakonTags = [
     'INSIGHT_MODIFY_PENDING', 'INSIGHT_DELETE_REQUEST',
     'OBJECTIVE_SET', 'OBJECTIVE_COMPLETE'
 ];
+
+// More comprehensive regex to catch all possible tags and IDs that should be hidden
 const tagCleanupRegex = new RegExp(`\\[OTAKON_(${allOtakonTags.join('|')}):.*?\\]`, 'gs');
+const comprehensiveTagCleanupRegex = new RegExp(
+    // OTAKON tags
+    `\\[OTAKON_(${allOtakonTags.join('|')}):.*?\\]|` +
+    // Any other OTAKON tags not in the list
+    `\\[OTAKON_[^\\]]*\\]|` +
+    // Common ID patterns that might appear
+    `\\[ID:[^\\]]*\\]|` +
+    `\\[TAG:[^\\]]*\\]|` +
+    `\\[META:[^\\]]*\\]|` +
+    `\\[DEBUG:[^\\]]*\\]|` +
+    `\\[SYSTEM:[^\\]]*\\]|` +
+    // UUID patterns
+    `\\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\b|` +
+    // Other common ID patterns
+    `\\b[A-Z0-9_]{10,}\\b(?=\\s|$)|` +
+    // Clean up any remaining bracket patterns that look like metadata
+    `\\[[^\\]]*:[^\\]]*\\](?=\\s|$)`,
+    'gs'
+);
 
 
 const sortConversations = (conversations: Conversations) => (aId: string, bId: string): number => {
@@ -901,7 +922,7 @@ export const useChat = (isHandsFreeMode: boolean) => {
             const onChunk = (chunk: string) => {
                 if (isCooldownActive) setIsCooldownActive(false);
                 rawTextResponse += chunk;
-                const displayText = rawTextResponse.replace(tagCleanupRegex, '').replace(/^[\s`"\]\}]*/, '').trim();
+                const displayText = rawTextResponse.replace(comprehensiveTagCleanupRegex, '').replace(/^[\s`"\]\}]*/, '').trim();
                 updateMessageInConversation(activeConversationId, modelMessageId, msg => ({ ...msg, text: displayText }));
                 
                 // 🚫 REMOVED: Real-time insight updates to prevent unauthorized API calls
@@ -1034,7 +1055,7 @@ export const useChat = (isHandsFreeMode: boolean) => {
             
             let finalCleanedText = rawTextResponse
                 .replace(hintTagsRegex, '') // Remove hint tags for display
-                .replace(tagCleanupRegex, '')
+                .replace(comprehensiveTagCleanupRegex, '')
                 .replace(/^Game Progress: \d+%\s*$/m, '')
                 .replace(/^[\s`"\]\}]*/, '')
                 .replace(/[\s`"\]\}]*$/, '')
@@ -1537,9 +1558,11 @@ Progress: ${conversation.progress}%`;
                     (chunk) => {
                         if (controller.signal.aborted) return;
                         fullContent += chunk;
+                        // Clean the content before displaying to hide tags and IDs
+                        const cleanedContent = fullContent.replace(comprehensiveTagCleanupRegex, '').trim();
                         updateConversation(conversationId, convo => ({
                             ...convo,
-                            insights: { ...convo.insights!, [insightId]: { ...convo.insights![insightId], content: fullContent, status: 'streaming' } }
+                            insights: { ...convo.insights!, [insightId]: { ...convo.insights![insightId], content: cleanedContent, status: 'streaming' } }
                         }), true);
                     },
                     (error) => {
