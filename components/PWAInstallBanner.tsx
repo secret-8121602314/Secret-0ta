@@ -153,7 +153,7 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = "" }) =
             </div>
             
             <div className="flex-1 min-w-0">
-              <h3 className="text-white font-semibold text-sm">Install Otagon - Gaming AI Assistant</h3>
+              <h3 className="text-white font-semibold text-sm">Otagon</h3>
               <p className="text-neutral-400 text-xs mt-1">
                 Get the full mobile experience with screenshot analysis and spoiler-free wiki
               </p>
@@ -196,7 +196,7 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = "" }) =
                 <img src="/images/Dragon Circle Logo Design.png" alt="Otagon Logo" className="w-8 h-8 rounded" />
               </div>
               <div>
-                <h3 className="text-white font-semibold text-sm">Otagon - Gaming AI Assistant</h3>
+                <h3 className="text-white font-semibold text-sm">Otagon</h3>
                 <p className="text-neutral-400 text-xs">Screenshot analysis, spoiler-free wiki, and more!</p>
               </div>
             </div>
