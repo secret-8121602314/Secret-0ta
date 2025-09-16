@@ -251,14 +251,19 @@ const App: React.FC = () => {
       
       if (batchData.images && batchData.images.length > 0) {
         // Convert base64 images to ImageFile format
-        const imageFiles: ImageFile[] = batchData.images.map((imgSrc: string, index: number) => ({
-          id: `pc-screenshot-${Date.now()}-${index}`,
-          file: null, // No file object for PC screenshots
-          preview: imgSrc,
-          name: `screenshot-${index + 1}.png`,
-          size: 0,
-          type: 'image/png'
-        }));
+        const imageFiles: ImageFile[] = batchData.images.map((imgSrc: string, index: number) => {
+          // Ensure proper data URL format
+          const properDataUrl = imgSrc.startsWith('data:') ? imgSrc : `data:image/png;base64,${imgSrc}`;
+          
+          return {
+            id: `pc-screenshot-${Date.now()}-${index}`,
+            file: null, // No file object for PC screenshots
+            preview: properDataUrl,
+            name: `screenshot-${index + 1}.png`,
+            size: 0,
+            type: 'image/png'
+          };
+        });
         
         // Send message with screenshots
         handleSendMessage("", imageFiles, true).then(result => {
@@ -273,10 +278,13 @@ const App: React.FC = () => {
       console.log("📸 Processing individual screenshot:", data);
       
       if (data.dataUrl) {
+        // Ensure proper data URL format
+        const properDataUrl = data.dataUrl.startsWith('data:') ? data.dataUrl : `data:image/png;base64,${data.dataUrl}`;
+        
         const imageFile: ImageFile = {
           id: `pc-screenshot-${Date.now()}`,
           file: null,
-          preview: data.dataUrl,
+          preview: properDataUrl,
           name: `screenshot.png`,
           size: 0,
           type: 'image/png'
