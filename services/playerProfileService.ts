@@ -128,6 +128,8 @@ class PlayerProfileService {
             last_updated: newProfile.lastUpdated,
             is_first_time: newProfile.isFirstTime
           }
+        }, {
+          onConflict: 'auth_user_id'
         });
 
       if (error) {

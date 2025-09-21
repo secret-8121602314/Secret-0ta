@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import { authService } from './supabase';
 import { UserTier } from './types';
 import { isDeveloperMode } from '../utils';
+import { unifiedUsageService } from './unifiedUsageService';
 
 // ========================================
 // 🛡️ SECURE APP STATE SERVICE
@@ -131,17 +132,26 @@ class SecureAppStateService implements AppStateService {
   }
 
   private async getSupabaseData(key: string): Promise<any> {
-    const authState = authService.getCurrentState();
+    let authState = authService.getCurrentState();
     
     if (!authState.user) {
-      throw new Error('User not authenticated');
+      // Add a longer delay to allow auth state to settle after OAuth callback
+      await new Promise(resolve => setTimeout(resolve, 500));
+      authState = authService.getCurrentState();
+      if (!authState.user) {
+        // Try one more time with even longer delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        authState = authService.getCurrentState();
+        if (!authState.user) {
+          throw new Error('User not authenticated');
+        }
+      }
     }
 
     const { data, error } = await supabase
       .from('users')
       .select(key)
       .eq('auth_user_id', authState.user.id)
-      .is('deleted_at', null)
       .single();
 
     if (error) {
@@ -152,10 +162,20 @@ class SecureAppStateService implements AppStateService {
   }
 
   private async setSupabaseData(key: string, data: any): Promise<void> {
-    const authState = authService.getCurrentState();
+    let authState = authService.getCurrentState();
     
     if (!authState.user) {
-      throw new Error('User not authenticated');
+      // Add a longer delay to allow auth state to settle after OAuth callback
+      await new Promise(resolve => setTimeout(resolve, 500));
+      authState = authService.getCurrentState();
+      if (!authState.user) {
+        // Try one more time with even longer delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        authState = authService.getCurrentState();
+        if (!authState.user) {
+          throw new Error('User not authenticated');
+        }
+      }
     }
 
     // Validate input based on key
@@ -167,11 +187,9 @@ class SecureAppStateService implements AppStateService {
       .from('users')
       .update({ 
         [key]: data,
-        updated_at: new Date().toISOString(),
-        updated_by: authState.user.id
+        updated_at: new Date().toISOString()
       })
-      .eq('auth_user_id', authState.user.id)
-      .is('deleted_at', null);
+      .eq('auth_user_id', authState.user.id);
 
     if (error) {
       throw new Error(`Failed to update ${key}: ${error.message}`);
@@ -183,14 +201,28 @@ class SecureAppStateService implements AppStateService {
 
   async getUserState(): Promise<UserState> {
     try {
-      // Check cache first, but not for developer mode
-      const isDevMode = isDeveloperMode();
-      const cached = this.getCachedData<UserState>('userState');
-      if (cached && !isDevMode) {
-        return cached;
+      // ✅ INFINITE LOOP FIX: Add processing guard
+      const processingKey = 'getUserState_processing';
+      if (this.cache.has(processingKey)) {
+        console.log('🔧 [AppStateService] getUserState already in progress, using cached result');
+        const cached = this.getCachedData<UserState>('userState');
+        if (cached) {
+          return cached;
+        }
       }
+      
+      // Set processing flag
+      this.cache.set(processingKey, { data: true, timestamp: Date.now() });
+      
+      try {
+        // Check cache first, but not for developer mode
+        const isDevMode = isDeveloperMode();
+        const cached = this.getCachedData<UserState>('userState');
+        if (cached && !isDevMode) {
+          return cached;
+        }
 
-      const authState = authService.getCurrentState();
+        const authState = authService.getCurrentState();
       
       if (!authState.user) {
         // Check if we're in developer mode and should restore session
@@ -226,7 +258,6 @@ class SecureAppStateService implements AppStateService {
           const currentTier = (localStorage.getItem('otakonUserTier') as UserTier) || 'free';
           
           // Get usage data from unifiedUsageService (this correctly calculates tier-based limits)
-          const { unifiedUsageService } = await import('./unifiedUsageService');
           const usageData = await unifiedUsageService.getUsage();
           
           console.log('🔧 [AppStateService] Usage data from unifiedUsageService:', {
@@ -321,7 +352,6 @@ class SecureAppStateService implements AppStateService {
         const currentTier = (localStorage.getItem('otakonUserTier') as UserTier) || 'free';
         
         // Get usage data from unifiedUsageService (this correctly calculates tier-based limits)
-        const { unifiedUsageService } = await import('./unifiedUsageService');
         const usageData = await unifiedUsageService.getUsage();
         
         console.log('🔧 [AppStateService] Usage data from unifiedUsageService:', {
@@ -375,7 +405,7 @@ class SecureAppStateService implements AppStateService {
         isDeveloper: false,
         hasProfileSetup: userData.profile_data?.profileSetupCompleted || false,
         hasSeenSplashScreens: userData.app_state?.hasSeenSplashScreens || false,
-        hasWelcomeMessage: userData.app_state?.welcomeMessageShown || false,
+        hasWelcomeMessage: userData.app_state?.hasWelcomeMessage || false,
         isNewUser: !userData.app_state?.firstRunCompleted,
         lastActivity: new Date(userData.last_activity).getTime(),
         preferences: userData.preferences || {},
@@ -389,10 +419,16 @@ class SecureAppStateService implements AppStateService {
         }
       };
 
+      
       // Cache the result
       this.setCachedData('userState', userState);
       
       return userState;
+      
+      } finally {
+        // Clear processing flag for inner try block
+        this.cache.delete('getUserState_processing');
+      }
 
     } catch (error) {
       this.error('Failed to get user state', error);
@@ -527,10 +563,12 @@ class SecureAppStateService implements AppStateService {
       if (localStorage.getItem('otakon_developer_mode') === 'true') {
         // Mark developer mode profile setup as complete
         localStorage.setItem('otakon_dev_profile_setup_completed', 'true');
+        localStorage.setItem('otakon_dev_onboarding_complete', 'true');
         this.log('Developer mode: Profile setup marked as complete');
         return;
       }
 
+      // Update both profile data and main app state flags
       await this.retryOperation(
         () => this.setSupabaseData('profile_data', { 
           profileSetupCompleted: true,
@@ -539,6 +577,22 @@ class SecureAppStateService implements AppStateService {
         'markProfileSetupComplete'
       );
 
+      // Also update the main app state to mark onboarding as complete
+      await this.retryOperation(
+        () => this.setSupabaseData('app_state', {
+          hasSeenSplashScreens: true,
+          hasProfileSetup: true,
+          hasWelcomeMessage: true,
+          isNewUser: false,
+          firstRunCompleted: true,
+          onboardingComplete: true
+        }),
+        'markProfileSetupComplete'
+      );
+
+      // Clear cache to force refresh of user state
+      this.cache.delete(this.getCacheKey('userState'));
+      
       this.log('Profile setup marked as complete');
 
     } catch (error) {
@@ -563,19 +617,27 @@ class SecureAppStateService implements AppStateService {
         return;
       }
 
-      await this.retryOperation(
-        () => this.setSupabaseData('app_state', { 
-          hasSeenSplashScreens: true,
-          splashScreensCompletedAt: new Date().toISOString()
-        }),
-        'markSplashScreensSeen'
-      );
+      try {
+        await this.retryOperation(
+          () => this.setSupabaseData('app_state', { 
+            hasSeenSplashScreens: true,
+            splashScreensCompletedAt: new Date().toISOString()
+          }),
+          'markSplashScreensSeen'
+        );
 
-      this.log('Splash screens marked as seen');
+        this.log('Splash screens marked as seen');
+      } catch (dbError) {
+        // If database update fails, still mark in localStorage as fallback
+        console.warn('Database update failed, using localStorage fallback:', dbError);
+        localStorage.setItem('otakon_has_seen_splash_screens', 'true');
+        this.log('Splash screens marked as seen (localStorage fallback)');
+      }
 
     } catch (error) {
       this.error('Failed to mark splash screens seen', error);
-      throw error;
+      // Don't throw error - just log it and continue
+      console.warn('Splash screen completion failed, but continuing anyway:', error);
     }
   }
 
@@ -649,8 +711,22 @@ class SecureAppStateService implements AppStateService {
       if (!userState.isAuthenticated) {
         // Only log when transitioning from authenticated to unauthenticated
         if (this.lastUserState?.isAuthenticated) {
-          console.log('🔧 [AppStateService] User logged out, returning landing page');
+          console.log('🔧 [AppStateService] User logged out, checking for login redirect');
         }
+        
+        // Check if this is a logout redirect - show login page instead of landing page
+        const isLogoutRedirect = localStorage.getItem('otakon_logout_redirect') === 'true';
+        if (isLogoutRedirect) {
+          console.log('🔧 [AppStateService] Logout redirect detected, showing login page');
+          // Clear the flag so it doesn't persist
+          localStorage.removeItem('otakon_logout_redirect');
+          return {
+            view: 'app',
+            onboardingStatus: 'login'
+          };
+        }
+        
+        // Default behavior for unauthenticated users
         return {
           view: 'landing',
           onboardingStatus: 'complete'
@@ -692,8 +768,24 @@ class SecureAppStateService implements AppStateService {
         return 'login';
       }
 
+      // Check localStorage first for splash screen progression (more reliable)
+      const hasSeenSplashScreensLocal = localStorage.getItem('otakon_has_seen_splash_screens') === 'true';
+      const hasCompletedOnboardingLocal = localStorage.getItem('otakonOnboardingComplete') === 'true';
+      
+      console.log('🔧 [AppStateService] Local storage check:', { 
+        hasSeenSplashScreensLocal, 
+        hasCompletedOnboardingLocal,
+        hasSeenSplashScreensSupabase: userState.hasSeenSplashScreens,
+        hasProfileSetup: userState.hasProfileSetup
+      });
+
       // SIMPLIFIED: Check if user needs onboarding
-      if (userState.isNewUser || !userState.hasSeenSplashScreens || !userState.hasProfileSetup) {
+      // Use localStorage as primary source, Supabase as fallback
+      const needsOnboarding = userState.isNewUser || 
+        (!hasSeenSplashScreensLocal && !userState.hasSeenSplashScreens) || 
+        (!hasCompletedOnboardingLocal && !userState.hasProfileSetup);
+      
+      if (needsOnboarding) {
         console.log('🔧 [AppStateService] User needs onboarding');
         
         // For developer mode, check if onboarding is complete

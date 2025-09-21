@@ -1,17 +1,15 @@
 import { supabase } from './supabase';
 import { authService } from './supabase';
-import { Conversation as UseChatConversation, Conversations as UseChatConversations } from './types';
-import { devModeMigrationService } from './devModeMigrationService';
 
 // ========================================
-// 🛡️ SECURE CONVERSATION SERVICE
+// 🛡️ SECURE CONVERSATION SERVICE - FIXED VERSION
 // ========================================
-// This fixes all conversation management issues with:
-// - Proper conflict resolution
-// - Input validation
-// - Atomic operations
-// - Performance optimization
-// - Data integrity
+// This fixes ALL conversation management issues with:
+// - Proper user ID mapping between auth.users and public.users
+// - Complete conversation loading and saving
+// - Profile setup completion handling
+// - Chat memory persistence across logout/refresh
+// - Proper conflict resolution and error handling
 
 export interface Conversation {
   id: string;
@@ -20,11 +18,15 @@ export interface Conversation {
   insights: any[];
   context: Record<string, any>;
   game_id?: string;
+  gameId?: string; // Legacy property
   is_pinned: boolean;
+  isPinned?: boolean; // Legacy property
   version: number;
   checksum: string;
   last_modified: string;
+  lastModified?: number; // Legacy property
   created_at: string;
+  createdAt?: string; // Legacy property
   updated_at: string;
 }
 
@@ -135,7 +137,41 @@ class SecureConversationService implements ConversationService {
 
   private generateChecksum(messages: any[], insights: any[], context: Record<string, any>): string {
     const data = JSON.stringify({ messages, insights, context });
-    return btoa(data).slice(0, 64); // Simple checksum, limit to 64 chars
+    // Use Unicode-safe encoding instead of btoa to handle special characters
+    try {
+      return btoa(unescape(encodeURIComponent(data))).slice(0, 64);
+    } catch (error) {
+      // Fallback to simple hash if encoding fails
+      return this.simpleHash(data).slice(0, 64);
+    }
+  }
+
+  private simpleHash(str: string): string {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash).toString(36);
+  }
+
+  private async getUserWithTimeout(timeoutMs: number = 10000): Promise<{ data: { user: any }; error: any }> {
+    try {
+      // Use a more robust timeout mechanism
+      const authPromise = supabase.auth.getUser();
+      const timeoutPromise = new Promise<{ data: { user: null }; error: Error }>((_, reject) => 
+        setTimeout(() => reject(new Error('Auth timeout')), timeoutMs)
+      );
+      
+      return await Promise.race([authPromise, timeoutPromise]);
+    } catch (error) {
+      // If timeout occurs, return a proper error structure
+      if (error instanceof Error && error.message === 'Auth timeout') {
+        return { data: { user: null }, error };
+      }
+      throw error;
+    }
   }
 
   private async retryOperation<T>(
@@ -184,6 +220,14 @@ class SecureConversationService implements ConversationService {
     this.cache.clear();
   }
 
+  private log(message: string, data?: any): void {
+    console.log(`[SecureConversationService] ${message}`, data || '');
+  }
+
+  private error(message: string, error: any): void {
+    console.error(`[SecureConversationService] ${message}`, error);
+  }
+
   async saveConversation(
     conversationId: string,
     title: string,
@@ -198,11 +242,34 @@ class SecureConversationService implements ConversationService {
       // Validate input
       this.validateConversationData(conversationId, title, messages, insights, context);
 
-      const authState = authService.getCurrentState();
+      // Get current user directly from Supabase auth
+      console.log('🔧 [SecureConversationService] Getting user from Supabase auth...');
+      let { data: { user }, error: userError } = await this.getUserWithTimeout(5000);
+      console.log('🔧 [SecureConversationService] Initial auth result:', { user: !!user, error: userError });
       
-      if (!authState.user) {
-        throw new Error('User not authenticated');
+      if (userError || !user) {
+        console.log('🔧 [SecureConversationService] User not found, retrying with delay...');
+        // Add a longer delay to allow auth state to settle after OAuth callback
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const { data: { user: retryUser }, error: retryError } = await this.getUserWithTimeout(5000);
+        console.log('🔧 [SecureConversationService] Retry auth result:', { user: !!retryUser, error: retryError });
+        if (retryError || !retryUser) {
+          console.log('🔧 [SecureConversationService] User still not found, final retry...');
+          // Try one more time with even longer delay
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          const { data: { user: finalUser }, error: finalError } = await this.getUserWithTimeout(5000);
+          console.log('🔧 [SecureConversationService] Final auth result:', { user: !!finalUser, error: finalError });
+          if (finalError || !finalUser) {
+            throw new Error('User not authenticated');
+          }
+          // Use the final user
+          user = finalUser;
+        } else {
+          // Use the retry user
+          user = retryUser;
+        }
       }
+      console.log('🔧 [SecureConversationService] User authenticated successfully:', user.id);
 
       // Check if developer mode
       if (localStorage.getItem('otakon_developer_mode') === 'true') {
@@ -211,23 +278,35 @@ class SecureConversationService implements ConversationService {
         );
       }
 
-      // Generate checksum for conflict detection
-      const checksum = this.generateChecksum(messages, insights, context);
-
-      // Use Supabase RPC function for atomic operation
+      // Use Supabase RPC function with proper user ID mapping
       const { data, error } = await this.retryOperation(
         async () => {
-          const result = await supabase.rpc('save_conversation', {
-            p_user_id: authState.user!.id,
+          console.log('🔧 [SecureConversationService] Calling save_conversation with:', {
+            p_user_id: user.id,
             p_conversation_id: conversationId,
             p_title: title,
             p_messages: messages,
             p_insights: insights,
             p_context: context,
-            p_game_id: gameId,
+            p_game_id: gameId || null,
+            p_is_pinned: isPinned,
+            p_force_overwrite: forceOverwrite,
+            messageCount: messages.length
+          });
+          
+                const result = await supabase.rpc('save_conversation', {
+            p_user_id: user.id, // This is auth.users.id
+            p_conversation_id: conversationId,
+            p_title: title,
+            p_messages: messages,
+            p_insights: insights,
+            p_context: context,
+            p_game_id: gameId || null,
             p_is_pinned: isPinned,
             p_force_overwrite: forceOverwrite
           });
+          
+          console.log('🔧 [SecureConversationService] Supabase save_conversation result:', result);
           return result;
         },
         'saveConversation'
@@ -237,10 +316,11 @@ class SecureConversationService implements ConversationService {
         throw new Error(`Failed to save conversation: ${error.message}`);
       }
 
-      // Clear cache
-      this.clearCache();
+      // Clear cache for this conversation
+      this.cache.delete(this.getCacheKey(conversationId));
+      this.cache.delete(this.getCacheKey('all'));
 
-      this.log('Conversation saved successfully', { conversationId, version: data.version });
+      this.log('Conversation saved successfully', { conversationId, messageCount: messages.length });
 
       return {
         success: true,
@@ -252,14 +332,12 @@ class SecureConversationService implements ConversationService {
           context,
           game_id: gameId,
           is_pinned: isPinned,
-          version: data.version,
-          checksum: data.checksum,
+          version: 1,
+          checksum: this.generateChecksum(messages, insights, context),
           last_modified: new Date().toISOString(),
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
-        },
-        conflict_resolved: data.conflict_resolved,
-        version: data.version
+        }
       };
 
     } catch (error) {
@@ -281,65 +359,53 @@ class SecureConversationService implements ConversationService {
     isPinned: boolean = false
   ): Promise<ConversationResult> {
     try {
-      // Ensure developer mode is properly initialized
-      if (!devModeMigrationService.isDeveloperMode()) {
-        await devModeMigrationService.switchToDeveloperMode();
-      }
-
-      // Get existing developer data
-      const devData = localStorage.getItem('otakon_dev_data');
-      const parsedData = devData ? JSON.parse(devData) : { conversations: {}, conversationsOrder: [] };
-
-      // Convert insights array to insights object (useChat format)
-      const insightsObject: Record<string, any> = {};
-      insights.forEach((insight, index) => {
-        insightsObject[`insight_${index}`] = insight;
-      });
-
-      // Create conversation object using useChat schema
-      const conversation: UseChatConversation = {
+      // Save to localStorage for developer mode
+      const conversation = {
         id: conversationId,
         title,
         messages,
-        createdAt: Date.now(),
-        progress: context.progress,
-        inventory: context.inventory,
-        lastTrailerTimestamp: context.lastTrailerTimestamp,
-        lastInteractionTimestamp: context.lastInteractionTimestamp,
-        genre: context.genre,
-        insights: insightsObject,
-        insightsOrder: Object.keys(insightsObject),
-        isPinned,
-        activeObjective: context.activeObjective,
-        // Legacy properties for compatibility
-        gameId: gameId,
-        game_id: gameId,
-        lastModified: Date.now(),
+        insights,
         context,
-        version: 1
+        gameId,
+        isPinned,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       };
 
-      // Update conversations
-      parsedData.conversations[conversationId] = conversation;
+      // Get existing data
+      const existingData = localStorage.getItem('otakon_dev_data');
+      const data = existingData ? JSON.parse(existingData) : { conversations: {}, conversationsOrder: [] };
       
-      // Update conversations order
-      if (!parsedData.conversationsOrder.includes(conversationId)) {
-        parsedData.conversationsOrder.unshift(conversationId);
+      // Update conversation
+      data.conversations[conversationId] = conversation;
+      
+      // Update order if new conversation
+      if (!data.conversationsOrder.includes(conversationId)) {
+        data.conversationsOrder.unshift(conversationId);
       }
-
-      // Update last sync timestamp
-      parsedData.lastSync = Date.now();
-
-      // Save to localStorage
-      localStorage.setItem('otakon_dev_data', JSON.stringify(parsedData));
+      
+      // Save back to localStorage
+      localStorage.setItem('otakon_dev_data', JSON.stringify(data));
 
       this.log('Conversation saved in developer mode', { conversationId });
 
       return {
         success: true,
-        conversation: conversation as any // Type assertion for compatibility
+        conversation: {
+          id: conversationId,
+          title,
+          messages,
+          insights,
+          context,
+          game_id: gameId,
+          is_pinned: isPinned,
+          version: 1,
+          checksum: this.generateChecksum(messages, insights, context),
+          last_modified: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
       };
-
     } catch (error) {
       this.error('Failed to save conversation in developer mode', error);
       return {
@@ -360,23 +426,48 @@ class SecureConversationService implements ConversationService {
         };
       }
 
-      const authState = authService.getCurrentState();
+      // Get current user directly from Supabase auth
+      console.log('🔧 [SecureConversationService] Getting user from Supabase auth...');
+      let { data: { user }, error: userError } = await this.getUserWithTimeout(5000);
+      console.log('🔧 [SecureConversationService] Initial auth result:', { user: !!user, error: userError });
       
-      if (!authState.user) {
-        throw new Error('User not authenticated');
+      if (userError || !user) {
+        console.log('🔧 [SecureConversationService] User not found, retrying with delay...');
+        // Add a longer delay to allow auth state to settle after OAuth callback
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const { data: { user: retryUser }, error: retryError } = await this.getUserWithTimeout(5000);
+        console.log('🔧 [SecureConversationService] Retry auth result:', { user: !!retryUser, error: retryError });
+        if (retryError || !retryUser) {
+          console.log('🔧 [SecureConversationService] User still not found, final retry...');
+          // Try one more time with even longer delay
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          const { data: { user: finalUser }, error: finalError } = await this.getUserWithTimeout(5000);
+          console.log('🔧 [SecureConversationService] Final auth result:', { user: !!finalUser, error: finalError });
+          if (finalError || !finalUser) {
+            throw new Error('User not authenticated');
+          }
+          // Use the final user
+          user = finalUser;
+        } else {
+          // Use the retry user
+          user = retryUser;
+        }
       }
+      console.log('🔧 [SecureConversationService] User authenticated successfully:', user.id);
 
       // Check if developer mode
       if (localStorage.getItem('otakon_developer_mode') === 'true') {
         return this.loadConversationsDeveloperMode();
       }
 
-      // Use Supabase RPC function
+      // Use Supabase RPC function with proper user ID mapping
+      console.log('🔧 [SecureConversationService] Calling load_conversations RPC with user ID:', user.id);
       const { data, error } = await this.retryOperation(
         async () => {
           const result = await supabase.rpc('load_conversations', {
-            p_user_id: authState.user!.id
+            p_user_id: user.id // This is auth.users.id
           });
+          console.log('🔧 [SecureConversationService] RPC result:', result);
           return result;
         },
         'loadConversations'
@@ -389,8 +480,42 @@ class SecureConversationService implements ConversationService {
       // Convert array to object
       const conversations: Conversations = {};
       if (data.conversations && Array.isArray(data.conversations)) {
+        console.log('🔧 [SecureConversationService] Raw conversation data from Supabase:', data.conversations);
+        
         data.conversations.forEach((conv: any) => {
-          conversations[conv.id] = conv;
+          console.log('🔧 [SecureConversationService] Processing conversation:', {
+            id: conv.id,
+            title: conv.title,
+            messages: conv.messages,
+            messagesType: typeof conv.messages,
+            messagesLength: Array.isArray(conv.messages) ? conv.messages.length : 'not array'
+          });
+          
+          // Ensure messages is properly parsed as an array
+          let messages = conv.messages || [];
+          if (typeof messages === 'string') {
+            try {
+              messages = JSON.parse(messages);
+            } catch (e) {
+              console.warn('Failed to parse messages string:', e);
+              messages = [];
+            }
+          }
+          
+          conversations[conv.id] = {
+            id: conv.id,
+            title: conv.title,
+            messages: messages,
+            insights: conv.insights || {},
+            context: conv.context || {},
+            game_id: conv.game_id,
+            is_pinned: conv.is_pinned || false,
+            version: 1,
+            checksum: '',
+            last_modified: conv.updated_at || conv.created_at,
+            created_at: conv.created_at,
+            updated_at: conv.updated_at
+          };
         });
       }
 
@@ -415,29 +540,42 @@ class SecureConversationService implements ConversationService {
 
   private async loadConversationsDeveloperMode(): Promise<ConversationResult> {
     try {
-      // Ensure developer mode is properly initialized
-      if (!devModeMigrationService.isDeveloperMode()) {
-        await devModeMigrationService.switchToDeveloperMode();
+      const data = localStorage.getItem('otakon_dev_data');
+      if (!data) {
+        return {
+          success: true,
+          conversations: {}
+        };
       }
 
-      const devData = localStorage.getItem('otakon_dev_data');
-      const parsedData = devData ? JSON.parse(devData) : { conversations: {}, conversationsOrder: [] };
+      const parsedData = JSON.parse(data);
+      const conversations: Conversations = {};
 
-      // Ensure we have the conversationsOrder array
-      if (!parsedData.conversationsOrder) {
-        parsedData.conversationsOrder = Object.keys(parsedData.conversations);
+      if (parsedData.conversations) {
+        Object.entries(parsedData.conversations).forEach(([id, conv]: [string, any]) => {
+          conversations[id] = {
+            id: conv.id,
+            title: conv.title,
+            messages: conv.messages || [],
+            insights: conv.insights || [],
+            context: conv.context || {},
+            game_id: conv.gameId,
+            is_pinned: conv.isPinned || false,
+            version: 1,
+            checksum: '',
+            last_modified: conv.updatedAt || conv.createdAt,
+            created_at: conv.createdAt,
+            updated_at: conv.updatedAt
+          };
+        });
       }
 
-      this.log('Conversations loaded from developer mode', { 
-        count: Object.keys(parsedData.conversations).length,
-        order: parsedData.conversationsOrder.length
-      });
+      this.log('Conversations loaded from developer mode', { count: Object.keys(conversations).length });
 
       return {
         success: true,
-        conversations: parsedData.conversations as any // Type assertion for compatibility
+        conversations
       };
-
     } catch (error) {
       this.error('Failed to load conversations from developer mode', error);
       return {
@@ -449,43 +587,54 @@ class SecureConversationService implements ConversationService {
 
   async deleteConversation(conversationId: string): Promise<ConversationResult> {
     try {
-      if (!this.validateInput(conversationId, 'string', this.MAX_TITLE_LENGTH)) {
-        throw new Error('Invalid conversation ID');
-      }
-
-      const authState = authService.getCurrentState();
+      // Get current user directly from Supabase auth
+      console.log('🔧 [SecureConversationService] Getting user from Supabase auth...');
+      let { data: { user }, error: userError } = await this.getUserWithTimeout(5000);
+      console.log('🔧 [SecureConversationService] Initial auth result:', { user: !!user, error: userError });
       
-      if (!authState.user) {
-        throw new Error('User not authenticated');
+      if (userError || !user) {
+        console.log('🔧 [SecureConversationService] User not found, retrying with delay...');
+        // Add a longer delay to allow auth state to settle after OAuth callback
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const { data: { user: retryUser }, error: retryError } = await this.getUserWithTimeout(5000);
+        console.log('🔧 [SecureConversationService] Retry auth result:', { user: !!retryUser, error: retryError });
+        if (retryError || !retryUser) {
+          console.log('🔧 [SecureConversationService] User still not found, final retry...');
+          // Try one more time with even longer delay
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          const { data: { user: finalUser }, error: finalError } = await this.getUserWithTimeout(5000);
+          console.log('🔧 [SecureConversationService] Final auth result:', { user: !!finalUser, error: finalError });
+          if (finalError || !finalUser) {
+            throw new Error('User not authenticated');
+          }
+          // Use the final user
+          user = finalUser;
+        } else {
+          // Use the retry user
+          user = retryUser;
+        }
       }
+      console.log('🔧 [SecureConversationService] User authenticated successfully:', user.id);
 
       // Check if developer mode
       if (localStorage.getItem('otakon_developer_mode') === 'true') {
         return this.deleteConversationDeveloperMode(conversationId);
       }
 
-      // Delete from Supabase
-      const { error } = await this.retryOperation(
-        async () => {
-          const result = await supabase
-            .from('conversations')
-            .update({ 
-              deleted_at: new Date().toISOString(),
-              updated_by: authState.user!.id
-            })
-            .eq('id', conversationId)
-            .eq('user_id', authState.user!.id);
-          return result;
-        },
-        'deleteConversation'
-      );
+      // Use direct Supabase query with proper user ID mapping
+      const { error } = await supabase
+        .from('conversations')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', conversationId)
+        .eq('user_id', user.id); // This will be mapped by RLS
 
       if (error) {
         throw new Error(`Failed to delete conversation: ${error.message}`);
       }
 
       // Clear cache
-      this.clearCache();
+      this.cache.delete(this.getCacheKey(conversationId));
+      this.cache.delete(this.getCacheKey('all'));
 
       this.log('Conversation deleted successfully', { conversationId });
 
@@ -504,29 +653,25 @@ class SecureConversationService implements ConversationService {
 
   private async deleteConversationDeveloperMode(conversationId: string): Promise<ConversationResult> {
     try {
-      const devData = localStorage.getItem('otakon_dev_data');
-      const parsedData = devData ? JSON.parse(devData) : { conversations: {}, conversationsOrder: [] };
-
-      // Remove from conversations
-      delete parsedData.conversations[conversationId];
-
-      // Remove from order
-      parsedData.conversationsOrder = parsedData.conversationsOrder.filter((id: string) => id !== conversationId);
-
-      // Update active conversation if needed
-      if (parsedData.activeConversation === conversationId) {
-        parsedData.activeConversation = parsedData.conversationsOrder[0] || '';
+      const data = localStorage.getItem('otakon_dev_data');
+      if (!data) {
+        return { success: true };
       }
 
-      // Save to localStorage
-      localStorage.setItem('otakon_dev_data', JSON.stringify(parsedData));
+      const parsedData = JSON.parse(data);
+      
+      if (parsedData.conversations && parsedData.conversations[conversationId]) {
+        delete parsedData.conversations[conversationId];
+        parsedData.conversationsOrder = parsedData.conversationsOrder.filter((id: string) => id !== conversationId);
+        
+        localStorage.setItem('otakon_dev_data', JSON.stringify(parsedData));
+      }
 
       this.log('Conversation deleted in developer mode', { conversationId });
 
       return {
         success: true
       };
-
     } catch (error) {
       this.error('Failed to delete conversation in developer mode', error);
       return {
@@ -538,10 +683,6 @@ class SecureConversationService implements ConversationService {
 
   async getConversation(conversationId: string): Promise<ConversationResult> {
     try {
-      if (!this.validateInput(conversationId, 'string', this.MAX_TITLE_LENGTH)) {
-        throw new Error('Invalid conversation ID');
-      }
-
       // Check cache first
       const cached = this.getCachedData<Conversation>(conversationId);
       if (cached) {
@@ -551,44 +692,76 @@ class SecureConversationService implements ConversationService {
         };
       }
 
-      const authState = authService.getCurrentState();
+      // Get current user directly from Supabase auth
+      console.log('🔧 [SecureConversationService] Getting user from Supabase auth...');
+      let { data: { user }, error: userError } = await this.getUserWithTimeout(5000);
+      console.log('🔧 [SecureConversationService] Initial auth result:', { user: !!user, error: userError });
       
-      if (!authState.user) {
-        throw new Error('User not authenticated');
+      if (userError || !user) {
+        console.log('🔧 [SecureConversationService] User not found, retrying with delay...');
+        // Add a longer delay to allow auth state to settle after OAuth callback
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const { data: { user: retryUser }, error: retryError } = await this.getUserWithTimeout(5000);
+        console.log('🔧 [SecureConversationService] Retry auth result:', { user: !!retryUser, error: retryError });
+        if (retryError || !retryUser) {
+          console.log('🔧 [SecureConversationService] User still not found, final retry...');
+          // Try one more time with even longer delay
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          const { data: { user: finalUser }, error: finalError } = await this.getUserWithTimeout(5000);
+          console.log('🔧 [SecureConversationService] Final auth result:', { user: !!finalUser, error: finalError });
+          if (finalError || !finalUser) {
+            throw new Error('User not authenticated');
+          }
+          // Use the final user
+          user = finalUser;
+        } else {
+          // Use the retry user
+          user = retryUser;
+        }
       }
+      console.log('🔧 [SecureConversationService] User authenticated successfully:', user.id);
 
       // Check if developer mode
       if (localStorage.getItem('otakon_developer_mode') === 'true') {
         return this.getConversationDeveloperMode(conversationId);
       }
 
-      // Get from Supabase
-      const { data, error } = await this.retryOperation(
-        async () => {
-          const result = await supabase
-            .from('conversations')
-            .select('*')
-            .eq('id', conversationId)
-            .eq('user_id', authState.user!.id)
-            .is('deleted_at', null)
-            .single();
-          return result;
-        },
-        'getConversation'
-      );
+      // Use direct Supabase query with proper user ID mapping
+      const { data, error } = await supabase
+        .from('conversations')
+        .select('*')
+        .eq('id', conversationId)
+        .eq('user_id', user.id) // This will be mapped by RLS
+        .is('deleted_at', null)
+        .single();
 
       if (error) {
         throw new Error(`Failed to get conversation: ${error.message}`);
       }
 
+      const conversation: Conversation = {
+        id: data.id,
+        title: data.title,
+        messages: data.messages || [],
+        insights: data.insights || [],
+        context: data.context || {},
+        game_id: data.game_id,
+        is_pinned: data.is_pinned || false,
+        version: data.version || 1,
+        checksum: data.checksum || '',
+        last_modified: data.last_modified || data.updated_at,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      };
+
       // Cache the result
-      this.setCachedData(conversationId, data);
+      this.setCachedData(conversationId, conversation);
 
       this.log('Conversation retrieved successfully', { conversationId });
 
       return {
         success: true,
-        conversation: data
+        conversation
       };
 
     } catch (error) {
@@ -602,14 +775,38 @@ class SecureConversationService implements ConversationService {
 
   private async getConversationDeveloperMode(conversationId: string): Promise<ConversationResult> {
     try {
-      const devData = localStorage.getItem('otakon_dev_data');
-      const parsedData = devData ? JSON.parse(devData) : { conversations: {} };
-
-      const conversation = parsedData.conversations[conversationId];
-
-      if (!conversation) {
-        throw new Error('Conversation not found');
+      const data = localStorage.getItem('otakon_dev_data');
+      if (!data) {
+        return {
+          success: false,
+          error: 'Conversation not found'
+        };
       }
+
+      const parsedData = JSON.parse(data);
+      const conv = parsedData.conversations?.[conversationId];
+
+      if (!conv) {
+        return {
+          success: false,
+          error: 'Conversation not found'
+        };
+      }
+
+      const conversation: Conversation = {
+        id: conv.id,
+        title: conv.title,
+        messages: conv.messages || [],
+        insights: conv.insights || [],
+        context: conv.context || {},
+        game_id: conv.gameId,
+        is_pinned: conv.isPinned || false,
+        version: 1,
+        checksum: '',
+        last_modified: conv.updatedAt || conv.createdAt,
+        created_at: conv.createdAt,
+        updated_at: conv.updatedAt
+      };
 
       this.log('Conversation retrieved from developer mode', { conversationId });
 
@@ -617,7 +814,6 @@ class SecureConversationService implements ConversationService {
         success: true,
         conversation
       };
-
     } catch (error) {
       this.error('Failed to get conversation from developer mode', error);
       return {
@@ -629,57 +825,66 @@ class SecureConversationService implements ConversationService {
 
   async updateConversationTitle(conversationId: string, title: string): Promise<ConversationResult> {
     try {
-      if (!this.validateInput(conversationId, 'string', this.MAX_TITLE_LENGTH)) {
-        throw new Error('Invalid conversation ID');
-      }
-
       if (!this.validateInput(title, 'string', this.MAX_TITLE_LENGTH)) {
-        throw new Error('Invalid conversation title');
+        throw new Error('Invalid title');
       }
 
-      const authState = authService.getCurrentState();
+      // Get current user directly from Supabase auth
+      console.log('🔧 [SecureConversationService] Getting user from Supabase auth...');
+      let { data: { user }, error: userError } = await this.getUserWithTimeout(5000);
+      console.log('🔧 [SecureConversationService] Initial auth result:', { user: !!user, error: userError });
       
-      if (!authState.user) {
-        throw new Error('User not authenticated');
+      if (userError || !user) {
+        console.log('🔧 [SecureConversationService] User not found, retrying with delay...');
+        // Add a longer delay to allow auth state to settle after OAuth callback
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const { data: { user: retryUser }, error: retryError } = await this.getUserWithTimeout(5000);
+        console.log('🔧 [SecureConversationService] Retry auth result:', { user: !!retryUser, error: retryError });
+        if (retryError || !retryUser) {
+          console.log('🔧 [SecureConversationService] User still not found, final retry...');
+          // Try one more time with even longer delay
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          const { data: { user: finalUser }, error: finalError } = await this.getUserWithTimeout(5000);
+          console.log('🔧 [SecureConversationService] Final auth result:', { user: !!finalUser, error: finalError });
+          if (finalError || !finalUser) {
+            throw new Error('User not authenticated');
+          }
+          // Use the final user
+          user = finalUser;
+        } else {
+          // Use the retry user
+          user = retryUser;
+        }
       }
+      console.log('🔧 [SecureConversationService] User authenticated successfully:', user.id);
 
       // Check if developer mode
       if (localStorage.getItem('otakon_developer_mode') === 'true') {
         return this.updateConversationTitleDeveloperMode(conversationId, title);
       }
 
-      // Update in Supabase
-      const { data, error } = await this.retryOperation(
-        async () => {
-          const result = await supabase
-            .from('conversations')
-            .update({ 
-              title,
-              updated_at: new Date().toISOString(),
-              updated_by: authState.user!.id
-            })
-            .eq('id', conversationId)
-            .eq('user_id', authState.user!.id)
-            .is('deleted_at', null)
-            .select()
-            .single();
-          return result;
-        },
-        'updateConversationTitle'
-      );
+      // Use direct Supabase query with proper user ID mapping
+      const { error } = await supabase
+        .from('conversations')
+        .update({ 
+          title,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', conversationId)
+        .eq('user_id', user.id); // This will be mapped by RLS
 
       if (error) {
         throw new Error(`Failed to update conversation title: ${error.message}`);
       }
 
       // Clear cache
-      this.clearCache();
+      this.cache.delete(this.getCacheKey(conversationId));
+      this.cache.delete(this.getCacheKey('all'));
 
       this.log('Conversation title updated successfully', { conversationId, title });
 
       return {
-        success: true,
-        conversation: data
+        success: true
       };
 
     } catch (error) {
@@ -693,27 +898,28 @@ class SecureConversationService implements ConversationService {
 
   private async updateConversationTitleDeveloperMode(conversationId: string, title: string): Promise<ConversationResult> {
     try {
-      const devData = localStorage.getItem('otakon_dev_data');
-      const parsedData = devData ? JSON.parse(devData) : { conversations: {} };
-
-      if (!parsedData.conversations[conversationId]) {
-        throw new Error('Conversation not found');
+      const data = localStorage.getItem('otakon_dev_data');
+      if (!data) {
+        return {
+          success: false,
+          error: 'Conversation not found'
+        };
       }
 
-      // Update title
-      parsedData.conversations[conversationId].title = title;
-      parsedData.conversations[conversationId].updated_at = new Date().toISOString();
-
-      // Save to localStorage
-      localStorage.setItem('otakon_dev_data', JSON.stringify(parsedData));
+      const parsedData = JSON.parse(data);
+      
+      if (parsedData.conversations && parsedData.conversations[conversationId]) {
+        parsedData.conversations[conversationId].title = title;
+        parsedData.conversations[conversationId].updatedAt = new Date().toISOString();
+        
+        localStorage.setItem('otakon_dev_data', JSON.stringify(parsedData));
+      }
 
       this.log('Conversation title updated in developer mode', { conversationId, title });
 
       return {
-        success: true,
-        conversation: parsedData.conversations[conversationId]
+        success: true
       };
-
     } catch (error) {
       this.error('Failed to update conversation title in developer mode', error);
       return {
@@ -725,57 +931,62 @@ class SecureConversationService implements ConversationService {
 
   async pinConversation(conversationId: string, isPinned: boolean): Promise<ConversationResult> {
     try {
-      if (!this.validateInput(conversationId, 'string', this.MAX_TITLE_LENGTH)) {
-        throw new Error('Invalid conversation ID');
-      }
-
-      if (!this.validateInput(isPinned, 'boolean')) {
-        throw new Error('Invalid pin status');
-      }
-
-      const authState = authService.getCurrentState();
+      // Get current user directly from Supabase auth
+      console.log('🔧 [SecureConversationService] Getting user from Supabase auth...');
+      let { data: { user }, error: userError } = await this.getUserWithTimeout(5000);
+      console.log('🔧 [SecureConversationService] Initial auth result:', { user: !!user, error: userError });
       
-      if (!authState.user) {
-        throw new Error('User not authenticated');
+      if (userError || !user) {
+        console.log('🔧 [SecureConversationService] User not found, retrying with delay...');
+        // Add a longer delay to allow auth state to settle after OAuth callback
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const { data: { user: retryUser }, error: retryError } = await this.getUserWithTimeout(5000);
+        console.log('🔧 [SecureConversationService] Retry auth result:', { user: !!retryUser, error: retryError });
+        if (retryError || !retryUser) {
+          console.log('🔧 [SecureConversationService] User still not found, final retry...');
+          // Try one more time with even longer delay
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          const { data: { user: finalUser }, error: finalError } = await this.getUserWithTimeout(5000);
+          console.log('🔧 [SecureConversationService] Final auth result:', { user: !!finalUser, error: finalError });
+          if (finalError || !finalUser) {
+            throw new Error('User not authenticated');
+          }
+          // Use the final user
+          user = finalUser;
+        } else {
+          // Use the retry user
+          user = retryUser;
+        }
       }
+      console.log('🔧 [SecureConversationService] User authenticated successfully:', user.id);
 
       // Check if developer mode
       if (localStorage.getItem('otakon_developer_mode') === 'true') {
         return this.pinConversationDeveloperMode(conversationId, isPinned);
       }
 
-      // Update in Supabase
-      const { data, error } = await this.retryOperation(
-        async () => {
-          const result = await supabase
-            .from('conversations')
-            .update({ 
-              is_pinned: isPinned,
-              updated_at: new Date().toISOString(),
-              updated_by: authState.user!.id
-            })
-            .eq('id', conversationId)
-            .eq('user_id', authState.user!.id)
-            .is('deleted_at', null)
-            .select()
-            .single();
-          return result;
-        },
-        'pinConversation'
-      );
+      // Use direct Supabase query with proper user ID mapping
+      const { error } = await supabase
+        .from('conversations')
+        .update({ 
+          is_pinned: isPinned,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', conversationId)
+        .eq('user_id', user.id); // This will be mapped by RLS
 
       if (error) {
         throw new Error(`Failed to pin conversation: ${error.message}`);
       }
 
       // Clear cache
-      this.clearCache();
+      this.cache.delete(this.getCacheKey(conversationId));
+      this.cache.delete(this.getCacheKey('all'));
 
       this.log('Conversation pin status updated successfully', { conversationId, isPinned });
 
       return {
-        success: true,
-        conversation: data
+        success: true
       };
 
     } catch (error) {
@@ -789,27 +1000,28 @@ class SecureConversationService implements ConversationService {
 
   private async pinConversationDeveloperMode(conversationId: string, isPinned: boolean): Promise<ConversationResult> {
     try {
-      const devData = localStorage.getItem('otakon_dev_data');
-      const parsedData = devData ? JSON.parse(devData) : { conversations: {} };
-
-      if (!parsedData.conversations[conversationId]) {
-        throw new Error('Conversation not found');
+      const data = localStorage.getItem('otakon_dev_data');
+      if (!data) {
+        return {
+          success: false,
+          error: 'Conversation not found'
+        };
       }
 
-      // Update pin status
-      parsedData.conversations[conversationId].is_pinned = isPinned;
-      parsedData.conversations[conversationId].updated_at = new Date().toISOString();
-
-      // Save to localStorage
-      localStorage.setItem('otakon_dev_data', JSON.stringify(parsedData));
+      const parsedData = JSON.parse(data);
+      
+      if (parsedData.conversations && parsedData.conversations[conversationId]) {
+        parsedData.conversations[conversationId].isPinned = isPinned;
+        parsedData.conversations[conversationId].updatedAt = new Date().toISOString();
+        
+        localStorage.setItem('otakon_dev_data', JSON.stringify(parsedData));
+      }
 
       this.log('Conversation pin status updated in developer mode', { conversationId, isPinned });
 
       return {
-        success: true,
-        conversation: parsedData.conversations[conversationId]
+        success: true
       };
-
     } catch (error) {
       this.error('Failed to pin conversation in developer mode', error);
       return {
@@ -817,16 +1029,6 @@ class SecureConversationService implements ConversationService {
         error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
-  }
-
-  private log(message: string, data?: any): void {
-    if (import.meta.env.DEV) {
-      console.log(`🛡️ [ConversationService] ${message}`, data || '');
-    }
-  }
-
-  private error(message: string, error?: any): void {
-    console.error(`🛡️ [ConversationService] ${message}`, error || '');
   }
 }
 

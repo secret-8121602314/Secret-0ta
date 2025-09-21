@@ -153,6 +153,8 @@ class UserPreferencesService {
             auth_user_id: user.id,
             email: user.email || '',
             preferences: newPreferences
+          }, {
+            onConflict: 'auth_user_id'
           });
 
         if (error) throw error;

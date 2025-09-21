@@ -1,14 +1,17 @@
 
 
-import React from 'react';
+import React, { useState } from 'react';
 import Logo from './Logo';
 import PWAInstallBanner from './PWAInstallBanner';
+import { authService, supabase } from '../services/supabase';
 
 interface InitialSplashScreenProps {
   onComplete: () => void;
 }
 
 const InitialSplashScreen: React.FC<InitialSplashScreenProps> = ({ onComplete }) => {
+  const [isProcessing, setIsProcessing] = useState(false);
+  
   const handleDownloadPCClient = () => {
     // Download PC Client from GitHub releases
     const downloadUrl = 'https://github.com/readmet3xt/readmet3xt.github.io/releases/tag/Otagon-connector';
@@ -40,16 +43,55 @@ const InitialSplashScreen: React.FC<InitialSplashScreenProps> = ({ onComplete })
           className="flex flex-col items-center justify-center gap-4 w-full max-w-lg mt-12"
         >
           <button
-            onClick={() => {
+            onClick={async () => {
+              // Prevent multiple clicks
+              if (isProcessing) {
+                console.log('🎯 [InitialSplashScreen] Already processing, ignoring click');
+                return;
+              }
+              
+              setIsProcessing(true);
+              
               try {
+                console.log('🎯 [InitialSplashScreen] Start the Adventure clicked');
+                
                 // Mark that splash screens have been seen to advance flow in dev mode
                 localStorage.setItem('otakon_has_seen_splash_screens', 'true');
-              } catch {}
-              onComplete();
+                
+                // Also update Supabase to mark splash screens as seen
+                const currentUserId = authService.getCurrentUserId();
+                if (currentUserId) {
+                  console.log('🎯 [InitialSplashScreen] Updating Supabase app_state to mark splash screens as seen');
+                  try {
+                    const { error } = await supabase.rpc('update_user_app_state', {
+                      p_user_id: currentUserId,
+                      p_field: 'hasSeenSplashScreens',
+                      p_value: 'true'
+                    });
+                    if (error) {
+                      console.warn('🎯 [InitialSplashScreen] Failed to update Supabase:', error);
+                    } else {
+                      console.log('🎯 [InitialSplashScreen] Successfully updated Supabase');
+                    }
+                  } catch (error) {
+                    console.warn('🎯 [InitialSplashScreen] Error updating Supabase:', error);
+                  }
+                }
+                
+                // Call the completion handler
+                onComplete();
+                
+              } catch (error) {
+                console.error('🎯 [InitialSplashScreen] Error in button click:', error);
+              } finally {
+                // Reset processing state after a delay to prevent rapid clicks
+                setTimeout(() => setIsProcessing(false), 1000);
+              }
             }}
-            className="w-full bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] hover:from-[#D42A2A] hover:to-[#C87A1A] text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#E53A3A]/25 text-base flex items-center justify-center"
+            disabled={isProcessing}
+            className={`w-full bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] hover:from-[#D42A2A] hover:to-[#C87A1A] text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#E53A3A]/25 text-base flex items-center justify-center ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            Start the Adventure
+            {isProcessing ? 'Starting...' : 'Start the Adventure'}
           </button>
           
           <button

@@ -201,7 +201,7 @@ class FixedAuthService implements AuthService {
 
   private async clearInvalidSession(): Promise<void> {
     try {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: 'local' });
       this.updateAuthState({ 
         user: null, 
         session: null, 
@@ -586,7 +586,7 @@ class FixedAuthService implements AuthService {
       }
 
       // Sign out from Supabase
-      const { error } = await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
 
       if (error) {
         this.error('Sign out error', error);

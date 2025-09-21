@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import type { DiaryFavorite } from '../services/types';
-// Dynamic import to avoid circular dependency
-// import { otakuDiaryService } from '../services/otakuDiaryService';
+import { otakuDiaryService } from '../services/otakuDiaryService';
 
 interface FavoritesTabProps {
   gameId: string;
@@ -17,7 +16,6 @@ const FavoritesTab: React.FC<FavoritesTabProps> = ({ gameId, favorites, onFavori
       setDeletingId(favoriteId);
       try {
         // Using static import instead of dynamic import for Firebase hosting compatibility
-        const { otakuDiaryService } = await import('../services/otakuDiaryService');
         await otakuDiaryService.removeFavorite(gameId, favoriteId);
         onFavoriteUpdate();
       } catch (error) {

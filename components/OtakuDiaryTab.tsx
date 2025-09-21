@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import type { DiaryTask, DiaryFavorite } from '../services/types';
-// Dynamic import to avoid circular dependency
-// import { unifiedUsageService } from '../services/unifiedUsageService';
+import { unifiedUsageService } from '../services/unifiedUsageService';
 import ToDoListTab from './ToDoListTab';
 import FavoritesTab from './FavoritesTab';
-// Dynamic import to avoid circular dependency
-// import { otakuDiaryService } from '../services/otakuDiaryService';
+import { otakuDiaryService } from '../services/otakuDiaryService';
 
 interface OtakuDiaryTabProps {
   gameId: string;
@@ -29,7 +27,6 @@ const OtakuDiaryTab: React.FC<OtakuDiaryTabProps> = ({ gameId, gameTitle }) => {
 
   const loadUsageData = async () => {
     try {
-      const { unifiedUsageService } = await import('../services/unifiedUsageService');
       const usageData = await unifiedUsageService.getUsage();
       setUsage(usageData);
     } catch (error) {
@@ -41,8 +38,7 @@ const OtakuDiaryTab: React.FC<OtakuDiaryTabProps> = ({ gameId, gameTitle }) => {
   const loadDiaryData = async () => {
     setIsLoading(true);
     try {
-      // Using dynamic import to avoid circular dependency
-      const { otakuDiaryService } = await import('../services/otakuDiaryService');
+      // Using static import instead of dynamic import for Firebase hosting compatibility
       const [tasksData, favoritesData] = await Promise.all([
         otakuDiaryService.getTasks(gameId),
         otakuDiaryService.getFavorites(gameId)

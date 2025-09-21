@@ -120,21 +120,39 @@ export class TierService {
         return false;
       }
 
-      // Check if user has already used their trial
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('has_used_trial, tier')
-        .eq('auth_user_id', userId)
-        .single();
-
-      if (existingUser?.has_used_trial) {
-        console.log('User has already used their free trial');
+      // Get the current auth user ID from Supabase
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) {
+        console.warn('No authenticated user found');
         return false;
       }
 
-      if (existingUser?.tier !== 'free') {
-        console.log('User is not on free tier, cannot start trial');
-        return false;
+      // Check if user has already used their trial
+      try {
+
+        const { data: existingUser, error: checkError } = await supabase
+          .from('users')
+          .select('has_used_trial, tier')
+          .eq('auth_user_id', authUser.id) // Use the auth user ID, not the internal user ID
+          .single();
+
+        if (checkError) {
+          console.warn('Failed to check existing trial status:', checkError);
+          return false; // Default to failure if query fails
+        }
+
+        if (existingUser?.has_used_trial) {
+          console.log('User has already used their free trial');
+          return false;
+        }
+
+        if (existingUser?.tier !== 'free') {
+          console.log('User is not on free tier, cannot start trial');
+          return false;
+        }
+      } catch (queryError) {
+        console.warn('Trial status check failed:', queryError);
+        return false; // Default to failure if query fails
       }
 
       const now = new Date();
@@ -150,7 +168,7 @@ export class TierService {
           has_used_trial: true,
           updated_at: now.toISOString()
         })
-        .eq('auth_user_id', userId);
+        .eq('auth_user_id', authUser.id); // Use the auth user ID
 
       if (error) {
         console.error('Error starting free trial:', error);
@@ -183,13 +201,30 @@ export class TierService {
         return false;
       }
 
-      const { data: user } = await supabase
-        .from('users')
-        .select('has_used_trial, tier')
-        .eq('auth_user_id', userId)
-        .single();
+      try {
+        // Get the current auth user ID from Supabase
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (!authUser) {
+          console.warn('No authenticated user found');
+          return false;
+        }
 
-      return user?.tier === 'free' && !user?.has_used_trial;
+        const { data: user, error } = await supabase
+          .from('users')
+          .select('has_used_trial, tier')
+          .eq('auth_user_id', authUser.id) // Use the auth user ID, not the internal user ID
+          .single();
+
+        if (error) {
+          console.warn('Failed to check trial eligibility:', error);
+          return false; // Default to not eligible if query fails
+        }
+
+        return user?.tier === 'free' && !user?.has_used_trial;
+      } catch (queryError) {
+        console.warn('Trial eligibility query failed:', queryError);
+        return false; // Default to not eligible if query fails
+      }
     } catch (error) {
       console.error('Error checking trial eligibility:', error);
       return false;

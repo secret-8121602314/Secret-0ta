@@ -133,12 +133,14 @@ export const useModals = ({
   }, [setActiveModal]);
 
   const showConfirmation = useCallback((title: string, message: string, onConfirm: () => void) => {
+    console.log('🔐 [Confirmation] Showing confirmation modal:', { title, message });
     setConfirmationModal({ title, message, onConfirm });
-  }, [setConfirmationModal]);
+  }, []);
 
   const hideConfirmation = useCallback(() => {
+    console.log('🔐 [Confirmation] Hiding confirmation modal');
     setConfirmationModal(null);
-  }, [setConfirmationModal]);
+  }, []);
 
   return {
     confirmationModal,

@@ -199,7 +199,7 @@ export class GameKnowledgeService {
       const { data, error } = await supabase
         .from('games')
         .select('*')
-        .or(`id.eq.${identifier},title.ilike.%${identifier}%`)
+        .or(`game_id.eq.${identifier},title.ilike.%${identifier}%`)
         .single();
 
       if (error && error.code !== 'PGRST116') throw error;
@@ -1221,7 +1221,7 @@ export class GameKnowledgeService {
       let gameId: string | undefined;
       if (gameTitle) {
         const game = await this.getGame(gameTitle);
-        gameId = game?.id;
+        gameId = game?.game_id; // Use game_id (string) instead of id (UUID)
       }
 
       // Create or update knowledge pattern

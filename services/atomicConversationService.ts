@@ -137,7 +137,23 @@ class SecureConversationService implements ConversationService {
 
   private generateChecksum(messages: any[], insights: any[], context: Record<string, any>): string {
     const data = JSON.stringify({ messages, insights, context });
-    return btoa(data).slice(0, 64); // Simple checksum, limit to 64 chars
+    // Use Unicode-safe encoding instead of btoa to handle special characters
+    try {
+      return btoa(unescape(encodeURIComponent(data))).slice(0, 64);
+    } catch (error) {
+      // Fallback to simple hash if encoding fails
+      return this.simpleHash(data).slice(0, 64);
+    }
+  }
+
+  private simpleHash(str: string): string {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash).toString(36);
   }
 
   private async retryOperation<T>(
@@ -445,8 +461,7 @@ class SecureConversationService implements ConversationService {
           const result = await supabase
             .from('conversations')
             .update({ 
-              deleted_at: new Date().toISOString(),
-              updated_by: authState.user!.id
+              deleted_at: new Date().toISOString()
             })
             .eq('id', conversationId)
             .eq('user_id', authState.user!.id);
@@ -630,8 +645,7 @@ class SecureConversationService implements ConversationService {
             .from('conversations')
             .update({ 
               title,
-              updated_at: new Date().toISOString(),
-              updated_by: authState.user!.id
+              updated_at: new Date().toISOString()
             })
             .eq('id', conversationId)
             .eq('user_id', authState.user!.id)
@@ -726,8 +740,7 @@ class SecureConversationService implements ConversationService {
             .from('conversations')
             .update({ 
               is_pinned: isPinned,
-              updated_at: new Date().toISOString(),
-              updated_by: authState.user!.id
+              updated_at: new Date().toISOString()
             })
             .eq('id', conversationId)
             .eq('user_id', authState.user!.id)

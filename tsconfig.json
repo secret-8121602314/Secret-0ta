@@ -19,14 +19,14 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "noImplicitAny": false,
+    "noImplicitAny": true,  // ✅ TYPESCRIPT FIX: Enable strict type checking
     "strictNullChecks": true,
     "strictFunctionTypes": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": false,
+    "noUncheckedIndexedAccess": true,  // ✅ TYPESCRIPT FIX: Enable strict array access
     "noImplicitOverride": true,
-    "exactOptionalPropertyTypes": false,
+    "exactOptionalPropertyTypes": true,  // ✅ TYPESCRIPT FIX: Enable strict optional properties
     "paths": {
       "@/*": [
         "./*"

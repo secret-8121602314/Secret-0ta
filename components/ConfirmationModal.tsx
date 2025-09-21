@@ -9,6 +9,8 @@ interface ConfirmationModalProps {
 }
 
 const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ title, message, onConfirm, onCancel }) => {
+    console.log('🔐 [ConfirmationModal] Rendering confirmation modal:', { title, message });
+    
     return (
         <div className="fixed inset-0 bg-gradient-to-br from-black/80 to-[#0A0A0A]/80 backdrop-blur-xl flex items-center justify-center z-50 animate-fade-in" onClick={onCancel}>
             <div
@@ -20,7 +22,10 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ title, message, o
 
                 <div className="flex flex-col sm:flex-row-reverse gap-3 sm:gap-4 justify-start">
                     <button
-                        onClick={onConfirm}
+                        onClick={() => {
+                            console.log('🔐 [ConfirmationModal] Confirm button clicked');
+                            onConfirm();
+                        }}
                         className="w-full sm:w-auto bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold py-3 sm:py-4 px-6 sm:px-8 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-red-600/25 text-sm sm:text-base"
                     >
                         Confirm

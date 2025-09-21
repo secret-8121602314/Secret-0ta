@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react';
-// Dynamic import to avoid circular dependency
-// import { taskDetectionService } from '../services/taskDetectionService';
-// Dynamic import to avoid circular dependency
-// import { unifiedUsageService } from '../services/unifiedUsageService';
-// Dynamic import to avoid circular dependency
-// import { otakuDiaryService } from '../services/otakuDiaryService';
+import { taskDetectionService } from '../services/taskDetectionService';
+import { unifiedUsageService } from '../services/unifiedUsageService';
+import { otakuDiaryService } from '../services/otakuDiaryService';
 
 interface ActionButtonsProps {
   content: string;
@@ -33,7 +30,6 @@ const ActionButtons: React.FC<ActionButtonsProps> = React.memo(({
 
   useEffect(() => {
     const loadUsage = async () => {
-      const { unifiedUsageService } = await import('../services/unifiedUsageService');
       setUsage(unifiedUsageService.getUsage());
     };
     loadUsage();
@@ -46,7 +42,6 @@ const ActionButtons: React.FC<ActionButtonsProps> = React.memo(({
         // Using static import instead of dynamic import for Firebase hosting compatibility
         const type = messageId ? 'message' : 'insight';
         const sourceId = messageId || insightId || '';
-        const { otakuDiaryService } = await import('../services/otakuDiaryService');
         const favorited = await otakuDiaryService.isFavorited(gameId, sourceId, type);
         setIsFavorited(favorited);
       }
@@ -64,7 +59,6 @@ const ActionButtons: React.FC<ActionButtonsProps> = React.memo(({
       
       if (isFavorited) {
         // Remove from favorites
-        const { otakuDiaryService } = await import('../services/otakuDiaryService');
         const favorites = await otakuDiaryService.getFavorites(gameId);
         const favorite = favorites.find(fav => 
           (messageId && fav.sourceMessageId === messageId) ||
@@ -78,7 +72,6 @@ const ActionButtons: React.FC<ActionButtonsProps> = React.memo(({
       } else {
         // Add to favorites
         const type = messageId ? 'ai_response' : 'insight';
-        const { otakuDiaryService } = await import('../services/otakuDiaryService');
         await otakuDiaryService.addFavorite({
           content: content.substring(0, 200) + (content.length > 200 ? '...' : ''),
           type,
@@ -104,13 +97,11 @@ const ActionButtons: React.FC<ActionButtonsProps> = React.memo(({
       // Using static import instead of dynamic import for Firebase hosting compatibility
       
       // Detect tasks from content
-      const { taskDetectionService } = await import('../services/taskDetectionService');
       const detectedTasks = taskDetectionService.detectTasksFromText(content);
       
       if (detectedTasks.length > 0) {
         // Add each detected task directly to user created tasks
         for (const detectedTask of detectedTasks) {
-          const { otakuDiaryService } = await import('../services/otakuDiaryService');
           await otakuDiaryService.createTask({
             title: detectedTask.title,
             description: detectedTask.description,
@@ -128,7 +119,6 @@ const ActionButtons: React.FC<ActionButtonsProps> = React.memo(({
         console.log(`Added ${detectedTasks.length} tasks to your diary`);
       } else {
         // If no tasks detected, create a custom task from the content
-        const { otakuDiaryService } = await import('../services/otakuDiaryService');
         await otakuDiaryService.createTask({
           title: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
           description: `Custom task from ${messageId ? 'AI response' : 'insight'}`,

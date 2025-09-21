@@ -1,7 +1,6 @@
 
 import React from 'react';
-// Dynamic import to avoid circular dependency
-// import { pwaNavigationService } from '../services/pwaNavigationService';
+import { pwaNavigationService } from '../services/pwaNavigationService';
 
 export const HandsFreeIcon: React.FC<{ isActive: boolean; className?: string }> = ({ isActive, className }) => (
     <svg 
@@ -29,7 +28,6 @@ interface HandsFreeToggleProps {
 const HandsFreeToggle: React.FC<HandsFreeToggleProps> = ({ isHandsFree, onToggle }) => {
   const handleToggle = async () => {
     // Update PWA navigation service with hands-free preference
-    const { pwaNavigationService } = await import('../services/pwaNavigationService');
     pwaNavigationService.setHandsFreePreference(!isHandsFree);
     
     // Call the original toggle function

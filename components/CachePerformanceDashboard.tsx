@@ -18,14 +18,14 @@ interface CachePerformanceMetrics {
 
 export default function CachePerformanceDashboard({ isOpen, onClose }: CachePerformanceDashboardProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'strategies' | 'performance' | 'management'>('overview');
-  const [metrics, setMetrics] = useState<CachePerformanceMetrics>({
+  const [metrics, setMetrics] = useState<CachePerformanceMetrics>(() => ({
     hitRate: 0,
     missRate: 0,
     averageResponseTime: 0,
     memoryUsage: 0,
     storageUsage: 0,
-    lastUpdated: new Date()
-  });
+    lastUpdated: new Date() // ✅ FIX: Initialize once, don't create new Date() on every render
+  }));
   const [cacheInfo, setCacheInfo] = useState({
     memorySize: 0,
     storageSize: 0,

@@ -15,7 +15,7 @@ interface UseAuthFlowProps {
   setIsHandsFreeMode: (mode: boolean) => void;
   setIsConnectionModalOpen: (open: boolean) => void;
   setShowProfileSetup: (show: boolean) => void;
-  setConfirmationModal: (modal: any) => void;
+  showConfirmation: (title: string, message: string, onConfirm: () => void) => void;
   send?: any;
   disconnect?: () => void;
   resetConversations?: () => void;
@@ -31,7 +31,7 @@ export const useAuthFlow = ({
   setIsHandsFreeMode,
   setIsConnectionModalOpen,
   setShowProfileSetup,
-  setConfirmationModal,
+  showConfirmation,
   send,
   disconnect,
   resetConversations,
@@ -92,43 +92,64 @@ export const useAuthFlow = ({
   const handleLogoutOnly = useCallback(async () => {
     const isDeveloperMode = canAccessDeveloperFeatures(authState?.user?.email);
     
-    setConfirmationModal({
-      title: isDeveloperMode ? 'Sign Out of Developer Mode?' : 'Sign Out?',
-      message: isDeveloperMode 
+    console.log('🔐 [Logout] Starting logout process...', { isDeveloperMode, userEmail: authState?.user?.email });
+    
+    showConfirmation(
+      isDeveloperMode ? 'Sign Out of Developer Mode?' : 'Sign Out?',
+      isDeveloperMode 
         ? 'Are you sure you want to sign out of developer mode? Your data will be preserved.'
         : 'Are you sure you want to sign out? Your data will be preserved.',
-      onConfirm: async () => {
+      async () => {
         try {
+          console.log('🔐 [Logout] Confirmation received, proceeding with logout...');
+          
           // Sign out from Supabase
-          await authService.signOut();
+          console.log('🔐 [Logout] Calling authService.signOut()...');
+          const signOutResult = await authService.signOut();
+          console.log('🔐 [Logout] Sign out result:', signOutResult);
+          
+          if (!signOutResult.success) {
+            console.error('🔐 [Logout] Supabase sign out failed:', signOutResult.error);
+            throw new Error(signOutResult.error || 'Sign out failed');
+          }
+          
+          // Clear onboarding flags to ensure proper logout flow
+          localStorage.removeItem('otakonOnboardingComplete');
+          localStorage.removeItem('otakon_profile_setup_completed');
           
           // Reset app state and return to login screen
+          console.log('🔐 [Logout] Resetting app state...');
           setOnboardingStatus('login');
           setIsHandsFreeMode(false);
           setIsConnectionModalOpen(false);
           setView('app'); // This will show login screen since onboardingStatus is 'login'
           
-          console.log('User logged out successfully (data preserved)');
+          console.log('✅ [Logout] User logged out successfully (data preserved)');
         } catch (error) {
-          console.error('Logout error:', error);
+          console.error('🔐 [Logout] Logout error:', error);
           // Even if Supabase logout fails, clear local data
+          console.log('🔐 [Logout] Falling back to full reset...');
           await executeFullReset();
         }
-      },
-    });
-  }, [setConfirmationModal, executeFullReset]);
+      }
+    );
+  }, [showConfirmation, executeFullReset, authState?.user?.email]);
 
   // Function to logout and reset (clear all data) - for context menu
   const handleLogout = useCallback(async () => {
     const isDeveloperMode = canAccessDeveloperFeatures(authState?.user?.email);
     
-    setConfirmationModal({
-      title: isDeveloperMode ? 'Sign Out & Reset Developer Mode?' : 'Sign Out & Reset?',
-      message: isDeveloperMode 
+    console.log('🔐 [Logout] Starting logout and reset process...', { isDeveloperMode, userEmail: authState?.user?.email });
+    
+    showConfirmation(
+      isDeveloperMode ? 'Sign Out & Reset Developer Mode?' : 'Sign Out & Reset?',
+      isDeveloperMode 
         ? 'Are you sure you want to sign out and reset developer mode? This will permanently delete all data and show the first run experience on next login.'
         : 'Are you sure you want to sign out and reset? This will permanently delete all data.',
-      onConfirm: async () => {
+      async () => {
         try {
+          console.log('🔐 [Logout] Confirmation received, proceeding with logout and reset...');
+          
           // First, clear local data and reset services while still authenticated
           if (send) {
             send({ type: 'clear_history' });
@@ -175,32 +196,41 @@ export const useAuthFlow = ({
           localStorage.removeItem('otakon_first_run_completed');
           
           // Now sign out from Supabase (after all authenticated operations are done)
-          await authService.signOut();
+          console.log('🔐 [Logout] Calling authService.signOut()...');
+          const signOutResult = await authService.signOut();
+          console.log('🔐 [Logout] Sign out result:', signOutResult);
+          
+          if (!signOutResult.success) {
+            console.error('🔐 [Logout] Supabase sign out failed:', signOutResult.error);
+            throw new Error(signOutResult.error || 'Sign out failed');
+          }
           
           // Reset app state and show first run experience
+          console.log('🔐 [Logout] Resetting app state for first run experience...');
           setOnboardingStatus('initial'); // Start with first run experience
           setIsHandsFreeMode(false);
           setIsConnectionModalOpen(false);
           setView('app'); // This will show onboarding flow since onboardingStatus is 'initial'
           
-          console.log('User logged out and reset successfully');
+          console.log('✅ [Logout] User logged out and reset successfully');
         } catch (error) {
-          console.error('Logout and reset error:', error);
+          console.error('🔐 [Logout] Logout and reset error:', error);
           // Even if Supabase logout fails, clear local data
+          console.log('🔐 [Logout] Falling back to executeFullReset...');
           await executeFullReset();
         }
-      },
-    });
-  }, [setConfirmationModal, send, disconnect, resetConversations, executeFullReset]);
+      }
+    );
+  }, [showConfirmation, send, disconnect, resetConversations, executeFullReset]);
 
 
   const handleResetApp = useCallback(() => {
-    setConfirmationModal({
-      title: 'Reset Application?',
-      message: 'This will permanently delete all conversation history and settings, and log you out. This action cannot be undone.',
-      onConfirm: executeFullReset,
-    });
-  }, [setConfirmationModal, executeFullReset]);
+    showConfirmation(
+      'Reset Application?',
+      'This will permanently delete all conversation history and settings, and log you out. This action cannot be undone.',
+      executeFullReset
+    );
+  }, [showConfirmation, executeFullReset]);
 
   const handleProfileSetupComplete = useCallback(async (profile?: any) => {
     try {
@@ -220,11 +250,18 @@ export const useAuthFlow = ({
       await secureAppStateService.markProfileSetupComplete();
       console.log('Profile setup marked as completed in Supabase');
       
-      // Mark profile setup as completed in localStorage
+      // REMOVED: localStorage fallback for authenticated users
+      // For authenticated users, we rely on Supabase data persistence
+      // localStorage is only used for developer mode
       const isDeveloperMode = authState.user?.email === 'developer@otakon.app' || localStorage.getItem('otakon_developer_mode') === 'true';
-      const profileSetupKey = isDeveloperMode ? 'otakon_dev_profile_setup_completed' : 'otakon_profile_setup_completed';
-      localStorage.setItem(profileSetupKey, 'true');
-      console.log('Profile setup marked as completed in localStorage');
+      if (isDeveloperMode) {
+        // Only use localStorage for developer mode
+        localStorage.setItem('otakon_dev_profile_setup_completed', 'true');
+        localStorage.setItem('otakon_dev_onboarding_complete', 'true');
+        console.log('Developer mode: Profile setup marked in localStorage');
+      }
+      
+      console.log('Profile setup marked as completed (Supabase for authenticated users)');
       
       // Mark first run as completed
       await playerProfileService.markFirstRunCompleted();
@@ -271,7 +308,15 @@ export const useAuthFlow = ({
       await playerProfileService.updateWelcomeMessageShown('profile_setup');
       console.log('Welcome message shown updated');
       
-      // Welcome message is now added before profile setup modal shows, not here
+      // REMOVED: localStorage fallback for authenticated users
+      // For authenticated users, we rely on Supabase data persistence
+      // localStorage is only used for developer mode
+      const isDeveloperMode = authState.user?.email === 'developer@otakon.app' || localStorage.getItem('otakon_developer_mode') === 'true';
+      if (isDeveloperMode) {
+        // Only use localStorage for developer mode
+        localStorage.setItem('otakon_dev_onboarding_complete', 'true');
+        console.log('Developer mode: Onboarding marked in localStorage');
+      }
       
       // Update onboarding status
       setOnboardingStatus('complete');

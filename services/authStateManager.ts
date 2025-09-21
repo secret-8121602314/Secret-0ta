@@ -473,7 +473,7 @@ class AuthStateManager {
      */
     async signOut(): Promise<void> {
         try {
-            await supabase.auth.signOut();
+            await supabase.auth.signOut({ scope: 'local' });
         } catch (error) {
             console.error('Sign out failed:', error);
             throw error;

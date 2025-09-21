@@ -1,20 +1,6 @@
 import { useCallback } from 'react';
 import { Usage } from '../services/types';
-// Dynamic import to avoid circular dependency
-let unifiedUsageService: any;
-
-// Initialize service dynamically
-const initializeService = async () => {
-  try {
-    const module = await import('../services/unifiedUsageService');
-    unifiedUsageService = module.unifiedUsageService;
-  } catch (error) {
-    console.warn('Failed to initialize unifiedUsageService:', error);
-  }
-};
-
-// Initialize service on module load
-initializeService();
+import { unifiedUsageService } from '../services/unifiedUsageService';
 
 interface UseUsageTrackingProps {
   usage: Usage;

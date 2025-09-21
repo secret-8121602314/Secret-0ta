@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { UserTier } from '../services/types';
-// Dynamic import to avoid circular dependency
-// import { unifiedUsageService } from '../services/unifiedUsageService';
+import { unifiedUsageService } from '../services/unifiedUsageService';
 
 interface DevTierSwitcherProps {
   currentTier: UserTier;
@@ -29,7 +28,6 @@ const DevTierSwitcher: React.FC<DevTierSwitcherProps> = ({ currentTier, onSwitch
   useEffect(() => {
     const checkTrialState = async () => {
       try {
-        const { unifiedUsageService } = await import('../services/unifiedUsageService');
         const isActive = unifiedUsageService.isTrialActive();
         setTrialActive(isActive);
       } catch (error) {
@@ -61,15 +59,12 @@ const DevTierSwitcher: React.FC<DevTierSwitcherProps> = ({ currentTier, onSwitch
       // Then attempt to update the backend
       if (nextTier === 'free') {
         console.log('🔄 Calling switchToFree...');
-        const { unifiedUsageService } = await import('../services/unifiedUsageService');
         await unifiedUsageService.switchToFree();
       } else if (nextTier === 'pro') {
         console.log('🔄 Calling switchToPro...');
-        const { unifiedUsageService } = await import('../services/unifiedUsageService');
         await unifiedUsageService.switchToPro();
       } else if (nextTier === 'vanguard_pro') {
         console.log('🔄 Calling switchToVanguard...');
-        const { unifiedUsageService } = await import('../services/unifiedUsageService');
         await unifiedUsageService.switchToVanguard();
       }
       
@@ -117,7 +112,6 @@ const DevTierSwitcher: React.FC<DevTierSwitcherProps> = ({ currentTier, onSwitch
     
     try {
       console.log('🔄 Starting free trial in dev mode...');
-      const { unifiedUsageService } = await import('../services/unifiedUsageService');
       await unifiedUsageService.startFreeTrial();
       
       console.log('✅ Trial started successfully');

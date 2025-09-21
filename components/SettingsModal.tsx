@@ -12,6 +12,7 @@ import HelpGuideTab from './HelpGuideTab';
 import UserPreferencesTab from './UserPreferencesTab';
 import { canAccessDeveloperFeatures } from '../config/developer';
 import { fixedErrorHandlingService } from '../services/fixedErrorHandlingService';
+import { apiCostService } from '../services/apiCostService';
 
 // Lazy load PerformanceDashboard to avoid duplication
 const LazyPerformanceDashboard = lazy(() => 
@@ -53,8 +54,7 @@ const AdminTabContent: React.FC<{ onClearFirstRunCache?: () => void }> = ({ onCl
     const loadCostData = async () => {
         setIsLoading(true);
         try {
-            const { apiCostService } = await import('../services/apiCostService');
-        const [summary, recs] = await Promise.all([
+            const [summary, recs] = await Promise.all([
                 apiCostService.getCostSummary(),
                 apiCostService.getCostOptimizationRecommendations()
             ]);
@@ -72,8 +72,7 @@ const AdminTabContent: React.FC<{ onClearFirstRunCache?: () => void }> = ({ onCl
 
     const handleExportData = async () => {
         try {
-            const { apiCostService } = await import('../services/apiCostService');
-        const csvData = await apiCostService.exportCostData();
+            const csvData = await apiCostService.exportCostData();
             
             // Create download link
             const blob = new Blob([csvData], { type: 'text/csv' });
@@ -93,7 +92,6 @@ const AdminTabContent: React.FC<{ onClearFirstRunCache?: () => void }> = ({ onCl
     const handleCleanup = async () => {
         if (window.confirm('This will delete API cost records older than 90 days. Continue?')) {
             try {
-                const { apiCostService } = await import('../services/apiCostService');
                 await apiCostService.cleanupOldRecords(90);
                 await loadCostData(); // Reload data
                 alert('Cleanup completed successfully');
@@ -107,7 +105,6 @@ const AdminTabContent: React.FC<{ onClearFirstRunCache?: () => void }> = ({ onCl
     const handleReset = async () => {
         if (window.confirm('This will delete ALL API cost records. This action cannot be undone. Continue?')) {
             try {
-                const { apiCostService } = await import('../services/apiCostService');
                 await apiCostService.resetCostTracking();
                 await loadCostData(); // Reload data
                 alert('Cost tracking reset successfully');

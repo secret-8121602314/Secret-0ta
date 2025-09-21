@@ -93,6 +93,14 @@ class WishlistService {
       this.wishlistCache = updatedWishlist;
       this.updateLocalStorage();
 
+      // Trigger comprehensive sync
+      try {
+        const { comprehensivePersistenceService } = await import('./comprehensivePersistenceService');
+        comprehensivePersistenceService.syncAllUserData();
+      } catch (error) {
+        console.warn('Failed to trigger comprehensive sync:', error);
+      }
+
       return wishlistItem;
     } catch (error) {
       console.error('Failed to add to wishlist:', error);

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-// Dynamic import to avoid circular dependency
-// import { tierService, TierInfo } from '../services/tierService';
-// import { authService } from '../services/supabase';
+import { tierService, TierInfo } from '../services/tierService';
+import { authService } from '../services/supabase';
 import StarIcon from './StarIcon';
 import CheckIcon from './CheckIcon';
 import { fixedErrorHandlingService } from '../services/fixedErrorHandlingService';
@@ -12,14 +11,6 @@ interface TierUpgradeModalProps {
   onUpgradeSuccess?: () => void;
 }
 
-interface TierInfo {
-  name: string;
-  price: number;
-  features: string[];
-  description: string;
-  textLimit?: number;
-  imageLimit?: number;
-}
 
 export const TierUpgradeModal: React.FC<TierUpgradeModalProps> = ({
   isOpen,
@@ -39,15 +30,12 @@ export const TierUpgradeModal: React.FC<TierUpgradeModalProps> = ({
 
   const loadTierInfo = async () => {
     try {
-      const { tierService } = await import('../services/tierService');
       const allTiers = tierService.getAllTiers();
       setTiers(allTiers as unknown as Record<string, TierInfo>);
 
       // Get current user's tier
-      const { authService } = await import('../services/supabase');
       const authState = authService.getAuthState();
       if (authState.user) {
-        const { tierService } = await import('../services/tierService');
         const userTier = await tierService.getUserTier(authState.user.id);
         if (userTier) {
           setCurrentTier(userTier.tier);
@@ -68,7 +56,6 @@ export const TierUpgradeModal: React.FC<TierUpgradeModalProps> = ({
     setUpgradeMessage('');
 
     try {
-      const { authService } = await import('../services/supabase');
       const authState = authService.getAuthState();
       if (!authState.user) {
         setUpgradeMessage('Please log in to upgrade your tier.');
@@ -77,10 +64,8 @@ export const TierUpgradeModal: React.FC<TierUpgradeModalProps> = ({
 
       let success = false;
       if (targetTier === 'pro') {
-        const { tierService } = await import('../services/tierService');
         success = await tierService.upgradeToPro(authState.user.id);
       } else if (targetTier === 'vanguard_pro') {
-        const { tierService } = await import('../services/tierService');
         success = await tierService.upgradeToVanguardPro(authState.user.id);
       }
 

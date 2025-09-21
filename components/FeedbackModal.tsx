@@ -1,8 +1,7 @@
 
 
 import React, { useState, useEffect } from 'react';
-// Dynamic import to avoid circular dependency
-// import { aiContextService } from '../services/aiContextService';
+import { aiContextService } from '../services/aiContextService';
 import { fixedErrorHandlingService } from '../services/fixedErrorHandlingService';
 
 interface FeedbackModalProps {
@@ -27,7 +26,6 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ originalText, onSubmit, o
     setIsLoadingInsights(true);
     try {
       // Get global learning patterns to provide insights
-      const { aiContextService } = await import('../services/aiContextService');
       const patterns = await aiContextService.getGlobalLearningPatterns();
       const errorPatterns = patterns.filter(p => p.learning_type === 'error_correction');
       

@@ -60,6 +60,7 @@ export class WaitlistService {
           await supabase
             .from('analytics')
             .insert({
+              user_id: user.id,
               event_type: 'waitlist_signup_success',
               event_data: { email, source }
             });

@@ -41,6 +41,8 @@ class DailyNewsCacheService {
 
   private constructor() {
     this.loadCacheFromStorage();
+    // Clear any invalid cache entries on startup
+    this.clearInvalidCacheEntries();
   }
 
   public static getInstance(): DailyNewsCacheService {
@@ -52,38 +54,19 @@ class DailyNewsCacheService {
 
   /**
    * Check if we need to make a grounding search call for this prompt
-   * Now considers free user windows and cache history
+   * For suggested prompts: ANY user can trigger search if no cache exists
    */
   public async needsGroundingSearch(prompt: string, userTier: string): Promise<{ needsSearch: boolean; reason: string; canUseFreeWindow: boolean }> {
     const promptKey = this.getPromptKey(prompt);
     const cached = this.cache[promptKey];
     
     // If we have valid cache, no search needed
-    if (cached && !this.isExpired(cached.timestamp)) {
+    if (cached && cached.timestamp && !isNaN(cached.timestamp) && !this.isExpired(cached.timestamp)) {
       return { 
         needsSearch: false, 
         reason: `Serving cached response (age: ${this.getAgeInHours(cached.timestamp)}h)`,
         canUseFreeWindow: false
       };
-    }
-
-    // Check if we're in a free user window for this prompt
-    const freeUserWindow = await this.isInFreeUserWindow(promptKey);
-    
-    if (freeUserWindow) {
-      if (userTier === 'free') {
-        return { 
-          needsSearch: true, 
-          reason: 'Free user window active - free user can trigger search',
-          canUseFreeWindow: true
-        };
-      } else {
-        return { 
-          needsSearch: false, 
-          reason: 'Free user window active - waiting for free user to trigger',
-          canUseFreeWindow: false
-        };
-      }
     }
 
     // Check cache history for recent similar content to avoid repetition
@@ -96,19 +79,11 @@ class DailyNewsCacheService {
       };
     }
 
-    // Pro/Vanguard users can always trigger search if no cache and no free window
-    if (userTier === 'pro' || userTier === 'vanguard_pro') {
-      return { 
-        needsSearch: true, 
-        reason: 'No cache, no free window - Pro/Vanguard user can trigger search',
-        canUseFreeWindow: false
-      };
-    }
-
-    // Free users can't trigger search outside of free windows
+    // For suggested prompts: ANY user can trigger search if no cache exists
+    // This implements the "first user triggers search, response cached for 24h" logic
     return { 
-      needsSearch: false, 
-      reason: 'No cache, no free window - Free user cannot trigger search',
+      needsSearch: true, 
+      reason: 'No cache found - any user can trigger search for suggested prompts',
       canUseFreeWindow: false
     };
   }
@@ -287,6 +262,13 @@ class DailyNewsCacheService {
       return null;
     }
 
+    // Validate timestamp
+    if (!cached.timestamp || isNaN(cached.timestamp)) {
+      console.warn(`📰 Invalid timestamp in cache for: ${prompt}, removing entry`);
+      this.removeFromCache(promptKey);
+      return null;
+    }
+
     if (this.isExpired(cached.timestamp)) {
       console.log(`📰 Cache expired for: ${prompt} (age: ${this.getAgeInHours(cached.timestamp)}h)`);
       this.removeFromCache(promptKey);
@@ -328,11 +310,6 @@ class DailyNewsCacheService {
     
     // Store in Supabase for persistence
     await this.storeInSupabase(promptKey, response, contentHash);
-    
-    // If this was triggered by a free user, start the free user window
-    if (userTier === 'free') {
-      await this.startFreeUserWindow(promptKey);
-    }
     
     console.log(`📰 Cached fresh response for: ${prompt} (triggered by ${userTier} user)`);
     console.log(`📊 Daily cache stats:`, this.getCacheStats());
@@ -455,6 +432,10 @@ class DailyNewsCacheService {
    * Get age of cache in hours
    */
   public getAgeInHours(timestamp: number): number {
+    if (!timestamp || isNaN(timestamp)) {
+      console.warn('Invalid timestamp provided to getAgeInHours:', timestamp);
+      return 0;
+    }
     return Math.round((Date.now() - timestamp) / (60 * 60 * 1000));
   }
 
@@ -527,6 +508,29 @@ class DailyNewsCacheService {
     this.cache = {};
     this.saveCacheToStorage();
     console.log('📰 Daily news cache cleared');
+  }
+
+  /**
+   * Clear invalid cache entries (for debugging)
+   */
+  public clearInvalidCacheEntries(): void {
+    const invalidKeys: string[] = [];
+    
+    Object.entries(this.cache).forEach(([key, cached]) => {
+      if (!cached.timestamp || isNaN(cached.timestamp)) {
+        invalidKeys.push(key);
+      }
+    });
+    
+    if (invalidKeys.length > 0) {
+      console.log(`📰 Clearing ${invalidKeys.length} invalid cache entries:`, invalidKeys);
+      invalidKeys.forEach(key => {
+        delete this.cache[key];
+      });
+      this.saveCacheToStorage();
+    } else {
+      console.log('📰 No invalid cache entries found');
+    }
   }
 
   /**

@@ -36,13 +36,13 @@ import { gameKnowledgeService } from '../services/gameKnowledgeService';
 // Removed unifiedAIService - not used in useChat
 // import { otakuDiaryService } from '../services/otakuDiaryService';
 import { unifiedUsageService } from '../services/unifiedUsageService';
+import { supabaseDataService } from '../services/supabaseDataService';
 // Removed unifiedAnalyticsService - not used in useChat
 // import { analyticsService } from '../services/analyticsService'; // Deleted - using unifiedAnalyticsService
 // import { playerProfileService } from '../services/playerProfileService';
 // import { contextManagementService } from '../services/contextManagementService';
 // import { longTermMemoryService } from '../services/longTermMemoryService';
 // Removed databaseService - not used in useChat
-// import { supabaseDataService } from '../services/supabaseDataService';
 
 const COOLDOWN_KEY = 'geminiCooldownEnd';
 const COOLDOWN_DURATION = 60 * 60 * 1000; // 1 hour
@@ -82,7 +82,14 @@ const comprehensiveTagCleanupRegex = new RegExp(
     // Other common ID patterns
     `\\b[A-Z0-9_]{10,}\\b(?=\\s|$)|` +
     // Clean up any remaining bracket patterns that look like metadata
-    `\\[[^\\]]*:[^\\]]*\\](?=\\s|$)`,
+    `\\[[^\\]]*:[^\\]]*\\](?=\\s|$)|` +
+    // Handle incomplete streaming tags (tags that end without closing bracket)
+    `\\[OTAKON_[^\\]]*$|` +
+    `\\[ID:[^\\]]*$|` +
+    `\\[TAG:[^\\]]*$|` +
+    `\\[META:[^\\]]*$|` +
+    `\\[DEBUG:[^\\]]*$|` +
+    `\\[SYSTEM:[^\\]]*$`,
     'gs'
 );
 
@@ -105,7 +112,7 @@ const sortConversations = (conversations: Conversations) => (aId: string, bId: s
 };
 
 
-export const useChat = (isHandsFreeMode: boolean) => {
+export const useChat = (isHandsFreeMode: boolean, refreshUsage?: () => Promise<void>) => {
     // Services are now imported statically, no initialization needed
 
     // ===== HELPER FUNCTIONS FOR UNIVERSAL AI RESPONSE =====
@@ -155,6 +162,10 @@ export const useChat = (isHandsFreeMode: boolean) => {
     const abortControllersRef = useRef<Record<string, AbortController>>({});
     const hasLoggedUnauthenticatedRef = useRef(false);
     
+    // ✅ MEMORY LEAK FIXES: Track resources for cleanup
+    const intervalsRef = useRef<Set<NodeJS.Timeout>>(new Set());
+    const eventListenersRef = useRef<Map<string, () => void>>(new Map());
+    
     // Use refs to avoid unnecessary re-renders and memory leaks
     const conversationsRef = useRef(conversations);
     const conversationsOrderRef = useRef(conversationsOrder);
@@ -198,23 +209,49 @@ export const useChat = (isHandsFreeMode: boolean) => {
         saveTimeoutRef.current = setTimeout(async () => {
             isSavingRef.current = true;
             try {
-                // Save each conversation individually
+                // First, save to localStorage as backup
+                try {
+                    localStorage.setItem('otakon_conversations', JSON.stringify(conversations));
+                    console.log('💾 Conversations saved to localStorage backup');
+                } catch (localError) {
+                    console.warn('Failed to save conversations to localStorage:', localError);
+                }
+                
+                // Then save each conversation individually to Supabase
                 for (const [conversationId, conversation] of Object.entries(conversations)) {
-                    await secureConversationService.saveConversation(
-                        conversationId,
-                        conversation.title,
-                        conversation.messages,
-                        conversation.insights ? Object.values(conversation.insights) : [],
-                        { 
-                            progress: conversation.progress,
-                            genre: conversation.genre,
-                            inventory: conversation.inventory,
-                            activeObjective: conversation.activeObjective,
-                            lastTrailerTimestamp: conversation.lastTrailerTimestamp,
-                            lastInteractionTimestamp: conversation.lastInteractionTimestamp,
-                            isPinned: conversation.isPinned
+                    try {
+                        console.log('🔧 [useChat] debouncedSave - Saving conversation:', {
+                            conversationId,
+                            title: conversation.title,
+                            messages: conversation.messages,
+                            messageCount: Array.isArray(conversation.messages) ? conversation.messages.length : 'not array',
+                            messagesType: typeof conversation.messages
+                        });
+                        
+                        const result = await secureConversationService.saveConversation(
+                            conversationId,
+                            conversation.title,
+                            conversation.messages,
+                            conversation.insights ? Object.values(conversation.insights) : [],
+                            { 
+                                progress: conversation.progress,
+                                genre: conversation.genre,
+                                inventory: conversation.inventory,
+                                activeObjective: conversation.activeObjective,
+                                lastTrailerTimestamp: conversation.lastTrailerTimestamp,
+                                lastInteractionTimestamp: conversation.lastInteractionTimestamp,
+                                isPinned: conversation.isPinned
+                            }
+                        );
+                        
+                        if (!result.success) {
+                            console.warn(`Failed to save conversation ${conversationId} to Supabase:`, result.error);
+                        } else {
+                            console.log(`✅ Conversation ${conversationId} saved to Supabase`);
                         }
-                    );
+                    } catch (convError) {
+                        console.error(`Error saving conversation ${conversationId}:`, convError);
+                    }
                 }
             } catch (error) {
                 console.error('Failed to save conversations:', error);
@@ -288,18 +325,48 @@ export const useChat = (isHandsFreeMode: boolean) => {
         
         const loadConversations = async () => {
             try {
-                // Check authentication state first
-                const authState = authService.getCurrentState();
+                // Wait for auth service to be properly initialized
+                let authState = authService.getCurrentState();
+                let attempts = 0;
+                const maxAttempts = 20; // Wait up to 2 seconds
+                
+                // If auth is still loading, wait for it to complete
+                while (authState.loading && attempts < maxAttempts) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    authState = authService.getCurrentState();
+                    attempts++;
+                }
                 
                 // Always create default conversation for immediate chat access
+                // Check if we need to add a welcome message for authenticated users
+                const welcomeAddedThisSession = sessionStorage.getItem('otakon_welcome_added_session');
+                const shouldAddWelcome = authState.user && !welcomeAddedThisSession;
+                
+                const welcomeMessage = shouldAddWelcome ? {
+                    id: crypto.randomUUID(),
+                    role: 'model' as const,
+                    text: 'Welcome to Otagon! I\'m your AI gaming assistant, here to help you get unstuck in games with hints, not spoilers. Upload screenshots, ask questions, or connect your PC for instant help while playing!',
+                    feedback: undefined
+                } : null;
+                
                 const defaultConversations = {
                     [EVERYTHING_ELSE_ID]: {
                         id: EVERYTHING_ELSE_ID,
                         title: 'Everything else',
-                        messages: [],
+                        messages: welcomeMessage ? [welcomeMessage] : [],
+                        insights: {},
+                        insightsOrder: [],
+                        context: {},
                         createdAt: Date.now(),
+                        isPinned: false
                     }
                 };
+                
+                // Mark welcome message as added if we added it
+                if (shouldAddWelcome) {
+                    sessionStorage.setItem('otakon_welcome_added_session', 'true');
+                    console.log('🔧 [useChat] Welcome message added to default conversation');
+                }
                 
                 // Set default state immediately
                 if (isMounted) {
@@ -352,13 +419,419 @@ export const useChat = (isHandsFreeMode: boolean) => {
                     return;
                 }
                 
-                // Load conversations from secure service
-                const result = await secureConversationService.loadConversations();
+                // For authenticated users, ensure we have a conversation with welcome message
+                if (authState.user && isMounted) {
+                    console.log('🔧 [useChat] User authenticated, ensuring default conversation with welcome message...');
+                    
+                    // Check if we need to add a welcome message
+                    const welcomeAddedThisSession = sessionStorage.getItem('otakon_welcome_added_session');
+                    if (!welcomeAddedThisSession) {
+                        const welcomeMessage: ChatMessage = {
+                            id: crypto.randomUUID(),
+                            role: 'model' as const,
+                            text: 'Welcome to Otagon! I\'m your AI gaming assistant, here to help you get unstuck in games with hints, not spoilers. Upload screenshots, ask questions, or connect your PC for instant help while playing!',
+                            feedback: undefined
+                        };
+                        
+                        const conversationsWithWelcome = {
+                            [EVERYTHING_ELSE_ID]: {
+                                id: EVERYTHING_ELSE_ID,
+                                title: 'Everything else',
+                                messages: [welcomeMessage],
+                                insights: {},
+                                insightsOrder: [],
+                                context: {},
+                                createdAt: Date.now(),
+                                isPinned: false
+                            }
+                        };
+                        
+                        setChatState({
+                            conversations: conversationsWithWelcome,
+                            order: [EVERYTHING_ELSE_ID],
+                            activeId: EVERYTHING_ELSE_ID
+                        });
+                        
+                        // Mark that we've added a welcome message this session
+                        sessionStorage.setItem('otakon_welcome_added_session', 'true');
+                        
+                        console.log('🔧 [useChat] Default conversation with welcome message created for authenticated user');
+                        
+                        // Try to save the conversation
+                        try {
+                            await secureConversationService.saveConversation(
+                                EVERYTHING_ELSE_ID,
+                                'Everything Else',
+                                [welcomeMessage],
+                                [],
+                                {},
+                                undefined,
+                                false,
+                                true
+                            );
+                            console.log('🔧 [useChat] Welcome message conversation saved to database');
+                        } catch (saveError) {
+                            console.error('Failed to save welcome message conversation:', saveError);
+                        }
+                        
+                        return; // Exit early since we've created the default conversation
+                    }
+                }
                 
-                if (isMounted && result.success && result.conversations) {
-                    const conversations = result.conversations as any; // Type cast to handle interface mismatch
+                    // Only load conversations if auth is not loading and user is authenticated
+                    if (!authState.loading && authState.user) {
+                        console.log('🔐 User signed in, reloading conversations...');
+                        
+                        // Add additional delay to ensure auth state is fully ready
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        
+                        try {
+                            const result = await secureConversationService.loadConversations();
+                        
+                        console.log('🔐 Conversation loading result:', {
+                            success: result.success,
+                            hasConversations: !!result.conversations,
+                            conversationCount: result.conversations ? Object.keys(result.conversations).length : 0,
+                            error: result.error
+                        });
+                        
+                        if (isMounted && result.success && result.conversations) {
+                            const conversations = result.conversations as any; // Type cast to handle interface mismatch
+                            
+                            console.log('🔧 [useChat] Processing loaded conversations:', {
+                                conversationCount: Object.keys(conversations).length,
+                                conversationIds: Object.keys(conversations),
+                                conversations: conversations
+                            });
+                            
+                            // CRITICAL FIX: Ensure we always have a default conversation with welcome message
+                            if (!conversations[EVERYTHING_ELSE_ID] || 
+                                (conversations[EVERYTHING_ELSE_ID] && 
+                                 (!conversations[EVERYTHING_ELSE_ID].messages || 
+                                  conversations[EVERYTHING_ELSE_ID].messages.length === 0))) {
+                                
+                                console.log('🔧 [useChat] Ensuring default conversation with welcome message exists...');
+                                
+                                const welcomeAddedThisSession = sessionStorage.getItem('otakon_welcome_added_session');
+                                if (!welcomeAddedThisSession) {
+                                    const welcomeMessage: ChatMessage = {
+                                        id: crypto.randomUUID(),
+                                        role: 'model' as const,
+                                        text: 'Welcome to Otagon! I\'m your AI gaming assistant, here to help you get unstuck in games with hints, not spoilers. Upload screenshots, ask questions, or connect your PC for instant help while playing!',
+                                        feedback: undefined
+                                    };
+                                    
+                                    conversations[EVERYTHING_ELSE_ID] = {
+                                        id: EVERYTHING_ELSE_ID,
+                                        title: 'Everything else',
+                                        messages: [welcomeMessage],
+                                        insights: {},
+                                        insightsOrder: [],
+                                        context: {},
+                                        createdAt: Date.now(),
+                                        isPinned: false
+                                    };
+                                    
+                                    // Mark that we've added a welcome message this session
+                                    sessionStorage.setItem('otakon_welcome_added_session', 'true');
+                                    
+                                    console.log('🔧 [useChat] Welcome message added to loaded conversations');
+                                    
+                                    // Try to save the conversation
+                                    try {
+                                        await secureConversationService.saveConversation(
+                                            EVERYTHING_ELSE_ID,
+                                            'Everything Else',
+                                            [welcomeMessage],
+                                            [],
+                                            {},
+                                            undefined,
+                                            false,
+                                            true
+                                        );
+                                        console.log('🔧 [useChat] Welcome message conversation saved to database');
+                                    } catch (saveError) {
+                                        console.error('Failed to save welcome message conversation:', saveError);
+                                    }
+                                }
+                            }
+                            
+                            // Restore insights from localStorage for Pro/Vanguard users if missing
+                            for (const [conversationId, conversation] of Object.entries(conversations)) {
+                                const conv = conversation as any;
+                                if (conv.id !== EVERYTHING_ELSE_ID && (!conv.insights || Object.keys(conv.insights).length === 0)) {
+                                    try {
+                                        const insightsBackup = localStorage.getItem(`otakon_insights_${conversationId}`);
+                                        if (insightsBackup) {
+                                            const parsedInsights = JSON.parse(insightsBackup);
+                                            if (parsedInsights.insights && Object.keys(parsedInsights.insights).length > 0) {
+                                                conv.insights = parsedInsights.insights;
+                                                conv.insightsOrder = parsedInsights.insightsOrder;
+                                                console.log(`✅ Insights restored from localStorage for conversation: ${conversationId}`, Object.keys(parsedInsights.insights).length, 'tabs');
+                                            }
+                                        }
+                                    } catch (error) {
+                                        console.warn(`Failed to restore insights for conversation ${conversationId}:`, error);
+                                    }
+                                }
+                            }
+                            
+                            const order = Object.keys(conversations).sort(sortConversations(conversations));
+                            
+                            // Preserve current active conversation if it still exists, otherwise use first available
+                            const currentActiveId = chatState.activeId;
+                            const activeId = (currentActiveId && conversations[currentActiveId]) 
+                                ? currentActiveId 
+                                : (order.length > 0 ? order[0] : EVERYTHING_ELSE_ID);
+                            
+                            console.log('🔧 [useChat] Setting chat state with processed conversations:', {
+                                conversationCount: Object.keys(conversations).length,
+                                conversationIds: Object.keys(conversations),
+                                order,
+                                currentActiveId,
+                                preservedActiveId: activeId
+                            });
+                            
+                            setChatState({
+                                conversations: conversations,
+                                order,
+                                activeId
+                            });
+                            console.log('✅ Conversations loaded from Supabase:', Object.keys(conversations).length);
+                        } else if (isMounted && result.success && (!result.conversations || Object.keys(result.conversations).length === 0)) {
+                            // No conversations found in Supabase, but user is authenticated
+                            // Create default conversation with welcome message
+                            console.log('🔧 [useChat] No conversations found in Supabase, creating default with welcome message...');
+                            
+                            const welcomeAddedThisSession = sessionStorage.getItem('otakon_welcome_added_session');
+                            if (!welcomeAddedThisSession) {
+                                const welcomeMessage: ChatMessage = {
+                                id: crypto.randomUUID(),
+                                role: 'model' as const,
+                                text: 'Welcome to Otagon! I\'m your AI gaming assistant, here to help you get unstuck in games with hints, not spoilers. Upload screenshots, ask questions, or connect your PC for instant help while playing!',
+                                feedback: undefined
+                            };
+                            
+                            const defaultConversations = {
+                                [EVERYTHING_ELSE_ID]: {
+                                    id: EVERYTHING_ELSE_ID,
+                                    title: 'Everything else',
+                                    messages: [welcomeMessage],
+                                    insights: {},
+                                    insightsOrder: [],
+                                    context: {},
+                                    createdAt: Date.now(),
+                                    isPinned: false
+                                }
+                            };
+                            
+                                setChatState({
+                                    conversations: defaultConversations,
+                                    order: [EVERYTHING_ELSE_ID],
+                                    activeId: EVERYTHING_ELSE_ID
+                                });
+                                
+                                // Mark that we've added a welcome message this session
+                                sessionStorage.setItem('otakon_welcome_added_session', 'true');
+                                
+                                // Try to save the default conversation with welcome message
+                                try {
+                                    await secureConversationService.saveConversation(
+                                        EVERYTHING_ELSE_ID,
+                                        'Everything Else',
+                                        [welcomeMessage],
+                                        [],
+                                        {},
+                                        undefined,
+                                        false,
+                                        true // force overwrite
+                                    );
+                                    console.log('🔧 [useChat] Default conversation with welcome message saved to database');
+                                } catch (saveError) {
+                                    console.error('Failed to save default conversation with welcome message:', saveError);
+                                    // Continue anyway - conversation is in memory
+                                }
+                                
+                                console.log('💬 [useChat] Default conversation with welcome message created');
+                            } else {
+                                console.log('🔧 [useChat] Welcome message already added this session, skipping default conversation creation');
+                            }
+                        } else {
+                            // Loading failed, try to restore from localStorage as fallback
+                            console.warn('⚠️ Failed to load conversations from Supabase, trying localStorage fallback');
+                            try {
+                                const fallbackData = localStorage.getItem('otakon_conversations');
+                                if (fallbackData) {
+                                    const parsedData = JSON.parse(fallbackData);
+                                    if (parsedData && Object.keys(parsedData).length > 0) {
+                                        const conversations = parsedData as any;
+                                        
+                                        // Restore insights from localStorage for Pro/Vanguard users
+                                        for (const [conversationId, conversation] of Object.entries(conversations)) {
+                                            const conv = conversation as any;
+                                            if (conv.id !== EVERYTHING_ELSE_ID && (!conv.insights || Object.keys(conv.insights).length === 0)) {
+                                                try {
+                                                    const insightsBackup = localStorage.getItem(`otakon_insights_${conversationId}`);
+                                                    if (insightsBackup) {
+                                                        const parsedInsights = JSON.parse(insightsBackup);
+                                                        if (parsedInsights.insights && Object.keys(parsedInsights.insights).length > 0) {
+                                                            conv.insights = parsedInsights.insights;
+                                                            conv.insightsOrder = parsedInsights.insightsOrder;
+                                                            console.log(`✅ Insights restored from localStorage fallback for conversation: ${conversationId}`, Object.keys(parsedInsights.insights).length, 'tabs');
+                                                        }
+                                                    }
+                                                } catch (error) {
+                                                    console.warn(`Failed to restore insights fallback for conversation ${conversationId}:`, error);
+                                                }
+                                            }
+                                        }
+                                        
+                                        const order = Object.keys(conversations).sort(sortConversations(conversations));
+                                        const activeId = order.length > 0 ? order[0] : EVERYTHING_ELSE_ID;
+                                        
+                                        if (isMounted) {
+                                            setChatState({
+                                                conversations: conversations,
+                                                order,
+                                                activeId
+                                            });
+                                            console.log('✅ Conversations restored from localStorage fallback:', Object.keys(conversations).length);
+                                        }
+                                    }
+                                }
+                            } catch (fallbackError) {
+                                console.error('Failed to restore conversations from localStorage:', fallbackError);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('🔐 Error loading conversations:', error);
+                        
+                        // Try localStorage fallback on error
+                        try {
+                            const fallbackData = localStorage.getItem('otakon_conversations');
+                            if (fallbackData) {
+                                const parsedData = JSON.parse(fallbackData);
+                                if (parsedData && Object.keys(parsedData).length > 0) {
+                                    const conversations = parsedData as any;
+                                    
+                                    // Restore insights from localStorage for Pro/Vanguard users
+                                    for (const [conversationId, conversation] of Object.entries(conversations)) {
+                                        const conv = conversation as any;
+                                        if (conv.id !== EVERYTHING_ELSE_ID && (!conv.insights || Object.keys(conv.insights).length === 0)) {
+                                            try {
+                                                const insightsBackup = localStorage.getItem(`otakon_insights_${conversationId}`);
+                                                if (insightsBackup) {
+                                                    const parsedInsights = JSON.parse(insightsBackup);
+                                                    if (parsedInsights.insights && Object.keys(parsedInsights.insights).length > 0) {
+                                                        conv.insights = parsedInsights.insights;
+                                                        conv.insightsOrder = parsedInsights.insightsOrder;
+                                                        console.log(`✅ Insights restored from localStorage after error for conversation: ${conversationId}`, Object.keys(parsedInsights.insights).length, 'tabs');
+                                                    }
+                                                }
+                                            } catch (error) {
+                                                console.warn(`Failed to restore insights after error for conversation ${conversationId}:`, error);
+                                            }
+                                        }
+                                    }
+                                    
+                                    const order = Object.keys(conversations).sort(sortConversations(conversations));
+                                    const activeId = order.length > 0 ? order[0] : EVERYTHING_ELSE_ID;
+                                    
+                                    if (isMounted) {
+                                        setChatState({
+                                            conversations: conversations,
+                                            order,
+                                            activeId
+                                        });
+                                        console.log('✅ Conversations restored from localStorage after error:', Object.keys(conversations).length);
+                                    }
+                                }
+                            }
+                        } catch (fallbackError) {
+                            console.error('Failed to restore conversations from localStorage after error:', fallbackError);
+                        }
+                    }
+                        
+                    // Check if we need to add welcome message for returning users
+                    // Only add welcome message for truly empty conversations (not just missing messages array)
+                    if (conversations[EVERYTHING_ELSE_ID] && 
+                        conversations[EVERYTHING_ELSE_ID].messages && 
+                        conversations[EVERYTHING_ELSE_ID].messages.length === 0) {
+                        
+                        // Additional check: verify this is actually an empty conversation, not a data loading issue
+                        const conversationExists = conversations[EVERYTHING_ELSE_ID].id === EVERYTHING_ELSE_ID;
+                        const hasValidStructure = conversations[EVERYTHING_ELSE_ID].title && conversations[EVERYTHING_ELSE_ID].title === 'Everything else';
+                        
+                        if (conversationExists && hasValidStructure) {
+                            // Check if we've already added a welcome message in this session
+                            const welcomeAddedThisSession = sessionStorage.getItem('otakon_welcome_added_session');
+                            if (!welcomeAddedThisSession) {
+                                console.log('🔧 [useChat] Adding welcome message for empty conversation...');
+                                
+                                // Add welcome message to the conversation
+                                const welcomeMessage: ChatMessage = {
+                                    id: crypto.randomUUID(),
+                                    role: 'model' as const,
+                                    text: 'Welcome to Otagon! I\'m your AI gaming assistant, here to help you get unstuck in games with hints, not spoilers. Upload screenshots, ask questions, or connect your PC for instant help while playing!',
+                                    feedback: undefined
+                                };
+                                
+                                conversations[EVERYTHING_ELSE_ID].messages = [welcomeMessage];
+                                
+                                // Mark that we've added a welcome message this session
+                                sessionStorage.setItem('otakon_welcome_added_session', 'true');
+                                
+                                // Update welcome message shown in Supabase (but don't block on this)
+                                try {
+                                    await supabaseDataService.updateWelcomeMessageShown('returning_user');
+                                } catch (error) {
+                                    console.warn('Failed to update welcome message tracking:', error);
+                                }
+                                
+                                // Immediately save the conversation with welcome message to database
+                        try {
+                            console.log('🔧 [useChat] Saving welcome message to database:', {
+                                conversationId: EVERYTHING_ELSE_ID,
+                                title: 'Everything Else',
+                                messages: [welcomeMessage],
+                                messageCount: [welcomeMessage].length
+                            });
+                            
+                            await secureConversationService.saveConversation(
+                                EVERYTHING_ELSE_ID,
+                                'Everything Else',
+                                [welcomeMessage], // Use the welcomeMessage directly instead of conversations object
+                                [],
+                                {},
+                                undefined,
+                                false,
+                                true // force overwrite
+                            );
+                            console.log('🔧 [useChat] Welcome message conversation saved to database');
+                        } catch (saveError) {
+                            console.error('Failed to save welcome message conversation:', saveError);
+                        }
+                        
+                                console.log('🔧 [useChat] Welcome message added during conversation loading');
+                            } else {
+                                console.log('🔧 [useChat] Welcome message already added this session, skipping');
+                            }
+                        }
+                    } else if (conversations[EVERYTHING_ELSE_ID] && 
+                               conversations[EVERYTHING_ELSE_ID].messages && 
+                               conversations[EVERYTHING_ELSE_ID].messages.length > 0) {
+                        console.log('🔧 [useChat] Conversation already has messages, skipping welcome message');
+                    }
+                    
                     const order = Object.keys(conversations).sort(sortConversations(conversations));
                     const activeId = order.length > 0 ? order[0] : EVERYTHING_ELSE_ID;
+                    
+                    console.log('🔐 Setting chat state with conversations:', {
+                        conversationIds: Object.keys(conversations),
+                        order,
+                        activeId,
+                        conversations: conversations
+                    });
                     
                     setChatState({
                         conversations: conversations as any, // Type cast to handle interface mismatch
@@ -396,75 +869,136 @@ export const useChat = (isHandsFreeMode: boolean) => {
         };
     }, [secureConversationService]);
 
-    // Listen for authentication state changes to reload conversations when user logs in
+    // ✅ INFINITE LOOP FIX: Disabled duplicate auth listener in useChat
+    // The App.tsx now handles all auth state changes centrally
+    // This prevents the infinite loop caused by multiple auth listeners
+    /*
     useEffect(() => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (event === 'SIGNED_IN' && session?.user) {
-                console.log('🔐 User signed in, reloading conversations...');
+                console.log('🔐 User signed in, triggering conversation reload...');
+                
+                // Prevent duplicate operations with improved flag management
+                if (isLoadingConversationsRef.current) {
+                    console.log('🔧 [useChat] Conversation loading already in progress, skipping...');
+                    return;
+                }
+                
+                isLoadingConversationsRef.current = true;
+                
                 try {
+                    // Wait for auth state to stabilize with longer delay
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                    
+                    // Reload conversations from database
                     const result = await secureConversationService.loadConversations();
                     
-                    if (result.success && result.conversations) {
-                        const conversations = result.conversations as any;
-                        const order = Object.keys(conversations).sort(sortConversations(conversations));
-                        const activeId = order.length > 0 ? order[0] : EVERYTHING_ELSE_ID;
+                    if (result.success && result.conversations && Object.keys(result.conversations).length > 0) {
+                        console.log('✅ Conversations loaded from database after sign in:', Object.keys(result.conversations).length);
                         
-                        setChatState({
-                            conversations: conversations as any,
-                            order,
-                            activeId
+                        // Convert database format to local format
+                        const conversations: Record<string, Conversation> = {};
+                        const order: string[] = [];
+                        
+                        Object.values(result.conversations).forEach((conv: any) => {
+                            conversations[conv.id] = {
+                                id: conv.id,
+                                title: conv.title,
+                                messages: conv.messages || [],
+                                insights: conv.insights || {},
+                                insightsOrder: Object.keys(conv.insights || {}),
+                                context: conv.context || {},
+                                createdAt: conv.createdAt || Date.now(),
+                                isPinned: conv.is_pinned || false
+                            };
+                            order.push(conv.id);
                         });
                         
-                        console.log(`💾 Conversations reloaded after authentication`);
+                        setChatState({
+                            conversations,
+                            order,
+                            activeId: order[0] || EVERYTHING_ELSE_ID
+                        });
                     } else {
-                        // If no conversations loaded, check if this is developer mode and restore from localStorage
-                        const isDevMode = localStorage.getItem('otakon_developer_mode') === 'true';
-                        if (isDevMode) {
-                            console.log('🔧 Developer mode detected, attempting to restore conversations from localStorage...');
-                            const devData = localStorage.getItem('otakon_dev_data');
-                            if (devData) {
-                                const parsedData = JSON.parse(devData);
-                                if (parsedData.conversations && Object.keys(parsedData.conversations).length > 0) {
-                                    const conversations = parsedData.conversations;
-                                    const order = parsedData.conversationsOrder || Object.keys(conversations);
-                                    const activeId = parsedData.activeConversation || order[0] || EVERYTHING_ELSE_ID;
-                                    
-                                    setChatState({
-                                        conversations: conversations as any,
-                                        order,
-                                        activeId
-                                    });
-                                    console.log('💾 Developer conversations restored from localStorage after sign in');
+                        console.log('🔧 No conversations found in database, creating default...');
+                        
+                        // Create default conversation with welcome message
+                        const welcomeAddedThisSession = sessionStorage.getItem('otakon_welcome_added_session');
+                        if (!welcomeAddedThisSession) {
+                            const welcomeMessage: ChatMessage = {
+                                id: crypto.randomUUID(),
+                                role: 'model' as const,
+                                text: 'Welcome to Otagon! I\'m your AI gaming assistant, here to help you get unstuck in games with hints, not spoilers. Upload screenshots, ask questions, or connect your PC for instant help while playing!',
+                                feedback: undefined
+                            };
+                            
+                            const defaultConversations = {
+                                [EVERYTHING_ELSE_ID]: {
+                                    id: EVERYTHING_ELSE_ID,
+                                    title: 'Everything else',
+                                    messages: [welcomeMessage],
+                                    insights: {},
+                                    insightsOrder: [],
+                                    context: {},
+                                    createdAt: Date.now(),
+                                    isPinned: false
                                 }
+                            };
+                            
+                            setChatState({
+                                conversations: defaultConversations,
+                                order: [EVERYTHING_ELSE_ID],
+                                activeId: EVERYTHING_ELSE_ID
+                            });
+                            
+                            // Mark that we've added a welcome message this session
+                            sessionStorage.setItem('otakon_welcome_added_session', 'true');
+                            
+                            console.log('🔧 [useChat] Default conversation with welcome message created after sign in');
+                            
+                            // Try to save the conversation
+                            try {
+                                await secureConversationService.saveConversation(
+                                    EVERYTHING_ELSE_ID,
+                                    'Everything Else',
+                                    [welcomeMessage],
+                                    [],
+                                    {},
+                                    undefined,
+                                    false,
+                                    true
+                                );
+                                console.log('🔧 [useChat] Welcome message conversation saved to database');
+                            } catch (saveError) {
+                                console.error('Failed to save welcome message conversation:', saveError);
                             }
                         }
                     }
                 } catch (error) {
-                    console.error('Failed to reload conversations after authentication:', error);
+                    console.error('Error loading conversations after sign in:', error);
+                } finally {
+                    // Clear loading flag
+                    isLoadingConversationsRef.current = false;
                 }
             } else if (event === 'SIGNED_OUT') {
-                console.log('🔐 User signed out, checking if developer mode data should be preserved...');
+                console.log('🔐 User signed out, resetting conversations to default state');
                 
-                // Check if this is developer mode - preserve conversations
-                const isDevMode = localStorage.getItem('otakon_developer_mode') === 'true';
-                const devSessionStart = localStorage.getItem('otakon_dev_session_start');
-                const hasActiveDevSession = devSessionStart && (Date.now() - parseInt(devSessionStart, 10)) < (24 * 60 * 60 * 1000); // 24 hours
+                // Clear welcome message session flag for next login
+                sessionStorage.removeItem('otakon_welcome_added_session');
+                sessionStorage.removeItem('otakon_welcome_shown_session');
                 
-                if (isDevMode && hasActiveDevSession) {
-                    console.log('🔧 Developer mode detected - preserving conversations during sign out');
-                    // Don't reset conversations for developer mode - they'll be restored when signing back in
-                    return;
-                }
-                
-                // For regular users, reset to default state
-                console.log('🔐 Regular user signed out, resetting conversations to default state');
+                // Reset to default state
                 setChatState({
                     conversations: {
                         [EVERYTHING_ELSE_ID]: {
                             id: EVERYTHING_ELSE_ID,
                             title: 'Everything else',
                             messages: [],
+                            insights: {},
+                            insightsOrder: [],
+                            context: {},
                             createdAt: Date.now(),
+                            isPinned: false
                         }
                     },
                     order: [EVERYTHING_ELSE_ID],
@@ -476,10 +1010,22 @@ export const useChat = (isHandsFreeMode: boolean) => {
         return () => {
             subscription.unsubscribe();
         };
-    }, []);
+    }, [secureConversationService]);
+    */
+
+    // REMOVED: Duplicate conversation creation effect to prevent race conditions
 
     // Use debounced save instead of the old timeout approach
+    // Add a ref to track if we're currently loading conversations to prevent immediate save
+    const isLoadingConversationsRef = useRef(false);
+    
     useEffect(() => {
+        // Don't save if we're currently loading conversations
+        if (isLoadingConversationsRef.current) {
+            console.log('🔧 [useChat] Skipping debouncedSave - currently loading conversations');
+            return;
+        }
+        
         debouncedSave(conversations);
     }, [conversations, debouncedSave]);
 
@@ -511,7 +1057,16 @@ export const useChat = (isHandsFreeMode: boolean) => {
         return undefined;
     }, []);
 
-    const activeConversation = useMemo(() => conversations[activeConversationId], [conversations, activeConversationId]);
+    const activeConversation = useMemo(() => {
+        const conv = conversations[activeConversationId];
+        console.log('🔧 [useChat] Active conversation lookup:', {
+            activeConversationId,
+            hasConversation: !!conv,
+            conversationId: conv?.id,
+            messageCount: conv?.messages?.length || 0
+        });
+        return conv;
+    }, [conversations, activeConversationId]);
     
     const updateConversation = useCallback((convoId: string, updateFn: (convo: Conversation) => Conversation, skipTimestamp?: boolean) => {
         setChatState(prev => {
@@ -783,6 +1338,16 @@ export const useChat = (isHandsFreeMode: boolean) => {
         await unifiedUsageService.incrementQueryCount('text', textQueries);
         await unifiedUsageService.incrementQueryCount('image', imageQueries);
 
+        // Refresh the UI to show updated credit counts
+        if (refreshUsage) {
+            try {
+                await refreshUsage();
+                console.log('🔄 Credit indicator refreshed after query');
+            } catch (error) {
+                console.warn('Failed to refresh credit indicator:', error);
+            }
+        }
+
         const controller = new AbortController();
         abortControllersRef.current[modelMessageId] = controller;
         
@@ -944,7 +1509,11 @@ export const useChat = (isHandsFreeMode: boolean) => {
             const onChunk = (chunk: string) => {
                 if (isCooldownActive) setIsCooldownActive(false);
                 rawTextResponse += chunk;
-                const displayText = rawTextResponse.replace(comprehensiveTagCleanupRegex, '').replace(/^[\s`"\]\}]*/, '').trim();
+                const displayText = rawTextResponse
+                    .replace(comprehensiveTagCleanupRegex, '')
+                    .replace(/^[\s`"\]\}]*/, '') // Remove leading brackets/quotes
+                    .replace(/[\s`"\]\}]*$/, '') // Remove trailing brackets/quotes
+                    .trim();
                 updateMessageInConversation(activeConversationId, modelMessageId, msg => ({ ...msg, text: displayText }));
                 
                 // 🚫 REMOVED: Real-time insight updates to prevent unauthorized API calls
@@ -1484,6 +2053,41 @@ export const useChat = (isHandsFreeMode: boolean) => {
             // 🔥 NEW: Consolidated insight update function that only runs on user queries
             if (isProUser && finalTargetConvoId !== EVERYTHING_ELSE_ID) {
                 updateInsightsOnUserQuery(finalCleanedText, finalTargetConvoId, identifiedGameName, gameGenre, gameProgress, text.trim());
+                
+                // Ensure insights are saved to database immediately
+                try {
+                    const targetConvo = conversations[finalTargetConvoId];
+                    if (targetConvo?.insights && targetConvo?.insightsOrder) {
+                        // Save insights as object (not array) for proper persistence
+                        const insightsObject = targetConvo.insights;
+                        
+                        await secureConversationService.saveConversation(
+                            finalTargetConvoId,
+                            targetConvo.title,
+                            targetConvo.messages,
+                            Object.values(insightsObject), // Convert object to array
+                            targetConvo.context,
+                            targetConvo.context?.gameId,
+                            targetConvo.isPinned,
+                            true // force overwrite
+                        );
+                        console.log('✅ Insights saved to database for conversation:', finalTargetConvoId, 'with', Object.keys(insightsObject).length, 'tabs');
+                        
+                        // Also save to localStorage as backup
+                        try {
+                            localStorage.setItem(`otakon_insights_${finalTargetConvoId}`, JSON.stringify({
+                                insights: insightsObject,
+                                insightsOrder: targetConvo.insightsOrder,
+                                lastSaved: Date.now()
+                            }));
+                            console.log('💾 Insights saved to localStorage backup for conversation:', finalTargetConvoId);
+                        } catch (localError) {
+                            console.warn('Failed to save insights to localStorage:', localError);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Failed to save insights to database:', error);
+                }
             }
 
             // Cache paid latest-info responses for reuse across the app
@@ -1659,8 +2263,21 @@ export const useChat = (isHandsFreeMode: boolean) => {
             return;
         }
         const newOrder = Object.keys(history).sort(sortConversations(history));
-        setChatState({ conversations: history, order: newOrder, activeId: EVERYTHING_ELSE_ID });
-    }, [resetConversations]);
+        
+        // Preserve current active conversation if it still exists, otherwise use first available
+        const currentActiveId = chatState.activeId;
+        const activeId = (currentActiveId && history[currentActiveId]) 
+            ? currentActiveId 
+            : (newOrder.length > 0 ? newOrder[0] : EVERYTHING_ELSE_ID);
+            
+        console.log('🔧 [useChat] Restoring history with preserved active conversation:', {
+            currentActiveId,
+            preservedActiveId: activeId,
+            conversationCount: Object.keys(history).length
+        });
+        
+        setChatState({ conversations: history, order: newOrder, activeId });
+    }, [resetConversations, chatState.activeId]);
 
     const fetchInsightContent = useCallback(async (conversationId: string, insightId: string) => {
         const conversation = conversations[conversationId];
@@ -1762,7 +2379,11 @@ Progress: ${conversation.progress}%`;
                         if (controller.signal.aborted) return;
                         fullContent += chunk;
                         // Clean the content before displaying to hide tags and IDs
-                        const cleanedContent = fullContent.replace(comprehensiveTagCleanupRegex, '').trim();
+                        const cleanedContent = fullContent
+                            .replace(comprehensiveTagCleanupRegex, '')
+                            .replace(/^[\s`"\]\}]*/, '') // Remove leading brackets/quotes
+                            .replace(/[\s`"\]\}]*$/, '') // Remove trailing brackets/quotes
+                            .trim();
                         updateConversation(conversationId, convo => ({
                             ...convo,
                             insights: { ...convo.insights!, [insightId]: { ...convo.insights![insightId], content: cleanedContent, status: 'streaming' } }
@@ -2349,6 +2970,29 @@ Progress: ${conversation.progress}%`;
     // Handle sub view changes (for switching between chat and insights)
     const handleSubViewChange = useCallback((viewId: string) => {
         setActiveSubView(viewId);
+    }, []);
+
+    // ✅ MEMORY LEAK FIXES: Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            // Clear all intervals
+            intervalsRef.current.forEach(interval => clearInterval(interval));
+            intervalsRef.current.clear();
+            
+            // Abort all pending requests
+            Object.values(abortControllersRef.current).forEach(controller => controller.abort());
+            abortControllersRef.current = {};
+            
+            // Remove all event listeners
+            eventListenersRef.current.forEach(cleanup => cleanup());
+            eventListenersRef.current.clear();
+            
+            // Clear save timeout
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+                saveTimeoutRef.current = null;
+            }
+        };
     }, []);
 
     return {

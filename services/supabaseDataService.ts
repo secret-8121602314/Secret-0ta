@@ -61,39 +61,56 @@ export interface AppCache {
 
 class SupabaseDataService {
   private userId: string | null = null;
+  private initializationPromise: Promise<void> | null = null;
 
   constructor() {
-    this.initializeUserId();
+    // Don't call async function in constructor
+    // Initialize lazily when first needed
   }
 
   private async initializeUserId() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      // Get the internal user ID from the users table
-      const { data: userData, error } = await supabase
-        .from('users')
-        .select('id')
-        .eq('auth_user_id', user.id)
-        .single();
-      
-      if (error || !userData) {
-        console.warn('User not found in users table:', error);
+    // Prevent multiple simultaneous initializations
+    if (this.initializationPromise) {
+      return this.initializationPromise;
+    }
+
+    this.initializationPromise = this._doInitializeUserId();
+    return this.initializationPromise;
+  }
+
+  private async _doInitializeUserId() {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Get the internal user ID from the users table
+        const { data: userData, error } = await supabase
+          .from('users')
+          .select('id')
+          .eq('auth_user_id', user.id)
+          .single();
         
-        // Try to create the user record manually
-        console.log('🔐 [SupabaseDataService] Attempting to create user record...');
-        const createResult = await userCreationService.ensureUserRecord(user.id, user.email || '');
-        
-        if (createResult.success && createResult.userId) {
-          console.log('🔐 [SupabaseDataService] User record created successfully:', createResult.userId);
-          this.userId = createResult.userId;
+        if (error || !userData) {
+          console.warn('User not found in users table:', error);
+          
+          // Try to create the user record manually
+          console.log('🔐 [SupabaseDataService] Attempting to create user record...');
+          const createResult = await userCreationService.ensureUserRecord(user.id, user.email || '');
+          
+          if (createResult.success && createResult.userId) {
+            console.log('🔐 [SupabaseDataService] User record created successfully:', createResult.userId);
+            this.userId = createResult.userId;
+          } else {
+            console.error('🔐 [SupabaseDataService] Failed to create user record:', createResult.error);
+            this.userId = null;
+          }
         } else {
-          console.error('🔐 [SupabaseDataService] Failed to create user record:', createResult.error);
-          this.userId = null;
+          this.userId = userData.id;
         }
       } else {
-        this.userId = userData.id;
+        this.userId = null;
       }
-    } else {
+    } catch (error) {
+      console.error('🔐 [SupabaseDataService] Error initializing user ID:', error);
       this.userId = null;
     }
   }

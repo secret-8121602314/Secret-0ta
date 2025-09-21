@@ -3,8 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import TTSStatusIndicator from './TTSStatusIndicator';
-// Dynamic import to avoid circular dependency
-// import { ttsService } from '../services/ttsService';
+import { ttsService } from '../services/ttsService';
 
 interface HandsFreeModalProps {
   onClose: () => void;
@@ -31,7 +30,6 @@ const HandsFreeModal: React.FC<HandsFreeModalProps> = ({
 
   useEffect(() => {
     const updateVoices = async () => {
-      const { ttsService } = await import('../services/ttsService');
       const allVoices = ttsService.getAvailableVoices();
       const englishVoices = allVoices.filter(v => v.lang.startsWith('en-'));
       
@@ -56,7 +54,6 @@ const HandsFreeModal: React.FC<HandsFreeModalProps> = ({
     };
 
     const interval = setInterval(async () => {
-        const { ttsService } = await import('../services/ttsService');
         const currentVoices = ttsService.getAvailableVoices();
         // This condition is now more robust. It updates if the count is different,
         // OR if voices are available but the component state is empty (initial load).

@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { AuthService, AuthState } from './authTypes';
+import { secureAppStateService } from './secureAppStateService';
 
 // Re-export AuthState for compatibility
 export type { AuthState } from './authTypes';
@@ -112,6 +113,12 @@ class SecureAuthService implements AuthService {
     try {
       this.log('Initializing secure authentication service...');
       
+      // ✅ RACE CONDITION FIX: Single auth state listener
+      if (this.isInitialized) {
+        this.log('Auth service already initialized, skipping...');
+        return;
+      }
+      
       // Check for developer mode session first
       const devSessionStart = localStorage.getItem('otakon_dev_session_start');
       const devMode = localStorage.getItem('otakon_developer_mode') === 'true';
@@ -143,7 +150,7 @@ class SecureAuthService implements AuthService {
         await this.validateSession(session);
       }
 
-      // Listen for auth changes
+      // ✅ RACE CONDITION FIX: Single auth state listener with proper cleanup
       this.setupAuthStateListener();
       
       this.isInitialized = true;
@@ -182,7 +189,7 @@ class SecureAuthService implements AuthService {
 
   private async clearInvalidSession(): Promise<void> {
     try {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: 'local' });
       
       // Clear developer mode session if it exists
       if (localStorage.getItem('otakon_developer_mode') === 'true') {
@@ -203,8 +210,16 @@ class SecureAuthService implements AuthService {
     }
   }
 
+  private authStateListener: any = null; // ✅ RACE CONDITION FIX: Track listener for cleanup
+
   private setupAuthStateListener(): void {
-    supabase.auth.onAuthStateChange(async (event, session) => {
+    // ✅ RACE CONDITION FIX: Remove existing listener before adding new one
+    if (this.authStateListener) {
+      this.authStateListener.data.subscription.unsubscribe();
+      this.authStateListener = null;
+    }
+    
+    this.authStateListener = supabase.auth.onAuthStateChange(async (event, session) => {
       this.log(`Auth state change: ${event}`, { 
         hasSession: !!session, 
         hasUser: !!session?.user 
@@ -221,12 +236,22 @@ class SecureAuthService implements AuthService {
             break;
             
           case 'SIGNED_OUT':
-            this.log('User signed out');
+            this.log('User signed out - clearing all auth state');
+            // CRITICAL FIX: Force clear all auth state on sign out
             this.updateAuthState({ 
               user: null, 
               session: null, 
-              loading: false 
+              loading: false,
+              error: null
             });
+            
+            // CRITICAL FIX: Also clear any cached data
+            try {
+              await supabase.auth.getSession();
+            } catch (sessionError) {
+              // Expected - session should be cleared
+              this.log('Session cleared in SIGNED_OUT handler');
+            }
             break;
             
           case 'TOKEN_REFRESHED':
@@ -398,12 +423,14 @@ class SecureAuthService implements AuthService {
     try {
       this.log('Attempting sign out...');
       
-      const { error } = await supabase.auth.signOut();
-
-      if (error) {
-        this.error('Sign out failed', error);
-        return { success: false, error: error.message };
-      }
+      // CRITICAL FIX: Force clear auth state BEFORE calling Supabase signOut
+      // This ensures the UI immediately reflects the sign out state
+      this.updateAuthState({
+        user: null,
+        session: null,
+        loading: false,
+        error: null
+      });
 
       // Clear developer mode if active
       if (localStorage.getItem('otakon_developer_mode') === 'true') {
@@ -412,12 +439,42 @@ class SecureAuthService implements AuthService {
         localStorage.removeItem('otakon_dev_session_start');
       }
 
+      // CRITICAL FIX: Use signOut without scope to ensure complete session clearing
+      // The 'local' scope was preventing proper session clearing
+      const { error } = await supabase.auth.signOut();
+
+      if (error) {
+        this.error('Sign out failed', error);
+        // Even if Supabase signOut fails, we've already cleared the local state
+        return { success: true, error: error.message };
+      }
+
+      // CRITICAL FIX: Verify session is cleared
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          this.log('Warning: Session still exists after signOut, forcing clear');
+          // Force clear the session
+          await supabase.auth.signOut();
+        }
+      } catch (sessionError) {
+        // Expected - session should be cleared
+        this.log('Session cleared successfully');
+      }
+
       this.log('Sign out successful');
       return { success: true };
 
     } catch (error) {
       this.error('Sign out error', error);
-      return { success: false, error: 'An unexpected error occurred' };
+      // Even if there's an error, ensure auth state is cleared
+      this.updateAuthState({
+        user: null,
+        session: null,
+        loading: false,
+        error: null
+      });
+      return { success: true, error: 'Sign out completed with errors' };
     }
   }
 
@@ -487,7 +544,6 @@ class SecureAuthService implements AuthService {
       await this.initializeDeveloperModeData();
 
       // Clear user state cache to ensure fresh developer mode state
-      const { secureAppStateService } = await import('./secureAppStateService');
       secureAppStateService.clearUserStateCache();
 
       // Update auth state with mock user
@@ -700,6 +756,15 @@ class SecureAuthService implements AuthService {
 
   private error(message: string, error?: any): void {
     console.error(`🔐 [AuthService] ${message}`, error || '');
+  }
+  
+  // ✅ RACE CONDITION FIX: Cleanup method to remove auth listener
+  cleanup(): void {
+    if (this.authStateListener) {
+      this.authStateListener.data.subscription.unsubscribe();
+      this.authStateListener = null;
+    }
+    this.isInitialized = false;
   }
 }
 

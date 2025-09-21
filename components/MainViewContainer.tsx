@@ -55,13 +55,26 @@ const MainViewContainer: React.FC<MainViewContainerProps> = ({
   onOpenWishlistModal,
   conversations,
 }) => {
-  // Safety check to prevent rendering when activeConversation is undefined
+  // FIXED: Better loading state management
   if (!activeConversation) {
+    console.log('🔧 [MainViewContainer] No active conversation found:', {
+      activeConversationId,
+      hasConversations: !!conversations,
+      conversationCount: conversations ? Object.keys(conversations).length : 0,
+      conversationIds: conversations ? Object.keys(conversations) : []
+    });
+    
+    // If we have conversations but no active one, try to set a default
+    if (conversations && Object.keys(conversations).length > 0) {
+      console.log('🔧 [MainViewContainer] Found conversations but no active one, this should not happen');
+    }
+    
     return (
       <div className="min-h-screen bg-[#1A1A1A] text-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading chat...</p>
+          <p className="text-gray-400">Loading conversations...</p>
+          <p className="text-gray-500 text-sm mt-2">This should only take a moment</p>
         </div>
       </div>
     );

@@ -4,6 +4,7 @@ import { databaseService } from './databaseService';
 import { authService } from './supabase';
 import { supabaseDataService } from './supabaseDataService';
 import { unifiedDataService, STORAGE_KEYS } from './unifiedDataService';
+import { tierService } from './tierService';
 
 const TIER_KEY = 'otakonUserTier';
 const TEXT_COUNT_KEY = 'otakonTextQueryCount';
@@ -349,7 +350,6 @@ const startFreeTrial = async () => {
         }
         
         // For production, use the tier service
-        const { tierService } = await import('./tierService');
         const userId = localStorage.getItem('otakonAuthUserId') || 'anonymous';
         const success = await tierService.startFreeTrial(userId);
         
