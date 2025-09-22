@@ -763,23 +763,21 @@ export const useChat = (isHandsFreeMode: boolean, refreshUsage?: () => Promise<v
                         const hasValidStructure = conversations[EVERYTHING_ELSE_ID].title && conversations[EVERYTHING_ELSE_ID].title === 'Everything else';
                         
                         if (conversationExists && hasValidStructure) {
-                            // Check if we've already added a welcome message in this session
-                            const welcomeAddedThisSession = sessionStorage.getItem('otakon_welcome_added_session');
-                            if (!welcomeAddedThisSession) {
-                                console.log('🔧 [useChat] Adding welcome message for empty conversation...');
-                                
-                                // Add welcome message to the conversation
-                                const welcomeMessage: ChatMessage = {
-                                    id: crypto.randomUUID(),
-                                    role: 'model' as const,
-                                    text: 'Welcome to Otagon! I\'m your AI gaming assistant, here to help you get unstuck in games with hints, not spoilers. Upload screenshots, ask questions, or connect your PC for instant help while playing!',
-                                    feedback: undefined
-                                };
-                                
-                                conversations[EVERYTHING_ELSE_ID].messages = [welcomeMessage];
-                                
-                                // Mark that we've added a welcome message this session
-                                sessionStorage.setItem('otakon_welcome_added_session', 'true');
+                            // Always add welcome message for empty conversations (removed session storage check)
+                            console.log('🔧 [useChat] Adding welcome message for empty conversation...');
+                            
+                            // Add welcome message to the conversation
+                            const welcomeMessage: ChatMessage = {
+                                id: crypto.randomUUID(),
+                                role: 'model' as const,
+                                text: 'Welcome to Otagon! I\'m your AI gaming assistant, here to help you get unstuck in games with hints, not spoilers. Upload screenshots, ask questions, or connect your PC for instant help while playing!',
+                                feedback: undefined
+                            };
+                            
+                            conversations[EVERYTHING_ELSE_ID].messages = [welcomeMessage];
+                            
+                            // Mark that we've added a welcome message this session
+                            sessionStorage.setItem('otakon_welcome_added_session', 'true');
                                 
                                 // Update welcome message shown in Supabase (but don't block on this)
                                 try {
