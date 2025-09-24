@@ -7,7 +7,10 @@ import DesktopIcon from './DesktopIcon';
 import BookmarkIcon from './BookmarkIcon';
 import { ConnectionStatus } from '../services/types';
 
-const slides = [
+// Feature flag: toggle to show or hide intro slides
+const SHOW_INTRO_SLIDES = false;
+
+const allSlides = [
   {
     icon: <ScreenshotIcon className="w-24 h-24 text-[#FF4D4D]" />,
     title: "Instant Context from Any Screenshot",
@@ -29,6 +32,8 @@ const slides = [
     description: "Link your desktop and mobile app to get help without leaving your game. Press a hotkey to instantly send a screenshot for analysis."
   }
 ];
+
+const slides = SHOW_INTRO_SLIDES ? allSlides : allSlides.slice(-1);
 
 interface SplashScreenProps {
   onComplete: () => void;

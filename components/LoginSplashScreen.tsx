@@ -589,7 +589,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({ onComplete, onOpe
 
                 {emailMode === 'options' ? (
                     <div 
-                        className="flex flex-col items-center justify-center gap-4 w-full max-w-lg px-4 sm:px-0 animate-fade-slide-up mt-12"
+                        className="flex flex-col items-center justify-center gap-4 w-full max-w-lg md:max-w-md lg:max-w-sm px-4 sm:px-0 animate-fade-slide-up mt-12"
                        
                     >
                         {errorMessage && (

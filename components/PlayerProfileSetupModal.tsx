@@ -97,7 +97,7 @@ export const PlayerProfileSetupModal: React.FC<PlayerProfileSetupModalProps> = (
         <div className="bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-white">Welcome to Otagon! 🎮</h2>
+              <h2 className="text-2xl font-bold text-white">Welcome to Otagon!</h2>
               <p className="text-white/90 mt-1">Let's personalize your gaming experience</p>
             </div>
             <div className="text-white/90 text-sm font-medium">

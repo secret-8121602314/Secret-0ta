@@ -4,6 +4,7 @@ import { enhancedErrorHandlingService, ChatErrorContext } from '../services/enha
 import { authService, supabase } from '../services/supabase';
 // Removed databaseService - not used in useChat
 import { secureConversationService } from '../services/secureConversationService';
+import { welcomeMessageService } from '../services/welcomeMessageService';
 import { ttsService } from '../services/ttsService';
 import { contextManagementService } from '../services/contextManagementService';
 import { playerProfileService } from '../services/playerProfileService';
@@ -349,13 +350,16 @@ export const useChat = (isHandsFreeMode: boolean, refreshUsage?: () => Promise<v
                 
                 // Always create default conversation for immediate chat access
                 // Check if we need to add a welcome message for authenticated users
+                const isDevMode = localStorage.getItem('otakon_developer_mode') === 'true';
                 const welcomeAddedThisSession = sessionStorage.getItem('otakon_welcome_added_session');
-                const shouldAddWelcome = authState.user && !welcomeAddedThisSession;
+                const devWelcomeShown = isDevMode && localStorage.getItem('otakon_dev_welcome_message_shown') === 'true';
+                const shouldAddWelcome = authState.user && !welcomeAddedThisSession && !devWelcomeShown;
                 
                 const welcomeMessage = shouldAddWelcome ? {
                     id: crypto.randomUUID(),
                     role: 'model' as const,
-                    text: 'Welcome to Otagon! I\'m your AI gaming assistant, here to help you get unstuck in games with hints, not spoilers. Upload screenshots, ask questions, or connect your PC for instant help while playing!'
+                    text: 'Welcome to Otagon! I\'m your AI gaming assistant, here to help you get unstuck in games with hints, not spoilers. Upload screenshots, ask questions, or connect your PC for instant help while playing!',
+                    metadata: { type: 'welcome' }
                 } : null;
                 
                 const defaultConversations = {
@@ -374,6 +378,11 @@ export const useChat = (isHandsFreeMode: boolean, refreshUsage?: () => Promise<v
                 // Mark welcome message as added if we added it
                 if (shouldAddWelcome) {
                     sessionStorage.setItem('otakon_welcome_added_session', 'true');
+                    if (isDevMode) {
+                        localStorage.setItem('otakon_dev_welcome_message_shown', 'true');
+                        localStorage.setItem('otakon_dev_welcome_message_time', new Date().toISOString());
+                        console.log('🔧 [useChat] Developer mode: Welcome message tracking updated in localStorage');
+                    }
                     console.log('🔧 [useChat] Welcome message added to default conversation');
                 }
                 
@@ -389,6 +398,13 @@ export const useChat = (isHandsFreeMode: boolean, refreshUsage?: () => Promise<v
                     console.log('  - order:', [EVERYTHING_ELSE_ID]);
                     console.log('  - activeId:', EVERYTHING_ELSE_ID);
                     console.log('💬 [useChat] Default conversation created immediately');
+
+                    // Ensure welcome message exists (idempotent, race-safe) and tracked
+                    try {
+                        await welcomeMessageService.ensureInserted(EVERYTHING_ELSE_ID, 'Everything else');
+                    } catch (e) {
+                        console.warn('Failed to ensure welcome message insertion:', e);
+                    }
                 }
                 
                 // If user is not authenticated, try to restore from localStorage for developer mode
@@ -439,54 +455,12 @@ export const useChat = (isHandsFreeMode: boolean, refreshUsage?: () => Promise<v
                     // Check if we need to add a welcome message
                     const welcomeAddedThisSession = sessionStorage.getItem('otakon_welcome_added_session');
                     if (!welcomeAddedThisSession) {
-                        const welcomeMessage: ChatMessage = {
-                            id: crypto.randomUUID(),
-                            role: 'model' as const,
-                            text: 'Welcome to Otagon! I\'m your AI gaming assistant, here to help you get unstuck in games with hints, not spoilers. Upload screenshots, ask questions, or connect your PC for instant help while playing!'
-                        };
-                        
-                        const conversationsWithWelcome = {
-                            [EVERYTHING_ELSE_ID]: {
-                                id: EVERYTHING_ELSE_ID,
-                                title: 'Everything else',
-                                messages: [welcomeMessage],
-                                insights: {},
-                                insightsOrder: [],
-                                context: {},
-                                createdAt: Date.now(),
-                                isPinned: false
-                            }
-                        };
-                        
-                        setChatState({
-                            conversations: conversationsWithWelcome,
-                            order: [EVERYTHING_ELSE_ID],
-                            activeId: EVERYTHING_ELSE_ID
-                        });
-                        
-                        // Mark that we've added a welcome message this session
+                        // Ensure welcome exists via centralized service (handles save+tracking)
+                        await welcomeMessageService.ensureInserted(EVERYTHING_ELSE_ID, 'Everything else');
+                        // Mark that we've attempted welcome this session to avoid redundant work
                         sessionStorage.setItem('otakon_welcome_added_session', 'true');
-                        
-                        console.log('🔧 [useChat] Default conversation with welcome message created for authenticated user');
-                        
-                        // Try to save the conversation
-                        try {
-                            await secureConversationService.saveConversation(
-                                EVERYTHING_ELSE_ID,
-                                'Everything Else',
-                                [welcomeMessage],
-                                [],
-                                {},
-                                undefined,
-                                false,
-                                true
-                            );
-                            console.log('🔧 [useChat] Welcome message conversation saved to database');
-                        } catch (saveError) {
-                            console.error('Failed to save welcome message conversation:', saveError);
-                        }
-                        
-                        return; // Exit early since we've created the default conversation
+                        console.log('🔧 [useChat] Ensured welcome message for authenticated user');
+                        return;
                     }
                 }
                 
@@ -843,53 +817,18 @@ export const useChat = (isHandsFreeMode: boolean, refreshUsage?: () => Promise<v
                         const hasValidStructure = conversations[EVERYTHING_ELSE_ID].title && conversations[EVERYTHING_ELSE_ID].title === 'Everything else';
                         
                         if (conversationExists && hasValidStructure) {
-                            // Always add welcome message for empty conversations (removed session storage check)
-                            console.log('🔧 [useChat] Adding welcome message for empty conversation...');
+                            // Check if welcome message was already shown in dev mode
+                            const isDevMode = localStorage.getItem('otakon_developer_mode') === 'true';
+                            const devWelcomeShown = isDevMode && localStorage.getItem('otakon_dev_welcome_message_shown') === 'true';
                             
-                            // Add welcome message to the conversation
-                            const welcomeMessage: ChatMessage = {
-                                id: crypto.randomUUID(),
-                                role: 'model' as const,
-                                text: 'Welcome to Otagon! I\'m your AI gaming assistant, here to help you get unstuck in games with hints, not spoilers. Upload screenshots, ask questions, or connect your PC for instant help while playing!'
-                            };
+                            if (devWelcomeShown) {
+                                console.log('🔧 [useChat] Developer mode: Welcome message already shown, skipping');
+                                return;
+                            }
                             
-                            conversations[EVERYTHING_ELSE_ID].messages = [welcomeMessage];
-                            
-                            // Mark that we've added a welcome message this session
-                            sessionStorage.setItem('otakon_welcome_added_session', 'true');
-                                
-                                // Update welcome message shown in Supabase (but don't block on this)
-                                try {
-                                    await supabaseDataService.updateWelcomeMessageShown('returning_user');
-                                } catch (error) {
-                                    console.warn('Failed to update welcome message tracking:', error);
-                                }
-                                
-                                // Immediately save the conversation with welcome message to database
-                        try {
-                            console.log('🔧 [useChat] Saving welcome message to database:', {
-                                conversationId: EVERYTHING_ELSE_ID,
-                                title: 'Everything Else',
-                                messages: [welcomeMessage],
-                                messageCount: [welcomeMessage].length
-                            });
-                            
-                            await secureConversationService.saveConversation(
-                                EVERYTHING_ELSE_ID,
-                                'Everything Else',
-                                [welcomeMessage], // Use the welcomeMessage directly instead of conversations object
-                                [],
-                                {},
-                                undefined,
-                                false,
-                                true // force overwrite
-                            );
-                            console.log('🔧 [useChat] Welcome message conversation saved to database');
-                        } catch (saveError) {
-                            console.error('Failed to save welcome message conversation:', saveError);
-                        }
-                        
-                                console.log('🔧 [useChat] Welcome message added during conversation loading');
+                            // Ensure welcome message via centralized service
+                            await welcomeMessageService.ensureInserted(EVERYTHING_ELSE_ID, 'Everything else');
+                            console.log('🔧 [useChat] Ensured welcome message during conversation loading');
                             } else {
                                 console.log('🔧 [useChat] Welcome message already added this session, skipping');
                             }

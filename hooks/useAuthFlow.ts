@@ -94,6 +94,15 @@ export const useAuthFlow = ({
     
     console.log('🔐 [Logout] Starting logout process...', { isDeveloperMode, userEmail: authState?.user?.email });
     
+    // Check if this is an automatic trigger (user just logged in)
+    const recentLogin = localStorage.getItem('otakonAuthMethod');
+    if (recentLogin === 'developer') {
+      console.log('🔐 [Logout] Detected recent developer login, clearing auth method flag');
+      localStorage.removeItem('otakonAuthMethod');
+      // Don't show confirmation modal if user just logged in
+      return;
+    }
+    
     showConfirmation(
       isDeveloperMode ? 'Sign Out of Developer Mode?' : 'Sign Out?',
       isDeveloperMode 
@@ -108,6 +117,12 @@ export const useAuthFlow = ({
           
           // Set logout redirect flag to show login page instead of landing page
           localStorage.setItem('otakon_logout_redirect', 'true');
+          
+          // Clear any persisting modal states
+          sessionStorage.removeItem('otakon_welcome_added_session');
+          
+          // Clear confirmation modal state to prevent it from persisting
+          // This is handled by the auth state change in App.tsx
           
           const signOutResult = await authService.signOut();
           console.log('🔐 [Logout] Sign out result:', signOutResult);

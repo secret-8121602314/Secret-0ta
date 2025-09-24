@@ -563,7 +563,7 @@ export class UnifiedAnalyticsService extends BaseService {
         }));
 
         const { error } = await supabase
-          .from('analytics_new')
+          .from('analytics')
           .insert(mappedEvents);
 
         if (error) {

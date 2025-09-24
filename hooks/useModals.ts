@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { ContextMenuState, ContextMenuItem } from '../services/types';
 import { FeedbackModalState, ActiveModal } from './useAppState';
 
@@ -140,6 +140,13 @@ export const useModals = ({
   const hideConfirmation = useCallback(() => {
     console.log('🔐 [Confirmation] Hiding confirmation modal');
     setConfirmationModal(null);
+  }, []);
+
+  // Clear confirmation modal on component unmount or when auth state changes
+  useEffect(() => {
+    return () => {
+      setConfirmationModal(null);
+    };
   }, []);
 
   return {

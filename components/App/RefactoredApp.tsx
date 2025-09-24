@@ -116,6 +116,22 @@ const RefactoredApp: React.FC = () => {
   } = useUsageTracking({ usage, setUsage: state.setUsage });
 
   const {
+    confirmationModal,
+    handleSettingsClick,
+    handleContextMenuAction,
+    handleFeedback,
+    closeFeedbackModal,
+    openModal,
+    closeModal,
+    showConfirmation,
+    hideConfirmation,
+  } = useModals({
+    setContextMenu: state.setContextMenu,
+    setFeedbackModalState: state.setFeedbackModalState,
+    setActiveModal: state.setActiveModal,
+  });
+
+  const {
     handleLogout,
     handleLogoutOnly,
     executeFullReset,
@@ -130,31 +146,11 @@ const RefactoredApp: React.FC = () => {
     setIsHandsFreeMode: state.setIsHandsFreeMode,
     setIsConnectionModalOpen: state.setIsConnectionModalOpen,
     setShowProfileSetup: state.setShowProfileSetup,
-    showConfirmation: (title: string, message: string, onConfirm: () => void) => {
-      // Will be handled by confirmation modal system
-      console.log('Confirmation requested:', title, message);
-      onConfirm();
-    },
+    showConfirmation,
     send,
     disconnect,
     resetConversations,
     refreshUsage,
-  });
-
-  const {
-    confirmationModal,
-    handleSettingsClick,
-    handleContextMenuAction,
-    handleFeedback,
-    closeFeedbackModal,
-    openModal,
-    closeModal,
-    showConfirmation,
-    hideConfirmation,
-  } = useModals({
-    setContextMenu: state.setContextMenu,
-    setFeedbackModalState: state.setFeedbackModalState,
-    setActiveModal: state.setActiveModal,
   });
 
   const {
