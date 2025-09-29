@@ -339,24 +339,11 @@ export const useChat = (isHandsFreeMode: boolean, refreshUsage?: () => Promise<v
                 }
                 
                 // Always create default conversation for immediate chat access
-                // Check if we need to add a welcome message for authenticated users
-                const isDevMode = localStorage.getItem('otakon_developer_mode') === 'true';
-                const welcomeAddedThisSession = sessionStorage.getItem('otakon_welcome_added_session');
-                const devWelcomeShown = isDevMode && localStorage.getItem('otakon_dev_welcome_message_shown') === 'true';
-                const shouldAddWelcome = authState.user && !welcomeAddedThisSession && !devWelcomeShown;
-                
-                const welcomeMessage = shouldAddWelcome ? {
-                    id: crypto.randomUUID(),
-                    role: 'model' as const,
-                    text: 'Welcome to Otagon! I\'m your AI gaming assistant, here to help you get unstuck in games with hints, not spoilers. Upload screenshots, ask questions, or connect your PC for instant help while playing!',
-                    metadata: { type: 'welcome' }
-                } : null;
-                
                 const defaultConversations = {
                     [EVERYTHING_ELSE_ID]: {
                         id: EVERYTHING_ELSE_ID,
                         title: 'Everything else',
-                        messages: welcomeMessage ? [welcomeMessage] : [],
+                        messages: [], // Start empty, welcome message will be added by welcomeMessageService
                         insights: {},
                         insightsOrder: [],
                         context: {},
@@ -364,17 +351,6 @@ export const useChat = (isHandsFreeMode: boolean, refreshUsage?: () => Promise<v
                         isPinned: false
                     }
                 };
-                
-                // Mark welcome message as added if we added it
-                if (shouldAddWelcome) {
-                    sessionStorage.setItem('otakon_welcome_added_session', 'true');
-                    if (isDevMode) {
-                        localStorage.setItem('otakon_dev_welcome_message_shown', 'true');
-                        localStorage.setItem('otakon_dev_welcome_message_time', new Date().toISOString());
-                        console.log('🔧 [useChat] Developer mode: Welcome message tracking updated in localStorage');
-                    }
-                    console.log('🔧 [useChat] Welcome message added to default conversation');
-                }
                 
                 // Set default state immediately
                 if (isMounted) {
@@ -388,10 +364,33 @@ export const useChat = (isHandsFreeMode: boolean, refreshUsage?: () => Promise<v
                     console.log('  - order:', [EVERYTHING_ELSE_ID]);
                     console.log('  - activeId:', EVERYTHING_ELSE_ID);
                     console.log('💬 [useChat] Default conversation created immediately');
-
-                    // Ensure welcome message exists (idempotent, race-safe) and tracked
+                }
+                
+                // CRITICAL FIX: Always try to ensure welcome message exists for authenticated users
+                if (authState.user) {
+                    console.log('🔧 [useChat] User authenticated, ensuring welcome message...');
                     try {
-                        await welcomeMessageService.ensureInserted(EVERYTHING_ELSE_ID, 'Everything else');
+                        const welcomeResult = await welcomeMessageService.ensureInserted(EVERYTHING_ELSE_ID, 'Everything else');
+                        console.log('🔧 [useChat] Welcome message ensureInserted result:', welcomeResult);
+                        
+                        if (welcomeResult) {
+                            // Reload conversations to get the welcome message
+                            const reloadResult = await secureConversationService.loadConversations();
+                            if (reloadResult.success && reloadResult.conversations) {
+                                const conversations = reloadResult.conversations as any;
+                                const order = Object.keys(conversations);
+                                const activeId = EVERYTHING_ELSE_ID;
+                                
+                                if (isMounted) {
+                                    setChatState({
+                                        conversations,
+                                        order,
+                                        activeId
+                                    });
+                                    console.log('🔧 [useChat] Conversations reloaded with welcome message');
+                                }
+                            }
+                        }
                     } catch (e) {
                         console.warn('Failed to ensure welcome message insertion:', e);
                     }
@@ -647,30 +646,7 @@ export const useChat = (isHandsFreeMode: boolean, refreshUsage?: () => Promise<v
                             }
                             
                             // Only create default if we truly have no conversations
-                            console.log('🔧 [useChat] No existing conversations, creating default with welcome message...');
-                            
-                            // Use welcomeMessageService to ensure proper welcome message handling
-                            try {
-                                await welcomeMessageService.ensureInserted(EVERYTHING_ELSE_ID, 'Everything else');
-                                console.log('🔧 [useChat] Welcome message ensured for new user');
-                                
-                                // Reload conversations to get the welcome message that was just created
-                                const reloadResult = await secureConversationService.loadConversations();
-                                if (reloadResult.success && reloadResult.conversations) {
-                                    const conversations = reloadResult.conversations as any;
-                                    const order = Object.keys(conversations);
-                                    const activeId = EVERYTHING_ELSE_ID;
-                                    
-                                    setChatState({
-                                        conversations,
-                                        order,
-                                        activeId
-                                    });
-                                    console.log('🔧 [useChat] Conversations reloaded with welcome message');
-                                }
-                            } catch (welcomeError) {
-                                console.error('Failed to ensure welcome message for new user:', welcomeError);
-                            }
+                            console.log('🔧 [useChat] No existing conversations, using default conversation...');
                         } else {
                             // Loading failed, try to restore from localStorage as fallback
                             console.warn('⚠️ Failed to load conversations from Supabase, trying localStorage fallback');

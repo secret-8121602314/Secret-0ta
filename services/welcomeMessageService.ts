@@ -57,11 +57,17 @@ class WelcomeMessageService {
 
   async ensureInserted(conversationId: string, title: string): Promise<boolean> {
     try {
+      console.log('[welcomeMessageService] ensureInserted called for:', { conversationId, title });
       const userId = await this.getUserId();
-      if (!userId) return false;
+      console.log('[welcomeMessageService] userId:', userId);
+      if (!userId) {
+        console.log('[welcomeMessageService] No userId, returning false');
+        return false;
+      }
 
       // Decide reason based on backend flag
       const decision = await this.decide();
+      console.log('[welcomeMessageService] decision:', decision);
       const reason: WelcomeReason = decision.reason === 'none' ? 'returning' : (decision.reason as WelcomeReason);
 
       // Load existing conversation (if present)
@@ -72,6 +78,7 @@ class WelcomeMessageService {
       const hasWelcome = existingMessages.some((m: any) => 
         m && m.metadata && m.metadata.type === 'welcome'
       );
+      console.log('[welcomeMessageService] existingMessages:', existingMessages.length, 'hasWelcome:', hasWelcome);
       if (hasWelcome) {
         console.log('[welcomeMessageService] Welcome message already exists in conversation');
         return false;
@@ -86,6 +93,7 @@ class WelcomeMessageService {
 
       const messagesToSave = [...existingMessages, message];
 
+      console.log('[welcomeMessageService] Saving conversation with welcome message...');
       const save = await secureConversationService.saveConversation(
         conversationId,
         title,
@@ -97,6 +105,7 @@ class WelcomeMessageService {
         true
       );
 
+      console.log('[welcomeMessageService] Save result:', save);
       if (!save.success) {
         console.warn('[welcomeMessageService] Failed to save conversation with welcome:', save.error);
         return false;
