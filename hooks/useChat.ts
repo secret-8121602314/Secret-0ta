@@ -330,16 +330,12 @@ export const useChat = (isHandsFreeMode: boolean, refreshUsage?: () => Promise<v
         
         const loadConversations = async () => {
             try {
-                // Wait for auth service to be properly initialized
-                let authState = authService.getCurrentState();
-                let attempts = 0;
-                const maxAttempts = 20; // Wait up to 2 seconds
+                // CRITICAL FIX: Simplified auth state check - single check with timeout
+                const authState = authService.getCurrentState();
                 
-                // If auth is still loading, wait for it to complete
-                while (authState.loading && attempts < maxAttempts) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    authState = authService.getCurrentState();
-                    attempts++;
+                // If auth is still loading, wait briefly then proceed
+                if (authState.loading) {
+                    await new Promise(resolve => setTimeout(resolve, 200));
                 }
                 
                 // Always create default conversation for immediate chat access
@@ -442,12 +438,9 @@ export const useChat = (isHandsFreeMode: boolean, refreshUsage?: () => Promise<v
                     return;
                 }
                 
-                // For authenticated users, load conversations from Supabase first
-                if (!authState.loading && authState.user) {
-                        console.log('🔐 User signed in, reloading conversations...');
-                        
-                        // Add additional delay to ensure auth state is fully ready
-                        await new Promise(resolve => setTimeout(resolve, 500));
+                // For authenticated users, load conversations from Supabase
+                if (authState.user) {
+                        console.log('🔐 User signed in, loading conversations...');
                         
                         try {
                             const result = await secureConversationService.loadConversations();

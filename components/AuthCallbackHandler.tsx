@@ -57,23 +57,27 @@ const AuthCallbackHandler: React.FC<AuthCallbackHandlerProps> = ({ onAuthSuccess
               console.log('Session missing during OAuth flow, waiting and retrying...');
               await new Promise(resolve => setTimeout(resolve, 2000));
               
-              // Try one more time
-              const { data: { user: retryUser }, error: retryError } = await supabase.auth.getUser();
-              if (retryError || !retryUser) {
-                setError('Authentication session expired. Please try signing in again.');
+              // Try to get session again after waiting
+              const { data: { session: retrySession }, error: retryError } = await supabase.auth.getSession();
+              if (retryError || !retrySession) {
+                console.log('Retry failed, redirecting to login');
+                setError('Authentication session expired. Please try logging in again.');
                 setStatus('error');
-                onAuthError('Authentication session expired. Please try signing in again.');
-              } else {
-                console.log('User authenticated on retry:', retryUser);
-                setStatus('success');
-                setTimeout(() => {
-                  if (onRedirectToSplash) {
-                    onRedirectToSplash();
-                  } else {
-                    onAuthSuccess();
-                  }
-                }, 1500);
+                onAuthError('Authentication session expired. Please try logging in again.');
+                return;
               }
+              
+              // Session recovered, proceed with success
+              console.log('Session recovered after retry');
+              setStatus('success');
+              setTimeout(() => {
+                if (onRedirectToSplash) {
+                  onRedirectToSplash();
+                } else {
+                  onAuthSuccess();
+                }
+              }, 1500);
+              return;
             } else {
               setError('Authentication failed. Please try again.');
               setStatus('error');

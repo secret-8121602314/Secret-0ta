@@ -21,15 +21,10 @@ class WelcomeMessageService {
 
   async decide(): Promise<WelcomeDecision> {
     try {
-      // Always show welcome message for empty conversations
+      // CRITICAL FIX: Always return shouldShow: true for empty conversations
       // The actual check for existing welcome messages happens in ensureInserted()
-      // This method just determines the reason for the welcome message
-      const shouldShow = await playerProfileService.shouldShowWelcomeMessage();
-      if (shouldShow) {
-        return { shouldShow: true, reason: 'first_run' };
-      }
-      // Even if backend says no, we still want to show welcome for empty conversations
-      return { shouldShow: true, reason: 'returning' };
+      // This prevents welcome messages from disappearing after reload
+      return { shouldShow: true, reason: 'first_run' };
     } catch (error) {
       // Fallback: always show welcome message for empty conversations
       console.warn('[welcomeMessageService] decide() failed, defaulting to show welcome:', error);
@@ -73,10 +68,12 @@ class WelcomeMessageService {
       const existing = await secureConversationService.getConversation(conversationId);
       const existingMessages: any[] = existing.success && existing.conversation ? (existing.conversation.messages || []) : [];
 
-      // Check for existing welcome by metadata
-      const expectedId = `welcome:${userId}:${conversationId}`;
-      const hasWelcome = existingMessages.some((m: any) => m && m.metadata && m.metadata.type === 'welcome' && m.metadata.messageId === expectedId);
+      // Check for existing welcome by metadata (more flexible check)
+      const hasWelcome = existingMessages.some((m: any) => 
+        m && m.metadata && m.metadata.type === 'welcome'
+      );
       if (hasWelcome) {
+        console.log('[welcomeMessageService] Welcome message already exists in conversation');
         return false;
       }
 
