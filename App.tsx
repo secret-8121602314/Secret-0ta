@@ -579,7 +579,8 @@ const App: React.FC = () => {
       console.log('🔧 [App] Auth state changed. New state:', { 
         isAuthenticated: userState.isAuthenticated, 
         view: appView.view,
-        onboardingStatus: appView.onboardingStatus
+        onboardingStatus: appView.onboardingStatus,
+        isOAuthCallback: isOAuthCallback
       });
 
       // 2. Directly set the new state. This is the single source of truth for updates.
@@ -599,6 +600,12 @@ const App: React.FC = () => {
         setIsOAuthCallback(false);
       } else if (userState.isAuthenticated && isOAuthCallback) {
         console.log('🔧 [App] User authenticated successfully, resetting OAuth callback flag');
+        setIsOAuthCallback(false);
+      }
+      
+      // ADDITIONAL FIX: Always clear OAuth callback flag after auth state is processed
+      if (isOAuthCallback) {
+        console.log('🔧 [App] Clearing OAuth callback flag after auth state processing');
         setIsOAuthCallback(false);
       }
       
