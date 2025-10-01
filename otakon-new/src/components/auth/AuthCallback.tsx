@@ -160,8 +160,8 @@ const AuthCallback: React.FC<AuthCallbackProps> = ({ onAuthSuccess, onAuthError 
           if (urlParams.has('code') || urlParams.has('error') || hashParams.has('access_token')) {
             console.log('🔐 [AuthCallback] OAuth parameters found, trying manual handling...');
             
-            // Wait a bit more for the OAuth process to complete
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            // Wait a bit for the OAuth process to complete
+            await new Promise(resolve => setTimeout(resolve, 1000));
             
             // Try to get session again
             const retrySession = await supabase.auth.getSession();
@@ -172,7 +172,7 @@ const AuthCallback: React.FC<AuthCallbackProps> = ({ onAuthSuccess, onAuthError 
               
               // Wait for database trigger to create user record
               console.log('🔐 [AuthCallback] Waiting for database trigger to create user record...');
-              await new Promise(resolve => setTimeout(resolve, 1000));
+              await new Promise(resolve => setTimeout(resolve, 500));
               
               // Load user data through AuthService
               await authService.loadUserFromSupabase(retrySession.data.session.user.id);

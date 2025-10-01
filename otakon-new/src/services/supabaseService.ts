@@ -31,7 +31,6 @@ export class SupabaseService {
           authUserId: userData.user_id,
           email: userData.email,
           tier: userData.tier as UserTier,
-          isDeveloper: false,
           hasProfileSetup: false,
           hasSeenSplashScreens: false,
           hasSeenHowToUse: false,

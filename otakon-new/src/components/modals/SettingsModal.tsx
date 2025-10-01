@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
-import TierSwitcher from '../developer/TierSwitcher';
 import { User, UserTier } from '../../types';
 import { authService } from '../../services/authService';
 
@@ -9,14 +8,12 @@ interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   user: User | null;
-  onTierChange: (tier: UserTier) => void;
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ 
   isOpen, 
   onClose, 
-  user, 
-  onTierChange 
+  user
 }) => {
   const [activeTab, setActiveTab] = useState<'account' | 'tier' | 'preferences'>('account');
 
@@ -26,6 +23,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     await authService.signOut();
     onClose();
   };
+
 
   const getTierDisplayName = (tier: UserTier) => {
     switch (tier) {
@@ -119,13 +117,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
                 </div>
                 
-                {user.isDeveloper && (
-                  <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                    <div className="text-sm text-yellow-400">
-                      <strong>Developer Mode:</strong> You have access to all features and tier switching.
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -180,12 +171,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
             </div>
 
-            {user.isDeveloper && (
-              <TierSwitcher
-                currentTier={user.tier}
-                onTierChange={onTierChange}
-              />
-            )}
           </div>
         )}
 
@@ -229,6 +214,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
         )}
+
       </div>
     </Modal>
   );

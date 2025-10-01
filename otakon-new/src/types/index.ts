@@ -1,6 +1,6 @@
 // User Types
 export type UserTier = 'free' | 'pro' | 'vanguard_pro';
-export type AuthMethod = 'google' | 'discord' | 'email' | 'dev';
+export type AuthMethod = 'google' | 'discord' | 'email';
 
 // Connection Status
 export enum ConnectionStatus {
@@ -15,7 +15,6 @@ export interface User {
   authUserId: string;
   email: string;
   tier: UserTier;
-  isDeveloper: boolean;
   hasProfileSetup: boolean;
   hasSeenSplashScreens: boolean;
   hasSeenHowToUse: boolean;

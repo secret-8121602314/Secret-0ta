@@ -22,8 +22,6 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
   const [emailMode, setEmailMode] = useState<'options' | 'signin' | 'signup' | 'forgot-password'>('options');
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [showDeveloperPassword, setShowDeveloperPassword] = useState(false);
-  const [developerPassword, setDeveloperPassword] = useState('');
   const [isAnimating, setIsAnimating] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [emailError, setEmailError] = useState('');
@@ -111,28 +109,21 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [emailMode]);
 
-  const handleAuth = async (method: 'google' | 'discord' | 'email' | 'dev') => {
+  const handleAuth = async (method: 'google' | 'discord' | 'email') => {
+    console.log('🔐 [LoginSplashScreen] Auth method called:', method);
     setIsLoading(true);
     setErrorMessage('');
 
     try {
-      if (method === 'dev') {
-        const result = await authService.signInWithDeveloper(developerPassword);
-        if (result.success) {
-          onComplete();
-        } else {
-          setErrorMessage(result.error || 'Invalid developer password');
-        }
-        return;
-      }
-
       if (method === 'email') {
         setEmailMode('signin');
         setIsLoading(false);
         return;
       }
 
-      // OAuth methods
+      // ⚠️ PROTECTED OAUTH FLOW - DO NOT MODIFY WITHOUT WARNING ⚠️
+      // Google and Discord OAuth are working correctly - any changes here could break user authentication
+      // If you need to modify this, add a warning comment explaining the change
       const result = await authService[method === 'google' ? 'signInWithGoogle' : 'signInWithDiscord']();
       if (result.success) {
         // OAuth will redirect, so we don't need to call onComplete here
@@ -190,6 +181,9 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
     try {
       let result;
       if (emailMode === 'signin') {
+        // ⚠️ PROTECTED EMAIL AUTH FLOW - DO NOT MODIFY WITHOUT WARNING ⚠️
+        // Email sign-in is working correctly - any changes here could break user authentication
+        // If you need to modify this, add a warning comment explaining the change
         // Set view to app immediately to prevent flash
         onComplete();
         // Show loading state during sign-in
@@ -208,6 +202,9 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
           return;
         }
         
+        // ⚠️ PROTECTED EMAIL AUTH FLOW - DO NOT MODIFY WITHOUT WARNING ⚠️
+        // Email signup is working correctly - any changes here could break user registration
+        // If you need to modify this, add a warning comment explaining the change
         result = await authService.signUpWithEmail(email, password);
       }
       
@@ -280,14 +277,6 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-[#0F0F0F] to-background text-text-primary flex flex-col items-center justify-center px-4 py-8 relative overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl animate-pulse hidden md:block"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-secondary/5 rounded-full blur-3xl animate-pulse delay-1000 hidden md:block"></div>
-        {/* Mobile background elements */}
-        <div className="absolute -top-20 -right-20 w-40 h-40 bg-primary/5 rounded-full blur-2xl animate-pulse md:hidden"></div>
-        <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-secondary/5 rounded-full blur-2xl animate-pulse delay-1000 md:hidden"></div>
-      </div>
       
       <div className={`w-full max-w-md relative z-10 transition-all duration-500 ${isAnimating ? 'scale-105' : 'scale-100'} mx-auto`}>
         {/* Logo and Title */}
@@ -572,70 +561,16 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
               </Button>
             </div>
 
-            {/* Developer Mode */}
-            <div className="pt-4 border-t border-surface-light/20 text-center">
-              {!showDeveloperPassword ? (
-                <button
-                  onClick={() => setShowDeveloperPassword(true)}
-                  className="text-xs text-text-muted hover:text-primary transition-colors duration-200 underline"
-                >
-                  Developer Mode
-                </button>
-              ) : (
-                <div className="flex items-center gap-2 justify-center">
-                  <input
-                    type="password"
-                    placeholder="Dev password"
-                    value={developerPassword}
-                    onChange={(e) => setDeveloperPassword(e.target.value)}
-                    className="px-2 py-1 bg-surface border border-surface-light/60 rounded text-text-primary placeholder-text-muted focus:outline-none focus:border-primary transition-colors text-xs w-24"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        handleAuth('dev');
-                      }
-                    }}
-                  />
-                  <button
-                    onClick={() => handleAuth('dev')}
-                    className="px-2 py-1 h-6 bg-transparent text-primary font-bold rounded text-xs hover:bg-primary/10 transition-all duration-200 flex items-center justify-center"
-                  >
-                    Enter
-                  </button>
-                  <button
-                    onClick={() => setShowDeveloperPassword(false)}
-                    className="text-xs text-text-muted hover:text-primary transition-colors duration-200"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              )}
-            </div>
           </div>
         )}
 
-        {/* Footer */}
+        {/* Back to Landing */}
         <div className="text-center mt-6 md:mt-8">
-          <p className="text-xs text-text-muted mb-4">
-            By continuing, you agree to our{' '}
-            <button
-              onClick={() => setShowTermsModal(true)}
-              className="text-primary hover:text-secondary transition-colors underline"
-            >
-              Terms of Service
-            </button>
-            {' '}and{' '}
-            <button
-              onClick={() => setShowPrivacyModal(true)}
-              className="text-primary hover:text-secondary transition-colors underline"
-            >
-              Privacy Policy
-            </button>
-            .
-          </p>
-
-          {/* Back to Landing */}
           <button
-            onClick={onBackToLanding}
+            onClick={() => {
+              console.log('🔙 [LoginSplashScreen] Back to landing clicked');
+              onBackToLanding();
+            }}
             className="text-text-muted hover:text-text-primary transition-colors text-xs md:text-sm flex items-center justify-center space-x-1 md:space-x-2 mx-auto hover:scale-105 transition-all duration-300"
             aria-label="Return to landing page"
           >
@@ -645,6 +580,27 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
             <span>Back to Landing Page</span>
           </button>
         </div>
+      </div>
+
+      {/* Footer */}
+      <div className="absolute bottom-4 left-0 right-0 p-4 text-center">
+        <p className="text-xs text-text-muted">
+          By continuing, you agree to our{' '}
+          <button
+            onClick={() => setShowTermsModal(true)}
+            className="text-primary hover:text-secondary transition-colors underline"
+          >
+            Terms of Service
+          </button>
+          {' '}and{' '}
+          <button
+            onClick={() => setShowPrivacyModal(true)}
+            className="text-primary hover:text-secondary transition-colors underline"
+          >
+            Privacy Policy
+          </button>
+          .
+        </p>
       </div>
 
       {/* Modals */}

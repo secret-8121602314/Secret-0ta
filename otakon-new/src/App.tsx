@@ -29,7 +29,7 @@ function App() {
   const [hasEverLoggedIn, setHasEverLoggedIn] = useState(false);
   const [appState, setAppState] = useState({
     view: 'landing' as 'landing' | 'app',
-    onboardingStatus: 'login' as any,
+    onboardingStatus: 'initial' as any,
     activeSubView: 'chat',
     isConnectionModalOpen: false,
     isHandsFreeModalOpen: false,
@@ -52,6 +52,7 @@ function App() {
   });
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.DISCONNECTED);
   const [connectionError, setConnectionError] = useState<string | null>(null);
@@ -74,10 +75,11 @@ function App() {
     });
   }, [appState.view, appState.onboardingStatus, authState.user]);
 
-  // Update Supabase with app state changes (only for persistent data)
+  // Update user data with app state changes (only for persistent data)
   useEffect(() => {
     if (authState.user && !authState.isLoading) {
-      // Update user's app state in Supabase
+      
+      // Update authenticated users in Supabase
       const updateAppState = async () => {
         try {
           const { error } = await supabase
@@ -164,7 +166,12 @@ function App() {
             
             // Process onboarding if we're in the app view OR if we have a user and need to transition to app
             // But only if we haven't already set an onboarding status
-            if ((appStateRef.current.view === 'app' || (newAuthState.user && !newAuthState.user.onboardingCompleted)) && 
+            const needsOnboarding = newAuthState.user && !newAuthState.user.onboardingCompleted;
+            const isInAppView = appStateRef.current.view === 'app';
+            
+            const shouldProcessOnboarding = (isInAppView || needsOnboarding);
+            
+            if (shouldProcessOnboarding && 
                 (appStateRef.current.onboardingStatus === 'login' || appStateRef.current.onboardingStatus === 'initial')) {
               // Check if user has completed onboarding
               if (newAuthState.user.onboardingCompleted || (newAuthState.user.hasSeenSplashScreens && newAuthState.user.hasProfileSetup)) {
@@ -336,7 +343,12 @@ function App() {
   };
 
   const handleBackToLanding = () => {
-    setAppState(prev => ({ ...prev, view: 'landing' }));
+    console.log('🔙 [App] Back to landing clicked, resetting to landing page');
+    setAppState(prev => ({ 
+      ...prev, 
+      view: 'landing',
+      onboardingStatus: 'initial' // Reset to show actual landing page, not login
+    }));
   };
 
 
@@ -355,8 +367,13 @@ function App() {
     setAppState(prev => ({ ...prev, view: 'landing' }));
   };
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const confirmLogout = async () => {
     console.log('🎯 [App] Starting logout process...');
+    setShowLogoutConfirm(false);
     
     // Sign out from auth service
     await authService.signOut();
@@ -364,7 +381,7 @@ function App() {
     // Reset all app state (but keep hasEverLoggedIn = true)
     setAppState(prev => ({ 
       ...prev,
-      view: 'app', 
+      view: 'landing', 
       onboardingStatus: 'login' 
     }));
     
@@ -384,10 +401,6 @@ function App() {
     setActiveModal(null);
   };
 
-  const handleTierChange = (newTier: any) => {
-    // This will be handled by the auth service
-    console.log('Tier changed to:', newTier);
-  };
 
   const handleOnboardingComplete = async (step: string) => {
     console.log('🎯 [App] Onboarding step completed:', step);
@@ -750,8 +763,33 @@ function App() {
           isOpen={settingsOpen}
           onClose={() => setSettingsOpen(false)}
           user={authState.user}
-          onTierChange={handleTierChange}
         />
+
+        {/* Logout Confirmation Modal */}
+        {showLogoutConfirm && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-surface border border-surface-light/20 rounded-xl p-6 max-w-md mx-4">
+              <h3 className="text-lg font-semibold text-text-primary mb-4">Confirm Logout</h3>
+              <p className="text-text-secondary mb-6">
+                Are you sure you want to sign out? You'll need to log in again to access your account.
+              </p>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowLogoutConfirm(false)}
+                  className="flex-1 px-4 py-2 text-text-muted hover:text-text-primary transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmLogout}
+                  className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </>
     );
     }
@@ -759,7 +797,7 @@ function App() {
 
   // Fallback
   return (
-    <div className="h-screen bg-background flex items-center justify-center">
+    <div className="h-screen bg-gradient-to-br from-background via-[#0F0F0F] to-background flex items-center justify-center">
       <div className="text-center">
         <p className="text-text-muted">Something went wrong. Please refresh the page.</p>
       </div>

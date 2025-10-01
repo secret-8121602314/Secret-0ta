@@ -27,7 +27,6 @@ export interface Database {
           full_name: string | null;
           avatar_url: string | null;
           tier: 'free' | 'pro' | 'vanguard_pro';
-          is_developer: boolean;
           has_profile_setup: boolean;
           has_seen_splash_screens: boolean;
           has_welcome_message: boolean;
@@ -55,7 +54,6 @@ export interface Database {
           full_name?: string | null;
           avatar_url?: string | null;
           tier?: 'free' | 'pro' | 'vanguard_pro';
-          is_developer?: boolean;
           has_profile_setup?: boolean;
           has_seen_splash_screens?: boolean;
           has_welcome_message?: boolean;
@@ -83,7 +81,6 @@ export interface Database {
           full_name?: string | null;
           avatar_url?: string | null;
           tier?: 'free' | 'pro' | 'vanguard_pro';
-          is_developer?: boolean;
           has_profile_setup?: boolean;
           has_seen_splash_screens?: boolean;
           has_welcome_message?: boolean;

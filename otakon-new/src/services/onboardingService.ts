@@ -31,7 +31,6 @@ export interface OnboardingStatus {
   pc_connection_skipped: boolean;
   onboarding_completed: boolean;
   tier: string;
-  is_developer: boolean;
 }
 
 // ========================================
@@ -188,11 +187,6 @@ class OnboardingService {
         return 'login';
       }
 
-      // Developer mode users skip onboarding
-      if (status.is_developer) {
-        console.log('🎯 [OnboardingService] Developer user, returning complete');
-        return 'complete';
-      }
 
       // Safely get boolean values with defaults
       const hasSeenSplashScreens = this.getBooleanValue(status.has_seen_splash_screens);
@@ -274,11 +268,6 @@ class OnboardingService {
       
       if (!status) {
         return true;
-      }
-
-      // Developer mode users don't need onboarding
-      if (status.is_developer) {
-        return false;
       }
 
       // Check if onboarding is complete

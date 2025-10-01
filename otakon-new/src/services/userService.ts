@@ -20,7 +20,6 @@ export class UserService {
       authUserId: `user_${now}`,
       email,
       tier,
-      isDeveloper: false,
       hasProfileSetup: false,
       hasSeenSplashScreens: false,
       hasSeenHowToUse: false,

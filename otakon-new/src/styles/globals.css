@@ -3,6 +3,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Prevent white flash during transitions */
+html, body {
+  background-color: #0F0F0F;
+  background: linear-gradient(135deg, #0F0F0F 0%, #111111 50%, #0F0F0F 100%);
+}
+
+/* Smooth transitions for all elements */
+* {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
 /* Hide scrollbar utility */
 .scrollbar-hide {
   -ms-overflow-style: none;  /* Internet Explorer 10+ */

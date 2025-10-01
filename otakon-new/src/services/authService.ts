@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { User, AuthResult, AuthState, UserTier } from '../types';
-import { USER_TIERS, TIER_LIMITS } from '../constants';
+import { TIER_LIMITS } from '../constants';
 
 export class AuthService {
   private static instance: AuthService;
@@ -27,12 +27,6 @@ export class AuthService {
     try {
       // Always initialize auth
 
-      // Check for developer mode first
-      const isDevMode = localStorage.getItem('otakon_developer_mode') === 'true';
-      if (isDevMode) {
-        await this.loadDeveloperUser();
-        return;
-      }
 
       // Handle OAuth callback if we're on the callback URL
       // Note: AuthCallback component handles OAuth callbacks, so we skip this
@@ -72,7 +66,7 @@ export class AuthService {
   }
 
 
-  private async createUserRecord(authUser: any, isDeveloper: boolean = false): Promise<void> {
+  private async createUserRecord(authUser: any): Promise<void> {
     try {
       console.log('🔐 [AuthService] Creating user record for:', authUser.email);
       
@@ -115,8 +109,8 @@ export class AuthService {
         p_email: uniqueEmail,
         p_full_name: authUser.user_metadata?.full_name || authUser.user_metadata?.name || 'User',
         p_avatar_url: authUser.user_metadata?.avatar_url,
-        p_is_developer: isDeveloper,
-        p_tier: isDeveloper ? 'vanguard_pro' : 'free'
+        p_is_developer: false,
+        p_tier: 'free'
       });
 
       if (error) {
@@ -178,7 +172,6 @@ export class AuthService {
             authUserId: tableData.auth_user_id || authUserId, // Fallback to the authUserId parameter
             email: this.extractOriginalEmail(tableData.email), // Extract original email from unique identifier
             tier: tableData.tier as UserTier,
-            isDeveloper: tableData.is_developer || false,
             hasProfileSetup: tableData.has_profile_setup || false,
             hasSeenSplashScreens: tableData.has_seen_splash_screens || false,
             hasSeenHowToUse: tableData.has_seen_how_to_use || false,
@@ -226,7 +219,6 @@ export class AuthService {
           authUserId: userData.auth_user_id || authUserId, // Fallback to the authUserId parameter
           email: this.extractOriginalEmail(userData.email), // Extract original email from unique identifier
           tier: userData.tier as UserTier,
-          isDeveloper: userData.is_developer || false,
           hasProfileSetup: userData.has_profile_setup || false,
           hasSeenSplashScreens: userData.has_seen_splash_screens || false,
           hasSeenHowToUse: userData.has_seen_how_to_use || false,
@@ -267,7 +259,7 @@ export class AuthService {
           const { data: { user: authUser } } = await supabase.auth.getUser();
           if (authUser) {
             console.log('🔐 [AuthService] Creating user record for auth user:', authUser.email);
-            await this.createUserRecord(authUser, false);
+            await this.createUserRecord(authUser);
             // Try loading again after creation
             await this.loadUserFromSupabase(authUserId);
           } else {
@@ -284,55 +276,6 @@ export class AuthService {
     }
   }
 
-  private async loadDeveloperUser() {
-    // Check if this is a first-time dev user by looking for existing dev user data
-    const isFirstTimeDev = !localStorage.getItem('otakon_dev_user_created');
-    
-    const devUser: User = {
-      id: 'dev-user',
-      authUserId: 'dev-user',
-      email: 'developer@otagon.app',
-      tier: USER_TIERS.VANGUARD_PRO,
-      isDeveloper: true,
-      hasProfileSetup: isFirstTimeDev ? false : true,
-      hasSeenSplashScreens: isFirstTimeDev ? false : true,
-      hasSeenHowToUse: isFirstTimeDev ? false : true,
-      hasSeenFeaturesConnected: isFirstTimeDev ? false : true,
-      hasSeenProFeatures: isFirstTimeDev ? false : true,
-      pcConnected: isFirstTimeDev ? false : true,
-      pcConnectionSkipped: false,
-      onboardingCompleted: isFirstTimeDev ? false : true,
-      hasWelcomeMessage: isFirstTimeDev ? false : true,
-      isNewUser: isFirstTimeDev,
-      hasUsedTrial: true,
-      lastActivity: Date.now(),
-      preferences: {},
-      usage: {
-        textCount: 0,
-        imageCount: 0,
-        textLimit: TIER_LIMITS[USER_TIERS.VANGUARD_PRO].text,
-        imageLimit: TIER_LIMITS[USER_TIERS.VANGUARD_PRO].image,
-        totalRequests: 0,
-        lastReset: Date.now(),
-        tier: USER_TIERS.VANGUARD_PRO,
-      },
-      appState: {},
-      profileData: {},
-      onboardingData: {},
-      behaviorData: {},
-      feedbackData: {},
-      usageData: {},
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
-
-    // Mark dev user as created for future sessions
-    if (isFirstTimeDev) {
-      localStorage.setItem('otakon_dev_user_created', 'true');
-    }
-
-    this.updateAuthState({ user: devUser, isLoading: false, error: null });
-  }
 
   private updateAuthState(newState: Partial<AuthState>) {
     const previousState = { ...this.authState };
@@ -346,6 +289,10 @@ export class AuthService {
   }
 
   // Public methods
+  
+  // ⚠️ PROTECTED OAUTH FLOW - DO NOT MODIFY WITHOUT WARNING ⚠️
+  // Google OAuth is working correctly - any changes here could break user authentication
+  // If you need to modify this, add a warning comment explaining the change
   async signInWithGoogle(): Promise<AuthResult> {
     try {
       this.updateAuthState({ isLoading: true, error: null });
@@ -376,6 +323,9 @@ export class AuthService {
     }
   }
 
+  // ⚠️ PROTECTED OAUTH FLOW - DO NOT MODIFY WITHOUT WARNING ⚠️
+  // Discord OAuth is working correctly - any changes here could break user authentication
+  // If you need to modify this, add a warning comment explaining the change
   async signInWithDiscord(): Promise<AuthResult> {
     try {
       this.updateAuthState({ isLoading: true, error: null });
@@ -456,6 +406,9 @@ export class AuthService {
     }
   }
 
+  // ⚠️ PROTECTED EMAIL AUTH FLOW - DO NOT MODIFY WITHOUT WARNING ⚠️
+  // Email authentication is working correctly - any changes here could break user authentication
+  // If you need to modify this, add a warning comment explaining the change
   async signInWithEmail(email: string, password: string): Promise<AuthResult> {
     try {
       this.updateAuthState({ isLoading: true, error: null });
@@ -503,61 +456,10 @@ export class AuthService {
     }
   }
 
-  async signInWithDeveloper(password: string): Promise<AuthResult> {
-    try {
-      this.updateAuthState({ isLoading: true, error: null });
-      
-      const validPasswords = ['dev123', 'otakon-dev'];
-      
-      if (!validPasswords.includes(password)) {
-        this.updateAuthState({ isLoading: false, error: 'Invalid developer password' });
-        return { success: false, error: 'Invalid developer password' };
-      }
 
-      // Create a developer user in Supabase
-      const devEmail = `dev-${Date.now()}@otagon.dev`;
-      const devPassword = `dev-${Math.random().toString(36).substring(7)}`;
-      
-      // Sign up with Supabase
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: devEmail,
-        password: devPassword,
-        options: {
-          data: {
-            full_name: 'Developer User',
-            is_developer: true
-          }
-        }
-      });
-
-      if (signUpError) {
-        this.updateAuthState({ isLoading: false, error: signUpError.message });
-        return { success: false, error: signUpError.message };
-      }
-
-      if (signUpData.user) {
-        // Create user record in our database
-        await this.createUserRecord(signUpData.user, true);
-        
-        // Load the user data
-        await this.loadUserFromSupabase(signUpData.user.id);
-        
-        // Set developer mode flags
-        localStorage.setItem('otakon_developer_mode', 'true');
-        localStorage.setItem('otakon_auth_method', 'developer');
-        
-        return { success: true, user: this.authState.user || undefined };
-      }
-
-      this.updateAuthState({ isLoading: false, error: 'Failed to create developer user' });
-      return { success: false, error: 'Failed to create developer user' };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.updateAuthState({ isLoading: false, error: errorMessage });
-      return { success: false, error: errorMessage };
-    }
-  }
-
+  // ⚠️ PROTECTED EMAIL AUTH FLOW - DO NOT MODIFY WITHOUT WARNING ⚠️
+  // Email signup is working correctly - any changes here could break user registration
+  // If you need to modify this, add a warning comment explaining the change
   async signUpWithEmail(email: string, password: string): Promise<AuthResult> {
     try {
       this.updateAuthState({ isLoading: true, error: null });
@@ -653,9 +555,7 @@ export class AuthService {
       console.log('🔐 [AuthService] Starting sign out process...');
       
       // Clear all local storage
-      localStorage.removeItem('otakon_developer_mode');
       localStorage.removeItem('otakon_auth_method');
-      localStorage.removeItem('otakon_dev_user_created');
       localStorage.removeItem('otakon_remember_me');
       localStorage.removeItem('otakon_remembered_email');
       localStorage.removeItem('otakon_discord_auth_attempt');
@@ -685,11 +585,6 @@ export class AuthService {
     return this.authState;
   }
 
-  // Method to reset dev user for testing (useful for testing onboarding flow)
-  resetDevUser(): void {
-    localStorage.removeItem('otakon_dev_user_created');
-    console.log('🔐 [AuthService] Dev user reset - next dev login will go through onboarding');
-  }
 
   // Method to clear all user data for testing multiple OAuth providers
   async clearAllUserData(): Promise<void> {
@@ -697,8 +592,6 @@ export class AuthService {
       console.log('🔐 [AuthService] Clearing all user data for testing...');
       
       // Clear localStorage
-      localStorage.removeItem('otakon_dev_user_created');
-      localStorage.removeItem('otakon_developer_mode');
       localStorage.removeItem('otakon_auth_method');
       localStorage.removeItem('otakon_remember_me');
       localStorage.removeItem('otakon_remembered_email');
@@ -827,45 +720,6 @@ export class AuthService {
     };
   }
 
-  isDeveloperMode(): boolean {
-    return localStorage.getItem('otakon_developer_mode') === 'true';
-  }
-
-  async switchTier(tier: UserTier): Promise<boolean> {
-    if (!this.isDeveloperMode()) {
-      console.warn('Tier switching only available in developer mode');
-      return false;
-    }
-
-    if (!this.authState.user) {
-      console.warn('No user logged in');
-      return false;
-    }
-
-    try {
-      // Update local user
-      const updatedUser = {
-        ...this.authState.user,
-        tier,
-        usage: {
-          ...this.authState.user.usage,
-          tier,
-          textLimit: TIER_LIMITS[tier].text,
-          imageLimit: TIER_LIMITS[tier].image,
-        }
-      };
-
-      this.updateAuthState({ user: updatedUser });
-      
-      // Update localStorage for persistence
-      localStorage.setItem('otakon_user_tier', tier);
-      
-      return true;
-    } catch (error) {
-      console.error('Error switching tier:', error);
-      return false;
-    }
-  }
 }
 
 export const authService = AuthService.getInstance();
