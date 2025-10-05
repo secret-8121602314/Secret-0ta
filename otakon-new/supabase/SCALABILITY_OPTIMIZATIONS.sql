@@ -102,76 +102,76 @@ DROP POLICY IF EXISTS "Users can delete own sessions" ON public.user_sessions;
 
 -- Users table - Optimized policies (using cached auth.uid())
 CREATE POLICY "Users can view own data" ON public.users
-    FOR SELECT USING (auth_user_id = auth.uid());
+    FOR SELECT USING (auth_user_id = (select auth.uid()));
 
 CREATE POLICY "Users can update own data" ON public.users
-    FOR UPDATE USING (auth_user_id = auth.uid());
+    FOR UPDATE USING (auth_user_id = (select auth.uid()));
 
 CREATE POLICY "Users can insert own data" ON public.users
-    FOR INSERT WITH CHECK (auth_user_id = auth.uid());
+    FOR INSERT WITH CHECK (auth_user_id = (select auth.uid()));
 
 -- Conversations table - Optimized policies
 CREATE POLICY "Users can view own conversations" ON public.conversations
     FOR SELECT USING (user_id IN (
-        SELECT id FROM public.users WHERE auth_user_id = auth.uid()
+        SELECT id FROM public.users WHERE auth_user_id = (select auth.uid())
     ));
 
 CREATE POLICY "Users can insert own conversations" ON public.conversations
     FOR INSERT WITH CHECK (user_id IN (
-        SELECT id FROM public.users WHERE auth_user_id = auth.uid()
+        SELECT id FROM public.users WHERE auth_user_id = (select auth.uid())
     ));
 
 CREATE POLICY "Users can update own conversations" ON public.conversations
     FOR UPDATE USING (user_id IN (
-        SELECT id FROM public.users WHERE auth_user_id = auth.uid()
+        SELECT id FROM public.users WHERE auth_user_id = (select auth.uid())
     ));
 
 CREATE POLICY "Users can delete own conversations" ON public.conversations
     FOR DELETE USING (user_id IN (
-        SELECT id FROM public.users WHERE auth_user_id = auth.uid()
+        SELECT id FROM public.users WHERE auth_user_id = (select auth.uid())
     ));
 
 -- API usage - Optimized policies
 CREATE POLICY "Users can view own API usage" ON public.api_usage
     FOR SELECT USING (user_id IN (
-        SELECT id FROM public.users WHERE auth_user_id = auth.uid()
+        SELECT id FROM public.users WHERE auth_user_id = (select auth.uid())
     ));
 
 CREATE POLICY "Users can insert own API usage" ON public.api_usage
     FOR INSERT WITH CHECK (user_id IN (
-        SELECT id FROM public.users WHERE auth_user_id = auth.uid()
+        SELECT id FROM public.users WHERE auth_user_id = (select auth.uid())
     ));
 
 -- User analytics - Optimized policies
 CREATE POLICY "Users can view own analytics" ON public.user_analytics
     FOR SELECT USING (user_id IN (
-        SELECT id FROM public.users WHERE auth_user_id = auth.uid()
+        SELECT id FROM public.users WHERE auth_user_id = (select auth.uid())
     ));
 
 CREATE POLICY "Users can insert own analytics" ON public.user_analytics
     FOR INSERT WITH CHECK (user_id IN (
-        SELECT id FROM public.users WHERE auth_user_id = auth.uid()
+        SELECT id FROM public.users WHERE auth_user_id = (select auth.uid())
     ));
 
 -- User sessions - Optimized policies
 CREATE POLICY "Users can view own sessions" ON public.user_sessions
     FOR SELECT USING (user_id IN (
-        SELECT id FROM public.users WHERE auth_user_id = auth.uid()
+        SELECT id FROM public.users WHERE auth_user_id = (select auth.uid())
     ));
 
 CREATE POLICY "Users can insert own sessions" ON public.user_sessions
     FOR INSERT WITH CHECK (user_id IN (
-        SELECT id FROM public.users WHERE auth_user_id = auth.uid()
+        SELECT id FROM public.users WHERE auth_user_id = (select auth.uid())
     ));
 
 CREATE POLICY "Users can update own sessions" ON public.user_sessions
     FOR UPDATE USING (user_id IN (
-        SELECT id FROM public.users WHERE auth_user_id = auth.uid()
+        SELECT id FROM public.users WHERE auth_user_id = (select auth.uid())
     ));
 
 CREATE POLICY "Users can delete own sessions" ON public.user_sessions
     FOR DELETE USING (user_id IN (
-        SELECT id FROM public.users WHERE auth_user_id = auth.uid()
+        SELECT id FROM public.users WHERE auth_user_id = (select auth.uid())
     ));
 
 -- ========================================
