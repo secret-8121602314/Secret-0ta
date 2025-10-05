@@ -60,7 +60,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               variant="primary"
               className="w-full btn-primary-enhanced text-sm sm:text-base"
             >
-              + New Chat
+              + Everything else
             </Button>
           </div>
 

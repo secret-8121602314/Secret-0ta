@@ -87,6 +87,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     );
   }
 
+  // Safety check for conversation
+  if (!conversation) {
+    return (
+      <div className="h-full bg-background flex flex-col overflow-hidden">
+        <div className="flex-1 p-6 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-text-muted text-lg">Loading conversation...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full bg-background flex flex-col overflow-hidden">
       {/* Messages Area - Only this should scroll */}

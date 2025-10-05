@@ -1,6 +1,8 @@
 import { supabase } from '../lib/supabase';
 import { User, AuthResult, AuthState, UserTier } from '../types';
 import { TIER_LIMITS } from '../constants';
+import { cacheService } from './cacheService';
+import { ErrorService } from './errorService';
 
 export class AuthService {
   private static instance: AuthService;
@@ -12,14 +14,7 @@ export class AuthService {
 
   private listeners: ((state: AuthState) => void)[] = [];
   
-  // ✅ SCALABILITY: User data caching
-  private userCache = new Map<string, { user: User; expires: number }>();
-  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-  
-  // ✅ SCALABILITY: Rate limiting
-  private rateLimiter = new Map<string, { count: number; resetTime: number }>();
-  private readonly RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
-  private readonly MAX_ATTEMPTS_PER_WINDOW = 10;
+  // ✅ SCALABILITY: Using centralized cache and error services
   
   // ✅ SCALABILITY: Memory leak prevention
   private cleanupFunctions: (() => void)[] = [];
@@ -51,56 +46,46 @@ export class AuthService {
     });
   }
 
-  // ✅ SCALABILITY: Check rate limit before operations
-  private checkRateLimit(identifier: string): boolean {
+  // ✅ SCALABILITY: Check rate limit using centralized service
+  private async checkRateLimit(identifier: string): Promise<boolean> {
     if (this.isDestroyed) return false;
     
+    const rateLimitData = await cacheService.getRateLimit(identifier);
     const now = Date.now();
-    const attempt = this.rateLimiter.get(identifier);
     
-    if (!attempt || now > attempt.resetTime) {
-      this.rateLimiter.set(identifier, { count: 1, resetTime: now + this.RATE_LIMIT_WINDOW });
+    if (!rateLimitData || now > rateLimitData.resetTime) {
+      await cacheService.setRateLimit(identifier, { count: 1, resetTime: now + 15 * 60 * 1000 });
       return true;
     }
     
-    if (attempt.count >= this.MAX_ATTEMPTS_PER_WINDOW) {
+    if (rateLimitData.count >= 10) {
       return false;
     }
     
-    attempt.count++;
+    await cacheService.setRateLimit(identifier, { 
+      count: rateLimitData.count + 1, 
+      resetTime: rateLimitData.resetTime 
+    });
     return true;
   }
 
-  // ✅ SCALABILITY: Get user from cache first
-  private getCachedUser(authUserId: string): User | null {
+  // ✅ SCALABILITY: Get user from centralized cache
+  private async getCachedUser(authUserId: string): Promise<User | null> {
     if (this.isDestroyed) return null;
     
-    const cached = this.userCache.get(authUserId);
-    if (cached && cached.expires > Date.now()) {
-      return cached.user;
-    }
-    
-    // Remove expired cache
-    if (cached) {
-      this.userCache.delete(authUserId);
-    }
-    
-    return null;
+    return await cacheService.getUser<User>(authUserId);
   }
 
-  // ✅ SCALABILITY: Cache user data
-  private setCachedUser(authUserId: string, user: User): void {
+  // ✅ SCALABILITY: Cache user data using centralized service
+  private async setCachedUser(authUserId: string, user: User): Promise<void> {
     if (this.isDestroyed) return;
     
-    this.userCache.set(authUserId, {
-      user,
-      expires: Date.now() + this.CACHE_DURATION
-    });
+    await cacheService.setUser(authUserId, user);
   }
 
-  // ✅ SCALABILITY: Clear cache
-  private clearCache(): void {
-    this.userCache.clear();
+  // ✅ SCALABILITY: Clear cache using centralized service
+  private async clearCache(): Promise<void> {
+    await cacheService.clear();
   }
 
   private async initializeAuth() {
@@ -223,7 +208,7 @@ export class AuthService {
   async loadUserFromSupabase(authUserId: string) {
     try {
       // ✅ SCALABILITY: Check cache first
-      const cachedUser = this.getCachedUser(authUserId);
+      const cachedUser = await this.getCachedUser(authUserId);
       if (cachedUser) {
         console.log('🔐 [AuthService] Using cached user data');
         this.updateAuthState({ user: cachedUser, isLoading: false, error: null });
@@ -293,7 +278,7 @@ export class AuthService {
           };
 
           // ✅ SCALABILITY: Cache user data
-          this.setCachedUser(authUserId, user);
+          await this.setCachedUser(authUserId, user);
           this.updateAuthState({ user, isLoading: false, error: null });
           return;
         }
@@ -396,12 +381,12 @@ export class AuthService {
   // Google OAuth is working correctly - any changes here could break user authentication
   // If you need to modify this, add a warning comment explaining the change
   async signInWithGoogle(): Promise<AuthResult> {
-    // ✅ SCALABILITY: Rate limiting
-    if (!this.checkRateLimit('google_signin')) {
-      return { success: false, error: 'Too many sign-in attempts. Please wait before trying again.' };
-    }
-
     try {
+      // ✅ SCALABILITY: Rate limiting
+      if (!(await this.checkRateLimit('google_signin'))) {
+        return { success: false, error: 'Too many sign-in attempts. Please wait before trying again.' };
+      }
+
       this.updateAuthState({ isLoading: true, error: null });
       
       console.log('🔐 [AuthService] Starting Google OAuth...');
@@ -423,10 +408,13 @@ export class AuthService {
       console.log('🔐 [AuthService] Google OAuth initiated successfully');
       return { success: true };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('🔐 [AuthService] Google OAuth exception:', error);
-      this.updateAuthState({ isLoading: false, error: errorMessage });
-      return { success: false, error: errorMessage };
+      ErrorService.handleAuthError(error as Error, 'signInWithGoogle');
+      this.updateAuthState({ 
+        user: null, 
+        isLoading: false, 
+        error: 'Google sign-in failed. Please try again.' 
+      });
+      return { success: false, error: 'Google sign-in failed. Please try again.' };
     }
   }
 
@@ -851,8 +839,7 @@ export class AuthService {
     // Clear cache
     this.clearCache();
     
-    // Clear rate limiter
-    this.rateLimiter.clear();
+    // Rate limiter is now handled by centralized cache service
     
     // Clear listeners
     this.listeners.length = 0;

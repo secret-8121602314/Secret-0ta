@@ -1,4 +1,6 @@
 import { StorageService } from './storageService';
+import { cacheService } from './cacheService';
+import { chatMemoryService } from './chatMemoryService';
 import { Conversations, Conversation, ChatMessage, UserTier } from '../types';
 import { STORAGE_KEYS, DEFAULT_CONVERSATION_TITLE, USER_TIERS } from '../constants';
 
@@ -23,10 +25,10 @@ const TIER_TOTAL_MESSAGE_LIMITS = {
 
 export class ConversationService {
   // ✅ SCALABILITY: Get user tier from auth service
-  private static getUserTier(): UserTier {
+  private static async getUserTier(): Promise<UserTier> {
     try {
       // Try to get from auth service first
-      const authService = require('./authService').authService;
+      const { authService } = await import('./authService');
       const user = authService.getCurrentUser();
       if (user?.tier) {
         return user.tier;
@@ -41,26 +43,26 @@ export class ConversationService {
   }
 
   // ✅ SCALABILITY: Get tier-based limits
-  private static getConversationLimit(): number {
-    const tier = this.getUserTier();
+  private static async getConversationLimit(): Promise<number> {
+    const tier = await this.getUserTier();
     return TIER_CONVERSATION_LIMITS[tier] || TIER_CONVERSATION_LIMITS[USER_TIERS.FREE];
   }
 
-  private static getMessageLimit(): number {
-    const tier = this.getUserTier();
+  private static async getMessageLimit(): Promise<number> {
+    const tier = await this.getUserTier();
     return TIER_MESSAGE_LIMITS[tier] || TIER_MESSAGE_LIMITS[USER_TIERS.FREE];
   }
 
-  private static getTotalMessageLimit(): number {
-    const tier = this.getUserTier();
+  private static async getTotalMessageLimit(): Promise<number> {
+    const tier = await this.getUserTier();
     return TIER_TOTAL_MESSAGE_LIMITS[tier] || TIER_TOTAL_MESSAGE_LIMITS[USER_TIERS.FREE];
   }
 
   // ✅ SCALABILITY: Check if user can create new conversation
-  static canCreateConversation(): { allowed: boolean; reason?: string } {
-    const conversations = this.getConversations();
-    const conversationLimit = this.getConversationLimit();
-    const tier = this.getUserTier();
+  static async canCreateConversation(): Promise<{ allowed: boolean; reason?: string }> {
+    const conversations = await this.getConversations();
+    const conversationLimit = await this.getConversationLimit();
+    const tier = await this.getUserTier();
     
     if (Object.keys(conversations).length >= conversationLimit) {
       return {
@@ -73,17 +75,17 @@ export class ConversationService {
   }
 
   // ✅ SCALABILITY: Check if user can add message to conversation
-  static canAddMessage(conversationId: string): { allowed: boolean; reason?: string } {
-    const conversations = this.getConversations();
+  static async canAddMessage(conversationId: string): Promise<{ allowed: boolean; reason?: string }> {
+    const conversations = await this.getConversations();
     const conversation = conversations[conversationId];
     
     if (!conversation) {
       return { allowed: false, reason: 'Conversation not found' };
     }
     
-    const messageLimit = this.getMessageLimit();
-    const totalMessageLimit = this.getTotalMessageLimit();
-    const tier = this.getUserTier();
+    const messageLimit = await this.getMessageLimit();
+    const totalMessageLimit = await this.getTotalMessageLimit();
+    const tier = await this.getUserTier();
     
     // Check per-conversation limit
     if (conversation.messages.length >= messageLimit) {
@@ -107,8 +109,28 @@ export class ConversationService {
     return { allowed: true };
   }
 
-  static getConversations(): Conversations {
-    const conversations = StorageService.get(STORAGE_KEYS.CONVERSATIONS, {}) as Conversations;
+  static async getConversations(): Promise<Conversations> {
+    // ✅ SCALABILITY: Try cache first, fallback to localStorage
+    let conversations: Conversations = {};
+    
+    try {
+      // Try to get from cache service first
+      const cachedConversations = await cacheService.get<Conversations>(STORAGE_KEYS.CONVERSATIONS);
+      console.log('🔍 [ConversationService] Cached conversations:', cachedConversations);
+      if (cachedConversations) {
+        conversations = cachedConversations;
+      } else {
+        // Fallback to localStorage
+        conversations = StorageService.get(STORAGE_KEYS.CONVERSATIONS, {}) as Conversations;
+        console.log('🔍 [ConversationService] localStorage conversations:', conversations);
+        // Cache the localStorage data for future use
+        await cacheService.set(STORAGE_KEYS.CONVERSATIONS, conversations, 30 * 24 * 60 * 60 * 1000); // 30 days
+      }
+    } catch (error) {
+      console.warn('Failed to load conversations from cache, using localStorage:', error);
+      conversations = StorageService.get(STORAGE_KEYS.CONVERSATIONS, {}) as Conversations;
+      console.log('🔍 [ConversationService] Error fallback conversations:', conversations);
+    }
     
     // Migration: Update existing "General Chat" titles to "Everything else" (one-time migration)
     let needsUpdate = false;
@@ -120,12 +142,12 @@ export class ConversationService {
     });
     
     if (needsUpdate) {
-      this.setConversations(conversations);
+      await this.setConversations(conversations);
     }
     
     // ✅ SCALABILITY: Enforce tier-based conversation limits
     const conversationArray = Object.values(conversations);
-    const conversationLimit = this.getConversationLimit();
+    const conversationLimit = await this.getConversationLimit();
     
     if (conversationArray.length > conversationLimit) {
       // Keep only the most recent conversations
@@ -138,15 +160,32 @@ export class ConversationService {
         limitedConversations[conv.id] = conv;
       });
       
-      this.setConversations(limitedConversations);
+      await this.setConversations(limitedConversations);
       return limitedConversations;
     }
     
     return conversations;
   }
 
-  static setConversations(conversations: Conversations): void {
-    StorageService.set(STORAGE_KEYS.CONVERSATIONS, conversations);
+  static async setConversations(conversations: Conversations): Promise<void> {
+    // ✅ SCALABILITY: Store in both cache and localStorage for reliability
+    try {
+      // Store in cache service (primary storage)
+      await cacheService.set(STORAGE_KEYS.CONVERSATIONS, conversations, 30 * 24 * 60 * 60 * 1000); // 30 days
+      
+      // Also store in localStorage as backup
+      StorageService.set(STORAGE_KEYS.CONVERSATIONS, conversations);
+      
+      // Store individual conversations for better performance
+      await Promise.all(
+        Object.values(conversations).map(conv => 
+          chatMemoryService.saveConversation(conv)
+        )
+      );
+    } catch (error) {
+      console.warn('Failed to store conversations in cache, using localStorage only:', error);
+      StorageService.set(STORAGE_KEYS.CONVERSATIONS, conversations);
+    }
   }
 
   static createConversation(title?: string): Conversation {
@@ -163,15 +202,15 @@ export class ConversationService {
     };
   }
 
-  static addConversation(conversation: Conversation): { success: boolean; reason?: string } {
+  static async addConversation(conversation: Conversation): Promise<{ success: boolean; reason?: string }> {
     // ✅ SCALABILITY: Check if user can create conversation
-    const canCreate = this.canCreateConversation();
+    const canCreate = await this.canCreateConversation();
     if (!canCreate.allowed) {
       return { success: false, reason: canCreate.reason };
     }
     
-    const conversations = this.getConversations();
-    const conversationLimit = this.getConversationLimit();
+    const conversations = await this.getConversations();
+    const conversationLimit = await this.getConversationLimit();
     
     // If at limit, remove oldest conversation
     if (Object.keys(conversations).length >= conversationLimit) {
@@ -181,39 +220,49 @@ export class ConversationService {
     }
     
     conversations[conversation.id] = conversation;
-    this.setConversations(conversations);
+    await this.setConversations(conversations);
+    
+    // ✅ SCALABILITY: Save individual conversation to cache for better performance
+    await chatMemoryService.saveConversation(conversation);
+    
     return { success: true };
   }
 
-  static updateConversation(id: string, updates: Partial<Conversation>): void {
-    const conversations = this.getConversations();
+  static async updateConversation(id: string, updates: Partial<Conversation>): Promise<void> {
+    const conversations = await this.getConversations();
     if (conversations[id]) {
       conversations[id] = {
         ...conversations[id],
         ...updates,
         updatedAt: Date.now(),
       };
-      this.setConversations(conversations);
+      await this.setConversations(conversations);
+      
+      // ✅ SCALABILITY: Update individual conversation in cache
+      await chatMemoryService.saveConversation(conversations[id]);
     }
   }
 
-  static deleteConversation(id: string): void {
-    const conversations = this.getConversations();
+  static async deleteConversation(id: string): Promise<void> {
+    const conversations = await this.getConversations();
     delete conversations[id];
-    this.setConversations(conversations);
+    await this.setConversations(conversations);
+    
+    // ✅ SCALABILITY: Remove from cache
+    await cacheService.delete(`conversation:${id}`);
   }
 
-  static addMessage(conversationId: string, message: ChatMessage): { success: boolean; reason?: string } {
+  static async addMessage(conversationId: string, message: ChatMessage): Promise<{ success: boolean; reason?: string }> {
     // ✅ SCALABILITY: Check if user can add message
-    const canAdd = this.canAddMessage(conversationId);
+    const canAdd = await this.canAddMessage(conversationId);
     if (!canAdd.allowed) {
       return { success: false, reason: canAdd.reason };
     }
     
-    const conversations = this.getConversations();
+    const conversations = await this.getConversations();
     if (conversations[conversationId]) {
       const conversation = conversations[conversationId];
-      const messageLimit = this.getMessageLimit();
+      const messageLimit = await this.getMessageLimit();
       
       // If at per-conversation limit, remove oldest message
       if (conversation.messages.length >= messageLimit) {
@@ -224,7 +273,7 @@ export class ConversationService {
       conversation.updatedAt = Date.now();
       
       // ✅ SCALABILITY: Check global message limit
-      const totalMessageLimit = this.getTotalMessageLimit();
+      const totalMessageLimit = await this.getTotalMessageLimit();
       const totalMessages = Object.values(conversations)
         .reduce((total, conv) => total + conv.messages.length, 0);
       
@@ -232,7 +281,28 @@ export class ConversationService {
         this.cleanupOldMessages(conversations);
       }
       
-      this.setConversations(conversations);
+      await this.setConversations(conversations);
+      
+      // ✅ SCALABILITY: Save individual conversation to cache
+      await chatMemoryService.saveConversation(conversation);
+      
+      // ✅ SCALABILITY: Save chat context for AI memory
+      try {
+        // Try to get actual user ID from auth service
+        const authService = require('./authService').authService;
+        const user = authService.getCurrentUser();
+        if (user?.id) {
+          await chatMemoryService.saveChatContext(user.id, {
+            recentMessages: conversation.messages.slice(-10), // Last 10 messages
+            userPreferences: {}, // This would come from user service
+            gameContext: {}, // This would come from game context
+            conversationSummary: conversation.title
+          });
+        }
+      } catch (error) {
+        console.warn('Failed to save chat context:', error);
+      }
+      
       return { success: true };
     }
     
@@ -270,23 +340,23 @@ export class ConversationService {
     }
   }
 
-  static getActiveConversation(): Conversation | null {
-    const conversations = this.getConversations();
+  static async getActiveConversation(): Promise<Conversation | null> {
+    const conversations = await this.getConversations();
     const activeConversation = Object.values(conversations).find(conv => conv.isActive);
     return activeConversation || null;
   }
 
   // ✅ SCALABILITY: Get user's current usage statistics
-  static getUsageStats(): {
+  static async getUsageStats(): Promise<{
     conversations: { current: number; limit: number; tier: UserTier };
     messages: { current: number; limit: number; tier: UserTier };
     totalMessages: { current: number; limit: number; tier: UserTier };
-  } {
-    const conversations = this.getConversations();
+  }> {
+    const conversations = await this.getConversations();
     const tier = this.getUserTier();
     
     const conversationCount = Object.keys(conversations).length;
-    const conversationLimit = this.getConversationLimit();
+    const conversationLimit = await this.getConversationLimit();
     
     const totalMessages = Object.values(conversations)
       .reduce((total, conv) => total + conv.messages.length, 0);
@@ -315,8 +385,8 @@ export class ConversationService {
   }
 
   // ✅ SCALABILITY: Get conversation-specific message count
-  static getConversationMessageCount(conversationId: string): { current: number; limit: number; tier: UserTier } {
-    const conversations = this.getConversations();
+  static async getConversationMessageCount(conversationId: string): Promise<{ current: number; limit: number; tier: UserTier }> {
+    const conversations = await this.getConversations();
     const conversation = conversations[conversationId];
     const tier = this.getUserTier();
     const messageLimit = this.getMessageLimit();
@@ -328,8 +398,8 @@ export class ConversationService {
     };
   }
 
-  static setActiveConversation(id: string): void {
-    const conversations = this.getConversations();
+  static async setActiveConversation(id: string): Promise<void> {
+    const conversations = await this.getConversations();
     
     // Set all conversations to inactive
     Object.values(conversations).forEach(conv => {
@@ -341,10 +411,17 @@ export class ConversationService {
       conversations[id].isActive = true;
     }
     
-    this.setConversations(conversations);
+    await this.setConversations(conversations);
   }
 
-  static clearAllConversations(): void {
-    this.setConversations({});
+  static async clearAllConversations(): Promise<void> {
+    await this.setConversations({});
+    
+    // ✅ SCALABILITY: Clear all conversation cache entries
+    try {
+      await cacheService.clear();
+    } catch (error) {
+      console.warn('Failed to clear conversation cache:', error);
+    }
   }
 }

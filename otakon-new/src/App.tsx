@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { AuthState, ConnectionStatus } from './types';
 import { authService } from './services/authService';
 import { onboardingService } from './services/onboardingService';
-import { connect, disconnect } from './services/connectionService';
+import { connect, disconnect } from './services/websocketService';
 import { supabase } from './lib/supabase';
 import LandingPage from './components/LandingPage';
 import LoginSplashScreen from './components/splash/LoginSplashScreen';
@@ -376,7 +376,7 @@ function App() {
     // Clear the OAuth callback URL
     window.history.replaceState({}, document.title, '/');
     // Force a re-render by updating the app state
-    setAppState(prev => ({ ...prev, view: 'app' }));
+        setAppState(prev => ({ ...prev, view: 'app' }));
     // The auth service will handle user creation and state updates
     // The useEffect will automatically handle the navigation based on auth state
   };

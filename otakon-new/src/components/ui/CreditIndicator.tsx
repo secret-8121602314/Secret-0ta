@@ -28,22 +28,23 @@ const CreditIndicator: React.FC<CreditIndicatorProps> = ({ user, onClick }) => {
     <div 
       className="credit-indicator-wrapper"
       style={{
-        boxShadow: '0 4px 15px rgba(229, 58, 58, 0.25), 0 2px 8px rgba(217, 140, 31, 0.2), 0 0 10px rgba(229, 58, 58, 0.15)',
-        display: 'inline-block'
+        display: 'inline-block',
+        background: 'linear-gradient(135deg, #E53A3A, #D98C1F)',
+        padding: '1px',
+        borderRadius: '8px'
       }}
     >
       <button
         type="button"
         onClick={onClick}
-        className="credit-indicator-button flex items-center justify-center h-11 w-11 sm:h-12 sm:w-12 lg:h-14 lg:w-14 rounded-full transition-all duration-300 hover:scale-105 active:scale-95 min-h-[44px] min-w-[44px]"
+        className="credit-indicator-button flex items-center justify-center h-11 w-11 sm:h-12 sm:w-12 lg:h-14 lg:w-14 rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 min-h-[44px] min-w-[44px]"
         style={{
-          background: 'rgba(0, 0, 0, 0.3) !important',
-          border: '2px solid transparent !important',
-          backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), linear-gradient(135deg, rgba(229, 58, 58, 0.4), rgba(217, 140, 31, 0.4)) !important',
-          backgroundOrigin: 'border-box !important',
-          backgroundClip: 'padding-box, border-box !important',
-          outline: 'none !important',
-          boxShadow: 'none !important'
+          background: '#0F0F0F',
+          border: 'none',
+          outline: 'none',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1)',
+          width: '100%',
+          height: '100%'
         }}
         aria-label="View query credits"
       >

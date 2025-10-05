@@ -57,29 +57,36 @@ const MainApp: React.FC<MainAppProps> = ({
   const connectionError = propConnectionError ?? null;
 
   useEffect(() => {
-    // Get user from AuthService instead of UserService
-    const currentUser = authService.getCurrentUser();
-    if (currentUser) {
-      setUser(currentUser);
-      // Also sync to UserService for compatibility
-      UserService.setCurrentUser(currentUser);
-    }
+    const loadData = async () => {
+      // Get user from AuthService instead of UserService
+      const currentUser = authService.getCurrentUser();
+      if (currentUser) {
+        setUser(currentUser);
+        // Also sync to UserService for compatibility
+        UserService.setCurrentUser(currentUser);
+      }
 
-    const userConversations = ConversationService.getConversations();
-    setConversations(userConversations);
+      const userConversations = await ConversationService.getConversations();
+      console.log('🔍 [MainApp] Loaded conversations:', userConversations);
+      setConversations(userConversations);
 
-    const active = ConversationService.getActiveConversation();
-    setActiveConversation(active);
+      const active = await ConversationService.getActiveConversation();
+      console.log('🔍 [MainApp] Active conversation:', active);
+      setActiveConversation(active);
 
-    // Auto-create a conversation if none exists
-    if (!active && Object.keys(userConversations).length === 0) {
-      const newConversation = ConversationService.createConversation();
-      ConversationService.addConversation(newConversation);
-      ConversationService.setActiveConversation(newConversation.id);
-      
-      setConversations(ConversationService.getConversations());
-      setActiveConversation(newConversation);
-    }
+      // Auto-create a conversation if none exists
+      if (!active && Object.keys(userConversations).length === 0) {
+        const newConversation = ConversationService.createConversation();
+        await ConversationService.addConversation(newConversation);
+        await ConversationService.setActiveConversation(newConversation.id);
+        
+        const updatedConversations = await ConversationService.getConversations();
+        setConversations(updatedConversations);
+        setActiveConversation(newConversation);
+      }
+    };
+
+    loadData();
   }, []);
 
   // WebSocket message handling (only if using local websocket)
@@ -141,31 +148,32 @@ const MainApp: React.FC<MainAppProps> = ({
     };
   }, [activeConversation, propOnConnect]);
 
-  const handleNewConversation = () => {
+  const handleNewConversation = async () => {
     const newConversation = ConversationService.createConversation();
-    ConversationService.addConversation(newConversation);
-    ConversationService.setActiveConversation(newConversation.id);
+    await ConversationService.addConversation(newConversation);
+    await ConversationService.setActiveConversation(newConversation.id);
     
-    setConversations(ConversationService.getConversations());
+    const updatedConversations = await ConversationService.getConversations();
+    setConversations(updatedConversations);
     setActiveConversation(newConversation);
     setSidebarOpen(false);
   };
 
-  const handleConversationSelect = (id: string) => {
-    ConversationService.setActiveConversation(id);
-    const updatedConversations = ConversationService.getConversations();
+  const handleConversationSelect = async (id: string) => {
+    await ConversationService.setActiveConversation(id);
+    const updatedConversations = await ConversationService.getConversations();
     setConversations(updatedConversations);
     setActiveConversation(updatedConversations[id]);
     setSidebarOpen(false);
   };
 
-  const handleDeleteConversation = (id: string) => {
-    ConversationService.deleteConversation(id);
-    const updatedConversations = ConversationService.getConversations();
+  const handleDeleteConversation = async (id: string) => {
+    await ConversationService.deleteConversation(id);
+    const updatedConversations = await ConversationService.getConversations();
     setConversations(updatedConversations);
     
     if (activeConversation?.id === id) {
-      const newActive = ConversationService.getActiveConversation();
+      const newActive = await ConversationService.getActiveConversation();
       setActiveConversation(newActive);
     }
   };

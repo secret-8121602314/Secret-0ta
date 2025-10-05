@@ -56,4 +56,4 @@ export const STORAGE_KEYS = {
 } as const;
 
 export const EVERYTHING_ELSE_ID = 'everything-else';
-export const DEFAULT_CONVERSATION_TITLE = 'New Chat';
+export const DEFAULT_CONVERSATION_TITLE = 'Everything else';
