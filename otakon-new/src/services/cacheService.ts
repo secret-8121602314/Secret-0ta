@@ -9,6 +9,9 @@ class CacheService {
   private readonly DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
   private readonly CACHE_TABLE = 'app_cache';
   private readonly MAX_MEMORY_CACHE_SIZE = 100; // Prevent memory bloat
+  
+  // Request deduplication - prevent multiple simultaneous calls for the same key
+  private pendingRequests = new Map<string, Promise<any>>();
 
   /**
    * Set a value in both memory and Supabase cache
@@ -52,8 +55,15 @@ class CacheService {
 
   /**
    * Get a value from cache (memory first, then Supabase)
+   * Implements request deduplication to prevent multiple simultaneous calls
    */
   async get<T>(key: string): Promise<T | null> {
+    // Check if there's already a pending request for this key
+    if (this.pendingRequests.has(key)) {
+      console.log(`[CacheService] Request deduplication: waiting for pending request for key: ${key}`);
+      return await this.pendingRequests.get(key) as T | null;
+    }
+    
     // Try memory cache first
     const memoryItem = this.memoryCache.get(key);
     if (memoryItem && Date.now() <= memoryItem.expires) {
@@ -66,7 +76,23 @@ class CacheService {
       this.memoryCache.delete(key);
     }
     
-    // Try Supabase cache
+    // Create a promise for the Supabase request and store it
+    const supabaseRequest = this.fetchFromSupabase<T>(key);
+    this.pendingRequests.set(key, supabaseRequest);
+    
+    try {
+      const result = await supabaseRequest;
+      return result;
+    } finally {
+      // Clean up the pending request
+      this.pendingRequests.delete(key);
+    }
+  }
+  
+  /**
+   * Fetch data from Supabase cache
+   */
+  private async fetchFromSupabase<T>(key: string): Promise<T | null> {
     try {
       console.log(`[CacheService] Cache MISS (memory), trying Supabase: ${key}`);
       const { data, error } = await supabase
@@ -141,6 +167,9 @@ class CacheService {
   async clear(): Promise<void> {
     // Clear memory cache
     this.memoryCache.clear();
+    
+    // Clear pending requests
+    this.pendingRequests.clear();
     
     // Clear Supabase cache
     try {
