@@ -278,7 +278,7 @@ export class ConversationService {
         .reduce((total, conv) => total + conv.messages.length, 0);
       
       if (totalMessages > totalMessageLimit) {
-        this.cleanupOldMessages(conversations);
+        await this.cleanupOldMessages(conversations);
       }
       
       await this.setConversations(conversations);
@@ -310,8 +310,8 @@ export class ConversationService {
   }
 
   // ✅ SCALABILITY: Cleanup old messages to prevent memory bloat
-  private static cleanupOldMessages(conversations: Conversations): void {
-    const totalMessageLimit = this.getTotalMessageLimit();
+  private static async cleanupOldMessages(conversations: Conversations): Promise<void> {
+    const totalMessageLimit = await this.getTotalMessageLimit();
     const targetMessages = Math.floor(totalMessageLimit * 0.8); // Keep 80% of limit
     
     // Get all messages with conversation info
@@ -353,17 +353,17 @@ export class ConversationService {
     totalMessages: { current: number; limit: number; tier: UserTier };
   }> {
     const conversations = await this.getConversations();
-    const tier = this.getUserTier();
+    const tier = await this.getUserTier();
     
     const conversationCount = Object.keys(conversations).length;
     const conversationLimit = await this.getConversationLimit();
     
     const totalMessages = Object.values(conversations)
       .reduce((total, conv) => total + conv.messages.length, 0);
-    const totalMessageLimit = this.getTotalMessageLimit();
+    const totalMessageLimit = await this.getTotalMessageLimit();
     
     // Get max messages per conversation for display
-    const messageLimit = this.getMessageLimit();
+    const messageLimit = await this.getMessageLimit();
     
     return {
       conversations: {
@@ -388,8 +388,8 @@ export class ConversationService {
   static async getConversationMessageCount(conversationId: string): Promise<{ current: number; limit: number; tier: UserTier }> {
     const conversations = await this.getConversations();
     const conversation = conversations[conversationId];
-    const tier = this.getUserTier();
-    const messageLimit = this.getMessageLimit();
+    const tier = await this.getUserTier();
+    const messageLimit = await this.getMessageLimit();
     
     return {
       current: conversation?.messages.length || 0,
