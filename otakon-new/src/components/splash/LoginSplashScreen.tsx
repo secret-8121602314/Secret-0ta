@@ -347,7 +347,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
       <div className={`w-full max-w-md relative z-10 transition-all duration-500 ${isAnimating ? 'scale-105' : 'scale-100'} mx-auto`}>
         {/* Logo and Title */}
         <div className="text-center mb-6 md:mb-8">
-          <Logo size="xl" className="mx-auto mb-4 md:mb-6 animate-bounce-slow" />
+          <Logo size="xl" className="mx-auto mb-4 md:mb-6 animate-bounce-slow" spin={true} />
           <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">
             Welcome to Otagon
           </h1>

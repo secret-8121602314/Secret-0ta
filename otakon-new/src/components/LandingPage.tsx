@@ -293,7 +293,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                     
                     <div className="container mx-auto px-6 relative overflow-visible">
                         <div className="flex flex-col items-center justify-center gap-4 mb-10 overflow-visible">
-                            <Logo className="h-32 w-32 animate-bounce-slow" />
+                            <Logo className="h-32 w-32 animate-bounce-slow" spin={true} />
                             <h1 
                                 className="text-6xl md:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] leading-none py-2"
                                 style={{

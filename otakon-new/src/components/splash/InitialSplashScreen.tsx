@@ -74,7 +74,7 @@ const InitialSplashScreen: React.FC<InitialSplashScreenProps> = ({ onComplete })
       
       <div className="flex flex-col items-center justify-center w-full max-w-2xl">
         <div className="flex-shrink-0 mb-1">
-          <Logo className="w-24 h-24 sm:w-26 sm:h-26 md:w-28 md:h-28" />
+          <Logo className="w-24 h-24 sm:w-26 sm:h-26 md:w-28 md:h-28" spin={true} />
         </div>
 
         <h1 
