@@ -11,6 +11,19 @@ export class AuthService {
   };
 
   private listeners: ((state: AuthState) => void)[] = [];
+  
+  // ✅ SCALABILITY: User data caching
+  private userCache = new Map<string, { user: User; expires: number }>();
+  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+  
+  // ✅ SCALABILITY: Rate limiting
+  private rateLimiter = new Map<string, { count: number; resetTime: number }>();
+  private readonly RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
+  private readonly MAX_ATTEMPTS_PER_WINDOW = 10;
+  
+  // ✅ SCALABILITY: Memory leak prevention
+  private cleanupFunctions: (() => void)[] = [];
+  private isDestroyed = false;
 
   static getInstance(): AuthService {
     if (!AuthService.instance) {
@@ -21,6 +34,73 @@ export class AuthService {
 
   constructor() {
     this.initializeAuth();
+    this.setupCleanup();
+  }
+
+  // ✅ SCALABILITY: Setup cleanup
+  private setupCleanup() {
+    const cleanup = () => {
+      if (!this.isDestroyed) {
+        this.cleanup();
+      }
+    };
+    
+    window.addEventListener('beforeunload', cleanup);
+    this.cleanupFunctions.push(() => {
+      window.removeEventListener('beforeunload', cleanup);
+    });
+  }
+
+  // ✅ SCALABILITY: Check rate limit before operations
+  private checkRateLimit(identifier: string): boolean {
+    if (this.isDestroyed) return false;
+    
+    const now = Date.now();
+    const attempt = this.rateLimiter.get(identifier);
+    
+    if (!attempt || now > attempt.resetTime) {
+      this.rateLimiter.set(identifier, { count: 1, resetTime: now + this.RATE_LIMIT_WINDOW });
+      return true;
+    }
+    
+    if (attempt.count >= this.MAX_ATTEMPTS_PER_WINDOW) {
+      return false;
+    }
+    
+    attempt.count++;
+    return true;
+  }
+
+  // ✅ SCALABILITY: Get user from cache first
+  private getCachedUser(authUserId: string): User | null {
+    if (this.isDestroyed) return null;
+    
+    const cached = this.userCache.get(authUserId);
+    if (cached && cached.expires > Date.now()) {
+      return cached.user;
+    }
+    
+    // Remove expired cache
+    if (cached) {
+      this.userCache.delete(authUserId);
+    }
+    
+    return null;
+  }
+
+  // ✅ SCALABILITY: Cache user data
+  private setCachedUser(authUserId: string, user: User): void {
+    if (this.isDestroyed) return;
+    
+    this.userCache.set(authUserId, {
+      user,
+      expires: Date.now() + this.CACHE_DURATION
+    });
+  }
+
+  // ✅ SCALABILITY: Clear cache
+  private clearCache(): void {
+    this.userCache.clear();
   }
 
   private async initializeAuth() {
@@ -142,7 +222,15 @@ export class AuthService {
 
   async loadUserFromSupabase(authUserId: string) {
     try {
-      console.log('🔐 [AuthService] Loading user data for authUserId:', authUserId);
+      // ✅ SCALABILITY: Check cache first
+      const cachedUser = this.getCachedUser(authUserId);
+      if (cachedUser) {
+        console.log('🔐 [AuthService] Using cached user data');
+        this.updateAuthState({ user: cachedUser, isLoading: false, error: null });
+        return;
+      }
+
+      console.log('🔐 [AuthService] Loading user data from database for authUserId:', authUserId);
       
       // Try the RPC function first
       const { data: rpcData, error: rpcError } = await supabase.rpc('get_complete_user_data', {
@@ -204,7 +292,8 @@ export class AuthService {
             updatedAt: tableData.updated_at ? new Date(tableData.updated_at).getTime() : Date.now(),
           };
 
-
+          // ✅ SCALABILITY: Cache user data
+          this.setCachedUser(authUserId, user);
           this.updateAuthState({ user, isLoading: false, error: null });
           return;
         }
@@ -307,6 +396,11 @@ export class AuthService {
   // Google OAuth is working correctly - any changes here could break user authentication
   // If you need to modify this, add a warning comment explaining the change
   async signInWithGoogle(): Promise<AuthResult> {
+    // ✅ SCALABILITY: Rate limiting
+    if (!this.checkRateLimit('google_signin')) {
+      return { success: false, error: 'Too many sign-in attempts. Please wait before trying again.' };
+    }
+
     try {
       this.updateAuthState({ isLoading: true, error: null });
       
@@ -340,6 +434,11 @@ export class AuthService {
   // Discord OAuth is working correctly - any changes here could break user authentication
   // If you need to modify this, add a warning comment explaining the change
   async signInWithDiscord(): Promise<AuthResult> {
+    // ✅ SCALABILITY: Rate limiting
+    if (!this.checkRateLimit('discord_signin')) {
+      return { success: false, error: 'Too many sign-in attempts. Please wait before trying again.' };
+    }
+
     try {
       this.updateAuthState({ isLoading: true, error: null });
       
@@ -423,6 +522,11 @@ export class AuthService {
   // Email authentication is working correctly - any changes here could break user authentication
   // If you need to modify this, add a warning comment explaining the change
   async signInWithEmail(email: string, password: string): Promise<AuthResult> {
+    // ✅ SCALABILITY: Rate limiting
+    if (!this.checkRateLimit(`email_signin_${email}`)) {
+      return { success: false, error: 'Too many sign-in attempts. Please wait before trying again.' };
+    }
+
     try {
       this.updateAuthState({ isLoading: true, error: null });
       
@@ -579,6 +683,9 @@ export class AuthService {
       // Sign out from Supabase
       await supabase.auth.signOut();
       
+      // ✅ SCALABILITY: Clear cache
+      this.clearCache();
+      
       // Clear auth state
       this.updateAuthState({ user: null, isLoading: false, error: null });
       
@@ -731,6 +838,36 @@ export class AuthService {
         this.listeners.splice(index, 1);
       }
     };
+  }
+
+  // ✅ SCALABILITY: Cleanup method to prevent memory leaks
+  cleanup(): void {
+    if (this.isDestroyed) return;
+    
+    console.log('🧹 [AuthService] Cleaning up...');
+    
+    this.isDestroyed = true;
+    
+    // Clear cache
+    this.clearCache();
+    
+    // Clear rate limiter
+    this.rateLimiter.clear();
+    
+    // Clear listeners
+    this.listeners.length = 0;
+    
+    // Run cleanup functions
+    this.cleanupFunctions.forEach(cleanup => {
+      try {
+        cleanup();
+      } catch (error) {
+        console.error('Error during auth service cleanup:', error);
+      }
+    });
+    this.cleanupFunctions.length = 0;
+    
+    console.log('🧹 [AuthService] Cleanup completed');
   }
 
 }

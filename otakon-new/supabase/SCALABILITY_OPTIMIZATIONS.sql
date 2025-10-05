@@ -64,9 +64,9 @@ ON public.user_analytics(event_type, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_user_sessions_user_expires 
 ON public.user_sessions(user_id, expires_at DESC);
 
+-- Note: Cannot use now() in index predicate, will handle expired sessions in application logic
 CREATE INDEX IF NOT EXISTS idx_user_sessions_token 
-ON public.user_sessions(session_token) 
-WHERE expires_at > now();
+ON public.user_sessions(session_token);
 
 -- Waitlist - Critical for signup flow
 CREATE INDEX IF NOT EXISTS idx_waitlist_email_status 
