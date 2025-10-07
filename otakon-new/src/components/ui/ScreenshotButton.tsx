@@ -162,12 +162,7 @@ const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({
         onTouchEnd={clearLongPress}
         onTouchCancel={clearLongPress}
         aria-disabled={!isConnected || isProcessing}
-        className={`${isConnected ? 'text-emerald-400' : 'text-[#8A8A8A]'} w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r from-[#2E2E2E]/90 to-[#1C1C1C]/90 border-2 border-[#424242]/60 shadow-lg flex items-center justify-center transition-all duration-300 ${isConnected ? 'hover:scale-105' : 'opacity-70 cursor-pointer hover:opacity-90'} ${isConnected && !isProcessing ? 'hover:border-emerald-400/60 hover:shadow-emerald-400/30' : ''} ${isProcessing ? 'animate-pulse' : ''}`}
-        style={{
-          boxShadow: isConnected 
-            ? '0 4px 16px rgba(16, 185, 129, 0.2), 0 2px 8px rgba(0, 0, 0, 0.3)' 
-            : '0 4px 16px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2)'
-        }}
+        className={`${isConnected ? 'text-emerald-400' : 'text-[#8A8A8A]'} w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r from-[#2E2E2E]/90 to-[#1C1C1C]/90 flex items-center justify-center transition-all duration-300 ${isConnected ? 'hover:scale-105' : 'opacity-70 cursor-pointer hover:opacity-90'} ${isProcessing ? 'animate-pulse' : ''}`}
         title={isConnected ? 'Screenshot (right-click/long-press to change mode)' : 'Connect your PC to enable screenshots'}
       >
         {mode === 'single' ? (

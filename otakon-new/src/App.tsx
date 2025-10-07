@@ -62,6 +62,7 @@ function App() {
   const authProcessedRef = useRef(false);
   const lastProcessedUserIdRef = useRef<string | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const mainAppMessageHandlerRef = useRef<((data: any) => void) | null>(null);
   const appStateRef = useRef(appState);
 
   // Debug app state changes
@@ -330,12 +331,8 @@ function App() {
     return () => clearTimeout(timeout);
   }, [isInitializing]);
 
-  // Cleanup connection on unmount
-  useEffect(() => {
-    return () => {
-      disconnect();
-    };
-  }, []);
+  // Note: Removed automatic disconnect on unmount to maintain persistent connection
+  // WebSocket should only disconnect when user explicitly disconnects or logs out
 
   // Handle OAuth callback URL
   useEffect(() => {
@@ -454,6 +451,7 @@ function App() {
       (data) => {
         console.log('🔗 [App] Message received:', data);
         // Handle incoming messages from PC client
+        handleWebSocketMessage(data);
       },
       (error) => {
         console.error('🔗 [App] Connection error:', error);
@@ -491,6 +489,57 @@ function App() {
         onboardingStatus: 'features-connected' 
       }));
     }, 500);
+  };
+
+  const handleDisconnect = () => {
+    console.log('🔗 [App] Disconnecting...');
+    disconnect();
+    setConnectionStatus(ConnectionStatus.DISCONNECTED);
+    setConnectionError(null);
+  };
+
+  const handleWebSocketMessage = (data: any) => {
+    console.log('🔗 [App] Processing WebSocket message:', data);
+    
+    // Handle screenshot processing
+    if (data.type === 'screenshot_batch') {
+      console.log("📸 Processing screenshot batch:", data);
+      
+      // Extract data from payload if it exists, otherwise use data directly
+      const batchData = data.payload || data;
+      
+      if (batchData.images && batchData.images.length > 0) {
+        // Process each image and send to MainApp
+        batchData.images.forEach((imgSrc: string, index: number) => {
+          // Ensure proper data URL format
+          const properDataUrl = imgSrc.startsWith('data:') ? imgSrc : `data:image/png;base64,${imgSrc}`;
+          
+          // Send to MainApp if handler is available
+          if (mainAppMessageHandlerRef.current) {
+            mainAppMessageHandlerRef.current({
+              type: 'screenshot',
+              dataUrl: properDataUrl,
+              index: index
+            });
+          }
+        });
+      }
+    } else if (data.type === 'screenshot_success' && data.success?.dataUrl) {
+      console.log("📸 Processing individual screenshot:", data);
+      
+      // Ensure proper data URL format
+      const properDataUrl = data.success.dataUrl.startsWith('data:') 
+        ? data.success.dataUrl 
+        : `data:image/png;base64,${data.success.dataUrl}`;
+      
+      // Send to MainApp if handler is available
+      if (mainAppMessageHandlerRef.current) {
+        mainAppMessageHandlerRef.current({
+          type: 'screenshot',
+          dataUrl: properDataUrl
+        });
+      }
+    }
   };
 
   const handleSkipConnection = async () => {
@@ -743,6 +792,13 @@ function App() {
           onOpenRefund={() => openModal('refund')}
           onOpenContact={() => openModal('contact')}
           onOpenTerms={() => openModal('terms')}
+          connectionStatus={connectionStatus}
+          connectionError={connectionError}
+          onConnect={handleConnect}
+          onDisconnect={handleDisconnect}
+          onWebSocketMessage={(handler) => {
+            mainAppMessageHandlerRef.current = handler;
+          }}
         />
         
         {/* Profile Setup Modal - Show as overlay if user hasn't completed profile setup */}

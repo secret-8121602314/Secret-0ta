@@ -100,6 +100,8 @@ export interface Conversation {
   createdAt: number;
   updatedAt: number;
   isActive: boolean;
+  isPinned?: boolean;
+  pinnedAt?: number;
 }
 
 export interface Conversations {

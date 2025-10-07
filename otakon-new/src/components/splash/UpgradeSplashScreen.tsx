@@ -81,9 +81,10 @@ const UpgradeSplashScreen: React.FC<UpgradeSplashScreenProps> = ({ onUpgrade, on
             <div className="mt-auto">
               <button 
                 onClick={onUpgrade} 
-                className="w-full bg-neutral-700 hover:bg-neutral-600 text-white font-bold py-3 px-6 rounded-xl transition-colors active:scale-95 flex items-center justify-center"
+                disabled
+                className="w-full bg-gradient-to-r from-neutral-600 to-neutral-500 text-neutral-300 font-bold py-3 px-6 rounded-xl transition-colors cursor-not-allowed opacity-50 flex items-center justify-center"
               >
-                Go Pro
+                Coming Soon
               </button>
             </div>
           </div>
@@ -107,9 +108,10 @@ const UpgradeSplashScreen: React.FC<UpgradeSplashScreenProps> = ({ onUpgrade, on
             <div className="mt-auto">
               <button 
                 onClick={onUpgradeToVanguard} 
-                className="w-full bg-neutral-700 hover:bg-neutral-600 text-white font-bold py-3 px-6 rounded-xl transition-colors active:scale-95 flex items-center justify-center"
+                disabled
+                className="w-full bg-gradient-to-r from-neutral-600 to-neutral-500 text-neutral-300 font-bold py-3 px-6 rounded-xl transition-colors cursor-not-allowed opacity-50 flex items-center justify-center"
               >
-                Become a Vanguard
+                Coming Soon
               </button>
             </div>
           </div>

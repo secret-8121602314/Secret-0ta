@@ -209,19 +209,21 @@ html, body {
 
 /* Enhanced Chat Message System */
 .chat-message-user {
-  @apply bg-gradient-to-r from-[#E53A3A]/20 to-[#D98C1F]/20;
-  @apply border border-[#E53A3A]/30;
-  @apply rounded-2xl rounded-br-md;
-  @apply p-4 max-w-2xl ml-auto;
-  @apply shadow-[0_4px_20px_rgba(229,58,58,0.15)];
+  @apply text-base text-rose-300;
+  @apply bg-gradient-to-r from-rose-900/15 to-rose-800/15;
+  @apply py-3 px-6 rounded-2xl rounded-br-none;
+  @apply border-2 border-rose-500/40;
+  @apply backdrop-blur-sm shadow-lg;
+  @apply max-w-2xl ml-auto;
 }
 
 .chat-message-ai {
-  @apply bg-gradient-to-r from-[#2E2E2E]/90 to-[#1C1C1C]/90;
-  @apply border border-[#424242]/40;
-  @apply rounded-2xl rounded-bl-md;
-  @apply p-4 max-w-4xl mr-auto;
-  @apply shadow-[0_4px_20px_rgba(0,0,0,0.2)];
+  @apply border-2 border-neutral-700/60;
+  @apply bg-gradient-to-r from-neutral-800/15 to-neutral-700/15;
+  @apply p-6 rounded-2xl rounded-bl-none;
+  @apply max-w-[80%] text-left;
+  @apply backdrop-blur-sm shadow-lg;
+  @apply mr-auto;
 }
 
 /* Enhanced Modal System */
@@ -675,6 +677,15 @@ html, body {
   }
 }
 
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(255, 77, 77, 0.05), 0 0 40px rgba(255, 171, 64, 0.02), 0 0 60px rgba(0, 0, 0, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(255, 77, 77, 0.3), 0 0 50px rgba(255, 171, 64, 0.2), 0 0 70px rgba(0, 0, 0, 0.1);
+  }
+}
+
 .animate-float {
   animation: float 6s ease-in-out infinite;
 }
@@ -685,6 +696,10 @@ html, body {
 
 .animate-glow-pulse {
   animation: glow-pulse 3s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 4s ease-in-out infinite;
 }
 
 /* Mobile-specific improvements */

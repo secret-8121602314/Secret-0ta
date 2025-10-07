@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import Modal from '../ui/Modal';
-import Button from '../ui/Button';
 import { User, UserTier } from '../../types';
 import { authService } from '../../services/authService';
 import TrialBanner from '../trial/TrialBanner';
@@ -20,10 +19,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
   if (!user) return null;
 
-  const handleLogout = async () => {
-    await authService.signOut();
-    onClose();
-  };
 
   const handleTrialStart = () => {
     // Refresh user data to reflect trial status
@@ -131,15 +126,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
             </div>
 
-            <div className="flex justify-end">
-              <Button
-                onClick={handleLogout}
-                variant="outline"
-                className="text-red-400 border-red-400/20 hover:bg-red-500/10"
-              >
-                Sign Out
-              </Button>
-            </div>
           </div>
         )}
 

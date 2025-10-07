@@ -47,7 +47,7 @@ const ProFeaturesSplashScreen: React.FC<ProFeaturesSplashScreenProps> = ({ onCom
           <div className="flex justify-center mb-2">
             <StarIcon className="w-8 h-8 sm:w-10 sm:h-10 text-[#FFAB40]" />
           </div>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] leading-tight mb-2">Supercharge with Otagon Pro</h1>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] leading-tight mb-2 pb-1" style={{ lineHeight: '1.2', paddingBottom: '0.25rem' }}>Supercharge with Otagon Pro</h1>
           <p className="text-sm sm:text-base md:text-lg text-neutral-300 leading-relaxed px-2">Unlock exclusive features for the ultimate gaming companion.</p>
 
           <div className="w-full max-w-sm mx-auto p-1 bg-gradient-to-r from-[#2E2E2E]/60 to-[#1A1A1A]/60 backdrop-blur-sm rounded-2xl flex items-center gap-1 mt-4 sm:mt-6">
@@ -81,9 +81,10 @@ const ProFeaturesSplashScreen: React.FC<ProFeaturesSplashScreenProps> = ({ onCom
         <div className="w-full max-w-lg mx-auto space-y-2 sm:space-y-3">
           <button
             onClick={activeTab === 'pro' ? onUpgrade : onUpgradeToVanguard}
-            className="w-full bg-gradient-to-r from-neutral-700 to-neutral-600 hover:from-neutral-600 hover:to-neutral-500 text-white font-bold py-3 sm:py-4 px-6 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95 text-sm sm:text-base flex items-center justify-center"
+            disabled
+            className="w-full bg-gradient-to-r from-neutral-600 to-neutral-500 text-neutral-300 font-bold py-3 sm:py-4 px-6 rounded-xl transition-all duration-300 cursor-not-allowed opacity-50 text-sm sm:text-base flex items-center justify-center"
           >
-            {activeTab === 'pro' ? 'Upgrade to Pro' : 'Upgrade to Vanguard'}
+            Coming Soon
           </button>
           <button
             onClick={onComplete}

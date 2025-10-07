@@ -212,6 +212,19 @@ export class ConversationService {
     const conversations = await this.getConversations();
     const conversationLimit = await this.getConversationLimit();
     
+    // ✅ FIX: Prevent duplicate "Everything else" conversations
+    if (conversation.title === DEFAULT_CONVERSATION_TITLE) {
+      const existingEverythingElse = Object.values(conversations).find(
+        conv => conv.title === DEFAULT_CONVERSATION_TITLE
+      );
+      if (existingEverythingElse) {
+        return { 
+          success: false, 
+          reason: 'An "Everything else" conversation already exists. Please use the existing one or create a conversation with a different title.' 
+        };
+      }
+    }
+    
     // If at limit, remove oldest conversation
     if (Object.keys(conversations).length >= conversationLimit) {
       const oldestConversation = Object.values(conversations)
@@ -422,6 +435,21 @@ export class ConversationService {
       await cacheService.clear();
     } catch (error) {
       console.warn('Failed to clear conversation cache:', error);
+    }
+  }
+
+  static async clearConversation(conversationId: string): Promise<void> {
+    const conversations = await this.getConversations();
+    if (conversations[conversationId]) {
+      // Clear messages but keep the conversation
+      conversations[conversationId] = {
+        ...conversations[conversationId],
+        messages: [],
+        updatedAt: Date.now(),
+      };
+      
+      await this.setConversations(conversations);
+      await chatMemoryService.saveConversation(conversations[conversationId]);
     }
   }
 }

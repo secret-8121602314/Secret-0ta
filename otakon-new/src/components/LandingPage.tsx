@@ -352,15 +352,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                             <div className="bg-transparent rounded-2xl p-6 space-y-6">
                                 {/* User Prompt */}
                                 <div className="flex justify-end">
-                                    <p className="text-base text-rose-300 bg-gradient-to-r from-rose-900/60 to-rose-800/60 py-3 px-6 rounded-2xl rounded-br-none border-2 border-rose-500/40 backdrop-blur-sm shadow-lg">
+                                    <p className="text-base text-[#F5F5F5] bg-gradient-to-r from-rose-900/15 to-rose-800/15 py-3 px-6 rounded-2xl rounded-br-none border-2 border-rose-500/40 backdrop-blur-sm shadow-lg">
                                         What should I do here?
                                     </p>
                                 </div>
                                 {/* Model Response */}
                                 <div className="flex justify-start">
-                                    <div className="border-2 border-neutral-700/60 bg-gradient-to-r from-neutral-800/60 to-neutral-700/60 p-6 rounded-2xl rounded-bl-none max-w-[80%] text-left backdrop-blur-sm shadow-lg">
+                                    <div className="border-2 border-neutral-700/60 bg-gradient-to-r from-neutral-800/15 to-neutral-700/15 p-6 rounded-2xl rounded-bl-none max-w-[80%] text-left backdrop-blur-sm shadow-lg">
                                         <p className="text-base font-bold text-white mb-2">Hint:</p>
-                                        <p className="text-base text-neutral-200 leading-relaxed">
+                                        <p className="text-base text-[#F5F5F5] leading-relaxed">
                                         The contraption on the far wall seems to be missing a gear. Perhaps there's one nearby?
                                         </p>
                                     </div>
@@ -765,7 +765,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                                         disabled
                                         title="Coming Soon - Join the waitlist to be notified when pricing goes live!"
                                     >
-                                        Start for Free
+                                        Coming Soon
                                     </button>
                                 </div>
                             </div>
@@ -799,7 +799,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                                         disabled
                                         title="Coming Soon - Join the waitlist to be notified when pricing goes live!"
                                     >
-                                        Become a Vanguard
+                                        Coming Soon
                                     </button>
             </div>
           </div>
@@ -829,7 +829,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                                         disabled
                                         title="Coming Soon - Join the waitlist to be notified when pricing goes live!"
                                     >
-                                        Go Pro
+                                        Coming Soon
                                     </button>
                                 </div>
             </div>
