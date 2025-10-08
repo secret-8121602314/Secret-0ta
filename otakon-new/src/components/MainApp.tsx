@@ -404,7 +404,7 @@ const MainApp: React.FC<MainAppProps> = ({
 
   // Handle active session toggle with session summaries
   const handleToggleActiveSession = async () => {
-    if (!activeConversation) return;
+    if (!activeConversation || !activeConversation.gameTitle || !activeConversation.gameId) return;
 
     const wasPlaying = session.isActive && session.currentGameId === activeConversation.id;
     const willBePlaying = !wasPlaying;
@@ -488,17 +488,15 @@ const MainApp: React.FC<MainAppProps> = ({
     }
   };
 
-  // Placeholder for game tab creation - will be implemented in Week 3
-  const handleCreateGameTab = async (gameInfo: { gameTitle: string; genre?: string }) => {
-    console.log('🎮 [MainApp] Game tab creation requested:', gameInfo);
+  // Create game tab and switch to it immediately
+  const handleCreateGameTabAndSwitch = async (
+    gameInfo: { gameTitle: string; genre?: string }, 
+    user: any, 
+    userMessage: any
+  ): Promise<any> => {
+    console.log('🎮 [MainApp] Creating game tab and switching:', gameInfo);
     
     try {
-      const user = authService.getCurrentUser();
-      if (!user) {
-        console.error('User not authenticated for game tab creation');
-        return;
-      }
-
       // Generate unique conversation ID
       const conversationId = gameTabService.generateGameConversationId(gameInfo.gameTitle);
       
@@ -506,35 +504,102 @@ const MainApp: React.FC<MainAppProps> = ({
       const existingConversation = conversations[conversationId];
       if (existingConversation) {
         console.log('🎮 [MainApp] Game tab already exists, switching to it');
+        
+        // Move user message to existing game tab
+        await ConversationService.addMessage(conversationId, userMessage);
+        
+        // Update conversations state to move user message
+        setConversations(prev => {
+          const updated = { ...prev };
+          // Remove from everything-else
+          if (updated['everything-else']) {
+            updated['everything-else'] = {
+              ...updated['everything-else'],
+              messages: updated['everything-else'].messages.filter(msg => msg.id !== userMessage.id),
+              updatedAt: Date.now()
+            };
+          }
+          // Add to game tab
+          if (updated[conversationId]) {
+            updated[conversationId] = {
+              ...updated[conversationId],
+              messages: [...updated[conversationId].messages, userMessage],
+              updatedAt: Date.now()
+            };
+          }
+          return updated;
+        });
+        
         setActiveConversation(existingConversation);
-        return;
+        return existingConversation;
       }
 
-      // Create new game tab
-      const newGameTab = await gameTabService.createGameTab({
+      // Create new game tab (without subtabs initially)
+      const newGameTab = await gameTabService.createGameTabWithoutSubtabs({
         gameTitle: gameInfo.gameTitle,
         genre: gameInfo.genre || 'Action RPG',
         conversationId,
         userId: user.id
       });
 
-      // Add to conversations state
-      setConversations(prev => ({
-        ...prev,
-        [conversationId]: newGameTab
-      }));
+      // Move user message to new game tab
+      await ConversationService.addMessage(conversationId, userMessage);
+
+      // Update conversations state
+      setConversations(prev => {
+        const updated = { ...prev };
+        // Remove from everything-else
+        if (updated['everything-else']) {
+          updated['everything-else'] = {
+            ...updated['everything-else'],
+            messages: updated['everything-else'].messages.filter(msg => msg.id !== userMessage.id),
+            updatedAt: Date.now()
+          };
+        }
+        // Add new game tab with user message
+        updated[conversationId] = {
+          ...newGameTab,
+          messages: [userMessage],
+          updatedAt: Date.now()
+        };
+        return updated;
+      });
 
       // Switch to the new game tab
       setActiveConversation(newGameTab);
-
+      
       // Auto-switch to Playing mode for new game tabs
-      setActiveSession(conversationId, true);
+      setActiveSession(newGameTab.id, true);
+      
+      // Create subtabs in background (no loading state)
+      gameTabService.generateSubtabsInBackground(conversationId, gameInfo.gameTitle, gameInfo.genre || 'Default')
+        .then(() => {
+          console.log('🎮 [MainApp] Subtabs generated in background for:', conversationId);
+          // Refresh conversations to show subtabs
+          ConversationService.getConversations().then(updatedConversations => {
+            setConversations(updatedConversations);
+          });
+        })
+        .catch(error => {
+          console.error('Failed to generate subtabs in background:', error);
+        });
+      
+      console.log('🎮 [MainApp] Game tab created and activated:', newGameTab.id);
+      return newGameTab;
 
-      console.log('🎮 [MainApp] Game tab created successfully:', newGameTab.title);
     } catch (error) {
       console.error('Failed to create game tab:', error);
-      // You could show a user-friendly error message here
+      return activeConversation; // Fallback to current conversation
     }
+  };
+
+  // Legacy function for backward compatibility
+  const handleCreateGameTab = async (gameInfo: { gameTitle: string; genre?: string }) => {
+    const user = authService.getCurrentUser();
+    if (!user) return;
+    
+    const newTab = await handleCreateGameTabAndSwitch(gameInfo, user, null);
+    return newTab;
   };
 
   const handleSendMessage = async (message: string, imageUrl?: string) => {
@@ -553,8 +618,8 @@ const MainApp: React.FC<MainAppProps> = ({
         message.toLowerCase().includes('guide')
       ));
 
-    if (isGameHelpRequest && activeConversation.id !== 'everything-else') {
-      // Switch to Playing mode if not already active
+    if (isGameHelpRequest && activeConversation.gameTitle && activeConversation.gameId) {
+      // Switch to Playing mode if not already active (only for game-specific conversations)
       if (!session.isActive || session.currentGameId !== activeConversation.id) {
         console.log('🎮 [MainApp] Auto-switching to Playing mode for game help request');
         setActiveSession(activeConversation.id, true);
@@ -582,8 +647,10 @@ const MainApp: React.FC<MainAppProps> = ({
       return updated;
     });
 
-    // Add message to service
-    await ConversationService.addMessage(activeConversation.id, newMessage);
+    // Add message to service (async, don't wait)
+    ConversationService.addMessage(activeConversation.id, newMessage).catch(error => {
+      console.error('Failed to save message to service:', error);
+    });
 
     // Track credit usage based on query type
     const hasImage = !!imageUrl;
@@ -655,6 +722,18 @@ const MainApp: React.FC<MainAppProps> = ({
         imageUrl
       );
 
+      // Check if this response indicates a game-specific conversation
+      let targetConversation = activeConversation;
+      if (response.otakonTags.has('GAME_ID') && activeConversation.id === 'everything-else') {
+        const gameInfo = {
+          gameTitle: response.otakonTags.get('GAME_ID'),
+          genre: response.otakonTags.get('GENRE') || 'Default'
+        };
+        
+        // Create game tab and move both user message and AI response
+        targetConversation = await handleCreateGameTabAndSwitch(gameInfo, user, newMessage);
+      }
+
       const aiMessage = {
         id: `msg_${Date.now() + 1}`,
         content: response.content,
@@ -662,21 +741,21 @@ const MainApp: React.FC<MainAppProps> = ({
         timestamp: Date.now(),
       };
 
-      // Optimized: Update state immediately
+      // Add AI message to the target conversation (game tab or current)
+      await ConversationService.addMessage(targetConversation.id, aiMessage);
+
+      // Update conversations state to show AI message in correct tab
       setConversations(prev => {
         const updated = { ...prev };
-        if (updated[activeConversation.id]) {
-          updated[activeConversation.id] = {
-            ...updated[activeConversation.id],
-            messages: [...updated[activeConversation.id].messages, aiMessage],
+        if (updated[targetConversation.id]) {
+          updated[targetConversation.id] = {
+            ...updated[targetConversation.id],
+            messages: [...updated[targetConversation.id].messages, aiMessage],
             updatedAt: Date.now()
           };
         }
         return updated;
       });
-
-      // Add message to service
-      await ConversationService.addMessage(activeConversation.id, aiMessage);
 
       // Process suggested prompts
       console.log('🔍 [MainApp] Raw suggestions from AI:', response.suggestions);
@@ -690,15 +769,6 @@ const MainApp: React.FC<MainAppProps> = ({
         const fallbackSuggestions = suggestedPromptsService.getFallbackSuggestions(activeConversation.id);
         console.log('🔍 [MainApp] Using fallback suggestions:', fallbackSuggestions);
         setSuggestedPrompts(fallbackSuggestions);
-      }
-
-      // Handle game tab creation if game is identified
-      if (response.otakonTags.has('GAME_ID')) {
-        const gameInfo = {
-          gameTitle: response.otakonTags.get('GAME_ID'),
-          genre: response.otakonTags.get('GENRE') || 'Default'
-        };
-        await handleCreateGameTab(gameInfo);
       }
 
     } catch (error) {

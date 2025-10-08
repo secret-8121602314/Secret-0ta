@@ -47,6 +47,65 @@ class GameTabService {
   }
 
   /**
+   * Create a new game-specific conversation tab without subtabs (for immediate switching)
+   */
+  async createGameTabWithoutSubtabs(data: GameTabCreationData): Promise<Conversation> {
+    console.log('🎮 [GameTabService] Creating game tab without subtabs:', data);
+    
+    // Create the conversation without subtabs initially
+    const conversation: Conversation = {
+      id: data.conversationId,
+      title: data.gameTitle,
+      messages: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      isActive: false,
+      gameId: data.gameTitle.toLowerCase().replace(/\s+/g, '-'),
+      gameTitle: data.gameTitle,
+      genre: data.genre,
+      subtabs: [],
+      subtabsOrder: [],
+      isActiveSession: false,
+      activeObjective: '',
+      gameProgress: 0
+    };
+
+    // Save to database
+    await ConversationService.addConversation(conversation);
+
+    return conversation;
+  }
+
+  /**
+   * Generate subtabs in background (no loading state)
+   */
+  async generateSubtabsInBackground(conversationId: string, gameTitle: string, genre: string): Promise<void> {
+    console.log('🎮 [GameTabService] Generating subtabs in background for:', conversationId);
+    
+    try {
+      // Generate initial sub-tabs based on genre
+      const subTabs = this.generateInitialSubTabs(genre);
+      
+      // Update conversation with subtabs
+      await ConversationService.updateConversation(conversationId, {
+        subtabs: subTabs,
+        subtabsOrder: subTabs.map(tab => tab.id),
+        updatedAt: Date.now()
+      });
+
+      // Generate initial AI insights for sub-tabs
+      const conversation = await ConversationService.getConversation(conversationId);
+      if (conversation) {
+        await this.generateInitialInsights(conversation);
+      }
+      
+      console.log('🎮 [GameTabService] Subtabs generated successfully for:', conversationId);
+    } catch (error) {
+      console.error('Failed to generate subtabs in background:', error);
+    }
+  }
+
+  /**
    * Generate initial sub-tabs based on game genre
    */
   private generateInitialSubTabs(genre: string): SubTab[] {

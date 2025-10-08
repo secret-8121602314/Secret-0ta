@@ -9,6 +9,9 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  esbuild: {
+    jsx: 'automatic',
+  },
   build: {
     outDir: 'dist',
     sourcemap: true,

@@ -338,8 +338,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       )}
 
 
-      {/* Sub-tabs Section - Show for game conversations */}
-      {conversation && conversation.id !== 'everything-else' && conversation.subtabs && conversation.subtabs.length > 0 && (
+      {/* Sub-tabs Section - Show for game conversations only */}
+      {conversation && conversation.gameTitle && conversation.gameId && conversation.subtabs && conversation.subtabs.length > 0 && (
         <div className="flex-shrink-0 px-3 pb-2">
           <SubTabs
             subtabs={conversation.subtabs}
@@ -424,8 +424,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
             </div>
             
-            {/* Active Session Toggle - Show for game conversations, positioned left of send button */}
-            {conversation && conversation.id !== 'everything-else' && activeSession && onToggleActiveSession && (
+            {/* Active Session Toggle - Show for game conversations only, positioned left of send button */}
+            {conversation && conversation.gameTitle && conversation.gameId && activeSession && onToggleActiveSession && (
               <ActiveSessionToggle
                 isActive={activeSession.isActive && activeSession.currentGameId === conversation.id}
                 onClick={onToggleActiveSession}
