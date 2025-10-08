@@ -132,6 +132,32 @@ const MainApp: React.FC<MainAppProps> = ({
     }
   }, [propOnWebSocketMessage, activeConversation]);
 
+  // Listen for sub-tab updates from background generation
+  useEffect(() => {
+    const handleSubTabUpdate = (event: CustomEvent) => {
+      const { conversationId, subtabs } = event.detail;
+      console.log('🔄 [MainApp] Received sub-tab update:', { conversationId, subtabs });
+      
+      setConversations(prev => {
+        const updated = { ...prev };
+        if (updated[conversationId]) {
+          updated[conversationId] = {
+            ...updated[conversationId],
+            subtabs,
+            updatedAt: Date.now()
+          };
+        }
+        return updated;
+      });
+    };
+
+    window.addEventListener('subtab-updated', handleSubTabUpdate as EventListener);
+    
+    return () => {
+      window.removeEventListener('subtab-updated', handleSubTabUpdate as EventListener);
+    };
+  }, []);
+
   useEffect(() => {
     const loadData = async (retryCount = 0) => {
       try {
@@ -498,7 +524,7 @@ const MainApp: React.FC<MainAppProps> = ({
   };
 
   // Placeholder for game tab creation - will be implemented in Week 3
-  const handleCreateGameTab = async (gameInfo: { gameTitle: string; genre?: string }) => {
+  const handleCreateGameTab = async (gameInfo: { gameTitle: string; genre?: string }, triggerMessages?: { userMessageId: string; aiMessageId: string }) => {
     console.log('🎮 [MainApp] Game tab creation requested:', gameInfo);
     
     try {
@@ -538,6 +564,32 @@ const MainApp: React.FC<MainAppProps> = ({
 
       // Auto-switch to Playing mode for new game tabs
       setActiveSession(conversationId, true);
+
+      // Clean up trigger messages from Everything Else tab if provided
+      if (triggerMessages && conversations['everything-else']) {
+        console.log('🧹 [MainApp] Cleaning up trigger messages from Everything Else tab');
+        setConversations(prev => {
+          const updated = { ...prev };
+          if (updated['everything-else']) {
+            const filteredMessages = updated['everything-else'].messages.filter(
+              msg => msg.id !== triggerMessages.userMessageId && msg.id !== triggerMessages.aiMessageId
+            );
+            updated['everything-else'] = {
+              ...updated['everything-else'],
+              messages: filteredMessages,
+              updatedAt: Date.now()
+            };
+          }
+          return updated;
+        });
+
+        // Also update in the service
+        await ConversationService.updateConversation('everything-else', {
+          messages: conversations['everything-else'].messages.filter(
+            msg => msg.id !== triggerMessages.userMessageId && msg.id !== triggerMessages.aiMessageId
+          )
+        });
+      }
 
       console.log('🎮 [MainApp] Game tab created successfully:', newGameTab.title);
     } catch (error) {
@@ -707,7 +759,14 @@ const MainApp: React.FC<MainAppProps> = ({
           gameTitle: response.otakonTags.get('GAME_ID'),
           genre: response.otakonTags.get('GENRE') || 'Default'
         };
-        await handleCreateGameTab(gameInfo);
+        
+        // Pass message IDs for cleanup if we're in Everything Else tab
+        const triggerMessages = activeConversation.id === 'everything-else' ? {
+          userMessageId: newMessage.id,
+          aiMessageId: aiMessage.id
+        } : undefined;
+        
+        await handleCreateGameTab(gameInfo, triggerMessages);
       }
 
     } catch (error) {

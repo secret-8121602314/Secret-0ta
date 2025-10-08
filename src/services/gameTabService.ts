@@ -16,8 +16,12 @@ class GameTabService {
   async createGameTab(data: GameTabCreationData): Promise<Conversation> {
     console.log('🎮 [GameTabService] Creating game tab:', data);
 
-    // Generate initial sub-tabs based on genre
-    const subTabs = this.generateInitialSubTabs(data.genre);
+    // Generate initial sub-tabs based on genre (with loading status)
+    const subTabs = this.generateInitialSubTabs(data.genre).map(tab => ({
+      ...tab,
+      status: 'loading' as const,
+      content: 'Loading...'
+    }));
     
     // Create the conversation
     const conversation: Conversation = {
@@ -40,8 +44,10 @@ class GameTabService {
     // Save to database
     await ConversationService.addConversation(conversation);
 
-    // Generate initial AI insights for sub-tabs
-    await this.generateInitialInsights(conversation);
+    // Generate initial AI insights for sub-tabs in the background (don't await)
+    this.generateInitialInsights(conversation).catch(error => {
+      console.error('Failed to generate initial insights in background:', error);
+    });
 
     return conversation;
   }
@@ -97,6 +103,14 @@ class GameTabService {
       // Save updated conversation
       await ConversationService.updateConversation(conversation.id, updatedConversation);
 
+      // Dispatch a custom event to notify the UI about the update
+      window.dispatchEvent(new CustomEvent('subtab-updated', {
+        detail: {
+          conversationId: conversation.id,
+          subtabs: updatedSubTabs
+        }
+      }));
+
     } catch (error) {
       console.error('Failed to generate initial insights:', error);
       
@@ -115,6 +129,14 @@ class GameTabService {
       };
 
       await ConversationService.updateConversation(conversation.id, updatedConversation);
+
+      // Dispatch error event
+      window.dispatchEvent(new CustomEvent('subtab-updated', {
+        detail: {
+          conversationId: conversation.id,
+          subtabs: errorSubTabs
+        }
+      }));
     }
   }
 

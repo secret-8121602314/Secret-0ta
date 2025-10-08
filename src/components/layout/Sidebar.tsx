@@ -40,9 +40,16 @@ const Sidebar: React.FC<SidebarProps> = ({
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const longPressDelay = 1500; // 1.5 seconds
 
-  // Sort conversations: pinned first, then by creation date
+  // Sort conversations: Everything Else first, then pinned, then by creation date
   const conversationList = Object.values(conversations).sort((a, b) => {
-    // Pinned conversations first
+    // Everything Else tab always first
+    if (a.id === 'everything-else' && b.id !== 'everything-else') return -1;
+    if (a.id !== 'everything-else' && b.id === 'everything-else') return 1;
+    
+    // If both are Everything Else, no change needed
+    if (a.id === 'everything-else' && b.id === 'everything-else') return 0;
+    
+    // Pinned conversations next
     if (a.isPinned && !b.isPinned) return -1;
     if (!a.isPinned && b.isPinned) return 1;
     
