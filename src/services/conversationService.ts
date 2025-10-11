@@ -123,13 +123,27 @@ export class ConversationService {
         // Fallback to localStorage
         conversations = StorageService.get(STORAGE_KEYS.CONVERSATIONS, {}) as Conversations;
         console.log('🔍 [ConversationService] localStorage conversations:', conversations);
-        // Cache the localStorage data for future use
-        await cacheService.set(STORAGE_KEYS.CONVERSATIONS, conversations, 30 * 24 * 60 * 60 * 1000); // 30 days
+        
+        // ✅ FIX: Immediately cache the localStorage data to prevent future cache misses
+        if (Object.keys(conversations).length > 0) {
+          console.log('🔍 [ConversationService] Caching localStorage data to Supabase...');
+          await cacheService.set(STORAGE_KEYS.CONVERSATIONS, conversations, 365 * 24 * 60 * 60 * 1000); // 1 year - persist indefinitely
+        }
       }
     } catch (error) {
       console.warn('Failed to load conversations from cache, using localStorage:', error);
       conversations = StorageService.get(STORAGE_KEYS.CONVERSATIONS, {}) as Conversations;
       console.log('🔍 [ConversationService] Error fallback conversations:', conversations);
+      
+      // ✅ FIX: Try to cache even on error to prevent future misses
+      if (Object.keys(conversations).length > 0) {
+        console.log('🔍 [ConversationService] Attempting to cache after error...');
+        try {
+          await cacheService.set(STORAGE_KEYS.CONVERSATIONS, conversations, 365 * 24 * 60 * 60 * 1000); // 1 year - persist indefinitely
+        } catch (cacheError) {
+          console.warn('Failed to cache conversations after error:', cacheError);
+        }
+      }
     }
     
     // Migration: Update existing "General Chat" titles to "Everything else" (one-time migration)
@@ -169,21 +183,27 @@ export class ConversationService {
 
   static async setConversations(conversations: Conversations): Promise<void> {
     // ✅ SCALABILITY: Store in both cache and localStorage for reliability
+    console.log('🔍 [ConversationService] Saving conversations:', Object.keys(conversations));
+    
     try {
-      // Store in cache service (primary storage)
-      await cacheService.set(STORAGE_KEYS.CONVERSATIONS, conversations, 30 * 24 * 60 * 60 * 1000); // 30 days
-      
-      // Also store in localStorage as backup
+      // IMPORTANT: Store in localStorage FIRST (synchronous, reliable)
       StorageService.set(STORAGE_KEYS.CONVERSATIONS, conversations);
+      console.log('🔍 [ConversationService] Saved to localStorage');
       
-      // Store individual conversations for better performance
-      await Promise.all(
+      // Then store in cache service (async, can fail without breaking functionality)
+      await cacheService.set(STORAGE_KEYS.CONVERSATIONS, conversations, 365 * 24 * 60 * 60 * 1000); // 1 year - persist indefinitely
+      console.log('🔍 [ConversationService] Saved to cache');
+      
+      // Store individual conversations for better performance (non-blocking)
+      Promise.all(
         Object.values(conversations).map(conv => 
           chatMemoryService.saveConversation(conv)
         )
-      );
+      ).catch(error => console.warn('Failed to save individual conversations:', error));
+      
     } catch (error) {
       console.warn('Failed to store conversations in cache, using localStorage only:', error);
+      // Ensure localStorage is still updated even if cache fails
       StorageService.set(STORAGE_KEYS.CONVERSATIONS, conversations);
     }
   }
@@ -234,11 +254,15 @@ export class ConversationService {
     }
     
     conversations[conversation.id] = conversation;
+    console.log('🔍 [ConversationService] Adding new conversation:', conversation.id, conversation.title);
+    
+    // ✅ FIX: Immediately persist to localStorage and cache to prevent loss on tab switch
     await this.setConversations(conversations);
     
     // ✅ SCALABILITY: Save individual conversation to cache for better performance
     await chatMemoryService.saveConversation(conversation);
     
+    console.log('🔍 [ConversationService] New conversation persisted successfully');
     return { success: true };
   }
 
@@ -307,32 +331,21 @@ export class ConversationService {
       
       // ✅ SCALABILITY: Save individual conversation to cache (non-blocking)
       chatMemoryService.saveConversation(conversation)
-        .catch(error => {
-          console.warn('Failed to save conversation to cache:', error);
-          // Silently fail - not critical for user experience
-        });
+        .catch(error => console.warn('Failed to save conversation to cache:', error));
       
       // ✅ SCALABILITY: Save chat context for AI memory (non-blocking)
       // Fire and forget - don't block on this operation
-      const saveContextAsync = async () => {
-        try {
-          const { authService } = await import('./authService');
-          const user = authService.getCurrentUser();
-          if (user?.authUserId) {
-            await chatMemoryService.saveChatContext(user.authUserId, {
-              recentMessages: conversation.messages.slice(-10), // Last 10 messages
-              userPreferences: {}, // This would come from user service
-              gameContext: {}, // This would come from game context
-              conversationSummary: conversation.title
-            });
-          }
-        } catch (error) {
-          console.warn('Failed to save chat context:', error);
-          // Silently fail - not critical for user experience
+      import('./authService').then(({ authService }) => {
+        const user = authService.getCurrentUser();
+        if (user?.authUserId) {
+          chatMemoryService.saveChatContext(user.authUserId, {
+            recentMessages: conversation.messages.slice(-10), // Last 10 messages
+            userPreferences: {}, // This would come from user service
+            gameContext: {}, // This would come from game context
+            conversationSummary: conversation.title
+          }).catch(error => console.warn('Failed to save chat context:', error));
         }
-      };
-      
-      saveContextAsync();
+      }).catch(error => console.warn('Failed to import authService:', error));
       
       return { success: true };
     }

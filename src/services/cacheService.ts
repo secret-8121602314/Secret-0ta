@@ -9,10 +9,9 @@ class CacheService {
   private readonly DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
   private readonly CACHE_TABLE = 'app_cache';
   private readonly MAX_MEMORY_CACHE_SIZE = 100; // Prevent memory bloat
-  private readonly REQUEST_TIMEOUT = 10000; // 10 second timeout for pending requests
   
   // Request deduplication - prevent multiple simultaneous calls for the same key
-  private pendingRequests = new Map<string, { promise: Promise<any>; timeout: NodeJS.Timeout }>();
+  private pendingRequests = new Map<string, Promise<any>>();
 
   /**
    * Set a value in both memory and Supabase cache
@@ -62,15 +61,9 @@ class CacheService {
    */
   async get<T>(key: string, memoryOnly: boolean = false): Promise<T | null> {
     // Check if there's already a pending request for this key
-    const pending = this.pendingRequests.get(key);
-    if (pending) {
+    if (this.pendingRequests.has(key)) {
       console.log(`[CacheService] Request deduplication: waiting for pending request for key: ${key}`);
-      try {
-        return await pending.promise as T | null;
-      } catch (error) {
-        console.warn(`[CacheService] Pending request failed for key ${key}:`, error);
-        return null;
-      }
+      return await this.pendingRequests.get(key) as T | null;
     }
     
     // Try memory cache first
@@ -91,33 +84,13 @@ class CacheService {
       return null;
     }
     
-    // Create a promise for the Supabase request with timeout
+    // Create a promise for the Supabase request and store it
     const supabaseRequest = this.fetchFromSupabase<T>(key);
-    
-    // Create timeout promise
-    const timeoutPromise = new Promise<T | null>((_, reject) => {
-      const timeout = setTimeout(() => {
-        reject(new Error(`Cache request timeout for key: ${key}`));
-      }, this.REQUEST_TIMEOUT);
-      return timeout;
-    });
-    
-    // Race between the actual request and timeout
-    const timeoutId = setTimeout(() => {
-      this.pendingRequests.delete(key);
-      console.warn(`[CacheService] Request timeout for key: ${key}`);
-    }, this.REQUEST_TIMEOUT);
-    
-    this.pendingRequests.set(key, { promise: supabaseRequest, timeout: timeoutId });
+    this.pendingRequests.set(key, supabaseRequest);
     
     try {
-      const result = await Promise.race([supabaseRequest, timeoutPromise]);
-      clearTimeout(timeoutId);
+      const result = await supabaseRequest;
       return result;
-    } catch (error) {
-      clearTimeout(timeoutId);
-      console.warn(`[CacheService] Error fetching cache for key ${key}:`, error);
-      return null;
     } finally {
       // Clean up the pending request
       this.pendingRequests.delete(key);
@@ -203,8 +176,7 @@ class CacheService {
     // Clear memory cache
     this.memoryCache.clear();
     
-    // Clear pending requests and their timeouts
-    this.pendingRequests.forEach(({ timeout }) => clearTimeout(timeout));
+    // Clear pending requests
     this.pendingRequests.clear();
     
     // Clear Supabase cache
@@ -353,7 +325,8 @@ class CacheService {
    * Set chat context data
    */
   async setChatContext(userId: string, context: any): Promise<void> {
-    await this.set(`chat_context:${userId}`, context, 24 * 60 * 60 * 1000, 'context', userId); // 24 hours
+    // Store for 90 days - chat context should persist but can expire after extended inactivity
+    await this.set(`chat_context:${userId}`, context, 90 * 24 * 60 * 60 * 1000, 'context', userId); // 90 days
   }
 
   /**
@@ -367,7 +340,8 @@ class CacheService {
    * Set user memory data
    */
   async setUserMemory(userId: string, memory: any): Promise<void> {
-    await this.set(`user_memory:${userId}`, memory, 30 * 24 * 60 * 60 * 1000, 'memory', userId); // 30 days
+    // Store indefinitely (365 days) - user memory should persist until explicitly deleted
+    await this.set(`user_memory:${userId}`, memory, 365 * 24 * 60 * 60 * 1000, 'memory', userId); // 1 year
   }
 
   /**
@@ -381,7 +355,8 @@ class CacheService {
    * Set game context data
    */
   async setGameContext(userId: string, gameId: string, context: any): Promise<void> {
-    await this.set(`game_context:${userId}:${gameId}`, context, 24 * 60 * 60 * 1000, 'context', userId); // 24 hours
+    // Store for 90 days - game context should persist but can expire after extended inactivity
+    await this.set(`game_context:${userId}:${gameId}`, context, 90 * 24 * 60 * 60 * 1000, 'context', userId); // 90 days
   }
 
   /**
@@ -395,7 +370,8 @@ class CacheService {
    * Set user data with appropriate TTL
    */
   async setUser(userId: string, user: any): Promise<void> {
-    await this.set(`user:${userId}`, user, 5 * 60 * 1000, 'user', userId); // 5 minutes
+    // Store indefinitely (365 days) - user data should persist until explicitly deleted
+    await this.set(`user:${userId}`, user, 365 * 24 * 60 * 60 * 1000, 'user', userId); // 1 year
   }
 
   /**
@@ -423,7 +399,8 @@ class CacheService {
    * Set conversation data
    */
   async setConversation(conversationId: string, conversation: any, userId?: string): Promise<void> {
-    await this.set(`conversation:${conversationId}`, conversation, 10 * 60 * 1000, 'conversation', userId); // 10 minutes
+    // Store indefinitely (365 days) - conversations should persist until explicitly deleted
+    await this.set(`conversation:${conversationId}`, conversation, 365 * 24 * 60 * 60 * 1000, 'conversation', userId); // 1 year
   }
 
   /**

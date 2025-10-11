@@ -11,19 +11,20 @@ import { errorRecoveryService } from '../services/errorRecoveryService';
 import { UserService } from '../services/userService';
 import { SupabaseService } from '../services/supabaseService';
 import { tabManagementService } from '../services/tabManagementService';
+import { ttsService } from '../services/ttsService';
 import Sidebar from './layout/Sidebar';
 import ChatInterface from './features/ChatInterface';
 import SettingsModal from './modals/SettingsModal';
 import CreditModal from './modals/CreditModal';
 import ConnectionModal from './modals/ConnectionModal';
+import HandsFreeModal from './modals/HandsFreeModal';
 import Logo from './ui/Logo';
 import CreditIndicator from './ui/CreditIndicator';
+import HandsFreeToggle from './ui/HandsFreeToggle';
 import { LoadingSpinner } from './ui/LoadingSpinner';
 import SettingsContextMenu from './ui/SettingsContextMenu';
 import { ConnectionStatus } from '../types';
-import HandsFreeModal from './modals/HandsFreeModal';
-import HandsFreeToggle from './ui/HandsFreeToggle';
-import { ttsService } from '../services/ttsService';
+import { connect, disconnect } from '../services/websocketService';
 
 interface MainAppProps {
   onLogout: () => void;
@@ -72,8 +73,27 @@ const MainApp: React.FC<MainAppProps> = ({
   const [connectionCode, setConnectionCode] = useState<string | null>(null);
   const [lastSuccessfulConnection, setLastSuccessfulConnection] = useState<Date | null>(null);
   
+  // Hands-free mode state
+  const [isHandsFreeMode, setIsHandsFreeMode] = useState(false);
+  const [handsFreeModalOpen, setHandsFreeModalOpen] = useState(false);
+  
   // Input preservation for tab switching
   const [currentInputMessage, setCurrentInputMessage] = useState<string>('');
+  
+  // Helper function to deep clone conversations to force React re-renders
+  const deepCloneConversations = (conversations: Conversations): Conversations => {
+    const cloned: Conversations = {};
+    Object.keys(conversations).forEach(key => {
+      cloned[key] = {
+        ...conversations[key],
+        // Force new subtabs array reference if it exists
+        subtabs: conversations[key].subtabs ? [...conversations[key].subtabs!] : undefined,
+        // Force new messages array reference
+        messages: [...conversations[key].messages]
+      };
+    });
+    return cloned;
+  };
   
   // Settings context menu state
   const [settingsContextMenu, setSettingsContextMenu] = useState<{
@@ -84,20 +104,16 @@ const MainApp: React.FC<MainAppProps> = ({
     position: { x: 0, y: 0 },
   });
   
-  // Handsfree mode state
-  const [isHandsFreeMode, setIsHandsFreeMode] = useState(false);
-  const [handsFreeModalOpen, setHandsFreeModalOpen] = useState(false);
-  
-  // Use props for connection state (centralized in App.tsx)
-  // No fallback to prevent state inconsistencies
-  const connectionStatus = propConnectionStatus || ConnectionStatus.DISCONNECTED;
-  const connectionError = propConnectionError || null;
+  // Use props for connection state, fallback to local state if not provided
+  const connectionStatus = propConnectionStatus ?? ConnectionStatus.DISCONNECTED;
+  const connectionError = propConnectionError ?? null;
   
   // Debug connection state
-  console.log('🔍 [MainApp] Connection state (from props):', {
+  console.log('🔍 [MainApp] Connection state:', {
+    propConnectionStatus,
     connectionStatus,
-    connectionError,
-    isConnected: connectionStatus === ConnectionStatus.CONNECTED
+    propConnectionError,
+    connectionError
   });
 
   // Restore connection state from localStorage on mount
@@ -114,7 +130,7 @@ const MainApp: React.FC<MainAppProps> = ({
 
   // Initialize TTS service on mount
   useEffect(() => {
-    ttsService.init().catch(err => {
+    ttsService.init().catch((err: Error) => {
       console.warn('Failed to initialize TTS service:', err);
     });
   }, []);
@@ -165,16 +181,16 @@ const MainApp: React.FC<MainAppProps> = ({
         console.log('🔍 [MainApp] Loaded conversations:', userConversations);
         
         // Migration: Fix "Everything else" conversation ID if needed
-        const everythingElseConv = Object.values(userConversations).find(
+        const oldEverythingElseConv = Object.values(userConversations).find(
           conv => conv.title === 'Everything else' && conv.id !== 'everything-else'
         );
         
-        if (everythingElseConv) {
-          console.log('🔍 [MainApp] Migrating "Everything else" conversation from ID', everythingElseConv.id, 'to everything-else');
-          const migratedConv = { ...everythingElseConv, id: 'everything-else' };
+        if (oldEverythingElseConv) {
+          console.log('🔍 [MainApp] Migrating "Everything else" conversation from ID', oldEverythingElseConv.id, 'to everything-else');
+          const migratedConv = { ...oldEverythingElseConv, id: 'everything-else' };
           
           // Remove old conversation
-          await ConversationService.deleteConversation(everythingElseConv.id);
+          await ConversationService.deleteConversation(oldEverythingElseConv.id);
           
           // Add with new ID
           await ConversationService.addConversation(migratedConv);
@@ -186,40 +202,66 @@ const MainApp: React.FC<MainAppProps> = ({
         
         setConversations(userConversations);
 
-        const active = await ConversationService.getActiveConversation();
-        console.log('🔍 [MainApp] Active conversation:', active);
-        setActiveConversation(active);
+        let active = await ConversationService.getActiveConversation();
+        console.log('🔍 [MainApp] Active conversation from service:', active);
 
-        // Auto-create a conversation if none exists
-        if (!active && Object.keys(userConversations).length === 0) {
-          console.log('🔍 [MainApp] No conversations found, creating new one...');
+        // Handle all cases to ensure "Everything else" is always available and active by default
+        const currentEverythingElse = Object.values(userConversations).find(
+          conv => conv.title === 'Everything else' || conv.id === 'everything-else'
+        );
+
+        // Case 1: No conversations at all - create "Everything else" and set as active
+        if (Object.keys(userConversations).length === 0) {
+          console.log('🔍 [MainApp] No conversations found, creating "Everything else"...');
+          const newConversation = ConversationService.createConversation('Everything else', 'everything-else');
+          await ConversationService.addConversation(newConversation);
+          await ConversationService.setActiveConversation(newConversation.id);
           
-          // Check if there's already an "Everything else" conversation
-          const existingEverythingElse = Object.values(userConversations).find(
-            conv => conv.title === 'Everything else' || conv.id === 'everything-else'
-          );
+          const updatedConversations = await ConversationService.getConversations();
+          setConversations(updatedConversations);
+          active = updatedConversations['everything-else'];
+          setActiveConversation(active);
+          console.log('🔍 [MainApp] Created and activated "Everything else" conversation');
+        }
+        // Case 2: "Everything else" exists but nothing is active - set "Everything else" as active
+        else if (!active && currentEverythingElse) {
+          console.log('🔍 [MainApp] No active conversation, setting "Everything else" as active');
+          await ConversationService.setActiveConversation(currentEverythingElse.id);
+          const updatedConversations = await ConversationService.getConversations();
+          setConversations(updatedConversations);
+          active = updatedConversations[currentEverythingElse.id];
+          setActiveConversation(active);
+        }
+        // Case 3: No "Everything else" conversation but other conversations exist - create and activate it
+        else if (!currentEverythingElse) {
+          console.log('🔍 [MainApp] "Everything else" missing, creating it...');
+          const newConversation = ConversationService.createConversation('Everything else', 'everything-else');
+          await ConversationService.addConversation(newConversation);
           
-          if (existingEverythingElse) {
-            // Use the existing "Everything else" conversation
-            console.log('🔍 [MainApp] Using existing "Everything else" conversation with ID:', existingEverythingElse.id);
-            await ConversationService.setActiveConversation(existingEverythingElse.id);
-            setActiveConversation(existingEverythingElse);
-          } else {
-            // Create a new "Everything else" conversation with correct ID
-            console.log('🔍 [MainApp] Creating new "Everything else" conversation with ID: everything-else');
-            const newConversation = ConversationService.createConversation('Everything else', 'everything-else');
-            await ConversationService.addConversation(newConversation);
+          // If no active conversation, make "Everything else" active
+          if (!active) {
             await ConversationService.setActiveConversation(newConversation.id);
-            
             const updatedConversations = await ConversationService.getConversations();
             setConversations(updatedConversations);
-            setActiveConversation(newConversation);
-            console.log('🔍 [MainApp] New "Everything else" conversation created and set as active with ID:', newConversation.id);
+            active = updatedConversations['everything-else'];
+            setActiveConversation(active);
+            console.log('🔍 [MainApp] Created "Everything else" and set as active');
+          } else {
+            // Otherwise, just add it but keep current active conversation
+            const updatedConversations = await ConversationService.getConversations();
+            setConversations(updatedConversations);
+            setActiveConversation(active);
+            console.log('🔍 [MainApp] Created "Everything else" but kept existing active conversation:', active.title);
           }
-        } else if (active) {
-          console.log('🔍 [MainApp] Found active conversation:', active.title, 'with ID:', active.id);
-          
-          // Set initial suggested prompts for the active conversation
+        }
+        // Case 4: Active conversation exists - restore it
+        else if (active) {
+          console.log('🔍 [MainApp] Restoring active conversation:', active.title, 'with ID:', active.id);
+          setActiveConversation(active);
+        }
+
+        // Set initial suggested prompts for the active conversation
+        if (active) {
           if (active.id === 'everything-else') {
             // For Everything Else tab, show news prompts if no messages
             if (!active.messages || active.messages.length === 0) {
@@ -257,14 +299,9 @@ const MainApp: React.FC<MainAppProps> = ({
     loadData();
   }, []);
 
-  // Poll for conversation updates when subtabs are loading (optimized)
+  // Poll for conversation updates when subtabs are loading
   useEffect(() => {
-    let intervalId: NodeJS.Timeout | null = null;
-    let isActive = true;
-    
     const pollForSubtabUpdates = async () => {
-      if (!isActive) return;
-      
       // Check if any conversation has loading subtabs
       const hasLoadingSubtabs = Object.values(conversations).some(conv => 
         conv.subtabs?.some(tab => tab.status === 'loading')
@@ -272,49 +309,27 @@ const MainApp: React.FC<MainAppProps> = ({
 
       if (hasLoadingSubtabs) {
         console.log('🔄 [MainApp] Polling for subtab updates...');
-        try {
-          const updatedConversations = await ConversationService.getConversations();
-          
-          if (!isActive) return; // Component unmounted, don't update state
-          
-          // Force new object reference to trigger React re-render
-          const freshConversations = { ...updatedConversations };
-          setConversations(freshConversations);
-          
-          // Update active conversation if it changed
-          if (activeConversation && updatedConversations[activeConversation.id]) {
-            setActiveConversation(updatedConversations[activeConversation.id]);
-          }
-        } catch (error) {
-          console.error('🔄 [MainApp] Error polling for subtab updates:', error);
+        const updatedConversations = await ConversationService.getConversations();
+        
+        // Deep clone to ensure React detects changes in nested objects
+        const freshConversations = deepCloneConversations(updatedConversations);
+        
+        console.log('🔄 [MainApp] Updated conversations with fresh references');
+        setConversations(freshConversations);
+        
+        // IMPORTANT: Update active conversation with new reference to trigger re-render
+        if (activeConversation && freshConversations[activeConversation.id]) {
+          console.log('🔄 [MainApp] Updating active conversation:', activeConversation.id);
+          setActiveConversation(freshConversations[activeConversation.id]);
         }
-      } else if (intervalId) {
-        // No more loading subtabs, stop polling
-        console.log('🔄 [MainApp] All subtabs loaded, stopping poll');
-        clearInterval(intervalId);
-        intervalId = null;
       }
     };
 
-    // Only start polling if there are loading subtabs
-    const hasLoadingSubtabs = Object.values(conversations).some(conv => 
-      conv.subtabs?.some(tab => tab.status === 'loading')
-    );
-    
-    if (hasLoadingSubtabs && !intervalId) {
-      console.log('🔄 [MainApp] Starting subtab poll (5s interval)');
-      // Increased to 5 seconds to reduce load, run immediately then poll
-      pollForSubtabUpdates();
-      intervalId = setInterval(pollForSubtabUpdates, 5000);
-    }
+    // Poll every 2 seconds when there are loading subtabs
+    const interval = setInterval(pollForSubtabUpdates, 2000);
     
     // Cleanup on unmount
-    return () => {
-      isActive = false;
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-    };
+    return () => clearInterval(interval);
   }, [conversations, activeConversation]);
 
   // Function to refresh user data (for credit updates)
@@ -331,27 +346,62 @@ const MainApp: React.FC<MainAppProps> = ({
     }
   };
 
-  // WebSocket connection is fully managed by App.tsx
-  // No local WebSocket management to prevent state duplication
+  // WebSocket message handling (only if using local websocket)
   useEffect(() => {
-    console.log('🔌 [MainApp] Using centralized WebSocket from App.tsx');
-    // All connection logic is handled in App.tsx and passed via props
-    // This component only receives and displays the connection state
-  }, []);
+    if (propOnConnect) {
+      // Using App.tsx connection state, no local websocket needed
+      return;
+    }
+
+
+    const handleWebSocketError = (error: string) => {
+      console.error('WebSocket error:', error);
+    };
+
+    const handleWebSocketOpen = () => {
+      console.log('🔌 WebSocket connected');
+    };
+
+    const handleWebSocketClose = () => {
+      console.log('🔌 WebSocket disconnected');
+    };
+
+    // Check if we have a stored connection code and try to reconnect
+    const storedCode = localStorage.getItem('otakon_connection_code');
+    if (storedCode) {
+      setConnectionCode(storedCode);
+      connect(storedCode, handleWebSocketOpen, handleWebSocketMessage, handleWebSocketError, handleWebSocketClose);
+    }
+
+    // Note: Removed automatic disconnect on unmount to maintain persistent connection
+    // WebSocket should only disconnect when user explicitly disconnects or logs out
+  }, [activeConversation, propOnConnect]);
 
 
   const handleConversationSelect = async (id: string) => {
-    await ConversationService.setActiveConversation(id);
-    const updatedConversations = await ConversationService.getConversations();
-    setConversations(updatedConversations);
-    setActiveConversation(updatedConversations[id]);
+    console.log('🔄 [MainApp] Switching to conversation:', id);
+    
+    // ✅ FIX: Use current conversations state instead of reloading from cache
+    // This prevents losing newly created tabs that haven't been cached yet
+    const targetConversation = conversations[id];
+    if (!targetConversation) {
+      console.warn('🔄 [MainApp] Conversation not found in state, reloading from service:', id);
+      const updatedConversations = await ConversationService.getConversations();
+      setConversations(updatedConversations);
+      setActiveConversation(updatedConversations[id]);
+    } else {
+      // Update active conversation in service
+      await ConversationService.setActiveConversation(id);
+      setActiveConversation(targetConversation);
+    }
+    
     setSidebarOpen(false);
 
     // Set initial suggested prompts for Everything Else tab
     if (id === 'everything-else') {
-      const conversation = updatedConversations[id];
+      const conversation = conversations[id];
       // If no messages yet, show news prompts (they will be displayed by SuggestedPrompts component)
-      if (!conversation.messages || conversation.messages.length === 0) {
+      if (!conversation || !conversation.messages || conversation.messages.length === 0) {
         // SuggestedPrompts component will handle showing newsPrompts for everything-else
         // We just need to ensure prompts array is not empty
         setSuggestedPrompts(newsPrompts);
@@ -466,12 +516,8 @@ const MainApp: React.FC<MainAppProps> = ({
   };
 
   const handleHandsFreeToggle = () => {
-    const newHandsFreeMode = !isHandsFreeMode;
-    setIsHandsFreeMode(newHandsFreeMode);
-    // Open modal when enabling hands-free mode for configuration
-    if (newHandsFreeMode) {
-      setHandsFreeModalOpen(true);
-    }
+    // Just open the modal - don't toggle the state
+    setHandsFreeModalOpen(true);
   };
 
   const handleHandsFreeModalClose = () => {
@@ -479,6 +525,7 @@ const MainApp: React.FC<MainAppProps> = ({
   };
 
   const handleToggleHandsFreeFromModal = () => {
+    // This is the actual toggle that enables/disables hands-free mode
     setIsHandsFreeMode(!isHandsFreeMode);
   };
 
@@ -515,23 +562,36 @@ const MainApp: React.FC<MainAppProps> = ({
     localStorage.setItem('otakon_connection_code', code);
     localStorage.setItem('otakon_last_connection', new Date().toISOString());
     
-    // Always use the centralized handler from App.tsx
+    // Use prop handler if available, otherwise use local websocket
     if (propOnConnect) {
       propOnConnect(code);
     } else {
-      console.warn('🔌 [MainApp] No connection handler provided from App.tsx');
+      // Fallback to local websocket connection
+      connect(
+        code,
+        () => {
+          setLastSuccessfulConnection(new Date());
+          localStorage.setItem('otakonHasConnectedBefore', 'true');
+        },
+        (data: any) => {
+          console.log('Connection message:', data);
+        },
+        (error: string) => {
+          console.error('Connection error:', error);
+        },
+        () => {
+          console.log('Connection closed');
+        }
+      );
     }
   };
 
   const handleDisconnect = () => {
-    // Always use the centralized handler from App.tsx
     if (propOnDisconnect) {
       propOnDisconnect();
     } else {
-      console.warn('🔌 [MainApp] No disconnect handler provided from App.tsx');
+      disconnect();
     }
-    
-    // Clear local connection state
     setConnectionCode(null);
     setLastSuccessfulConnection(null);
     localStorage.removeItem('otakon_connection_code');
@@ -546,56 +606,6 @@ const MainApp: React.FC<MainAppProps> = ({
   // Handle input message change
   const handleInputMessageChange = (message: string) => {
     setCurrentInputMessage(message);
-  };
-
-  // Helper function to extract the most relevant game help content for hands-free mode
-  const extractGameHelpFromResponse = (response: string, userQuery: string): string => {
-    // First, try to find the most relevant section based on the user's query
-    const queryLower = userQuery.toLowerCase();
-    
-    // Look for direct answers to common game help queries
-    if (queryLower.includes('how') || queryLower.includes('what') || queryLower.includes('where') || queryLower.includes('why')) {
-      // Try to find the first complete sentence that seems to answer the question
-      const sentences = response.split(/[.!?]+/).filter(s => s.trim().length > 10);
-      for (const sentence of sentences) {
-        const sentenceLower = sentence.toLowerCase();
-        if (sentenceLower.includes('you can') || sentenceLower.includes('try') || sentenceLower.includes('look for') || 
-            sentenceLower.includes('check') || sentenceLower.includes('find') || sentenceLower.includes('go to')) {
-          return sentence.trim() + '.';
-        }
-      }
-    }
-    
-    // Look for hint-like content
-    const hintPatterns = [
-      /(?:hint|tip|suggestion|advice)[:\s]*([^.!?]+[.!?])/i,
-      /(?:you should|try to|look for|check|find|go to)[^.!?]*[.!?]/i,
-      /(?:the key is|the solution is|you need to)[^.!?]*[.!?]/i
-    ];
-    
-    for (const pattern of hintPatterns) {
-      const match = response.match(pattern);
-      if (match) {
-        return match[0].trim();
-      }
-    }
-    
-    // Fallback: return the first meaningful paragraph (first 2-3 sentences)
-    const paragraphs = response.split('\n\n').filter(p => p.trim().length > 20);
-    if (paragraphs.length > 0) {
-      const firstParagraph = paragraphs[0];
-      if (firstParagraph) {
-        const sentences = firstParagraph.split(/[.!?]+/).filter(s => s.trim().length > 10);
-        if (sentences.length >= 2) {
-          return sentences.slice(0, 2).join('. ').trim() + '.';
-        } else if (sentences.length === 1) {
-          return sentences[0]?.trim() + '.';
-        }
-      }
-    }
-    
-    // Last resort: return the first 200 characters of the response
-    return response.substring(0, 200).trim() + (response.length > 200 ? '...' : '');
   };
 
   // Handle active session toggle with session summaries
@@ -705,9 +715,16 @@ const MainApp: React.FC<MainAppProps> = ({
         if (!stillLoading) {
           // Subtabs have finished loading!
           console.log('🎮 [MainApp] ✅ Background subtabs loaded successfully');
-          setConversations(updatedConversations);
+          
+          // Deep clone to ensure React detects changes
+          const freshConversations = deepCloneConversations(updatedConversations);
+          
+          setConversations(freshConversations);
+          
+          // Update active conversation with new reference
           if (activeConversation?.id === conversationId) {
-            setActiveConversation(targetConv);
+            console.log('🎮 [MainApp] ✅ Updating active conversation with loaded subtabs');
+            setActiveConversation(freshConversations[conversationId]);
           }
           return;
         }
@@ -866,19 +883,13 @@ const MainApp: React.FC<MainAppProps> = ({
     // Update in Supabase (non-blocking - fire and forget)
     if (user?.authUserId) {
       const supabaseService = new SupabaseService();
-      const updateUsageAsync = async () => {
-        try {
-          await supabaseService.incrementUsage(user.authUserId, queryType);
+      supabaseService.incrementUsage(user.authUserId, queryType)
+        .then(() => {
           console.log(`📊 [MainApp] Credit usage updated: ${queryType} query`);
           // Refresh user data in background to update credit indicator
-          await refreshUserData();
-        } catch (error) {
-          console.warn('Failed to update usage in Supabase:', error);
-          // Silently fail - user can still continue using the app
-        }
-      };
-      
-      updateUsageAsync();
+          return refreshUserData();
+        })
+        .catch(error => console.warn('Failed to update usage in Supabase:', error));
     }
 
     // Clear previous suggestions and start loading
@@ -932,34 +943,6 @@ const MainApp: React.FC<MainAppProps> = ({
       // Add message to service - MUST await to ensure it's saved before potential migration
       await ConversationService.addMessage(activeConversation.id, aiMessage);
 
-      // Handle hands-free TTS reading
-      if (isHandsFreeMode) {
-        console.log('🎤 [MainApp] Hands-free mode enabled, extracting content to speak');
-        
-        // Try to extract game help/hint section from response
-        let textToSpeak = '';
-        
-        // Look for explicit Hint: section
-        const hintMatch = response.content.match(/(?:^|\n)Hint:\s*(.+?)(?:\n\n|$)/s);
-        
-        if (hintMatch?.[1]) {
-          // Use the explicitly marked game help section
-          textToSpeak = hintMatch[1].trim();
-          console.log('🎤 [MainApp] Using explicit Hint section for TTS');
-        } else {
-          // Fallback: Extract the most relevant part of the response
-          textToSpeak = extractGameHelpFromResponse(response.content, message);
-          console.log('🎤 [MainApp] Using extracted game help for TTS');
-        }
-        
-        if (textToSpeak) {
-          console.log('🎤 [MainApp] Speaking:', textToSpeak.substring(0, 100) + '...');
-          ttsService.speak(textToSpeak).catch(error => {
-            console.error('🎤 [MainApp] TTS error:', error);
-          });
-        }
-      }
-
       // Process suggested prompts (prefer followUpPrompts from enhanced response)
       console.log('🔍 [MainApp] Raw suggestions from AI:', response.suggestions);
       const suggestionsToUse = response.followUpPrompts || response.suggestions;
@@ -988,10 +971,11 @@ const MainApp: React.FC<MainAppProps> = ({
           
           // Refresh conversations to show updated subtabs
           ConversationService.getConversations().then(updatedConversations => {
-            setConversations(updatedConversations);
+            const freshConversations = deepCloneConversations(updatedConversations);
+            setConversations(freshConversations);
             
             // Update active conversation to reflect changes
-            const refreshedConversation = updatedConversations[activeConversation.id];
+            const refreshedConversation = freshConversations[activeConversation.id];
             if (refreshedConversation) {
               setActiveConversation(refreshedConversation);
             }
@@ -1024,8 +1008,9 @@ const MainApp: React.FC<MainAppProps> = ({
                   console.log('📝 [MainApp] Tab updated via command:', parsed.id);
                   // Refresh UI
                   ConversationService.getConversations().then(updatedConversations => {
-                    setConversations(updatedConversations);
-                    const refreshedConversation = updatedConversations[activeConversation.id];
+                    const freshConversations = deepCloneConversations(updatedConversations);
+                    setConversations(freshConversations);
+                    const refreshedConversation = freshConversations[activeConversation.id];
                     if (refreshedConversation) setActiveConversation(refreshedConversation);
                   });
                 }).catch(error => console.error('Failed to update tab:', error));
@@ -1052,8 +1037,9 @@ const MainApp: React.FC<MainAppProps> = ({
                   console.log('📝 [MainApp] Tab modified via command:', parsed.id);
                   // Refresh UI
                   ConversationService.getConversations().then(updatedConversations => {
-                    setConversations(updatedConversations);
-                    const refreshedConversation = updatedConversations[activeConversation.id];
+                    const freshConversations = deepCloneConversations(updatedConversations);
+                    setConversations(freshConversations);
+                    const refreshedConversation = freshConversations[activeConversation.id];
                     if (refreshedConversation) setActiveConversation(refreshedConversation);
                   });
                 }).catch(error => console.error('Failed to modify tab:', error));
@@ -1148,95 +1134,58 @@ const MainApp: React.FC<MainAppProps> = ({
             console.log('🎮 [MainApp] ✅ Starting message migration from Everything Else to game tab');
             console.log('🎮 [MainApp] Message IDs to move:', { userMsgId: newMessage.id, aiMsgId: aiMessage.id });
             
-            // Get the messages to move
+            // Get the last two messages (user query and AI response)
             const messagesToMove = [newMessage, aiMessage];
             
-            // Transaction-like behavior: save state for rollback
-            const rollbackState = {
-              targetConversationId,
-              messagesToMove,
-              originalEverythingElse: await ConversationService.getConversation('everything-else')
-            };
+            // Add messages to the game tab
+            console.log('🎮 [MainApp] Adding messages to game tab:', targetConversationId);
+            for (const msg of messagesToMove) {
+              await ConversationService.addMessage(targetConversationId, msg);
+            }
+            console.log('🎮 [MainApp] ✅ Messages added to game tab');
             
-            try {
-              // Step 1: Add messages to game tab
-              console.log('🎮 [MainApp] Adding messages to game tab:', targetConversationId);
-              for (const msg of messagesToMove) {
-                const result = await ConversationService.addMessage(targetConversationId, msg);
-                if (!result.success) {
-                  throw new Error(`Failed to add message to game tab: ${result.reason}`);
-                }
-              }
-              console.log('🎮 [MainApp] ✅ Messages added to game tab');
+            // Get fresh conversation data from service
+            const currentConversations = await ConversationService.getConversations();
+            const everythingElseConv = currentConversations['everything-else'];
+            
+            if (everythingElseConv) {
+              console.log('🎮 [MainApp] Everything Else has', everythingElseConv.messages.length, 'messages before removal');
               
-              // Step 2: Get fresh conversation data
-              const currentConversations = await ConversationService.getConversations();
-              const everythingElseConv = currentConversations['everything-else'];
-              
-              if (everythingElseConv) {
-                console.log('🎮 [MainApp] Everything Else has', everythingElseConv.messages.length, 'messages before removal');
-                
-                // Remove the messages we just moved
-                const updatedMessages = everythingElseConv.messages.filter(
-                  msg => msg.id !== newMessage.id && msg.id !== aiMessage.id
-                );
-                
-                console.log('🎮 [MainApp] Everything Else will have', updatedMessages.length, 'messages after removal');
-                
-                await ConversationService.updateConversation('everything-else', {
-                  messages: updatedMessages,
-                  updatedAt: Date.now()
-                });
-                console.log('🎮 [MainApp] ✅ Messages removed from Everything Else');
-              }
-              
-              // Step 3: Update state with fresh data
-              const updatedConversations = await ConversationService.getConversations();
-              setConversations(updatedConversations);
-              
-              // Step 4: Switch to the game tab
-              const gameTab = updatedConversations[targetConversationId];
-              if (gameTab) {
-                console.log('🎮 [MainApp] ✅ Switching to game tab:', gameTab.title, 'with', gameTab.messages.length, 'messages');
-                await ConversationService.setActiveConversation(targetConversationId);
-                setActiveConversation(gameTab);
-                // Auto-switch to Playing mode for new/existing game tabs
-                setActiveSession(targetConversationId, true);
-                // Close sidebar on mobile
-                setSidebarOpen(false);
-                
-                // Poll for subtab updates if they're still loading
-                const hasLoadingSubtabs = gameTab.subtabs?.some(tab => tab.status === 'loading');
-                if (hasLoadingSubtabs) {
-                  console.log('🎮 [MainApp] 🔄 Starting background refresh for loading subtabs');
-                  pollForSubtabUpdates(targetConversationId);
-                }
-              }
-            } catch (migrationError) {
-              console.error('🎮 [MainApp] ❌ Message migration failed, attempting rollback:', migrationError);
-              
-              // Rollback: restore original state
-              try {
-                if (rollbackState.originalEverythingElse) {
-                  await ConversationService.updateConversation('everything-else', {
-                    messages: rollbackState.originalEverythingElse.messages,
-                    updatedAt: Date.now()
-                  });
-                  console.log('🎮 [MainApp] ✅ Rollback successful - messages restored to Everything Else');
-                }
-                
-                // Refresh UI
-                const refreshedConversations = await ConversationService.getConversations();
-                setConversations(refreshedConversations);
-              } catch (rollbackError) {
-                console.error('🎮 [MainApp] ❌ Rollback failed:', rollbackError);
-              }
-              
-              // Show error to user
-              errorRecoveryService.displayError(
-                'Failed to move messages to game tab. Your messages are safe in "Everything Else".',
-                'error'
+              // Remove the messages we just moved
+              const updatedMessages = everythingElseConv.messages.filter(
+                msg => msg.id !== newMessage.id && msg.id !== aiMessage.id
               );
+              
+              console.log('🎮 [MainApp] Everything Else will have', updatedMessages.length, 'messages after removal');
+              
+              await ConversationService.updateConversation('everything-else', {
+                messages: updatedMessages,
+                updatedAt: Date.now()
+              });
+              console.log('🎮 [MainApp] ✅ Messages removed from Everything Else');
+            }
+            
+            // Update state to reflect the changes
+            const updatedConversations = await ConversationService.getConversations();
+            setConversations(updatedConversations);
+            
+            // Switch to the game tab
+            const gameTab = updatedConversations[targetConversationId];
+            if (gameTab) {
+              console.log('🎮 [MainApp] ✅ Switching to game tab:', gameTab.title, 'with', gameTab.messages.length, 'messages');
+              await ConversationService.setActiveConversation(targetConversationId);
+              setActiveConversation(gameTab);
+              // Auto-switch to Playing mode for new/existing game tabs
+              setActiveSession(targetConversationId, true);
+              // Close sidebar on mobile
+              setSidebarOpen(false);
+              
+              // Poll for subtab updates if they're still loading
+              const hasLoadingSubtabs = gameTab.subtabs?.some(tab => tab.status === 'loading');
+              if (hasLoadingSubtabs) {
+                console.log('🎮 [MainApp] 🔄 Starting background refresh for loading subtabs');
+                pollForSubtabUpdates(targetConversationId);
+              }
             }
           } else {
             console.log('🎮 [MainApp] ⚠️ Skipping message migration - not in Everything Else tab or no target');
@@ -1346,7 +1295,7 @@ const MainApp: React.FC<MainAppProps> = ({
           </div>
 
           <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4">
-            <div className="mr-2 sm:mr-3 lg:mr-4">
+            <div className="mr-1 sm:mr-2">
               <CreditIndicator 
                 user={user} 
                 onClick={handleCreditModalOpen}

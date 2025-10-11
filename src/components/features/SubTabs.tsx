@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SubTab } from '../../types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -19,9 +19,29 @@ const SubTabs: React.FC<SubTabsProps> = ({
 }) => {
   const [localActiveTab, setLocalActiveTab] = useState<string>(activeTabId || subtabs[0]?.id || '');
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
+  const [hasUserInteracted, setHasUserInteracted] = useState<boolean>(false);
 
   const currentActiveTab = activeTabId || localActiveTab;
   const activeTab = subtabs.find(tab => tab.id === currentActiveTab);
+
+  // Auto-expand when subtabs finish loading (ONLY if user hasn't manually controlled it)
+  useEffect(() => {
+    // Only auto-expand if user hasn't manually interacted with the accordion
+    if (hasUserInteracted) {
+      return;
+    }
+
+    // Check if we have subtabs that are loaded (not loading and have content)
+    const hasLoadedContent = subtabs.some(tab => 
+      tab.status === 'loaded' && tab.content && tab.content.trim().length > 0
+    );
+    
+    // Auto-expand if we have loaded content and we're not already expanded
+    if (hasLoadedContent && !isExpanded) {
+      console.log('📂 [SubTabs] Auto-expanding subtabs with loaded content');
+      setIsExpanded(true);
+    }
+  }, [subtabs, isExpanded, hasUserInteracted]);
 
   const handleTabClick = (tabId: string) => {
     setLocalActiveTab(tabId);
@@ -30,6 +50,7 @@ const SubTabs: React.FC<SubTabsProps> = ({
 
   const toggleExpanded = () => {
     setIsExpanded(!isExpanded);
+    setHasUserInteracted(true); // Mark that user has manually controlled the accordion
   };
 
   // Return null if no subtabs (after hooks)
