@@ -1,0 +1,35 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://otakon.app/sitemap.xml
+
+# Crawl-delay for respectful crawling
+Crawl-delay: 1
+
+# Disallow admin and private areas
+Disallow: /admin/
+Disallow: /private/
+Disallow: /api/
+Disallow: /_/
+
+# Allow important pages
+Allow: /
+Allow: /about
+Allow: /features
+Allow: /pricing
+Allow: /contact
+Allow: /privacy
+Allow: /terms
+
+# Allow assets
+Allow: /images/
+Allow: /css/
+Allow: /js/
+Allow: /fonts/
+
+# Block unnecessary files
+Disallow: /*.json$
+Disallow: /*.xml$
+Disallow: /*.txt$
+Disallow: /*.log$

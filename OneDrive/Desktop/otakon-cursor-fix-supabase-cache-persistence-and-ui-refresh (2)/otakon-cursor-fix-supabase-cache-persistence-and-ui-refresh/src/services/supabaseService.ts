@@ -1,0 +1,608 @@
+import { supabase } from '../lib/supabase';
+import { User, Conversation, Game, UserTier, TrialStatus } from '../types';
+import { USER_TIERS, TIER_LIMITS } from '../constants';
+
+export class SupabaseService {
+  private static instance: SupabaseService;
+
+  static getInstance(): SupabaseService {
+    if (!SupabaseService.instance) {
+      SupabaseService.instance = new SupabaseService();
+    }
+    return SupabaseService.instance;
+  }
+
+  // User operations
+  async getUser(authUserId: string): Promise<User | null> {
+    try {
+      const { data, error } = await supabase.rpc('get_complete_user_data', {
+        p_auth_user_id: authUserId
+      });
+
+      if (error) {
+        console.error('Error getting user:', error);
+        return null;
+      }
+
+      if (data && data.length > 0) {
+        const userData = data[0];
+        return {
+          id: userData.id,
+          authUserId: userData.auth_user_id,
+          email: userData.email,
+          tier: userData.tier as UserTier,
+          hasProfileSetup: false,
+          hasSeenSplashScreens: false,
+          hasSeenHowToUse: false,
+          hasSeenFeaturesConnected: false,
+          hasSeenProFeatures: false,
+          pcConnected: false,
+          pcConnectionSkipped: false,
+          onboardingCompleted: false,
+          hasWelcomeMessage: false,
+          isNewUser: true,
+          hasUsedTrial: userData.has_used_trial,
+          lastActivity: Date.now(),
+          // ✅ Query-based usage limits (top-level)
+          textCount: userData.text_count || 0,
+          imageCount: userData.image_count || 0,
+          textLimit: userData.text_limit || 55,
+          imageLimit: userData.image_limit || 25,
+          totalRequests: userData.total_requests || 0,
+          lastReset: userData.last_reset ? new Date(userData.last_reset).getTime() : Date.now(),
+          preferences: userData.preferences || {},
+          // Legacy nested usage object
+          usage: {
+            textCount: userData.text_count,
+            imageCount: userData.image_count,
+            textLimit: userData.text_limit,
+            imageLimit: userData.image_limit,
+            totalRequests: 0,
+            lastReset: Date.now(),
+            tier: userData.tier as UserTier,
+          },
+          appState: userData.app_state || {},
+          profileData: userData.profile_data || {},
+          onboardingData: {},
+          behaviorData: {},
+          feedbackData: {},
+          usageData: {},
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        };
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error getting user:', error);
+      return null;
+    }
+  }
+
+  async updateUser(userId: string, updates: Partial<User>): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({
+          tier: updates.tier,
+          has_used_trial: updates.hasUsedTrial,
+          last_activity: updates.lastActivity,
+          preferences: updates.preferences,
+          app_state: updates.appState,
+          profile_data: updates.profileData,
+          onboarding_data: updates.onboardingData,
+          behavior_data: updates.behaviorData,
+          feedback_data: updates.feedbackData,
+          usage_data: updates.usageData,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('auth_user_id', userId);
+
+      if (error) {
+        console.error('Error updating user:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error updating user:', error);
+      return false;
+    }
+  }
+
+  async updateUsage(userId: string, usage: any): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({
+          text_count: usage.textCount,
+          image_count: usage.imageCount,
+          text_limit: usage.textLimit,
+          image_limit: usage.imageLimit,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('auth_user_id', userId);
+
+      if (error) {
+        console.error('Error updating usage:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error updating usage:', error);
+      return false;
+    }
+  }
+
+  // Conversation operations
+  async getConversations(userId: string): Promise<Conversation[]> {
+    try {
+      // First get the user's internal ID from auth_user_id
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_user_id', userId)
+        .single();
+
+      if (userError || !userData) {
+        console.error('Error getting user ID:', userError);
+        return [];
+      }
+
+      const { data, error } = await supabase
+        .from('conversations')
+        .select('*')
+        .eq('user_id', userData.id)
+        .order('updated_at', { ascending: false });
+
+      if (error) {
+        console.error('Error getting conversations:', error);
+        return [];
+      }
+
+      return data.map(conv => ({
+        id: conv.id,
+        title: conv.title,
+        messages: conv.messages || [],
+        gameId: conv.game_id,
+        gameTitle: conv.game_title,
+        genre: conv.genre,
+        subtabs: conv.subtabs || [],
+        subtabsOrder: conv.subtabs_order || [],
+        isActiveSession: conv.is_active_session,
+        activeObjective: conv.active_objective,
+        gameProgress: conv.game_progress,
+        createdAt: new Date(conv.created_at).getTime(),
+        updatedAt: new Date(conv.updated_at).getTime(),
+        isActive: conv.is_active,
+        isPinned: conv.is_pinned,
+        pinnedAt: conv.pinned_at ? new Date(conv.pinned_at).getTime() : undefined,
+        isGameHub: conv.is_game_hub,
+      }));
+    } catch (error) {
+      console.error('Error getting conversations:', error);
+      return [];
+    }
+  }
+
+  async createConversation(userId: string, conversation: Omit<Conversation, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> {
+    try {
+      // First get the user's internal ID from auth_user_id
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_user_id', userId)
+        .single();
+
+      if (userError || !userData) {
+        console.error('Error getting user ID:', userError);
+        return null;
+      }
+
+      const { data, error } = await supabase
+        .from('conversations')
+        .insert({
+          user_id: userData.id,
+          title: conversation.title,
+          messages: conversation.messages,
+          game_id: conversation.gameId,
+          game_title: conversation.gameTitle,
+          genre: conversation.genre,
+          subtabs: conversation.subtabs || [],
+          subtabs_order: conversation.subtabsOrder || [],
+          is_active_session: conversation.isActiveSession,
+          active_objective: conversation.activeObjective,
+          game_progress: conversation.gameProgress,
+          is_active: conversation.isActive,
+          is_pinned: conversation.isPinned,
+          pinned_at: conversation.pinnedAt ? new Date(conversation.pinnedAt).toISOString() : null,
+          is_game_hub: conversation.isGameHub,
+        })
+        .select('id')
+        .single();
+
+      if (error) {
+        console.error('Error creating conversation:', error);
+        return null;
+      }
+
+      return data.id;
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      return null;
+    }
+  }
+
+  async updateConversation(conversationId: string, updates: Partial<Conversation>): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('conversations')
+        .update({
+          title: updates.title,
+          messages: updates.messages,
+          game_id: updates.gameId,
+          game_title: updates.gameTitle,
+          genre: updates.genre,
+          subtabs: updates.subtabs,
+          subtabs_order: updates.subtabsOrder,
+          is_active_session: updates.isActiveSession,
+          active_objective: updates.activeObjective,
+          game_progress: updates.gameProgress,
+          is_active: updates.isActive,
+          is_pinned: updates.isPinned,
+          pinned_at: updates.pinnedAt ? new Date(updates.pinnedAt).toISOString() : null,
+          is_game_hub: updates.isGameHub,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', conversationId);
+
+      if (error) {
+        console.error('Error updating conversation:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error updating conversation:', error);
+      return false;
+    }
+  }
+
+  async deleteConversation(conversationId: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('conversations')
+        .delete()
+        .eq('id', conversationId);
+
+      if (error) {
+        console.error('Error deleting conversation:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      return false;
+    }
+  }
+
+  // Game operations
+  async getGames(userId: string): Promise<Game[]> {
+    try {
+      // First get the user's internal ID from auth_user_id
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_user_id', userId)
+        .single();
+
+      if (userError || !userData) {
+        console.error('Error getting user ID:', userError);
+        return [];
+      }
+
+      const { data, error } = await supabase
+        .from('games')
+        .select('*')
+        .eq('user_id', userData.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error getting games:', error);
+        return [];
+      }
+
+      return data.map(game => ({
+        id: game.id,
+        title: game.title,
+        description: game.notes,
+        genre: game.genre,
+        platform: game.platform,
+        releaseDate: '',
+        rating: game.rating,
+        imageUrl: game.cover_url,
+        metadata: game.metadata || {},
+        createdAt: new Date(game.created_at).getTime(),
+        updatedAt: new Date(game.updated_at).getTime(),
+      }));
+    } catch (error) {
+      console.error('Error getting games:', error);
+      return [];
+    }
+  }
+
+  async createGame(userId: string, game: Omit<Game, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> {
+    try {
+      // First get the user's internal ID from auth_user_id
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_user_id', userId)
+        .single();
+
+      if (userError || !userData) {
+        console.error('Error getting user ID:', userError);
+        return null;
+      }
+
+      const { data, error } = await supabase
+        .from('games')
+        .insert({
+          user_id: userData.id,
+          title: game.title,
+          notes: game.description,
+          genre: game.genre,
+          platform: game.platform,
+          rating: game.rating,
+          cover_url: game.imageUrl,
+          metadata: game.metadata,
+        })
+        .select('id')
+        .single();
+
+      if (error) {
+        console.error('Error creating game:', error);
+        return null;
+      }
+
+      return data.id;
+    } catch (error) {
+      console.error('Error creating game:', error);
+      return null;
+    }
+  }
+
+  // Trial operations
+  async getTrialStatus(userId: string): Promise<TrialStatus | null> {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('has_used_trial, trial_started_at, trial_expires_at')
+        .eq('auth_user_id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error getting trial status:', error);
+        return null;
+      }
+
+      const now = Date.now();
+      const trialExpiresAt = data.trial_expires_at ? new Date(data.trial_expires_at).getTime() : null;
+      const isActive = trialExpiresAt ? now < trialExpiresAt : false;
+      const daysRemaining = trialExpiresAt ? Math.ceil((trialExpiresAt - now) / (1000 * 60 * 60 * 24)) : 0;
+
+      return {
+        isEligible: !data.has_used_trial,
+        hasUsed: data.has_used_trial,
+        isActive,
+        expiresAt: trialExpiresAt || undefined,
+        daysRemaining: isActive ? daysRemaining : undefined,
+      };
+    } catch (error) {
+      console.error('Error getting trial status:', error);
+      return null;
+    }
+  }
+
+  async startTrial(userId: string): Promise<boolean> {
+    try {
+      const trialExpiresAt = new Date();
+      trialExpiresAt.setDate(trialExpiresAt.getDate() + 14);
+
+      const { error } = await supabase
+        .from('users')
+        .update({
+          has_used_trial: true,
+          trial_started_at: new Date().toISOString(),
+          trial_expires_at: trialExpiresAt.toISOString(),
+          tier: USER_TIERS.PRO,
+          text_limit: TIER_LIMITS[USER_TIERS.PRO].text,
+          image_limit: TIER_LIMITS[USER_TIERS.PRO].image,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('auth_user_id', userId);
+
+      if (error) {
+        console.error('Error starting trial:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error starting trial:', error);
+      return false;
+    }
+  }
+
+  // Usage operations
+  async canMakeRequest(userId: string, requestType: 'text' | 'image'): Promise<boolean> {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('text_count, image_count, text_limit, image_limit, tier')
+        .eq('auth_user_id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error checking usage:', error);
+        return false;
+      }
+
+      if (requestType === 'text') {
+        return data.text_count < data.text_limit;
+      } else {
+        return data.image_count < data.image_limit;
+      }
+    } catch (error) {
+      console.error('Error checking usage:', error);
+      return false;
+    }
+  }
+
+  async incrementUsage(userId: string, requestType: 'text' | 'image'): Promise<boolean> {
+    try {
+      // First, get the current usage data
+      const { data: userData, error: fetchError } = await supabase
+        .from('users')
+        .select('usage_data')
+        .eq('auth_user_id', userId)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching user data:', fetchError);
+        return false;
+      }
+
+      // Get current usage counts
+      const currentUsage = userData?.usage_data || {
+        textCount: 0,
+        imageCount: 0,
+        totalRequests: 0
+      };
+
+      // Increment the appropriate counter
+      const updatedUsage = {
+        ...currentUsage,
+        [requestType === 'text' ? 'textCount' : 'imageCount']: (currentUsage[requestType === 'text' ? 'textCount' : 'imageCount'] || 0) + 1,
+        totalRequests: (currentUsage.totalRequests || 0) + 1
+      };
+
+      // Update the usage_data JSONB field
+      const { error } = await supabase
+        .from('users')
+        .update({
+          usage_data: updatedUsage,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('auth_user_id', userId);
+
+      if (error) {
+        console.error('Error incrementing usage:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error incrementing usage:', error);
+      return false;
+    }
+  }
+
+  async resetUsage(userId: string): Promise<boolean> {
+    try {
+      // First, get the current usage data to preserve limits
+      const { data: userData, error: fetchError } = await supabase
+        .from('users')
+        .select('usage_data')
+        .eq('auth_user_id', userId)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching user data:', fetchError);
+        return false;
+      }
+
+      // Reset counters but preserve limits
+      const currentUsage = userData?.usage_data || {};
+      const resetUsage = {
+        ...currentUsage,
+        textCount: 0,
+        imageCount: 0,
+        totalRequests: 0,
+        lastReset: Date.now()
+      };
+
+      const { error } = await supabase
+        .from('users')
+        .update({
+          usage_data: resetUsage,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('auth_user_id', userId);
+
+      if (error) {
+        console.error('Error resetting usage:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error resetting usage:', error);
+      return false;
+    }
+  }
+
+  // ✅ Query-based usage tracking (replaces message-based limits)
+  async recordQuery(authUserId: string, queryType: 'text' | 'image'): Promise<boolean> {
+    try {
+      console.log(`📊 [SupabaseService] Recording ${queryType} query for user:`, authUserId);
+      
+      const { data, error } = await supabase.rpc('increment_user_usage', {
+        p_auth_user_id: authUserId,
+        p_query_type: queryType,
+        p_increment: 1
+      });
+
+      if (error) {
+        console.error('Error recording query:', error);
+        return false;
+      }
+
+      console.log(`✅ [SupabaseService] Successfully recorded ${queryType} query`);
+      return data === true;
+    } catch (error) {
+      console.error('Error recording query:', error);
+      return false;
+    }
+  }
+
+  async getQueryUsage(authUserId: string): Promise<{ textCount: number; imageCount: number; textLimit: number; imageLimit: number; lastReset: Date } | null> {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('text_count, image_count, text_limit, image_limit, last_reset')
+        .eq('auth_user_id', authUserId)
+        .single();
+
+      if (error) {
+        console.error('Error getting query usage:', error);
+        return null;
+      }
+
+      return {
+        textCount: data.text_count || 0,
+        imageCount: data.image_count || 0,
+        textLimit: data.text_limit || 55,
+        imageLimit: data.image_limit || 25,
+        lastReset: new Date(data.last_reset || Date.now())
+      };
+    } catch (error) {
+      console.error('Error getting query usage:', error);
+      return null;
+    }
+  }
+}
+
+export const supabaseService = SupabaseService.getInstance();
