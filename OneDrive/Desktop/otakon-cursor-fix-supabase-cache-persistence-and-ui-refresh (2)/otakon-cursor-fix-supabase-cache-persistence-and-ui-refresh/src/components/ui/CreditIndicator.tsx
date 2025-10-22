@@ -32,9 +32,9 @@ const CreditIndicator: React.FC<CreditIndicatorProps> = ({ user, onClick }) => {
         background: 'linear-gradient(135deg, #E53A3A, #D98C1F)',
         padding: '1px',
         borderRadius: '8px',
-        // Add soft brand gradient shadow
-        boxShadow: '0 8px 32px rgba(229, 58, 58, 0.3), 0 4px 16px rgba(217, 140, 31, 0.2), 0 2px 8px rgba(0, 0, 0, 0.1)',
-        filter: 'drop-shadow(0 0 20px rgba(229, 58, 58, 0.2))'
+        // Add soft brand gradient shadow (reduced glow)
+        boxShadow: '0 4px 16px rgba(229, 58, 58, 0.2), 0 2px 8px rgba(217, 140, 31, 0.15), 0 1px 4px rgba(0, 0, 0, 0.1)',
+        filter: 'drop-shadow(0 0 10px rgba(229, 58, 58, 0.15))'
       }}
     >
       <button

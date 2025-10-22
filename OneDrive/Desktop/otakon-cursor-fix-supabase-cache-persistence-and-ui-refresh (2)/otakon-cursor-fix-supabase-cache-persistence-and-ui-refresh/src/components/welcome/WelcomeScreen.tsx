@@ -12,16 +12,16 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStartChat, isRevisit = 
   const [activeTab, setActiveTab] = useState<TabType>('overview');
 
   const tabs = [
-    { id: 'overview' as TabType, label: 'Overview', icon: '🎮' },
-    { id: 'features' as TabType, label: 'Features', icon: '✨' },
-    { id: 'hotkeys' as TabType, label: 'PC Hotkeys', icon: '⌨️' },
-    { id: 'best-practices' as TabType, label: 'Best Practices', icon: '💡' }
+    { id: 'overview' as TabType, label: 'Overview' },
+    { id: 'features' as TabType, label: 'Features' },
+    { id: 'hotkeys' as TabType, label: 'PC Hotkeys' },
+    { id: 'best-practices' as TabType, label: 'Best Practices' }
   ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       {/* Modal Container */}
-      <div className="relative w-full max-w-5xl max-h-[90vh] bg-background rounded-2xl shadow-2xl border-2 border-transparent bg-clip-padding flex flex-col" style={{ backgroundImage: 'linear-gradient(#1a1a1a, #1a1a1a), linear-gradient(135deg, #FF4D4D, #FFAB40)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box' }}>
+      <div className="relative w-full max-w-5xl max-h-[90vh] bg-background rounded-2xl shadow-2xl border border-transparent bg-clip-padding flex flex-col overflow-hidden" style={{ backgroundImage: 'linear-gradient(#1a1a1a, #1a1a1a), linear-gradient(135deg, #FF4D4D, #FFAB40)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box' }}>
         {/* Close Button */}
         <button
           onClick={onStartChat}
@@ -35,19 +35,18 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStartChat, isRevisit = 
 
         {/* Tabs */}
         <div className="flex-shrink-0 border-b border-gray-700 px-3 sm:px-6 pt-6">
-          <div className="flex justify-center gap-1 sm:gap-2 overflow-x-auto pr-12">
+          <div className="flex justify-center gap-2 sm:gap-3 overflow-x-auto pr-12">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-6 py-3 text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-200 border-b-2 flex-shrink-0 ${
+                className={`flex items-center justify-center px-4 sm:px-6 py-3 min-h-[48px] text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-200 border-b-2 flex-shrink-0 ${
                   activeTab === tab.id
                     ? 'border-[#FF4D4D] text-white bg-gradient-to-b from-[#FF4D4D]/10 to-transparent'
                     : 'border-transparent text-gray-400 hover:text-white hover:bg-gray-700/50'
                 }`}
               >
-                <span className="text-base sm:text-lg">{tab.icon}</span>
-                <span className="hidden xs:inline sm:inline">{tab.label}</span>
+                <span>{tab.label}</span>
               </button>
             ))}
           </div>
@@ -70,23 +69,23 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStartChat, isRevisit = 
             {onAddGame && (
               <button
                 onClick={onAddGame}
-                className="inline-flex items-center justify-center px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-white border-2 border-gray-600 bg-gray-800 hover:bg-gray-700 hover:border-gray-500 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95"
+                className="inline-flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] hover:from-[#D42A2A] hover:to-[#C87A1A] rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-95"
               >
-                <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span>Create Game Tab</span>
+                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                <span>Create Game Tab</span>
               </button>
             )}
             
             {/* Close Guide Button */}
             <button
               onClick={onStartChat}
-              className="inline-flex items-center justify-center px-6 sm:px-8 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] hover:from-[#D42A2A] hover:to-[#C87A1A] rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-95"
+              className="inline-flex items-center gap-2 px-6 sm:px-8 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] hover:from-[#D42A2A] hover:to-[#C87A1A] rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-95"
             >
-              <span>{isRevisit ? 'Back to Chat' : 'Get Started'}</span>
+              <span>{isRevisit ? 'Back to Chat' : 'Start Chatting'}</span>
               <svg 
-                className="w-4 h-4 sm:w-5 sm:h-5 ml-2" 
+                className="w-5 h-5 flex-shrink-0" 
                 fill="none" 
                 stroke="currentColor" 
                 viewBox="0 0 24 24"

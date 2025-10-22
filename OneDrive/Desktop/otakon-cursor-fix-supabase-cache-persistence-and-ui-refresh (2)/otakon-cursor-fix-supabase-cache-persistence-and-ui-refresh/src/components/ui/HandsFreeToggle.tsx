@@ -28,21 +28,16 @@ const HandsFreeToggle: React.FC<HandsFreeToggleProps> = ({ isHandsFree, onToggle
     <button
       type="button"
       onClick={onToggle}
-      className={`flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-2 sm:px-3 h-10 sm:h-12 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 group
-      ${
+      className={`btn-icon p-3 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center ${
         isHandsFree
-          ? 'border-2 border-[#E53A3A]/50 text-[#FF7070] hover:bg-[#E53A3A]/10 shadow-[0_0_12px_rgba(229,58,58,0.3)]'
-          : 'bg-gradient-to-r from-[#2E2E2E] to-[#1C1C1C] border-2 border-[#424242]/60 text-[#CFCFCF] hover:from-[#424242] hover:to-[#2E2E2E] hover:border-[#5A5A5A] hover:scale-105'
-      }
-      `}
+          ? 'text-green-400 hover:text-green-300'
+          : 'text-text-muted hover:text-text-primary'
+      }`}
       aria-pressed={isHandsFree}
       aria-label="Hands-Free Settings"
-      title="Hands-Free Voice Response Settings"
+      title={isHandsFree ? 'Hands-Free Mode Active' : 'Hands-Free Voice Response Settings'}
     >
-      <HandsFreeIcon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" isActive={isHandsFree} />
-      <span className="hidden sm:inline">
-        Hands-Free
-      </span>
+      <HandsFreeIcon className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" isActive={isHandsFree} />
     </button>
   );
 };

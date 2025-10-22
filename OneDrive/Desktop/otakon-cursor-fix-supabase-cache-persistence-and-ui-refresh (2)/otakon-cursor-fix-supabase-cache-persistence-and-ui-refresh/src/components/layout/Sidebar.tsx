@@ -230,11 +230,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                           <p className={`text-xs font-medium truncate ${titleClass}`}>
                             {conversation.title}
                           </p>
-                          {isGameHub && (
-                            <span className="flex-shrink-0 px-1.5 py-0.5 bg-gradient-to-r from-[#FF4D4D]/20 to-[#FFAB40]/20 border border-[#FFAB40]/40 rounded text-[10px] font-medium">
-                              <span className="bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent">HUB</span>
-                            </span>
-                          )}
                           {isUnreleased && (
                             <span className="flex-shrink-0 px-1.5 py-0.5 bg-yellow-500/20 border border-yellow-500/40 rounded text-[10px] text-yellow-400 font-medium">
                               UPCOMING
@@ -246,12 +241,12 @@ const Sidebar: React.FC<SidebarProps> = ({
                             </svg>
                           )}
                         </div>
-                        <p className="text-xs text-text-muted mt-1">
+                        <p className="text-xs text-text-muted mt-2">
                           {conversation.messages.length} messages
-                      </p>
-                      <p className="text-xs text-text-muted">
-                        {new Date(conversation.updatedAt).toLocaleDateString()}
-                      </p>
+                        </p>
+                        <p className="text-xs text-text-muted mt-1">
+                          {new Date(conversation.updatedAt).toLocaleDateString()}
+                        </p>
                     </div>
                     
                     {/* Delete button - only show for non-Game Hub conversations */}
