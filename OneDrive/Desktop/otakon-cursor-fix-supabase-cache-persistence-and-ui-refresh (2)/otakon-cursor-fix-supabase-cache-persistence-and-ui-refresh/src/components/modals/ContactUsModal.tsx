@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toastService } from '../../services/toastService';
 
 interface ContactUsModalProps {
   isOpen: boolean;
@@ -44,6 +45,7 @@ const ContactUsModal: React.FC<ContactUsModalProps> = ({ isOpen, onClose }) => {
       }, 2000);
     } catch (error) {
       console.error('Contact form error:', error);
+      toastService.error('Failed to send message. Please try again.');
       setSubmitStatus('error');
     } finally {
       setIsSubmitting(false);
@@ -72,7 +74,9 @@ const ContactUsModal: React.FC<ContactUsModalProps> = ({ isOpen, onClose }) => {
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div 

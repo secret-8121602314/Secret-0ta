@@ -24,7 +24,7 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
         tagValue = JSON.parse(tagValue.replace(/'/g, '"'));
         console.log(`🔍 [OtakonTags] Parsed as JSON array:`, tagValue);
       }
-    } catch (e) {
+    } catch (_e) {
       console.log(`🔍 [OtakonTags] JSON parsing failed, keeping as string:`, tagValue);
       // Keep as string if not valid JSON
     }
@@ -50,3 +50,4 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
 
   return { cleanContent, tags };
 };
+

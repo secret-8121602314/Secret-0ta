@@ -117,6 +117,7 @@ export interface Conversation {
   isPinned?: boolean;
   pinnedAt?: number;
   isGameHub?: boolean; // Identifies the default Game Hub conversation - only one per user
+  isUnreleased?: boolean; // True for unreleased/upcoming games - no Playing mode, no subtabs
 }
 
 export interface Conversations {

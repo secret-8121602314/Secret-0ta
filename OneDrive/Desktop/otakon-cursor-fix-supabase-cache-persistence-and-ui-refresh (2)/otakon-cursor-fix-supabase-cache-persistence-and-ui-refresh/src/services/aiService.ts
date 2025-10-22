@@ -6,6 +6,7 @@ import { getPromptForPersona } from './promptSystem';
 import { errorRecoveryService } from './errorRecoveryService';
 import { characterImmersionService } from './characterImmersionService';
 import { profileAwareTabService } from './profileAwareTabService';
+import { toastService } from './toastService';
 
 const API_KEY = (import.meta as any).env.VITE_GEMINI_API_KEY;
 
@@ -170,6 +171,7 @@ class AIService {
 
     } catch (error) {
       console.error("AI Service Error:", error);
+      toastService.error('AI response failed. Please try again.');
       
       // Use error recovery service
       const recoveryAction = await errorRecoveryService.handleAIError(
@@ -420,6 +422,7 @@ Note: These are optional enhancements. If not applicable, omit or return empty a
       
     } catch (error) {
       console.error("Structured AI Service Error:", error);
+      toastService.error('AI response failed. Please try again.');
       
       // Use error recovery
       const recoveryAction = await errorRecoveryService.handleAIError(
@@ -509,6 +512,7 @@ Note: These are optional enhancements. If not applicable, omit or return empty a
 
     } catch (error) {
       console.error("Failed to generate initial insights:", error);
+      toastService.warning('Failed to generate game insights. You can still continue chatting!');
       return {};
     }
   }

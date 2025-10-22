@@ -63,10 +63,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
     if (syncInitiated && status === ConnectionStatus.CONNECTED && !connectionSuccessCalled) {
         console.log('🔗 [SplashScreen] Connection successful, calling onConnectionSuccess');
         setConnectionSuccessCalled(true);
-        // Add a small delay to ensure state is stable
-        setTimeout(() => {
-            onConnectionSuccess();
-        }, 100);
+        onConnectionSuccess();
     }
   }, [status, onConnectionSuccess, syncInitiated, connectionSuccessCalled]);
 
@@ -89,7 +86,9 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
   };
 
   const handleConnectClick = () => {
-    if (isConnecting || isConnected) return;
+    if (isConnecting || isConnected) {
+      return;
+    }
     setSyncInitiated(true);
     setConnectionSuccessCalled(false); // Reset the flag for new connection attempt
     onConnect(code);
@@ -112,7 +111,9 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
   };
 
   const handleTouchEnd = () => {
-    if (!touchStartX || !touchEndX) return;
+    if (!touchStartX || !touchEndX) {
+      return;
+    }
     const distance = touchStartX - touchEndX;
     const minSwipeDistance = 50;
     const isLeftSwipe = distance > minSwipeDistance;
@@ -238,3 +239,4 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
 };
 
 export default React.memo(SplashScreen);
+

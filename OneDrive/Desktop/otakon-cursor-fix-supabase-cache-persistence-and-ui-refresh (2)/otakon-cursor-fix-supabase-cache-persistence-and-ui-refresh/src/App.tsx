@@ -5,6 +5,7 @@ import { onboardingService } from './services/onboardingService';
 import { connect, disconnect } from './services/websocketService';
 import { supabase } from './lib/supabase';
 import AppRouter from './components/AppRouter';
+import { ToastContainer } from './components/ui/ToastContainer';
 
 function App() {
   const [authState, setAuthState] = useState<AuthState>({
@@ -43,7 +44,7 @@ function App() {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.DISCONNECTED);
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
-  const mainAppMessageHandlerRef = useRef<((data: any) => void) | null>(null);
+  const mainAppMessageHandlerRef = useRef<((_data: any) => void) | null>(null);
   const authSubscriptionRef = useRef<(() => void) | null>(null);
   const isProcessingAuthRef = useRef(false);
   const isManualNavigationRef = useRef(false); // Track manual onboarding navigation
@@ -113,17 +114,31 @@ function App() {
           const savedAppState = newAuthState.user.appState || {};
           const nextStep = await onboardingService.getNextOnboardingStep(newAuthState.user.authUserId);
           console.log('🎯 [App] Next onboarding step:', nextStep);
-          const hasRecentActivity = newAuthState.user.lastActivity &&
-            (Date.now() - newAuthState.user.lastActivity) < (30 * 24 * 60 * 60 * 1000);
-          const shouldSkipOnboarding = nextStep === 'complete' ||
-            (hasRecentActivity && newAuthState.user.hasSeenSplashScreens);
+          
+          // Returning users: Skip onboarding if they've completed it before
+          // This ensures users go straight to chat on login/refresh
+          const isReturningUser = nextStep === 'complete';
+          
           if (isMounted) {
-            setAppState((prev: AppState) => ({
-              ...prev,
-              view: 'app',
-              onboardingStatus: shouldSkipOnboarding ? 'complete' : nextStep,
-              ...savedAppState
-            }));
+            if (isReturningUser) {
+              // Returning user - skip all onboarding, go to main app
+              console.log('🎯 [App] Returning user detected - skipping onboarding');
+              setAppState((prev: AppState) => ({
+                ...prev,
+                view: 'app',
+                onboardingStatus: 'complete',
+                ...savedAppState
+              }));
+            } else {
+              // New user or incomplete onboarding - continue onboarding flow
+              console.log('🎯 [App] New user or incomplete onboarding - continuing from:', nextStep);
+              setAppState((prev: AppState) => ({
+                ...prev,
+                view: 'app',
+                onboardingStatus: nextStep,
+                ...savedAppState
+              }));
+            }
             setIsInitializing(false);
           }
         } else {
@@ -214,14 +229,26 @@ function App() {
   const confirmLogout = async () => {
     console.log('🎯 [App] Starting logout process...');
     setShowLogoutConfirm(false);
+    
+    // Preserve welcome screen flag (user has seen it once, don't show again)
+    const welcomeShown = localStorage.getItem('otakon_welcome_shown');
+    
+    // Sign out (clears Supabase session and localStorage)
     await authService.signOut();
+    
+    // Restore welcome screen flag after signOut cleared localStorage
+    if (welcomeShown) {
+      localStorage.setItem('otakon_welcome_shown', welcomeShown);
+    }
+    
     setAppState((prev: AppState) => ({
       ...prev,
-      view: 'landing',
-      onboardingStatus: 'login'
+      view: 'app', // Set to app view so landing page check doesn't trigger
+      onboardingStatus: 'login' // This will show login screen
     }));
+    setAuthState({ user: null, isLoading: false, error: null });
     isProcessingAuthRef.current = false;
-    console.log('🎯 [App] Logout completed, showing login page (user has logged in before)');
+    console.log('🎯 [App] Logout completed, showing login screen');
   };
 
   const openModal = (modal: ActiveModal) => {
@@ -419,36 +446,40 @@ function App() {
   };
 
   return (
-    <AppRouter
-      appState={appState}
-      authState={authState}
-      activeModal={activeModal}
-      settingsOpen={settingsOpen}
-      showLogoutConfirm={showLogoutConfirm}
-      isInitializing={isInitializing}
-      hasEverLoggedIn={hasEverLoggedIn}
-      connectionStatus={connectionStatus}
-      connectionError={connectionError}
-      handleGetStarted={handleGetStarted}
-      handleLoginComplete={handleLoginComplete}
-      handleBackToLanding={handleBackToLanding}
-      handleOAuthSuccess={handleOAuthSuccess}
-      handleOAuthError={handleOAuthError}
-      handleLogout={handleLogout}
-      confirmLogout={confirmLogout}
-      openModal={openModal}
-      closeModal={closeModal}
-      handleOnboardingComplete={handleOnboardingComplete}
-      handleConnect={handleConnect}
-      handleConnectionSuccess={handleConnectionSuccess}
-      handleDisconnect={handleDisconnect}
-      handleSkipConnection={handleSkipConnection}
-      handleProfileSetupComplete={handleProfileSetupComplete}
-      handleProfileSetupSkip={handleProfileSetupSkip}
-      setSettingsOpen={setSettingsOpen}
-      setShowLogoutConfirm={setShowLogoutConfirm}
-      mainAppMessageHandlerRef={mainAppMessageHandlerRef}
-    />
+    <>
+      <AppRouter
+        appState={appState}
+        authState={authState}
+        activeModal={activeModal}
+        settingsOpen={settingsOpen}
+        showLogoutConfirm={showLogoutConfirm}
+        isInitializing={isInitializing}
+        hasEverLoggedIn={hasEverLoggedIn}
+        connectionStatus={connectionStatus}
+        connectionError={connectionError}
+        handleGetStarted={handleGetStarted}
+        handleLoginComplete={handleLoginComplete}
+        handleBackToLanding={handleBackToLanding}
+        handleOAuthSuccess={handleOAuthSuccess}
+        handleOAuthError={handleOAuthError}
+        handleLogout={handleLogout}
+        confirmLogout={confirmLogout}
+        openModal={openModal}
+        closeModal={closeModal}
+        handleOnboardingComplete={handleOnboardingComplete}
+        handleConnect={handleConnect}
+        handleConnectionSuccess={handleConnectionSuccess}
+        handleDisconnect={handleDisconnect}
+        handleSkipConnection={handleSkipConnection}
+        handleProfileSetupComplete={handleProfileSetupComplete}
+        handleProfileSetupSkip={handleProfileSetupSkip}
+        setSettingsOpen={setSettingsOpen}
+        setShowLogoutConfirm={setShowLogoutConfirm}
+        mainAppMessageHandlerRef={mainAppMessageHandlerRef}
+        isManualNavigationRef={isManualNavigationRef}
+      />
+      <ToastContainer />
+    </>
   );
 }
 

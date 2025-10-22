@@ -33,6 +33,13 @@ export class UserService {
       hasUsedTrial: false,
       lastActivity: now,
       preferences: {},
+      // Add these required fields from User interface
+      textCount: 0,
+      imageCount: 0,
+      textLimit: limits.text,
+      imageLimit: limits.image,
+      totalRequests: 0,
+      lastReset: now,
       usage: {
         textCount: 0,
         imageCount: 0,
@@ -55,7 +62,9 @@ export class UserService {
 
   static updateUser(updates: Partial<User>): void {
     const currentUser = this.getCurrentUser();
-    if (!currentUser) return;
+    if (!currentUser) {
+      return;
+    }
 
     const updatedUser = {
       ...currentUser,
@@ -68,7 +77,9 @@ export class UserService {
 
   static updateUsage(usage: Partial<Usage>): void {
     const currentUser = this.getCurrentUser();
-    if (!currentUser) return;
+    if (!currentUser) {
+      return;
+    }
 
     this.updateUser({
       usage: {
@@ -80,7 +91,9 @@ export class UserService {
 
   static resetUsage(): void {
     const currentUser = this.getCurrentUser();
-    if (!currentUser) return;
+    if (!currentUser) {
+      return;
+    }
 
     const limits = TIER_LIMITS[currentUser.tier];
     this.updateUsage({
@@ -95,7 +108,9 @@ export class UserService {
 
   static canMakeRequest(type: 'text' | 'image'): boolean {
     const currentUser = this.getCurrentUser();
-    if (!currentUser) return false;
+    if (!currentUser) {
+      return false;
+    }
 
     const { usage } = currentUser;
     if (type === 'text') {
@@ -107,7 +122,9 @@ export class UserService {
 
   static incrementUsage(type: 'text' | 'image'): void {
     const currentUser = this.getCurrentUser();
-    if (!currentUser) return;
+    if (!currentUser) {
+      return;
+    }
 
     const updates: Partial<Usage> = {
       totalRequests: currentUser.usage.totalRequests + 1,
@@ -126,3 +143,4 @@ export class UserService {
     StorageService.remove(STORAGE_KEYS.USER);
   }
 }
+

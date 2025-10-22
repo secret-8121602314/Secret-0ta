@@ -12,6 +12,7 @@ interface SidebarProps {
   onPinConversation?: (id: string) => void;
   onUnpinConversation?: (id: string) => void;
   onClearConversation?: (id: string) => void;
+  onAddGame?: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -24,6 +25,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onPinConversation,
   onUnpinConversation,
   onClearConversation,
+  onAddGame,
 }) => {
   // Context menu state
   const [contextMenu, setContextMenu] = useState<{
@@ -46,12 +48,20 @@ const Sidebar: React.FC<SidebarProps> = ({
     const aIsGameHub = a.isGameHub || a.id === 'game-hub' || a.title === 'Game Hub';
     const bIsGameHub = b.isGameHub || b.id === 'game-hub' || b.title === 'Game Hub';
     
-    if (aIsGameHub && !bIsGameHub) return -1;
-    if (!aIsGameHub && bIsGameHub) return 1;
+    if (aIsGameHub && !bIsGameHub) {
+      return -1;
+    }
+    if (!aIsGameHub && bIsGameHub) {
+      return 1;
+    }
     
     // Pinned conversations next (sorted by pinned date, oldest pinned first)
-    if (a.isPinned && !b.isPinned) return -1;
-    if (!a.isPinned && b.isPinned) return 1;
+    if (a.isPinned && !b.isPinned) {
+      return -1;
+    }
+    if (!a.isPinned && b.isPinned) {
+      return 1;
+    }
     if (a.isPinned && b.isPinned) {
       return (a.pinnedAt || 0) - (b.pinnedAt || 0);
     }
@@ -155,11 +165,48 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
 
+          {/* Add Game Button */}
+          {onAddGame && (
+            <div className="px-4 sm:px-6 pt-4 pb-2">
+              <button
+                onClick={onAddGame}
+                className="w-full px-4 py-3 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] hover:from-[#D42A2A] hover:to-[#C87A1A] text-white font-medium rounded-lg transition-all shadow-lg hover:shadow-xl active:scale-95 flex items-center justify-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Add Game</span>
+              </button>
+            </div>
+          )}
+
           {/* Conversation List */}
           <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-4 sm:pb-6 custom-scrollbar" style={{ minHeight: 0 }}>
             <div className="space-y-2 sm:space-y-3 pt-2">
               {conversationList.map((conversation) => {
                 const isGameHub = conversation.isGameHub || conversation.id === 'game-hub' || conversation.title === 'Game Hub';
+                const isUnreleased = conversation.isUnreleased || false;
+                const isRegularGame = !isGameHub && !isUnreleased && conversation.gameTitle;
+                
+                // Determine border color based on tab type
+                let borderClass = '';
+                let titleClass = 'text-text-primary';
+                
+                if (isGameHub) {
+                  // Game Hub: Otagon brand gradient (red to orange)
+                  borderClass = 'border-l-2 border-gradient-to-b from-[#FF4D4D] to-[#FFAB40]';
+                  titleClass = 'bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent';
+                } else if (isUnreleased) {
+                  // Unreleased games: Yellow
+                  borderClass = 'border-l-2 border-yellow-500';
+                  titleClass = 'text-yellow-400';
+                } else if (isRegularGame) {
+                  // Regular games: Orange
+                  borderClass = 'border-l-2 border-orange-500';
+                  titleClass = 'text-orange-400';
+                }
+                // Non-game conversations: No border, default text color
+                
                 return (
                   <div
                     key={conversation.id}
@@ -167,7 +214,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                       activeConversation?.id === conversation.id
                         ? 'conversation-tab-active'
                         : ''
-                    }`}
+                    } ${borderClass}`}
                     onClick={() => onConversationSelect(conversation.id)}
                     onContextMenu={(e) => handleContextMenu(e, conversation.id)}
                     onMouseDown={() => handleLongPressStart(conversation.id)}
@@ -180,9 +227,19 @@ const Sidebar: React.FC<SidebarProps> = ({
                     <div className="flex items-center justify-between p-4 min-h-[60px]">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2">
-                          <p className="text-xs font-medium text-text-primary truncate">
+                          <p className={`text-xs font-medium truncate ${titleClass}`}>
                             {conversation.title}
                           </p>
+                          {isGameHub && (
+                            <span className="flex-shrink-0 px-1.5 py-0.5 bg-gradient-to-r from-[#FF4D4D]/20 to-[#FFAB40]/20 border border-[#FFAB40]/40 rounded text-[10px] font-medium">
+                              <span className="bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent">HUB</span>
+                            </span>
+                          )}
+                          {isUnreleased && (
+                            <span className="flex-shrink-0 px-1.5 py-0.5 bg-yellow-500/20 border border-yellow-500/40 rounded text-[10px] text-yellow-400 font-medium">
+                              UPCOMING
+                            </span>
+                          )}
                           {conversation.isPinned && (
                             <svg className="w-3 h-3 text-primary-dark flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                               <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />

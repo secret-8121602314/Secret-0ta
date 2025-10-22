@@ -2,12 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { UserTier } from '../../types';
 import { authService } from '../../services/authService';
 import { supabaseService } from '../../services/supabaseService';
+import { toastService } from '../../services/toastService';
 
 interface SettingsContextMenuProps {
   isOpen: boolean;
   position: { x: number; y: number };
   onClose: () => void;
   onOpenSettings: () => void;
+  onOpenGuide?: () => void;
   onLogout: () => void;
   userTier?: UserTier;
   onTrialStart?: () => void;
@@ -18,6 +20,7 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
   position,
   onClose,
   onOpenSettings,
+  onOpenGuide,
   onLogout,
   userTier,
   onTrialStart,
@@ -74,7 +77,9 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
 
   const handleStartTrial = async () => {
     const currentUser = authService.getCurrentUser();
-    if (!currentUser || isStartingTrial) return;
+    if (!currentUser || isStartingTrial) {
+      return;
+    }
 
     try {
       setIsStartingTrial(true);
@@ -82,21 +87,26 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
       
       if (success) {
         console.log('✅ Trial started successfully');
+        toastService.success('Pro trial activated! Enjoy your 7-day trial.');
         if (onTrialStart) {
           onTrialStart();
         }
         onClose();
       } else {
         console.error('❌ Failed to start trial');
+        toastService.error('Failed to start trial. Please try again.');
       }
     } catch (error) {
       console.error('Error starting trial:', error);
+      toastService.error('Failed to start trial. Please try again.');
     } finally {
       setIsStartingTrial(false);
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div
@@ -122,6 +132,22 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
         </svg>
         <span>Settings</span>
       </button>
+
+      {/* Guide Option */}
+      {onOpenGuide && (
+        <button
+          onClick={() => {
+            onOpenGuide();
+            onClose();
+          }}
+          className="w-full px-4 py-2 text-left text-text-primary hover:bg-gradient-to-r hover:from-[#FF4D4D]/10 hover:to-[#FFAB40]/10 transition-colors duration-200 flex items-center space-x-3"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+          <span>Guide</span>
+        </button>
+      )}
 
       {/* Start Free Trial - Only show for free users who haven't used trial */}
       {isTrialEligible && (
@@ -158,3 +184,4 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
 };
 
 export default SettingsContextMenu;
+

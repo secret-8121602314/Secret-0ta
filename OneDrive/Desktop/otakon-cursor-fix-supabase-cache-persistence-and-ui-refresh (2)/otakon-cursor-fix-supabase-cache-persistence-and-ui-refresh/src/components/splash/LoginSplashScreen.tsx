@@ -54,7 +54,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
       errors.push('Password must contain at least one number');
     }
     
-    if (!/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(password)) {
+    if (!/[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/.test(password)) {
       errors.push('Password must contain at least one special character');
     }
     
@@ -156,7 +156,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
       } else {
         setErrorMessage(result.error || 'Authentication failed. Please try again.');
       }
-    } catch (error) {
+    } catch (_error) {
       setErrorMessage('Authentication failed. Please try again.');
     } finally {
       setIsLoading(false);
@@ -301,7 +301,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
           setErrorMessage(result.error || 'Authentication failed. Please try again.');
         }
       }
-    } catch (error) {
+    } catch (_error) {
       setErrorMessage('Authentication failed. Please try again.');
     } finally {
       setIsLoading(false);
@@ -334,7 +334,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
       } else {
         setErrorMessage(result.error || 'Failed to send reset email. Please try again.');
       }
-    } catch (error) {
+    } catch (_error) {
       setErrorMessage('Failed to send reset email. Please try again.');
     } finally {
       setIsLoading(false);
@@ -476,7 +476,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
                         <li className={password.match(/[0-9]/) ? 'text-green-400' : 'text-text-muted'}>
                           At least one number
                         </li>
-                        <li className={password.match(/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/) ? 'text-green-400' : 'text-text-muted'}>
+                        <li className={password.match(/[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/) ? 'text-green-400' : 'text-text-muted'}>
                           At least one special character
                         </li>
                         <li className={password.length >= 8 ? 'text-green-400' : 'text-text-muted'}>
@@ -762,3 +762,4 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
 };
 
 export default LoginSplashScreen;
+

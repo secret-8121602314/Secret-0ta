@@ -80,16 +80,26 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
     
-    if (diffInHours < 1) return 'Less than an hour ago';
-    if (diffInHours === 1) return '1 hour ago';
-    if (diffInHours < 24) return `${diffInHours} hours ago`;
+    if (diffInHours < 1) {
+      return 'Less than an hour ago';
+    }
+    if (diffInHours === 1) {
+      return '1 hour ago';
+    }
+    if (diffInHours < 24) {
+      return `${diffInHours} hours ago`;
+    }
     
     const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays === 1) return '1 day ago';
+    if (diffInDays === 1) {
+      return '1 day ago';
+    }
     return `${diffInDays} days ago`;
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-black/80 to-[#0A0A0A]/80 backdrop-blur-xl flex items-center justify-center p-6 z-50 animate-fade-in">

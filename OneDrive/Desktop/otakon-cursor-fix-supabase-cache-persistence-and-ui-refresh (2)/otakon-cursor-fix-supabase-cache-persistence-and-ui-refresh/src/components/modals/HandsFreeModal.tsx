@@ -17,7 +17,6 @@ const HandsFreeModal: React.FC<HandsFreeModalProps> = ({
   isHandsFree,
   onToggleHandsFree,
 }) => {
-  if (!isOpen) return null;
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoiceURI, setSelectedVoiceURI] = useState<string>(
     () => localStorage.getItem('otakonPreferredVoiceURI') || ''
@@ -27,7 +26,6 @@ const HandsFreeModal: React.FC<HandsFreeModalProps> = ({
     return savedRate ? parseFloat(savedRate) : 0.94;
   });
 
-
   useEffect(() => {
     const updateVoices = async () => {
       const allVoices = ttsService.getAvailableVoices();
@@ -36,8 +34,12 @@ const HandsFreeModal: React.FC<HandsFreeModalProps> = ({
       const sortedVoices = englishVoices.sort((a, b) => {
         const aIsFemale = a.name.toLowerCase().includes('female');
         const bIsFemale = b.name.toLowerCase().includes('female');
-        if (aIsFemale && !bIsFemale) return -1;
-        if (!aIsFemale && bIsFemale) return 1;
+        if (aIsFemale && !bIsFemale) {
+          return -1;
+        }
+        if (!aIsFemale && bIsFemale) {
+          return 1;
+        }
         return a.name.localeCompare(b.name);
       });
 
@@ -80,6 +82,10 @@ const HandsFreeModal: React.FC<HandsFreeModalProps> = ({
     setSpeechRate(newRate);
     localStorage.setItem(SPEECH_RATE_KEY, newRate.toString());
   };
+
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in" onClick={onClose}>

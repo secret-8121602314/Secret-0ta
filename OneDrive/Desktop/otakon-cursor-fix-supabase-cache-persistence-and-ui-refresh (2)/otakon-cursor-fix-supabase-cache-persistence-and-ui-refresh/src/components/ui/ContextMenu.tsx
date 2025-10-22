@@ -53,7 +53,9 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div

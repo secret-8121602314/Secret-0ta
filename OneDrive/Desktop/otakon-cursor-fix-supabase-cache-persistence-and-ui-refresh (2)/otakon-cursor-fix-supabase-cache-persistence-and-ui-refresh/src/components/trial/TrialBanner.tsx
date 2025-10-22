@@ -34,7 +34,9 @@ const TrialBanner: React.FC<TrialBannerProps> = ({ userTier, onTrialStart }) => 
 
   const handleStartTrial = async () => {
     const currentUser = authService.getCurrentUser();
-    if (!currentUser) return;
+    if (!currentUser) {
+      return;
+    }
 
     try {
       const success = await supabaseService.startTrial(currentUser.authUserId);
@@ -138,3 +140,4 @@ const TrialBanner: React.FC<TrialBannerProps> = ({ userTier, onTrialStart }) => 
 };
 
 export default TrialBanner;
+

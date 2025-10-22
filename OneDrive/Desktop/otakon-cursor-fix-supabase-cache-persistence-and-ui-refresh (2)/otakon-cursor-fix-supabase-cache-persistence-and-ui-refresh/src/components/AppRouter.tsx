@@ -5,7 +5,6 @@ import LoginSplashScreen from './splash/LoginSplashScreen';
 import InitialSplashScreen from './splash/InitialSplashScreen';
 import HowToUseSplashScreen from './splash/HowToUseSplashScreen';
 import ProFeaturesSplashScreen from './splash/ProFeaturesSplashScreen';
-import PlayerProfileSetupModal from './splash/PlayerProfileSetupModal';
 import SplashScreen from './splash/SplashScreen';
 import MainApp from './MainApp';
 import AuthCallback from './auth/AuthCallback';
@@ -32,21 +31,24 @@ interface AppRouterProps {
   handleLoginComplete: () => void;
   handleBackToLanding: () => void;
   handleOAuthSuccess: () => void;
-  handleOAuthError: (error: string) => void;
+  handleOAuthError: (_error: string) => void;
   handleLogout: () => void;
   confirmLogout: () => void;
-  openModal: (modal: ActiveModal) => void;
+  openModal: (_modal: ActiveModal) => void;
   closeModal: () => void;
-  handleOnboardingComplete: (step: string) => void;
-  handleConnect: (code: string) => void;
+  handleOnboardingComplete: (_step: string) => void;
+  handleConnect: (_code: string) => void;
   handleConnectionSuccess: () => void;
   handleDisconnect: () => void;
   handleSkipConnection: () => void;
-  handleProfileSetupComplete: (profileData: any) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  handleProfileSetupComplete: (_profileData: any) => void;
   handleProfileSetupSkip: () => void;
-  setSettingsOpen: (isOpen: boolean) => void;
-  setShowLogoutConfirm: (isOpen: boolean) => void;
-  mainAppMessageHandlerRef: React.MutableRefObject<((data: any) => void) | null>;
+  setSettingsOpen: (_isOpen: boolean) => void;
+  setShowLogoutConfirm: (_isOpen: boolean) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  mainAppMessageHandlerRef: React.MutableRefObject<((_data: any) => void) | null>;
+  isManualNavigationRef: React.MutableRefObject<boolean>;
 }
 
 const AppRouter: React.FC<AppRouterProps> = ({
@@ -78,6 +80,7 @@ const AppRouter: React.FC<AppRouterProps> = ({
   setSettingsOpen,
   setShowLogoutConfirm,
   mainAppMessageHandlerRef,
+  isManualNavigationRef,
 }) => {
   if (window.location.pathname === '/auth/callback') {
     return (
@@ -111,7 +114,9 @@ const AppRouter: React.FC<AppRouterProps> = ({
           onOpenPrivacy={() => openModal('privacy')}
           onOpenRefund={() => openModal('refund')}
           onOpenTerms={() => openModal('terms')}
-          onDirectNavigation={(path) => console.log('Direct navigation to:', path)}
+          onDirectNavigation={() => {
+            // Direct navigation handler for landing page links
+          }}
         />
         <AboutModal isOpen={activeModal === 'about'} onClose={closeModal} />
         <PrivacyModal isOpen={activeModal === 'privacy'} onClose={closeModal} />
@@ -144,7 +149,7 @@ const AppRouter: React.FC<AppRouterProps> = ({
   }
 
   if (authState.user && appState.view === 'app') {
-    if (appState.onboardingStatus === 'initial') {
+    if (appState.onboardingStatus === 'initial' && !isInitializing) {
       return <InitialSplashScreen onComplete={() => handleOnboardingComplete('initial')} user={authState.user} />;
     }
 
@@ -166,10 +171,17 @@ const AppRouter: React.FC<AppRouterProps> = ({
         <HowToUseSplashScreen
           onComplete={async () => {
             if (authState.user) {
-              await onboardingService.updateOnboardingStatus(authState.user.authUserId, 'features-connected', {
-                has_seen_features_connected: true,
-              });
-              await authService.refreshUser();
+              try {
+                await onboardingService.updateOnboardingStatus(authState.user.authUserId, 'features-connected', {
+                  has_seen_features_connected: true,
+                });
+                // Prevent auth subscription from overriding navigation
+                isManualNavigationRef.current = true;
+                await authService.refreshUser();
+              } catch (error) {
+                console.error('🎯 [AppRouter] Error updating features-connected status:', error);
+                isManualNavigationRef.current = false;
+              }
             }
             handleOnboardingComplete('features-connected');
           }}
@@ -182,16 +194,27 @@ const AppRouter: React.FC<AppRouterProps> = ({
         <ProFeaturesSplashScreen
           onComplete={async () => {
             if (authState.user) {
-              await onboardingService.updateOnboardingStatus(authState.user.authUserId, 'pro-features', {
-                has_seen_pro_features: true,
-                onboarding_completed: true,
-              });
-              await authService.refreshUser();
+              try {
+                await onboardingService.updateOnboardingStatus(authState.user.authUserId, 'pro-features', {
+                  has_seen_pro_features: true,
+                  onboarding_completed: true,
+                });
+                // Prevent auth subscription from overriding navigation
+                isManualNavigationRef.current = true;
+                await authService.refreshUser();
+              } catch (error) {
+                console.error('🎯 [AppRouter] Error updating pro-features status:', error);
+                isManualNavigationRef.current = false;
+              }
             }
             handleOnboardingComplete('pro-features');
           }}
-          onUpgrade={() => console.log('Upgrade clicked')}
-          onUpgradeToVanguard={() => console.log('Upgrade to Vanguard clicked')}
+          onUpgrade={() => {
+            // Upgrade functionality coming soon
+          }}
+          onUpgradeToVanguard={() => {
+            // Vanguard upgrade functionality coming soon
+          }}
         />
       );
     }
@@ -214,14 +237,10 @@ const AppRouter: React.FC<AppRouterProps> = ({
             onWebSocketMessage={(handler) => {
               mainAppMessageHandlerRef.current = handler;
             }}
+            showProfileSetupBanner={authState.user ? !authState.user.hasProfileSetup : false}
+            onProfileSetupComplete={handleProfileSetupComplete}
+            onProfileSetupDismiss={handleProfileSetupSkip}
           />
-          {authState.user && !authState.user.hasProfileSetup && (
-            <PlayerProfileSetupModal
-              isOpen={true}
-              onComplete={handleProfileSetupComplete}
-              onSkip={handleProfileSetupSkip}
-            />
-          )}
           <AboutModal isOpen={activeModal === 'about'} onClose={closeModal} />
           <PrivacyModal isOpen={activeModal === 'privacy'} onClose={closeModal} />
           <TermsModal isOpen={activeModal === 'terms'} onClose={closeModal} />

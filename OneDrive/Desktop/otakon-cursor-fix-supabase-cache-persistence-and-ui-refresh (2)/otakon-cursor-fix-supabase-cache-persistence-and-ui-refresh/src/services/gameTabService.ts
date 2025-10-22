@@ -2,6 +2,7 @@ import { Conversation, SubTab, GameTab, insightTabsConfig, AIResponse, PlayerPro
 import { aiService } from './aiService';
 import { ConversationService } from './conversationService';
 import { profileAwareTabService, GameContext, ProfileSpecificTab } from './profileAwareTabService';
+import { toastService } from './toastService';
 
 export interface GameTabCreationData {
   gameTitle: string;
@@ -11,6 +12,7 @@ export interface GameTabCreationData {
   aiResponse?: AIResponse; // Optional AI response to extract insights from
   playerProfile?: PlayerProfile; // Optional player profile for personalization
   gameContext?: GameContext; // Optional game context (playthrough count, etc.)
+  isUnreleased?: boolean; // True for unreleased/upcoming games
 }
 
 class GameTabService {
@@ -20,17 +22,24 @@ class GameTabService {
   async createGameTab(data: GameTabCreationData): Promise<Conversation> {
     console.log('🎮 [GameTabService] Creating game tab:', data);
 
-    // Generate initial sub-tabs based on genre and profile
-    let subTabs = this.generateInitialSubTabs(
-      data.genre, 
-      data.playerProfile,
-      data.gameContext
-    );
+    // For unreleased games, don't generate subtabs
+    let subTabs: SubTab[] = [];
     
-    // If AI response provided, extract insights from it
-    if (data.aiResponse) {
-      console.log('🎮 [GameTabService] Using AI response for initial insights');
-      subTabs = this.extractInsightsFromAIResponse(data.aiResponse, subTabs);
+    if (!data.isUnreleased) {
+      // Generate initial sub-tabs based on genre and profile for released games
+      subTabs = this.generateInitialSubTabs(
+        data.genre, 
+        data.playerProfile,
+        data.gameContext
+      );
+      
+      // If AI response provided, extract insights from it
+      if (data.aiResponse) {
+        console.log('🎮 [GameTabService] Using AI response for initial insights');
+        subTabs = this.extractInsightsFromAIResponse(data.aiResponse, subTabs);
+      }
+    } else {
+      console.log('🎮 [GameTabService] Creating unreleased game tab (no subtabs, Discuss mode only)');
     }
     
     // Create the conversation
@@ -48,7 +57,8 @@ class GameTabService {
       subtabsOrder: subTabs.map(tab => tab.id),
       isActiveSession: false,
       activeObjective: '',
-      gameProgress: 0
+      gameProgress: 0,
+      isUnreleased: data.isUnreleased || false // Mark if unreleased
     };
 
     // Save to database
@@ -205,6 +215,7 @@ class GameTabService {
 
     } catch (error) {
       console.error('🤖 [GameTabService] ❌ Failed to generate initial insights:', error);
+      toastService.warning('Failed to load game insights. You can still chat about the game!');
       
       // Set error state for sub-tabs
       const errorSubTabs = conversation.subtabs?.map(subTab => ({
@@ -286,6 +297,7 @@ class GameTabService {
       };
     } catch (error) {
       console.error('Failed to get game tab:', error);
+      toastService.error('Failed to load game tab.');
       return null;
     }
   }

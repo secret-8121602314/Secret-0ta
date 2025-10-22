@@ -78,7 +78,9 @@ class PerformanceMonitor {
    * Start monitoring performance
    */
   startMonitoring(): void {
-    if (this.isMonitoring) return;
+    if (this.isMonitoring) {
+      return;
+    }
     
     console.log('📊 [PerformanceMonitor] Starting performance monitoring...');
     this.isMonitoring = true;
@@ -105,7 +107,9 @@ class PerformanceMonitor {
    * Stop monitoring
    */
   stopMonitoring(): void {
-    if (!this.isMonitoring) return;
+    if (!this.isMonitoring) {
+      return;
+    }
     
     console.log('📊 [PerformanceMonitor] Stopping performance monitoring...');
     this.isMonitoring = false;
@@ -120,7 +124,9 @@ class PerformanceMonitor {
    * Monitor page load performance
    */
   private monitorPageLoad(): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
     
     window.addEventListener('load', () => {
       const loadTime = performance.now();
@@ -136,7 +142,9 @@ class PerformanceMonitor {
    * Monitor memory usage
    */
   private monitorMemoryUsage(): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
     
     setInterval(() => {
       if ('memory' in performance) {
@@ -154,7 +162,9 @@ class PerformanceMonitor {
    * Monitor user interactions
    */
   private monitorUserInteractions(): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
     
     const events = ['click', 'keydown', 'scroll', 'touchstart'];
     events.forEach(event => {
@@ -168,7 +178,9 @@ class PerformanceMonitor {
    * Monitor errors
    */
   private monitorErrors(): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
     
     window.addEventListener('error', (event) => {
       this.metrics.errors++;
@@ -287,7 +299,9 @@ class PerformanceMonitor {
    * Report metrics to console (or external service)
    */
   private reportMetrics(): void {
-    if (!this.isMonitoring) return;
+    if (!this.isMonitoring) {
+      return;
+    }
     
     console.log('📊 [PerformanceMonitor] Current Metrics:', {
       pageLoadTime: `${this.metrics.pageLoadTime.toFixed(2)}ms`,
@@ -339,3 +353,4 @@ export const performanceMonitor = PerformanceMonitor.getInstance();
 if (typeof window !== 'undefined') {
   performanceMonitor.startMonitoring();
 }
+

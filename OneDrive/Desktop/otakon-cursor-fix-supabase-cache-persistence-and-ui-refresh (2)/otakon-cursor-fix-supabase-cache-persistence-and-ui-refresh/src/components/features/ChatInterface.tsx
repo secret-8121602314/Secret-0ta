@@ -272,7 +272,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }
 
   return (
-    <div className="h-full bg-background flex flex-col overflow-hidden">
+    <div className="h-full bg-gradient-to-r from-surface/30 to-background/30 flex flex-col overflow-hidden">
       {/* Messages Area - Only this should scroll */}
       <div className={`flex-1 p-6 space-y-6 min-h-0 ${conversation.messages.length > 0 ? 'overflow-y-auto custom-scrollbar' : 'overflow-y-hidden'}`}>
         {conversation.messages.length === 0 ? (
@@ -453,8 +453,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       )}
 
 
-      {/* Sub-tabs Section - Show for game conversations (not Game Hub) */}
-      {conversation && !conversation.isGameHub && conversation.subtabs && conversation.subtabs.length > 0 && (
+      {/* Sub-tabs Section - Show for released game conversations only (not Game Hub, not unreleased) */}
+      {conversation && !conversation.isGameHub && !conversation.isUnreleased && conversation.subtabs && conversation.subtabs.length > 0 && (
         <div className="flex-shrink-0 px-3 pb-2">
           <SubTabs
             subtabs={conversation.subtabs}
@@ -590,12 +590,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
             </div>
             
-            {/* Active Session Toggle - Show only for game-specific tabs, positioned left of send button */}
-            {conversation && gameTabService.isGameTab(conversation) && activeSession && onToggleActiveSession && (
-              <ActiveSessionToggle
-                isActive={activeSession.isActive && activeSession.currentGameId === conversation.id}
-                onClick={onToggleActiveSession}
-              />
+            {/* Active Session Toggle - Show only for released game tabs */}
+            {/* For unreleased games, show "Discuss" mode label with disabled toggle */}
+            {conversation && gameTabService.isGameTab(conversation) && activeSession && (
+              conversation.isUnreleased ? (
+                <div className="flex items-center gap-2 px-4 py-2 bg-surface/50 rounded-lg border border-surface-light/20">
+                  <span className="text-sm font-medium text-text-muted">Discuss Mode</span>
+                  <div className="text-xs text-text-muted/60">(No Playing mode until release)</div>
+                </div>
+              ) : onToggleActiveSession && (
+                <ActiveSessionToggle
+                  isActive={activeSession.isActive && activeSession.currentGameId === conversation.id}
+                  onClick={onToggleActiveSession}
+                />
+              )
             )}
             
             <button

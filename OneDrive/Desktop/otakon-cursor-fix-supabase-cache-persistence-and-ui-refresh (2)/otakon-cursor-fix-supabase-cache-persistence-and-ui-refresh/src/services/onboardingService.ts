@@ -259,14 +259,11 @@ class OnboardingService {
         return 'complete';
       }
 
-      // Fallback: If user has seen splash screens but is stuck, complete onboarding
-      if (hasSeenSplashScreens) {
-        console.log('🎯 [OnboardingService] User has seen splash screens but seems stuck, completing onboarding');
-        return 'complete';
-      }
-
-      console.log('🎯 [OnboardingService] All steps complete, returning complete');
-      return 'complete';
+      // REMOVED: Overly aggressive fallback that was skipping screens
+      // If we reach here, something is wrong - but return to how-to-use rather than complete
+      // This prevents skipping screens if the flow logic breaks
+      console.warn('🎯 [OnboardingService] WARNING: Unexpected flow state, returning to how-to-use');
+      return 'how-to-use';
 
     } catch (error) {
       console.error('🎯 [OnboardingService] Error getting next onboarding step:', error);

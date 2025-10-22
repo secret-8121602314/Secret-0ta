@@ -102,7 +102,9 @@ class SuggestedPromptsService {
   public getTimeUntilNextReset(): number {
     try {
       const lastResetTime = localStorage.getItem(this.LAST_RESET_KEY);
-      if (!lastResetTime) return 0;
+      if (!lastResetTime) {
+        return 0;
+      }
       
       const nextResetTime = parseInt(lastResetTime) + this.RESET_INTERVAL_MS;
       return Math.max(0, nextResetTime - Date.now());
@@ -166,7 +168,7 @@ class SuggestedPromptsService {
           suggestionsArray = [suggestions];
           console.log('🔍 [SuggestedPromptsService] Parsed as single value, wrapped in array');
         }
-      } catch (e) {
+      } catch (_e) {
         console.log('🔍 [SuggestedPromptsService] JSON parsing failed, trying delimiter splitting');
         // If JSON parsing fails, try to split by common delimiters
         if (cleanedSuggestions.includes('", "') || cleanedSuggestions.includes('",\n"')) {
@@ -176,9 +178,10 @@ class SuggestedPromptsService {
             .map(s => s.replace(/^["\s]+|["\s]+$/g, ''))
             .filter(s => s.length > 0);
           console.log('🔍 [SuggestedPromptsService] Split by comma delimiters');
-        } else if (cleanedSuggestions.includes('", "')) {
+        } else if (cleanedSuggestions.includes('\n')) {
+          // Split by newlines for multi-line format
           suggestionsArray = cleanedSuggestions
-            .split('", "')
+            .split('\n')
             .map(s => s.replace(/^["\s]+|["\s]+$/g, ''))
             .filter(s => s.length > 0);
           console.log('🔍 [SuggestedPromptsService] Split by quote delimiters');
@@ -221,3 +224,4 @@ class SuggestedPromptsService {
 }
 
 export const suggestedPromptsService = new SuggestedPromptsService();
+

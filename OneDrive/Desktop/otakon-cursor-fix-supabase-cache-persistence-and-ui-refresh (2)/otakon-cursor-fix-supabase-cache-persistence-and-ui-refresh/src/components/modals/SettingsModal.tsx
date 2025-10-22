@@ -23,7 +23,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const [preferredContentStyle, setPreferredContentStyle] = useState(user?.profileData?.preferredContentStyle || 'detailed');
   const [spoilerPreference, setSpoilerPreference] = useState(user?.profileData?.spoilerPreference || 'minimal');
 
-  if (!user) return null;
+  if (!user) {
+
+    return null;
+
+  }
 
 
   const handleTrialStart = () => {
@@ -386,3 +390,4 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 };
 
 export default SettingsModal;
+

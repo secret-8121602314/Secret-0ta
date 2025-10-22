@@ -52,7 +52,9 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '' }) =
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      return;
+    }
 
     // Show the install prompt
     deferredPrompt.prompt();
@@ -119,3 +121,4 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '' }) =
 };
 
 export default PWAInstallBanner;
+

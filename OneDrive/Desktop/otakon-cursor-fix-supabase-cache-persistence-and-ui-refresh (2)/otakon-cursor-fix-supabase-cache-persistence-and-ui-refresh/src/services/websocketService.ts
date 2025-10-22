@@ -49,7 +49,11 @@ const connect = (
     // Flush queued messages
     while (sendQueue.length && ws && ws.readyState === WebSocket.OPEN) {
       const payload = sendQueue.shift();
-      try { ws.send(JSON.stringify(payload)); } catch {}
+      try { 
+        ws.send(JSON.stringify(payload)); 
+      } catch {
+        // Ignore send errors during queue processing
+      }
     }
 
     // Start heartbeat
@@ -59,7 +63,11 @@ const connect = (
     }
     heartbeatTimer = window.setInterval(() => {
       if (ws && ws.readyState === WebSocket.OPEN) {
-        try { ws.send(JSON.stringify({ type: 'ping', ts: Date.now() })); } catch {}
+        try { 
+          ws.send(JSON.stringify({ type: 'ping', ts: Date.now() })); 
+        } catch {
+          // Ignore heartbeat send errors
+        }
       }
     }, HEARTBEAT_MS);
   };
@@ -70,7 +78,9 @@ const connect = (
       // Only log errors in development, not every message
       onMessage(data);
     } catch (e) {
-      if (process.env.NODE_ENV === 'development') console.error("Failed to parse WebSocket message:", event.data, e);
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Failed to parse WebSocket message:", event.data, e);
+      }
       // Ignore non-JSON
     }
   };

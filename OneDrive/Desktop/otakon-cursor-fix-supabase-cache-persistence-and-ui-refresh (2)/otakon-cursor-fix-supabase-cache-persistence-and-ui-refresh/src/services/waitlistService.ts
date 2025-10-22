@@ -117,9 +117,13 @@ export class WaitlistService {
 
       data.forEach(entry => {
         const status = entry.status || 'pending';
-        if (status === 'pending') stats.pending++;
-        else if (status === 'approved') stats.invited++;
-        else if (status === 'rejected') stats.converted++;
+        if (status === 'pending') {
+          stats.pending++;
+        } else if (status === 'approved') {
+          stats.invited++;
+        } else if (status === 'rejected') {
+          stats.converted++;
+        }
       });
 
       return stats;

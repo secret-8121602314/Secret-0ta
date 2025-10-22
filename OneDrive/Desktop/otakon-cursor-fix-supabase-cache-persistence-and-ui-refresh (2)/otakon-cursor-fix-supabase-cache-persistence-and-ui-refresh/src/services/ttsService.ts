@@ -54,7 +54,9 @@ const setupMediaSession = () => {
 
 const init = async () => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        if (isInitialized) return;
+        if (isInitialized) {
+          return;
+        }
         isInitialized = true;
         synth = window.speechSynthesis;
         await populateVoiceList();
@@ -74,7 +76,7 @@ const getAvailableVoices = (): SpeechSynthesisVoice[] => {
 };
 
 const speak = async (text: string): Promise<void> => {
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
         try {
             if (!synth) {
                 console.error("Text-to-Speech is not available on this browser.");
@@ -153,4 +155,5 @@ export const ttsService = {
     speak,
     cancel,
 };
+
 

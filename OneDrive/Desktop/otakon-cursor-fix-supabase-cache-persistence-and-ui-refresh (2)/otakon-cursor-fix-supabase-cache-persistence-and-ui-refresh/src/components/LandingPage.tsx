@@ -5,6 +5,7 @@ import StarIcon from './ui/StarIcon';
 import FounderImage from './FounderImage';
 import ContactUsModal from './modals/ContactUsModal';
 import { WaitlistService } from '../services/waitlistService';
+import { toastService } from '../services/toastService';
 
 const GamepadIcon = ({ className }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -159,7 +160,7 @@ interface LandingPageProps {
   onOpenPrivacy: () => void;
   onOpenRefund: () => void;
   onOpenTerms: () => void;
-  onDirectNavigation: (path: string) => void;
+  onDirectNavigation: (_path: string) => void;
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, onOpenPrivacy, onOpenRefund, onOpenTerms, onDirectNavigation }) => {
@@ -190,7 +191,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
 
   const handleWaitlistSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    if (!email) {
+      return;
+    }
 
     setIsSubmitting(true);
     setSubmitMessage('');
@@ -210,6 +213,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
       }
     } catch (error) {
       console.error('Waitlist submission error:', error);
+      toastService.error('Failed to join waitlist. Please try again.');
       setSubmitMessage('An unexpected error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);

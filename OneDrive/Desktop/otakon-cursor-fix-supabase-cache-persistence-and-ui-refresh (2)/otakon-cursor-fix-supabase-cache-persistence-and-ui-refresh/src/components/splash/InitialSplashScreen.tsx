@@ -62,7 +62,7 @@ const InitialSplashScreen: React.FC<InitialSplashScreenProps> = ({ onComplete, u
     } catch (error) {
       console.error('🎯 [InitialSplashScreen] Error in button click:', error);
     } finally {
-      setTimeout(() => setIsProcessing(false), 1000);
+      setIsProcessing(false);
     }
   };
 

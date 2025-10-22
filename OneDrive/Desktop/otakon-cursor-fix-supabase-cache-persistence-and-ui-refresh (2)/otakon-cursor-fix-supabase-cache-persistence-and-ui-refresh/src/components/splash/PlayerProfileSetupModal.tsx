@@ -21,7 +21,9 @@ export const PlayerProfileSetupModal: React.FC<PlayerProfileSetupModalProps> = (
 
   const [currentStep, setCurrentStep] = useState(0);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   const steps = [
     {

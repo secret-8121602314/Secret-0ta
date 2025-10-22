@@ -2,6 +2,7 @@ import { StorageService } from './storageService';
 import { cacheService } from './cacheService';
 import { chatMemoryService } from './chatMemoryService';
 import { SupabaseService } from './supabaseService';
+import { toastService } from './toastService';
 import { Conversations, Conversation, ChatMessage, UserTier } from '../types';
 import { STORAGE_KEYS, DEFAULT_CONVERSATION_TITLE, GAME_HUB_ID, USER_TIERS } from '../constants';
 
@@ -72,6 +73,7 @@ export class ConversationService {
       return { allowed: true, used: textCount, limit: textLimit };
     } catch (error) {
       console.error('Error checking text query limit:', error);
+      toastService.error('Failed to check query limit. Please try again.');
       return { allowed: false, reason: 'Failed to check query limit' };
     }
   }
@@ -102,6 +104,7 @@ export class ConversationService {
       return { allowed: true, used: imageCount, limit: imageLimit };
     } catch (error) {
       console.error('Error checking image query limit:', error);
+      toastService.error('Failed to check query limit. Please try again.');
       return { allowed: false, reason: 'Failed to check query limit' };
     }
   }
@@ -131,6 +134,7 @@ export class ConversationService {
         
       } catch (error) {
         console.error('🔍 [ConversationService] Failed to load from Supabase, falling back to localStorage:', error);
+        toastService.warning('Using offline conversations. Some data may not be synced.');
         conversations = StorageService.get(STORAGE_KEYS.CONVERSATIONS, {}) as Conversations;
       }
     } else {
@@ -307,6 +311,7 @@ export class ConversationService {
     const conversation = conversations[id];
     if (conversation?.isGameHub || id === GAME_HUB_ID) {
       console.warn('🔍 [ConversationService] Cannot delete Game Hub conversation');
+      toastService.warning('Cannot delete the Game Hub conversation. It\'s your main conversation space!');
       throw new Error('Cannot delete the Game Hub conversation');
     }
     

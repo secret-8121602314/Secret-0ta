@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Conversation, Conversations, newsPrompts } from '../types';
+import { User, Conversation, Conversations, newsPrompts, ConnectionStatus } from '../types';
 import { GAME_HUB_ID } from '../constants';
 import { ConversationService } from '../services/conversationService';
 import { authService } from '../services/authService';
@@ -13,18 +13,21 @@ import { UserService } from '../services/userService';
 import { SupabaseService } from '../services/supabaseService';
 import { tabManagementService } from '../services/tabManagementService';
 import { ttsService } from '../services/ttsService';
+import { toastService } from '../services/toastService';
 import Sidebar from './layout/Sidebar';
 import ChatInterface from './features/ChatInterface';
 import SettingsModal from './modals/SettingsModal';
 import CreditModal from './modals/CreditModal';
 import ConnectionModal from './modals/ConnectionModal';
 import HandsFreeModal from './modals/HandsFreeModal';
+import AddGameModal from './modals/AddGameModal';
 import Logo from './ui/Logo';
 import CreditIndicator from './ui/CreditIndicator';
 import HandsFreeToggle from './ui/HandsFreeToggle';
 import { LoadingSpinner } from './ui/LoadingSpinner';
 import SettingsContextMenu from './ui/SettingsContextMenu';
-import { ConnectionStatus } from '../types';
+import ProfileSetupBanner from './ui/ProfileSetupBanner';
+import WelcomeScreen from './welcome/WelcomeScreen';
 import { connect, disconnect } from '../services/websocketService';
 
 interface MainAppProps {
@@ -37,9 +40,14 @@ interface MainAppProps {
   onOpenTerms?: () => void;
   connectionStatus?: ConnectionStatus;
   connectionError?: string | null;
-  onConnect?: (code: string) => void;
+  onConnect?: (_code: string) => void;
   onDisconnect?: () => void;
-  onWebSocketMessage?: (data: any) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onWebSocketMessage?: (_data: any) => void;
+  showProfileSetupBanner?: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onProfileSetupComplete?: (_profileData: any) => void;
+  onProfileSetupDismiss?: () => void;
 }
 
 const MainApp: React.FC<MainAppProps> = ({
@@ -55,6 +63,9 @@ const MainApp: React.FC<MainAppProps> = ({
   onConnect: propOnConnect,
   onDisconnect: propOnDisconnect,
   onWebSocketMessage: propOnWebSocketMessage,
+  showProfileSetupBanner = false,
+  onProfileSetupComplete,
+  onProfileSetupDismiss,
 }) => {
   const [user, setUser] = useState<User | null>(null);
   const [conversations, setConversations] = useState<Conversations>({});
@@ -66,7 +77,11 @@ const MainApp: React.FC<MainAppProps> = ({
   
   // Active session management
   const { session, toggleSession, setActiveSession } = useActiveSession();
-  const [isManualUploadMode, setIsManualUploadMode] = useState(false);
+  const [isManualUploadMode, setIsManualUploadMode] = useState(() => {
+    // Restore from localStorage, default to true (auto-upload OFF)
+    const saved = localStorage.getItem('otakon_manual_upload_mode');
+    return saved !== null ? saved === 'true' : true;
+  });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [creditModalOpen, setCreditModalOpen] = useState(false);
@@ -80,6 +95,12 @@ const MainApp: React.FC<MainAppProps> = ({
   
   // Input preservation for tab switching
   const [currentInputMessage, setCurrentInputMessage] = useState<string>('');
+  
+  // Welcome screen state
+  const [showWelcomeScreen, setShowWelcomeScreen] = useState(false);
+  
+  // Add Game modal state
+  const [addGameModalOpen, setAddGameModalOpen] = useState(false);
   
   // Helper function to deep clone conversations to force React re-renders
   const deepCloneConversations = (conversations: Conversations): Conversations => {
@@ -136,6 +157,11 @@ const MainApp: React.FC<MainAppProps> = ({
     });
   }, []);
 
+  // Persist auto-upload mode setting to localStorage
+  useEffect(() => {
+    localStorage.setItem('otakon_manual_upload_mode', String(isManualUploadMode));
+  }, [isManualUploadMode]);
+
   // Handle WebSocket messages for screenshot processing
   const handleWebSocketMessage = (data: any) => {
     console.log('🔗 [MainApp] Received WebSocket message:', data);
@@ -144,17 +170,20 @@ const MainApp: React.FC<MainAppProps> = ({
       console.log('📸 Processing screenshot in MainApp:', data);
       
       if (isManualUploadMode) {
-        // In manual mode, queue the image for review instead of auto-sending
-        console.log('📸 Manual mode: Screenshot queued for review');
-        // TODO: Implement image queue for manual review
-        // For now, we'll still send it but this is where the queue logic would go
+        // In manual mode, queue the image in the input area for review instead of auto-sending
+        console.log('📸 Manual mode: Screenshot queued for review in input area');
+        setCurrentInputMessage(data.dataUrl);
+        // TODO: Show toast notification that image is queued
+        toastService.info('Screenshot queued. Review in chat input and send when ready.');
+        return; // Don't send automatically in manual mode
       }
       
-      // Send the screenshot to the active conversation
+      // Auto mode: Send the screenshot to the active conversation immediately
       if (activeConversation) {
         handleSendMessage("", data.dataUrl);
       } else {
         console.warn('📸 No active conversation to send screenshot to');
+        toastService.warning('No active conversation. Please select or create a conversation first.');
       }
     }
   };
@@ -175,11 +204,25 @@ const MainApp: React.FC<MainAppProps> = ({
           setUser(currentUser);
           // Also sync to UserService for compatibility
           UserService.setCurrentUser(currentUser);
+        } else if (retryCount === 0) {
+          // If no user on first attempt, wait a bit for auth state to settle after onboarding
+          console.log('🔍 [MainApp] No user found, retrying in 500ms...');
+          setTimeout(() => loadData(1), 500);
+          return;
         }
 
         console.log('🔍 [MainApp] Loading conversations (attempt', retryCount + 1, ')');
         let userConversations = await ConversationService.getConversations();
         console.log('🔍 [MainApp] Loaded conversations:', userConversations);
+        
+        // Check if this is a new user and show welcome screen
+        const isNewUser = Object.keys(userConversations).length === 0 || 
+          (Object.keys(userConversations).length === 1 && userConversations[GAME_HUB_ID]);
+        
+        if (isNewUser && !localStorage.getItem('otakon_welcome_shown')) {
+          setShowWelcomeScreen(true);
+          localStorage.setItem('otakon_welcome_shown', 'true');
+        }
         
         // Migration: Fix old "Everything else" or ensure Game Hub exists
         // Note: conversationService.getConversations() already handles the migration
@@ -273,6 +316,12 @@ const MainApp: React.FC<MainAppProps> = ({
           setTimeout(() => loadData(retryCount + 1), delay);
         } else {
           console.error('🔍 [MainApp] Failed to load data after 3 attempts');
+          toastService.error('Failed to load conversations. Please refresh the page.', {
+            action: {
+              label: 'Refresh',
+              onClick: () => window.location.reload()
+            }
+          });
           // Set a fallback state to prevent infinite loading
           setActiveConversation(null);
           setIsInitializing(false);
@@ -282,6 +331,30 @@ const MainApp: React.FC<MainAppProps> = ({
 
     loadData();
   }, []);
+
+  // Safety timeout: Force initialization complete after 1 second to prevent infinite loading
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (isInitializing) {
+        // Only force complete if we have conversations, even without user
+        if (Object.keys(conversations).length > 0 || activeConversation) {
+          console.warn('⚠️ [MainApp] Initialization timeout - but we have conversations, forcing completion');
+          setIsInitializing(false);
+        } else {
+          // Try to get user and load conversations one more time
+          console.warn('⚠️ [MainApp] Initialization timeout - retrying to load user and conversations');
+          const currentUser = authService.getCurrentUser();
+          if (currentUser) {
+            setUser(currentUser);
+            UserService.setCurrentUser(currentUser);
+            setIsInitializing(false);
+          }
+        }
+      }
+    }, 1000);
+    
+    return () => clearTimeout(timeout);
+  }, [isInitializing, conversations, activeConversation]);
 
   // Poll for conversation updates when subtabs are loading
   useEffect(() => {
@@ -327,6 +400,7 @@ const MainApp: React.FC<MainAppProps> = ({
       }
     } catch (error) {
       console.warn('Failed to refresh user data:', error);
+      toastService.warning('Failed to refresh user data. Please refresh the page if you experience issues.');
     }
   };
 
@@ -491,6 +565,80 @@ const MainApp: React.FC<MainAppProps> = ({
     console.log('Upgrade clicked');
   };
 
+  const handleStartChat = () => {
+    console.log('🔍 [handleStartChat] Starting chat, current activeConversation:', activeConversation?.id);
+    
+    // Game Hub is guaranteed to exist from initial load - just activate it
+    const currentGameHub = conversations[GAME_HUB_ID];
+    console.log('🔍 [handleStartChat] Current Game Hub:', currentGameHub?.id);
+    
+    if (currentGameHub) {
+      // Set Game Hub as active immediately (synchronous for instant UI)
+      console.log('🔍 [handleStartChat] Activating Game Hub...');
+      setActiveConversation(currentGameHub);
+      
+      // Update storage asynchronously in background
+      ConversationService.setActiveConversation(GAME_HUB_ID);
+      console.log('🔍 [handleStartChat] Game Hub activated');
+    } else {
+      // This should never happen, but as a fallback, try to find any Game Hub
+      console.warn('⚠️ [handleStartChat] Game Hub not found in state, searching...');
+      const anyGameHub = Object.values(conversations).find(
+        conv => conv.isGameHub || conv.title === 'Game Hub' || conv.id === 'game-hub'
+      );
+      if (anyGameHub) {
+        setActiveConversation(anyGameHub);
+        ConversationService.setActiveConversation(anyGameHub.id);
+      }
+    }
+    
+    // Load suggested prompts for Game Hub (static news prompts)
+    const newsPrompts = suggestedPromptsService.getStaticNewsPrompts();
+    setSuggestedPrompts(newsPrompts);
+    
+    // Hide welcome screen immediately - activeConversation is already set
+    setShowWelcomeScreen(false);
+  };
+
+  const handleOpenGuide = () => {
+    setShowWelcomeScreen(true);
+  };
+
+  const handleAddGame = () => {
+    // Close welcome screen if it's open
+    setShowWelcomeScreen(false);
+    setAddGameModalOpen(true);
+  };
+
+  const handleCreateGame = async (gameName: string, query: string) => {
+    // Switch to Game Hub
+    const gameHub = Object.values(conversations).find(
+      (conv) => conv.isGameHub || conv.id === 'game-hub' || conv.title === 'Game Hub'
+    );
+    
+    if (!gameHub) {
+      toastService.error('Game Hub not found. Please refresh the page.');
+      return;
+    }
+
+    // Switch to Game Hub and close modal
+    await ConversationService.setActiveConversation(gameHub.id);
+    setActiveConversation(gameHub);
+    setAddGameModalOpen(false);
+    
+    // Send formatted query to Game Hub
+    // Format: "I'm playing [GAME]. [USER_QUERY]"
+    const formattedMessage = `I'm playing ${gameName}. ${query}`;
+    
+    // Show processing message
+    toastService.info(`Checking ${gameName}...`);
+    
+    // Send message immediately - UI is already switched to Game Hub
+    // The AI will respond and determine if it's a valid/released/unreleased game
+    // The handleSendMessage flow will handle tab creation based on AI response
+    handleSendMessage(formattedMessage);
+  };
+
   const handleConnectionModalOpen = () => {
     setConnectionModalOpen(true);
   };
@@ -510,7 +658,13 @@ const MainApp: React.FC<MainAppProps> = ({
 
   const handleToggleHandsFreeFromModal = () => {
     // This is the actual toggle that enables/disables hands-free mode
-    setIsHandsFreeMode(!isHandsFreeMode);
+    const newMode = !isHandsFreeMode;
+    setIsHandsFreeMode(newMode);
+    
+    // If disabling hands-free mode, stop any ongoing speech
+    if (!newMode) {
+      ttsService.cancel();
+    }
   };
 
   // Settings context menu handlers
@@ -594,7 +748,9 @@ const MainApp: React.FC<MainAppProps> = ({
 
   // Handle active session toggle with session summaries
   const handleToggleActiveSession = async () => {
-    if (!activeConversation) return;
+    if (!activeConversation) {
+      return;
+    }
 
     const wasPlaying = session.isActive && session.currentGameId === activeConversation.id;
     const willBePlaying = !wasPlaying;
@@ -630,6 +786,7 @@ const MainApp: React.FC<MainAppProps> = ({
         await ConversationService.addMessage(activeConversation.id, summaryMessage);
       } catch (error) {
         console.error('Failed to create playing session summary:', error);
+        toastService.error('Failed to create session summary.');
       }
     } else if (willBePlaying) {
       // Switching from Planning to Playing - create planning session summary
@@ -661,6 +818,7 @@ const MainApp: React.FC<MainAppProps> = ({
         await ConversationService.addMessage(activeConversation.id, summaryMessage);
       } catch (error) {
         console.error('Failed to create planning session summary:', error);
+        toastService.error('Failed to create session summary.');
       }
     }
 
@@ -723,13 +881,14 @@ const MainApp: React.FC<MainAppProps> = ({
   };
 
   // Placeholder for game tab creation - will be implemented in Week 3
-  const handleCreateGameTab = async (gameInfo: { gameTitle: string; genre?: string; aiResponse?: any }): Promise<Conversation | null> => {
+  const handleCreateGameTab = async (gameInfo: { gameTitle: string; genre?: string; aiResponse?: any; isUnreleased?: boolean }): Promise<Conversation | null> => {
     console.log('🎮 [MainApp] Game tab creation requested:', gameInfo);
     
     try {
       const user = authService.getCurrentUser();
       if (!user) {
         console.error('User not authenticated for game tab creation');
+        toastService.error('Please sign in to create game tabs.');
         return null;
       }
 
@@ -750,7 +909,8 @@ const MainApp: React.FC<MainAppProps> = ({
         genre: gameInfo.genre || 'Action RPG',
         conversationId,
         userId: user.id,
-        aiResponse: gameInfo.aiResponse // Pass AI response for subtab population
+        aiResponse: gameInfo.aiResponse, // Pass AI response for subtab population
+        isUnreleased: gameInfo.isUnreleased || false // Pass unreleased status
       });
 
       // Add to conversations state
@@ -760,15 +920,19 @@ const MainApp: React.FC<MainAppProps> = ({
       }));
 
       console.log('🎮 [MainApp] Game tab created successfully:', newGameTab.title);
+      toastService.success(`Game tab "${gameInfo.gameTitle}" created!`);
       return newGameTab;
     } catch (error) {
       console.error('Failed to create game tab:', error);
+      toastService.error('Failed to create game tab. Please try again.');
       return null;
     }
   };
 
   const handleSendMessage = async (message: string, imageUrl?: string) => {
-    if (!activeConversation || isLoading) return;
+    if (!activeConversation || isLoading) {
+      return;
+    }
 
     console.log('📸 [MainApp] Sending message with image:', { message, hasImage: !!imageUrl, imageUrl: imageUrl?.substring(0, 50) + '...' });
 
@@ -886,7 +1050,9 @@ const MainApp: React.FC<MainAppProps> = ({
     
     try {
       const user = authService.getCurrentUser();
-      if (!user) throw new Error('User not authenticated');
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
 
       // Apply context summarization before sending to AI (keeps context manageable)
       let conversationWithOptimizedContext = activeConversation;
@@ -950,6 +1116,27 @@ const MainApp: React.FC<MainAppProps> = ({
 
       // Add message to service - MUST await to ensure it's saved before potential migration
       await ConversationService.addMessage(activeConversation.id, aiMessage);
+
+      // 🎤 Hands-Free Mode: Read AI response aloud if enabled
+      if (isHandsFreeMode && response.content) {
+        try {
+          // Strip markdown and special formatting for better TTS
+          const cleanText = response.content
+            .replace(/[*_~`]/g, '') // Remove markdown formatting
+            .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Convert [text](url) to text
+            .replace(/#{1,6}\s/g, '') // Remove heading markers
+            .replace(/```[\s\S]*?```/g, '') // Remove code blocks
+            .replace(/`([^`]+)`/g, '$1') // Remove inline code markers
+            .trim();
+          
+          if (cleanText) {
+            await ttsService.speak(cleanText);
+          }
+        } catch (ttsError) {
+          console.error('TTS Error:', ttsError);
+          // Don't block the flow if TTS fails
+        }
+      }
 
       // Process suggested prompts (prefer followUpPrompts from enhanced response)
       console.log('🔍 [MainApp] Raw suggestions from AI:', response.suggestions);
@@ -1019,7 +1206,9 @@ const MainApp: React.FC<MainAppProps> = ({
                     const freshConversations = deepCloneConversations(updatedConversations);
                     setConversations(freshConversations);
                     const refreshedConversation = freshConversations[activeConversation.id];
-                    if (refreshedConversation) setActiveConversation(refreshedConversation);
+                    if (refreshedConversation) {
+                      setActiveConversation(refreshedConversation);
+                    }
                   });
                 }).catch(error => console.error('Failed to update tab:', error));
               }
@@ -1048,7 +1237,9 @@ const MainApp: React.FC<MainAppProps> = ({
                     const freshConversations = deepCloneConversations(updatedConversations);
                     setConversations(freshConversations);
                     const refreshedConversation = freshConversations[activeConversation.id];
-                    if (refreshedConversation) setActiveConversation(refreshedConversation);
+                    if (refreshedConversation) {
+                      setActiveConversation(refreshedConversation);
+                    }
                   });
                 }).catch(error => console.error('Failed to modify tab:', error));
               }
@@ -1077,7 +1268,9 @@ const MainApp: React.FC<MainAppProps> = ({
                   ConversationService.getConversations().then(updatedConversations => {
                     setConversations(updatedConversations);
                     const refreshedConversation = updatedConversations[activeConversation.id];
-                    if (refreshedConversation) setActiveConversation(refreshedConversation);
+                    if (refreshedConversation) {
+                      setActiveConversation(refreshedConversation);
+                    }
                   });
                 }).catch(error => console.error('Failed to delete tab:', error));
               }
@@ -1104,13 +1297,11 @@ const MainApp: React.FC<MainAppProps> = ({
           messageIds: { user: newMessage.id, ai: aiMessage.id }
         });
 
-        // Only create game tab if:
-        // 1. Confidence is high
-        // 2. Game is released (not unreleased)
-        // Note: Any game screen (menu, gameplay, etc.) means they own the game, so we create a tab
-        const shouldCreateTab = 
-          confidence === 'high' && 
-          !isUnreleased;
+        // Create game tab if:
+        // 1. Confidence is high (game is valid)
+        // 2. Game can be unreleased OR released - both get tabs
+        // Invalid games (low confidence, no GAME_ID) stay in Game Hub
+        const shouldCreateTab = confidence === 'high';
 
         if (shouldCreateTab) {
           // Check if game tab already exists
@@ -1124,8 +1315,8 @@ const MainApp: React.FC<MainAppProps> = ({
             console.log('🎮 [MainApp] Found existing game tab:', existingGameTab.title);
             targetConversationId = existingGameTab.id;
           } else {
-            console.log('🎮 [MainApp] Creating new game tab for:', gameTitle);
-            const gameInfo = { gameTitle, genre, aiResponse: response };
+            console.log('🎮 [MainApp] Creating new game tab for:', gameTitle, isUnreleased ? '(unreleased)' : '(released)');
+            const gameInfo = { gameTitle, genre, aiResponse: response, isUnreleased };
             const newGameTab = await handleCreateGameTab(gameInfo);
             targetConversationId = newGameTab?.id || '';
           }
@@ -1259,7 +1450,7 @@ const MainApp: React.FC<MainAppProps> = ({
     }
   };
 
-  if (!user || isInitializing) {
+  if (isInitializing && (!user || Object.keys(conversations).length === 0)) {
     return (
       <div className="h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -1269,6 +1460,26 @@ const MainApp: React.FC<MainAppProps> = ({
       </div>
     );
   }
+
+  // Show welcome screen for new users or when guide is opened
+  if (showWelcomeScreen) {
+    const isFirstTimeWelcome = !localStorage.getItem('otakon_welcome_shown');
+    return <WelcomeScreen onStartChat={handleStartChat} isRevisit={!isFirstTimeWelcome} onAddGame={handleAddGame} />;
+  }
+
+  // If no user but we have initialization done, still show error or redirect
+  if (!user && !isInitializing) {
+    return (
+      <div className="h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-text-muted">User not found. Please refresh the page.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Type guard: At this point, user must exist due to the checks above
+  const currentUser = user || { tier: 'free' } as User;
 
   return (
     <div className="h-screen bg-background flex overflow-hidden">
@@ -1283,6 +1494,7 @@ const MainApp: React.FC<MainAppProps> = ({
           onPinConversation={handlePinConversation}
           onUnpinConversation={handleUnpinConversation}
           onClearConversation={handleClearConversation}
+          onAddGame={handleAddGame}
         />
 
       {/* Main Content */}
@@ -1305,7 +1517,7 @@ const MainApp: React.FC<MainAppProps> = ({
           <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4">
             <div className="mr-1 sm:mr-2">
               <CreditIndicator 
-                user={user} 
+                user={currentUser} 
                 onClick={handleCreditModalOpen}
               />
             </div>
@@ -1345,9 +1557,19 @@ const MainApp: React.FC<MainAppProps> = ({
 
         {/* Chat Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Profile Setup Banner - Show if user hasn't set up profile */}
+          {showProfileSetupBanner && onProfileSetupComplete && onProfileSetupDismiss && (
+            <div className="flex-shrink-0 pt-3 sm:pt-4 lg:pt-6">
+              <ProfileSetupBanner
+                onComplete={onProfileSetupComplete}
+                onDismiss={onProfileSetupDismiss}
+              />
+            </div>
+          )}
+
           {/* AdSense Placeholder Banner - Always show for free users */}
-          {user.tier === 'free' && (
-            <div className="px-3 sm:px-4 lg:px-6 pt-3 sm:pt-4 lg:pt-6 flex-shrink-0">
+          {currentUser.tier === 'free' && (
+            <div className="px-3 sm:px-4 lg:px-6 pt-0 sm:pt-1 flex-shrink-0">
               <div className="bg-gradient-to-r from-gray-100/10 to-gray-200/10 border border-gray-300/20 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6">
                 <div className="flex items-center justify-center h-16 sm:h-20 lg:h-24 bg-gray-100/20 rounded-lg border-2 border-dashed border-gray-300/40">
                   <div className="text-center">
@@ -1379,7 +1601,7 @@ const MainApp: React.FC<MainAppProps> = ({
                 isLoading={isLoading}
                 isPCConnected={connectionStatus === ConnectionStatus.CONNECTED}
                 onRequestConnect={handleConnectionModalOpen}
-                userTier={user.tier}
+                userTier={currentUser.tier}
                 onStop={handleStopAI}
                 isManualUploadMode={isManualUploadMode}
                 onToggleManualUploadMode={() => setIsManualUploadMode(!isManualUploadMode)}
@@ -1398,7 +1620,7 @@ const MainApp: React.FC<MainAppProps> = ({
       <SettingsModal
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
-        user={user}
+        user={currentUser}
       />
 
       {/* Credit Modal */}
@@ -1406,7 +1628,7 @@ const MainApp: React.FC<MainAppProps> = ({
         isOpen={creditModalOpen}
         onClose={handleCreditModalClose}
         onUpgrade={handleUpgrade}
-        user={user}
+        user={currentUser}
       />
 
       {/* Connection Modal */}
@@ -1429,14 +1651,22 @@ const MainApp: React.FC<MainAppProps> = ({
         onToggleHandsFree={handleToggleHandsFreeFromModal}
       />
 
+      {/* Add Game Modal */}
+      <AddGameModal
+        isOpen={addGameModalOpen}
+        onClose={() => setAddGameModalOpen(false)}
+        onCreateGame={handleCreateGame}
+      />
+
       {/* Settings Context Menu */}
       <SettingsContextMenu
         isOpen={settingsContextMenu.isOpen}
         position={settingsContextMenu.position}
         onClose={closeSettingsContextMenu}
         onOpenSettings={handleOpenSettings}
+        onOpenGuide={handleOpenGuide}
         onLogout={handleLogout}
-        userTier={user.tier}
+        userTier={currentUser.tier}
         onTrialStart={async () => {
           // Refresh user data after trial starts
           await authService.refreshUser();

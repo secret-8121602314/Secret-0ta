@@ -43,7 +43,9 @@ class MemoryManager {
 
   // ✅ SCALABILITY: Register cleanup function
   registerCleanup(id: string, cleanup: () => void, priority: number = 1): void {
-    if (this.isDestroyed) return;
+    if (this.isDestroyed) {
+      return;
+    }
     
     this.cleanupFunctions.set(id, { id, cleanup, priority });
   }
@@ -78,7 +80,9 @@ class MemoryManager {
     event: string, 
     handler: EventListener
   ): void {
-    if (this.isDestroyed) return;
+    if (this.isDestroyed) {
+      return;
+    }
     
     this.eventListeners.set(id, { element, event, handler });
   }
@@ -129,10 +133,14 @@ class MemoryManager {
 
   // ✅ SCALABILITY: Start memory monitoring
   private startMemoryMonitoring(): void {
-    if (this.isDestroyed) return;
+    if (this.isDestroyed) {
+      return;
+    }
     
     this.memoryCheckInterval = setInterval(() => {
-      if (this.isDestroyed) return;
+      if (this.isDestroyed) {
+        return;
+      }
       
       const stats = this.getMemoryStats();
       if (stats && stats.usagePercentage > this.MEMORY_THRESHOLD) {
@@ -196,7 +204,9 @@ class MemoryManager {
 
   // ✅ SCALABILITY: Main cleanup method
   cleanup(): void {
-    if (this.isDestroyed) return;
+    if (this.isDestroyed) {
+      return;
+    }
     
     console.log('🧹 [MemoryManager] Starting cleanup...');
     
@@ -318,3 +328,4 @@ export const createTrackedAbortController = (): AbortController => {
   memoryManager.trackAbortController(controller);
   return controller;
 };
+

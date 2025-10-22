@@ -87,7 +87,9 @@ class TabManagementService {
       this.normalizeTabName(tab.title) === normalizedSearch
     );
     
-    if (match) return match;
+    if (match) {
+      return match;
+    }
     
     // Then try partial match (search term is contained in tab name)
     match = subtabs.find(tab => 
@@ -95,7 +97,9 @@ class TabManagementService {
       this.normalizeTabName(tab.title).includes(normalizedSearch)
     );
     
-    if (match) return match;
+    if (match) {
+      return match;
+    }
     
     // Finally try reversed partial match (tab name is contained in search term)
     match = subtabs.find(tab => 

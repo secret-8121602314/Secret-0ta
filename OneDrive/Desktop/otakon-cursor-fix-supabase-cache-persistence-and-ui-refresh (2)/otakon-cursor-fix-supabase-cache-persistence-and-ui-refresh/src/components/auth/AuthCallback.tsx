@@ -14,7 +14,9 @@ const AuthCallback: React.FC<AuthCallbackProps> = ({ onAuthSuccess, onAuthError 
 
   useEffect(() => {
     // Prevent multiple processing
-    if (hasProcessed) return;
+    if (hasProcessed) {
+      return;
+    }
     
     const handleAuthCallback = async () => {
       try {

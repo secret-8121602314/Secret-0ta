@@ -12,7 +12,9 @@ interface CreditModalProps {
 }
 
 const CreditModal: React.FC<CreditModalProps> = ({ isOpen, onClose, onUpgrade, user }) => {
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   const { textCount, textLimit, imageCount, imageLimit, tier } = user.usage;
   const textRemaining = Math.max(0, textLimit - textCount);

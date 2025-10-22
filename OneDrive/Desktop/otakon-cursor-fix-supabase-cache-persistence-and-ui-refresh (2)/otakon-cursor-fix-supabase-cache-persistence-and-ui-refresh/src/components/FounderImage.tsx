@@ -48,7 +48,9 @@ const FounderImage: React.FC<FounderImageProps> = ({
             const target = e.target as HTMLImageElement;
             target.style.display = 'none';
             const fallback = target.parentElement?.querySelector('.fallback') as HTMLElement;
-            if (fallback) fallback.style.display = 'flex';
+            if (fallback) {
+              fallback.style.display = 'flex';
+            }
           }}
         />
         

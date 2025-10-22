@@ -3,6 +3,7 @@ import { User, AuthResult, AuthState, UserTier } from '../types';
 import { TIER_LIMITS } from '../constants';
 import { cacheService } from './cacheService';
 import { ErrorService } from './errorService';
+import { toastService } from './toastService';
 
 export class AuthService {
   private static instance: AuthService;
@@ -48,7 +49,9 @@ export class AuthService {
 
   // ✅ SCALABILITY: Check rate limit using centralized service
   private async checkRateLimit(identifier: string): Promise<boolean> {
-    if (this.isDestroyed) return false;
+    if (this.isDestroyed) {
+      return false;
+    }
     
     const rateLimitData = await cacheService.getRateLimit(identifier);
     const now = Date.now();
@@ -71,14 +74,18 @@ export class AuthService {
 
   // ✅ SCALABILITY: Get user from centralized cache
   private async getCachedUser(authUserId: string): Promise<User | null> {
-    if (this.isDestroyed) return null;
+    if (this.isDestroyed) {
+      return null;
+    }
     
     return await cacheService.getUser<User>(authUserId);
   }
 
   // ✅ SCALABILITY: Cache user data using centralized service
   private async setCachedUser(authUserId: string, user: User): Promise<void> {
-    if (this.isDestroyed) return;
+    if (this.isDestroyed) {
+      return;
+    }
     
     await cacheService.setUser(authUserId, user);
   }
@@ -116,14 +123,14 @@ export class AuthService {
         } else {
           this.updateAuthState({ user: null, isLoading: false, error: null });
         }
-      } catch (supabaseError) {
+      } catch (_supabaseError) {
         // Fallback to local storage
         const localUser = localStorage.getItem('otakon_user');
         if (localUser) {
           try {
             const user = JSON.parse(localUser);
             this.updateAuthState({ user, isLoading: false, error: null });
-          } catch (parseError) {
+          } catch (_parseError) {
             this.updateAuthState({ user: null, isLoading: false, error: null });
           }
         } else {
@@ -132,6 +139,12 @@ export class AuthService {
       }
     } catch (error) {
       console.error('Auth initialization error:', error);
+      toastService.error('Failed to initialize authentication. Please refresh the page.', {
+        action: {
+          label: 'Refresh',
+          onClick: () => window.location.reload()
+        }
+      });
       this.updateAuthState({ user: null, isLoading: false, error: null });
     }
   }
@@ -192,6 +205,7 @@ export class AuthService {
           return;
         }
         console.error('🔐 [AuthService] Error creating user record:', error);
+        toastService.error('Failed to create your account. Please try again.');
         throw error;
       }
       
@@ -204,6 +218,7 @@ export class AuthService {
         return;
       }
       console.error('🔐 [AuthService] Error creating user record:', error);
+      toastService.error('Failed to create your account. Please try again.');
       throw error;
     }
   }
@@ -435,6 +450,7 @@ export class AuthService {
 
       if (error) {
         console.error('🔐 [AuthService] Google OAuth error:', error);
+        toastService.error('Failed to sign in with Google. Please try again.');
         this.updateAuthState({ isLoading: false, error: error.message });
         return { success: false, error: error.message };
       }
@@ -443,6 +459,7 @@ export class AuthService {
       return { success: true };
     } catch (error) {
       ErrorService.handleAuthError(error as Error, 'signInWithGoogle');
+      toastService.error('Google sign-in failed. Please try again.');
       this.updateAuthState({ 
         user: null, 
         isLoading: false, 
@@ -517,6 +534,7 @@ export class AuthService {
           errorMessage += error.message;
         }
         
+        toastService.error(`Failed to sign in with Discord. ${errorMessage}`);
         this.updateAuthState({ isLoading: false, error: errorMessage });
         return { success: false, error: errorMessage };
       }
@@ -575,12 +593,14 @@ export class AuthService {
           errorMessage = 'Too many sign-in attempts. Please wait a moment before trying again.';
         }
         
+        toastService.error(errorMessage);
         this.updateAuthState({ isLoading: false, error: errorMessage });
         return { success: false, error: errorMessage };
       }
 
       if (data.user) {
         console.log('🔐 [AuthService] Email sign-in successful:', data.user.email);
+        toastService.success('Welcome back! Successfully signed in.');
         // Load user data (this will handle user creation if needed)
         await this.loadUserFromSupabase(data.user.id);
         return { success: true, user: this.authState.user || undefined };
@@ -590,6 +610,7 @@ export class AuthService {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('🔐 [AuthService] Email sign-in exception:', error);
+      toastService.error('Sign-in failed. Please try again.');
       this.updateAuthState({ isLoading: false, error: errorMessage });
       return { success: false, error: errorMessage };
     }
@@ -624,6 +645,7 @@ export class AuthService {
           // Continue with the sign-up process even if email confirmation fails
           // This is useful for development when email confirmation is disabled
         } else {
+          toastService.error(`Sign-up failed: ${error.message}`);
           this.updateAuthState({ isLoading: false, error: error.message });
           return { success: false, error: error.message };
         }
@@ -640,6 +662,7 @@ export class AuthService {
           // For development, if email confirmation is disabled, proceed anyway
           if (isEmailConfirmationDisabled) {
             console.log('🔐 [AuthService] Email confirmation disabled, creating user record anyway...');
+            toastService.success('Account created successfully! Welcome to Otakon!');
             await this.loadUserFromSupabase(data.user.id);
             return { success: true, user: this.authState.user || undefined };
           }
@@ -712,8 +735,10 @@ export class AuthService {
       this.updateAuthState({ user: null, isLoading: false, error: null });
       
       console.log('🔐 [AuthService] Sign out completed successfully');
+      toastService.success('Successfully signed out. See you next time!');
     } catch (error) {
       console.error('🔐 [AuthService] Sign out error:', error);
+      toastService.error('Sign out failed. Please try again.');
       // Even if there's an error, clear the local state
       this.updateAuthState({ user: null, isLoading: false, error: null });
     }
@@ -780,11 +805,13 @@ export class AuthService {
 
       if (error) {
         console.error('🔐 [AuthService] Error resending confirmation email:', error);
+        toastService.error('Failed to resend confirmation email. Please try again.');
         this.updateAuthState({ isLoading: false, error: error.message });
         return { success: false, error: error.message };
       }
 
       console.log('🔐 [AuthService] Confirmation email resent successfully');
+      toastService.success('Confirmation email sent! Please check your inbox.');
       this.updateAuthState({ isLoading: false, error: null });
       return { 
         success: true, 
@@ -793,6 +820,7 @@ export class AuthService {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('🔐 [AuthService] Exception resending confirmation email:', error);
+      toastService.error('Failed to resend confirmation email. Please try again.');
       this.updateAuthState({ isLoading: false, error: errorMessage });
       return { success: false, error: errorMessage };
     }
@@ -862,6 +890,7 @@ export class AuthService {
 
       if (error) {
         console.error('Error updating profile:', error);
+        toastService.error('Failed to update profile. Please try again.');
         throw error;
       }
 
@@ -870,8 +899,10 @@ export class AuthService {
       await this.loadUserFromSupabase(authUserId);
       
       console.log('✅ Profile preferences updated successfully');
+      toastService.success('Profile updated successfully!');
     } catch (error) {
       console.error('Failed to update profile preferences:', error);
+      toastService.error('Failed to update profile. Please try again.');
       throw error;
     }
   }
@@ -893,7 +924,9 @@ export class AuthService {
 
   // ✅ SCALABILITY: Cleanup method to prevent memory leaks
   cleanup(): void {
-    if (this.isDestroyed) return;
+    if (this.isDestroyed) {
+      return;
+    }
     
     console.log('🧹 [AuthService] Cleaning up...');
     

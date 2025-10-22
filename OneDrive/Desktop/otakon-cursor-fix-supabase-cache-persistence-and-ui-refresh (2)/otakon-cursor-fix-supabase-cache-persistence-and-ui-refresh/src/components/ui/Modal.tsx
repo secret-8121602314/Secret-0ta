@@ -50,7 +50,9 @@ const Modal: React.FC<ModalProps> = ({
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   const maxWidthClasses = {
     sm: 'max-w-sm',

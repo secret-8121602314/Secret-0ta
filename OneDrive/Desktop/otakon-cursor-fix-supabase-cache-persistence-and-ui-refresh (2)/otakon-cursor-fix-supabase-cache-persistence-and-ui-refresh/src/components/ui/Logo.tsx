@@ -17,8 +17,12 @@ const Logo: React.FC<LogoProps> = ({ className = '', size = 'md', spin = false, 
 
   const getAnimation = () => {
     const animations = [];
-    if (bounce) animations.push('bounce 2s infinite');
-    if (spin) animations.push('spin 6s linear infinite');
+    if (bounce) {
+      animations.push('bounce 2s infinite');
+    }
+    if (spin) {
+      animations.push('spin 6s linear infinite');
+    }
     return animations.length > 0 ? animations.join(', ') : 'none';
   };
 

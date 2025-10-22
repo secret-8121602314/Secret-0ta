@@ -57,10 +57,16 @@ const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({
   // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (!rootRef.current) return;
-      if (!rootRef.current.contains(e.target as Node)) setMenuOpen(false);
+      if (!rootRef.current) {
+        return;
+      }
+      if (!rootRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
     };
-    if (menuOpen) document.addEventListener('mousedown', handler, { passive: true } as any);
+    if (menuOpen) {
+      document.addEventListener('mousedown', handler, { passive: true } as any);
+    }
     return () => document.removeEventListener('mousedown', handler as any);
   }, [menuOpen]);
 
@@ -97,7 +103,9 @@ const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({
 
   const handleTouchStart = () => {
     // Long-press 1.75s
-    if (longPressRef.current) window.clearTimeout(longPressRef.current);
+    if (longPressRef.current) {
+      window.clearTimeout(longPressRef.current);
+    }
     longPressRef.current = window.setTimeout(() => {
       if (!isConnected) {
         onRequestConnect?.();
@@ -116,7 +124,9 @@ const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({
 
   const handleClick = async () => {
     if (!isConnected) { onRequestConnect?.(); return; }
-    if (isProcessing) return;
+    if (isProcessing) {
+      return;
+    }
     
     // Prevent multishot for free users
     if (mode === 'multi' && !canUseMultishot) {
@@ -129,7 +139,9 @@ const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({
       mode,
       processImmediate,
     };
-    if (mode === 'multi') msg.count = 5;
+    if (mode === 'multi') {
+      msg.count = 5;
+    }
     
     // Send screenshot request via websocket
     if (typeof send === 'function') {
@@ -237,3 +249,4 @@ const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({
 };
 
 export default ScreenshotButton;
+

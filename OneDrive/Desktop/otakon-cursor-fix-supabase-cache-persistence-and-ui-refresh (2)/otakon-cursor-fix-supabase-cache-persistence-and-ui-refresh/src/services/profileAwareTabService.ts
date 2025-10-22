@@ -146,8 +146,12 @@ class ProfileAwareTabService {
   ): ProfileSpecificTab[] {
     return tabs.sort((a, b) => {
       // Profile-specific tabs get highest priority
-      if (a.isProfileSpecific && !b.isProfileSpecific) return -1;
-      if (!a.isProfileSpecific && b.isProfileSpecific) return 1;
+      if (a.isProfileSpecific && !b.isProfileSpecific) {
+        return -1;
+      }
+      if (!a.isProfileSpecific && b.isProfileSpecific) {
+        return 1;
+      }
 
       // Then by priority level
       const priorityOrder = { high: 3, medium: 2, low: 1 };
