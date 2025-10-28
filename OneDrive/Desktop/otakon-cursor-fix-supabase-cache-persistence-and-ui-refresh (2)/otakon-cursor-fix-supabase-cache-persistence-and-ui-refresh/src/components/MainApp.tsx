@@ -98,6 +98,9 @@ const MainApp: React.FC<MainAppProps> = ({
   // Input preservation for tab switching
   const [currentInputMessage, setCurrentInputMessage] = useState<string>('');
   
+  // ✅ NEW: Queued screenshot from WebSocket (manual mode)
+  const [queuedScreenshot, setQueuedScreenshot] = useState<string | null>(null);
+  
   // Welcome screen state
   const [showWelcomeScreen, setShowWelcomeScreen] = useState(false);
   
@@ -171,22 +174,29 @@ const MainApp: React.FC<MainAppProps> = ({
       console.log('📸 Processing screenshot in MainApp:', data);
       
       if (isManualUploadMode) {
-        // In manual mode, queue the image in the input area for review instead of auto-sending
-        console.log('📸 Manual mode: Screenshot queued for review in input area');
-        setCurrentInputMessage(data.dataUrl);
-        // TODO: Show toast notification that image is queued
-        toastService.info('Screenshot queued. Review in chat input and send when ready.');
+        // ✅ FIXED: In manual mode, queue the image for ChatInterface (not text input!)
+        console.log('📸 Manual mode: Screenshot queued for review');
+        setQueuedScreenshot(data.dataUrl);
+        toastService.info('Screenshot queued. Review and send when ready.');
         return; // Don't send automatically in manual mode
       }
       
       // Auto mode: Send the screenshot to the active conversation immediately
       if (activeConversation) {
+        console.log('📸 Auto mode: Sending screenshot immediately');
         handleSendMessage("", data.dataUrl);
+        // Clear the queued screenshot immediately after sending in auto mode
+        setQueuedScreenshot(null);
       } else {
         console.warn('📸 No active conversation to send screenshot to');
         toastService.warning('No active conversation. Please select or create a conversation first.');
       }
     }
+  };
+
+  // Clear queued screenshot when it's been used
+  const handleScreenshotQueued = () => {
+    setQueuedScreenshot(null);
   };
 
   // Expose the message handler to parent
@@ -1667,6 +1677,8 @@ const MainApp: React.FC<MainAppProps> = ({
                 onToggleActiveSession={handleToggleActiveSession}
                 initialMessage={currentInputMessage}
                 onMessageChange={handleInputMessageChange}
+                queuedImage={queuedScreenshot}
+                onImageQueued={handleScreenshotQueued}
               />
             </div>
         </div>

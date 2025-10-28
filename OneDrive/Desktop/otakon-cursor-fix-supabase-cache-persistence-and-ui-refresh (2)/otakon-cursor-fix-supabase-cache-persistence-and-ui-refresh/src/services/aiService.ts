@@ -325,6 +325,12 @@ class AIService {
 In addition to your regular response, provide structured data in the following optional fields:
 
 1. **followUpPrompts** (array of 3-4 strings): Generate contextual follow-up questions directly related to your response content
+   ${!conversation.isGameHub ? `
+   - Session Mode: ${isActiveSession ? 'PLAYING MODE - User is actively playing' : 'PLANNING MODE - User is preparing/strategizing'}
+   - ${isActiveSession 
+       ? 'Generate immediate, actionable prompts (e.g., "How do I beat this boss?", "What should I do next?")'
+       : 'Generate strategic, planning prompts (e.g., "What should I prepare?", "What builds are recommended?")'
+     }` : ''}
 2. **progressiveInsightUpdates** (array): If conversation provides new info, update existing subtabs (e.g., story_so_far, characters)
 3. **stateUpdateTags** (array): Detect game events (e.g., "OBJECTIVE_COMPLETE: true", "TRIUMPH: Boss Name")
 4. **gamePillData** (object): ${conversation.isGameHub ? 'Set shouldCreate: true if user asks about a specific game, and include game details with pre-filled wikiContent' : 'Set shouldCreate: false (already in game tab)'}
@@ -439,6 +445,26 @@ Note: These are optional enhancements. If not applicable, omit or return empty a
         const rawResponse = await result.response.text();
         const structuredData = JSON.parse(rawResponse);
         
+        // ✅ Clean content: Remove any JSON-like structured data from the main content
+        let cleanContent = structuredData.content || '';
+        
+        // Remove structured fields if AI accidentally includes them in content
+        // This handles cases where AI outputs: "Hint: ... followUpPrompts: [...]"
+        cleanContent = cleanContent
+          // Remove followUpPrompts section
+          .replace(/followUpPrompts:\s*\[[\s\S]*?\](?=\s*(?:progressiveInsightUpdates|stateUpdateTags|gamePillData|$))/gi, '')
+          // Remove progressiveInsightUpdates section
+          .replace(/progressiveInsightUpdates:\s*\[[\s\S]*?\](?=\s*(?:followUpPrompts|stateUpdateTags|gamePillData|$))/gi, '')
+          // Remove stateUpdateTags section
+          .replace(/stateUpdateTags:\s*\[[\s\S]*?\](?=\s*(?:followUpPrompts|progressiveInsightUpdates|gamePillData|$))/gi, '')
+          // Remove gamePillData section (most complex - handles multi-line objects)
+          .replace(/gamePillData:\s*\{[\s\S]*?\}(?=\s*$)/gi, '')
+          // Clean up any remaining JSON artifacts
+          .replace(/\{[\s\S]*?"OTAKON_[A-Z_]+":[\s\S]*?\}/g, '')
+          // Remove excessive newlines
+          .replace(/\n{3,}/g, '\n\n')
+          .trim();
+        
         // Parse wikiContent if it's a JSON string
         let gamePillData = structuredData.gamePillData;
         if (gamePillData && typeof gamePillData.wikiContent === 'string') {
@@ -455,7 +481,7 @@ Note: These are optional enhancements. If not applicable, omit or return empty a
         
         // Build enhanced AIResponse
         const aiResponse: AIResponse = {
-          content: structuredData.content || '',
+          content: cleanContent,
           suggestions: structuredData.followUpPrompts || [],
           otakonTags: new Map(), // Empty for JSON mode
           rawContent: rawResponse,

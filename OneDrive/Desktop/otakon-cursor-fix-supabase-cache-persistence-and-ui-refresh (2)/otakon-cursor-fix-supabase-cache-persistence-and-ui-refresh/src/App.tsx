@@ -125,18 +125,18 @@ function App() {
               console.log('🎯 [App] Returning user detected - skipping onboarding');
               setAppState((prev: AppState) => ({
                 ...prev,
+                ...savedAppState,
                 view: 'app',
                 onboardingStatus: 'complete',
-                ...savedAppState
               }));
             } else {
               // New user or incomplete onboarding - continue onboarding flow
               console.log('🎯 [App] New user or incomplete onboarding - continuing from:', nextStep);
               setAppState((prev: AppState) => ({
                 ...prev,
+                ...savedAppState,
                 view: 'app',
                 onboardingStatus: nextStep,
-                ...savedAppState
               }));
             }
             setIsInitializing(false);

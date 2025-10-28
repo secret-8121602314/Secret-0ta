@@ -12,10 +12,8 @@ import SendIcon from '../ui/SendIcon';
 import SuggestedPrompts from './SuggestedPrompts';
 import { ActiveSessionToggle } from '../ui/ActiveSessionToggle';
 import SubTabs from './SubTabs';
-import GameProgressBar from './GameProgressBar';
 import { gameTabService } from '../../services/gameTabService';
 import { tabManagementService } from '../../services/tabManagementService';
-// import { LoadingSpinner } from '../ui/LoadingSpinner';
 
 interface ChatInterfaceProps {
   conversation: Conversation | null;
@@ -33,6 +31,8 @@ interface ChatInterfaceProps {
   onToggleActiveSession?: () => void;
   initialMessage?: string;
   onMessageChange?: (message: string) => void;
+  queuedImage?: string | null; // ✅ NEW: For WebSocket screenshot in manual mode
+  onImageQueued?: () => void; // ✅ NEW: Callback when image is accepted
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -51,6 +51,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onToggleActiveSession,
   initialMessage = '',
   onMessageChange,
+  queuedImage = null, // ✅ NEW: Receive queued image from WebSocket
+  onImageQueued, // ✅ NEW: Callback when image is set
 }) => {
   const [message, setMessage] = useState(initialMessage);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -161,6 +163,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       setMessage(initialMessage);
     }
   }, [initialMessage]);
+
+  // ✅ NEW: Handle queued image from WebSocket (manual mode)
+  useEffect(() => {
+    if (queuedImage && isManualUploadMode) {
+      console.log('📸 [ChatInterface] Queued image received from WebSocket');
+      setImagePreview(queuedImage);
+      // Notify parent that image was accepted
+      onImageQueued?.();
+    }
+  }, [queuedImage, isManualUploadMode, onImageQueued]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -459,16 +471,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           <SubTabs
             subtabs={conversation.subtabs}
             isLoading={isLoading}
-          />
-        </div>
-      )}
-
-      {/* Game Progress Bar - Show for game conversations (not Game Hub) */}
-      {conversation && !conversation.isGameHub && conversation.gameTitle && (
-        <div className="flex-shrink-0 px-3 pb-3">
-          <GameProgressBar 
-            progress={conversation.gameProgress || 0}
-            gameTitle={conversation.gameTitle}
           />
         </div>
       )}

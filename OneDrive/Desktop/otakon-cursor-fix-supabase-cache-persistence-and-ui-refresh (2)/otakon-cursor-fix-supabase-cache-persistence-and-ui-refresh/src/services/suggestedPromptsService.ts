@@ -206,19 +206,27 @@ class SuggestedPromptsService {
   }
 
   /**
-   * Get fallback suggestions if AI doesn't provide any
+   * Get fallback suggestions when AI doesn't provide any
+   * Returns news prompts for Game Hub, game-specific prompts for game tabs
    */
   public getFallbackSuggestions(conversationId: string, isGameHub?: boolean): string[] {
-    // Check if it's the Game Hub by ID or flag
-    if (conversationId === 'game-hub' || conversationId === 'everything-else' || isGameHub) {
+    // ✅ Explicit Game Hub check with multiple conditions
+    const isActuallyGameHub = isGameHub === true || 
+      conversationId === 'game-hub' || 
+      conversationId === 'everything-else';
+    
+    if (isActuallyGameHub) {
+      // Game Hub: Return 4 static news prompts
       return this.getStaticNewsPrompts();
     }
     
-    // Game-specific fallback suggestions
+    // ✅ Game-specific tabs: Return contextual game prompts
+    // These prompts work for ANY game (not news-related)
     return [
       "What should I do next in this area?",
       "Tell me about the story so far",
-      "Give me some tips for this game"
+      "Give me some tips for this game",
+      "What are the key mechanics I should know?"
     ];
   }
 }

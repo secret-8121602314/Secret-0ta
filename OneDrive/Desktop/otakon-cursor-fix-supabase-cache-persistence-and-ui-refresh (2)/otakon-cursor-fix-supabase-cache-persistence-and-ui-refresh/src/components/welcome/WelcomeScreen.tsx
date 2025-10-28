@@ -7,7 +7,7 @@ interface WelcomeScreenProps {
 
 type TabType = 'overview' | 'features' | 'hotkeys' | 'best-practices';
 
-const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStartChat, onAddGame }) => {
+const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStartChat, onAddGame: _onAddGame }) => {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
 
   const tabs = [
@@ -64,19 +64,6 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStartChat, onAddGame })
         {/* CTA Buttons - Fixed at bottom */}
         <div className="flex-shrink-0 py-3 sm:py-4 px-3 sm:px-6 border-t border-gray-700 bg-background">
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center justify-center">
-            {/* Add Game Button */}
-            {onAddGame && (
-              <button
-                onClick={onAddGame}
-                className="inline-flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] hover:from-[#D42A2A] hover:to-[#C87A1A] rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-95"
-              >
-                <span>Create Game Tab</span>
-                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-              </button>
-            )}
-            
             {/* Close Guide Button */}
             <button
               onClick={onStartChat}

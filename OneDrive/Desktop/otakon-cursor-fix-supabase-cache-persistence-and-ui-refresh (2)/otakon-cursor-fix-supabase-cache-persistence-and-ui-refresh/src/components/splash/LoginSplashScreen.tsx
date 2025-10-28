@@ -206,13 +206,8 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
     try {
       let result;
       if (emailMode === 'signin') {
-        // ⚠️ PROTECTED EMAIL AUTH FLOW - DO NOT MODIFY WITHOUT WARNING ⚠️
-        // Email sign-in is working correctly - any changes here could break user authentication
-        // If you need to modify this, add a warning comment explaining the change
-        // Set view to app immediately to prevent flash
-        onComplete();
-        // Show loading state during sign-in
-        setIsLoading(true);
+        // ✅ FIXED: Wait for authentication to complete before navigating
+        // This prevents race condition where onComplete() was called before auth finished
         result = await authService.signInWithEmail(email, password);
       } else {
         // For signup, validate the password
@@ -248,12 +243,14 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
           }
           // Don't call onComplete() here - let the modal handle the transition
         } else {
+          // ✅ FIXED: Only call onComplete() after successful sign-in
           // Store remember me preference for sign-in
           if (rememberMe) {
             localStorage.setItem('otakon_remember_me', 'true');
             localStorage.setItem('otakon_remembered_email', email);
           }
-          // onComplete() was already called above for sign-in
+          // Navigate to app now that authentication is complete
+          onComplete();
         }
       } else {
         // Handle different error types for signup
