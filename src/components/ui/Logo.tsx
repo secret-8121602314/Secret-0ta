@@ -1,10 +1,11 @@
-import React from 'react';
+﻿import React from 'react';
+import { getPublicPath } from '../../utils/publicPath';
 
 interface LogoProps {
   className?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   spin?: boolean;
-  spinOnce?: boolean; // New: rotates once and stops
+  spinOnce?: boolean;
   bounce?: boolean;
 }
 
@@ -31,14 +32,12 @@ const Logo: React.FC<LogoProps> = ({ className = '', size = 'md', spin = false, 
 
   return (
     <img
-      src="/images/Dragon Circle Logo Design.png"
+      src={getPublicPath('/images/otagon-logo.png')}
       alt="Otagon Logo"
       className={`${sizeClasses[size]} ${className}`}
       style={{ 
         objectFit: 'contain',
-        animation: getAnimation(),
-        transform: 'scale(1)', // Prevent any zoom effects
-        transition: 'none' // Disable any transitions
+        animation: getAnimation()
       }}
     />
   );

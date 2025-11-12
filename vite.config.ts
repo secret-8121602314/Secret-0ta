@@ -2,9 +2,9 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
-  base: '/Otagon/', // GitHub Pages subdirectory (change to '/' when custom domain is active)
+  base: mode === 'development' ? '/' : '/Otagon/', // Root path in dev, /Otagon/ in production
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -82,4 +82,4 @@ export default defineConfig({
     port: 5173,
     host: true,
   },
-})
+}))
