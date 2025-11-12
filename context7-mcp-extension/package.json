@@ -1,0 +1,39 @@
+{
+  "name": "context7-mcp-extension",
+  "displayName": "Context7 MCP Extension",
+  "description": "An extension for accessing real-time documentation from the Context7 MCP server.",
+  "version": "0.1.0",
+  "publisher": "your-name",
+  "engines": {
+    "vscode": "^1.50.0"
+  },
+  "activationEvents": [
+    "onCommand:context7-mcp.fetchDocumentation",
+    "onCommand:context7-mcp.resolveLibraryId"
+  ],
+  "main": "./src/extension.ts",
+  "contributes": {
+    "commands": [
+      {
+        "command": "context7-mcp.fetchDocumentation",
+        "title": "Fetch Documentation"
+      },
+      {
+        "command": "context7-mcp.resolveLibraryId",
+        "title": "Resolve Library ID"
+      }
+    ]
+  },
+  "dependencies": {
+    "axios": "^0.21.1"
+  },
+  "devDependencies": {
+    "typescript": "^4.0.0",
+    "vscode": "^1.50.0"
+  },
+  "scripts": {
+    "compile": "tsc -p ./tsconfig.json",
+    "watch": "tsc -p ./tsconfig.json --watch",
+    "prepublish": "npm run compile"
+  }
+}

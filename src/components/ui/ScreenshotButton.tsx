@@ -1,0 +1,252 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { UserTier } from '../../types';
+import { send } from '../../services/websocketService';
+
+interface ScreenshotButtonProps {
+  isConnected: boolean;
+  isProcessing: boolean;
+  isManualUploadMode: boolean;
+  onRequestConnect?: () => void;
+  usage?: { tier: UserTier };
+}
+
+type Mode = 'single' | 'multi';
+
+const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({ 
+  isConnected, 
+  isProcessing, 
+  isManualUploadMode, 
+  onRequestConnect,
+  usage 
+}) => {
+  const [mode, setMode] = useState<Mode>('single');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const longPressRef = useRef<number | null>(null);
+  const [showHint, setShowHint] = useState(false);
+
+  // Check if user can access multishot
+  const canUseMultishot = usage?.tier === 'pro' || usage?.tier === 'vanguard_pro';
+  const isFreeUser = usage?.tier === 'free';
+
+  // Persist mode - ensure free users can't have multishot saved
+  useEffect(() => {
+    const saved = localStorage.getItem('otakon_screenshot_mode');
+    if (saved === 'single' || (saved === 'multi' && canUseMultishot)) {
+      setMode(saved);
+    } else if (saved === 'multi' && !canUseMultishot) {
+      // Reset to single if free user had multishot saved
+      setMode('single');
+      localStorage.setItem('otakon_screenshot_mode', 'single');
+    }
+    // Don't show hint by default - only show on first interaction
+    setShowHint(false);
+  }, [canUseMultishot]);
+
+  const setModeAndPersist = (m: Mode) => {
+    // Prevent free users from setting multishot mode
+    if (m === 'multi' && !canUseMultishot) {
+      return;
+    }
+    setMode(m);
+    localStorage.setItem('otakon_screenshot_mode', m);
+    setMenuOpen(false);
+  };
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (!rootRef.current) {
+        return;
+      }
+      if (!rootRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    if (menuOpen) {
+      document.addEventListener('mousedown', handler, { passive: true } as any);
+    }
+    return () => document.removeEventListener('mousedown', handler as any);
+  }, [menuOpen]);
+
+  const openMenu = (e?: { preventDefault?: () => void; stopPropagation?: () => void }) => {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
+    setMenuOpen(true);
+  };
+
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    // Explicitly handle right-click
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isConnected) {
+      onRequestConnect?.();
+      return;
+    }
+    openMenu();
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    // Right-button fallback
+    if (e.button === 2) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!isConnected) {
+        onRequestConnect?.();
+        return;
+      }
+      openMenu();
+    }
+  };
+
+  const handleTouchStart = () => {
+    // Long-press 1.75s
+    if (longPressRef.current) {
+      window.clearTimeout(longPressRef.current);
+    }
+    longPressRef.current = window.setTimeout(() => {
+      if (!isConnected) {
+        onRequestConnect?.();
+        return;
+      }
+      openMenu();
+    }, 1750);
+  };
+
+  const clearLongPress = () => {
+    if (longPressRef.current) {
+      window.clearTimeout(longPressRef.current);
+      longPressRef.current = null;
+    }
+  };
+
+  const handleClick = async () => {
+    if (!isConnected) { onRequestConnect?.(); return; }
+    if (isProcessing) {
+      return;
+    }
+    
+    // Prevent multishot for free users
+    if (mode === 'multi' && !canUseMultishot) {
+      return;
+    }
+    
+    const processImmediate = isManualUploadMode ? false : mode === 'single';
+    const msg: any = {
+      type: 'screenshot_request',
+      mode,
+      processImmediate,
+    };
+    if (mode === 'multi') {
+      msg.count = 5;
+    }
+    
+    // Send screenshot request via websocket
+    if (typeof send === 'function') {
+      send(msg);
+      console.log('📸 Screenshot request sent:', msg);
+    } else {
+      console.warn('WebSocket send function not available');
+    }
+  };
+
+  const handleMultishotClick = () => {
+    if (!canUseMultishot) {
+      // Show upgrade prompt for free users
+      setMenuOpen(false);
+      // You can add an upgrade modal trigger here if needed
+      return;
+    }
+    setModeAndPersist('multi');
+  };
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        ref={btnRef}
+        type="button"
+        onClick={handleClick}
+        onContextMenu={handleContextMenu}
+        onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={clearLongPress}
+        onTouchCancel={clearLongPress}
+        aria-disabled={!isConnected || isProcessing}
+        className={`${isConnected ? 'text-emerald-400' : 'text-[#8A8A8A]'} w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r from-[#2E2E2E]/90 to-[#1C1C1C]/90 flex items-center justify-center transition-all duration-300 ${isConnected ? 'hover:scale-105' : 'opacity-70 cursor-pointer hover:opacity-90'} ${isProcessing ? 'animate-pulse' : ''}`}
+        title={isConnected ? 'Screenshot (right-click/long-press to change mode)' : 'Connect your PC to enable screenshots'}
+      >
+        {mode === 'single' ? (
+          // Monitor with capture corner (single)
+          <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="12" rx="2" />
+            <path d="M8 20h8" />
+            <path d="M7 7h3M7 10h3M14 7h3" />
+            <path d="M4 3v4M4 3h4" />
+          </svg>
+        ) : (
+          // Stacked monitors (multi)
+          <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="4" y="5" width="14" height="9" rx="2" />
+            <rect x="6" y="10" width="14" height="9" rx="2" />
+            <path d="M10 22h6" />
+          </svg>
+        )}
+      </button>
+
+      {showHint && isConnected && (
+        <div className="absolute left-1/2 -translate-x-1/2 mt-3 top-full text-xs text-[#CFCFCF] bg-[#101010]/95 border border-[#424242]/60 rounded-lg px-3 py-2 shadow-lg whitespace-nowrap z-50">
+          <button
+            type="button"
+            onClick={() => { setShowHint(false); localStorage.setItem('otakon_screenshot_hint_seen', '1'); }}
+            className="w-full h-full"
+          >
+            Press & hold (1.75s) or right-click to change mode
+          </button>
+        </div>
+      )}
+
+      {menuOpen && isConnected && (
+        <div className="absolute bottom-full right-0 mb-3 bg-[#101010]/98 border border-[#424242]/60 rounded-xl shadow-2xl min-w-[200px] overflow-hidden z-[9999] backdrop-blur-md">
+          <button 
+            onClick={() => setModeAndPersist('single')} 
+            className={`w-full text-left px-4 py-3 hover:bg-[#2E2E2E]/60 transition-colors ${mode === 'single' ? 'text-emerald-400' : 'text-[#CFCFCF]'}`}
+          >
+            📸 Single Shot {mode === 'single' ? '✓' : ''}
+          </button>
+          
+          <button 
+            onClick={handleMultishotClick} 
+            className={`w-full text-left px-4 py-3 transition-all duration-200 ${
+              canUseMultishot 
+                ? `hover:bg-[#2E2E2E]/60 ${mode === 'multi' ? 'text-emerald-400' : 'text-[#CFCFCF]'}` 
+                : 'text-[#666666] cursor-not-allowed opacity-60'
+            }`}
+            disabled={!canUseMultishot}
+          >
+            {canUseMultishot ? (
+              <>📸 Multi Shot (5) {mode === 'multi' ? '✓' : ''}</>
+            ) : (
+              <div className="flex items-center justify-between">
+                <span>🔒 Multi Shot (5)</span>
+                <span className="text-xs bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white px-2 py-1 rounded-full">
+                  PRO
+                </span>
+              </div>
+            )}
+          </button>
+          
+          {isFreeUser && (
+            <div className="px-4 py-2 text-xs text-[#999999] border-t border-[#424242]/40">
+              Upgrade to Pro for batch screenshots
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ScreenshotButton;
+
