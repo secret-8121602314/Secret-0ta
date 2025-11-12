@@ -6,7 +6,28 @@ const OTAKON_TAG_DEFINITIONS = `
 You MUST use the following tags to structure your response. Do not put them in a code block.
 - [OTAKON_GAME_ID: Game Name]: The full, official name of the game you've identified.
 - [OTAKON_CONFIDENCE: high|low]: Your confidence in the game identification.
-- [OTAKON_GENRE: Genre]: The primary genre of the identified game.
+- [OTAKON_GENRE: Genre]: The primary genre of the identified game. Must be one of:
+  • Action RPG - Action-focused RPGs with real-time combat (Dark Souls, God of War, etc.)
+  • RPG - Traditional role-playing games with deep stories and character progression
+  • Souls-like - Challenging action games inspired by Dark Souls (Elden Ring, Sekiro, Hollow Knight, etc.)
+  • Metroidvania - Non-linear exploration platformers with ability-gated progression
+  • Open-World - Large open-world games with exploration focus (GTA, Zelda: BOTW, etc.)
+  • Survival-Crafting - Survival games with resource gathering and crafting mechanics
+  • First-Person Shooter - FPS games
+  • Strategy - Strategy and tactical games (RTS, turn-based, 4X)
+  • Adventure - Story-driven adventure and narrative games
+  • Simulation - Simulation and management games
+  • Sports - Sports games and sports management sims
+  • Multiplayer Shooter - Competitive multiplayer FPS games
+  • Multiplayer Sports - Competitive multiplayer sports games
+  • Racing - Racing games and driving sims
+  • Fighting - Fighting games
+  • Battle Royale - Battle royale games
+  • MMORPG - Massively multiplayer online RPGs
+  • Puzzle - Puzzle games
+  • Horror - Horror and survival horror games
+  • Default - Use this only if none of the above genres fit
+  **Important**: Use the EXACT genre names listed above. Choose the MOST SPECIFIC genre that fits the game.
 - [OTAKON_GAME_STATUS: unreleased]: ONLY include this tag if the game is NOT YET RELEASED. Verify the release date before including this tag.
 - [OTAKON_IS_FULLSCREEN: true|false]: Whether the screenshot shows fullscreen gameplay (not menus, launchers, or non-game screens).
 - [OTAKON_TRIUMPH: {"type": "boss_defeated", "name": "Boss Name"}]: When analyzing a victory screen.
@@ -254,6 +275,13 @@ Places of Interest: [Nearby locations, shops, NPCs, or areas where the player ca
 - Stating the obvious ("you can see buildings", "there's text on screen")
 - Generic descriptions that don't add value
 - Deviating from the mandatory format above
+
+**Genre Classification Confirmation:**
+After providing your response, if there's ANY ambiguity about the genre classification, add a brief confirmation question:
+- Example: "I've classified this as a Souls-like game. Does that match your understanding, or would you prefer a different categorization?"
+- Example: "This appears to be an Open-World adventure game. If you think it fits better in another category (like RPG or Action RPG), let me know!"
+- Only include this if the genre could reasonably fit multiple categories
+- Keep it brief and natural - don't add it for obvious genre matches like "Call of Duty = First-Person Shooter"
 
 **Suggestions Guidelines:**
 Generate 3 short, specific follow-up questions that help the user:

@@ -12,7 +12,8 @@
     "firebase:init": "firebase init hosting",
     "firebase:deploy": "npm run build && firebase deploy",
     "firebase:serve": "firebase serve",
-    "deploy": "npm run build && firebase deploy --only hosting"
+    "deploy": "npm run build && firebase deploy --only hosting",
+    "deploy:gh-pages": "npm run build && gh-pages -d dist"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
