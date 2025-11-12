@@ -4,7 +4,7 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/', // Use '/' for custom domain, or '/repo-name/' for GitHub Pages without custom domain
+  base: '/Otagon/', // GitHub Pages subdirectory (change to '/' when custom domain is active)
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
