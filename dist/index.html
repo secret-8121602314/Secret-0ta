@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/images/Dragon Circle Logo Design.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Otagon - Your Spoiler-Free Gaming Companion" />
+    <meta name="theme-color" content="#E53A3A" />
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Otagon" />
+    
+    <title>Otagon</title>
+    <script type="module" crossorigin src="/assets/index-JWzW0emi.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/vendor-Co9Kbb3z.js">
+    <link rel="modulepreload" crossorigin href="/assets/markdown-vendor-BAX5B5Oq.js">
+    <link rel="modulepreload" crossorigin href="/assets/react-vendor-tK9JEV1C.js">
+    <link rel="modulepreload" crossorigin href="/assets/supabase-vendor-BWe1bYlW.js">
+    <link rel="modulepreload" crossorigin href="/assets/core-services-BK5NJZwB.js">
+    <link rel="modulepreload" crossorigin href="/assets/auth-8E_PKKV7.js">
+    <link rel="modulepreload" crossorigin href="/assets/services-BDnUVLBP.js">
+    <link rel="modulepreload" crossorigin href="/assets/ai-vendor-DDPwdD9r.js">
+    <link rel="modulepreload" crossorigin href="/assets/chat-services-Dg4d7yYf.js">
+    <link rel="modulepreload" crossorigin href="/assets/modals-CxnmHkoc.js">
+    <link rel="modulepreload" crossorigin href="/assets/features-eTNvMTrT.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-D_V1bdkP.css">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      // Service Worker Registration for Production
+      if ('serviceWorker' in navigator) {
+        // Only register in production (not localhost)
+        if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+              .then((registration) => {
+                console.log('SW registered: ', registration);
+                
+                // Check for updates
+                registration.addEventListener('updatefound', () => {
+                  const newWorker = registration.installing;
+                  if (newWorker) {
+                    newWorker.addEventListener('statechange', () => {
+                      if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        // New content is available, show update notification
+                        if (confirm('New version available! Reload to update?')) {
+                          newWorker.postMessage({ type: 'SKIP_WAITING' });
+                          window.location.reload();
+                        }
+                      }
+                    });
+                  }
+                });
+              })
+              .catch((registrationError) => {
+                console.log('SW registration failed: ', registrationError);
+              });
+          });
+        } else {
+          // Development mode - unregister service worker
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for(let registration of registrations) {
+              registration.unregister();
+            }
+          });
+        }
+      }
+    </script>
+  </body>
+</html>

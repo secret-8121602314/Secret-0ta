@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Conversation, ActiveSessionState } from '../../types';
+import { Conversation, ActiveSessionState, ChatMessage } from '../../types';
 import ManualUploadToggle from '../ui/ManualUploadToggle';
 import ScreenshotButton from '../ui/ScreenshotButton';
 import DownloadIcon from '../ui/DownloadIcon';
@@ -14,6 +14,163 @@ import { ActiveSessionToggle } from '../ui/ActiveSessionToggle';
 import SubTabs from './SubTabs';
 import { gameTabService } from '../../services/gameTabService';
 import { tabManagementService } from '../../services/tabManagementService';
+
+// ============================================================================
+// MEMOIZED CHAT MESSAGE COMPONENT (Performance Optimization)
+// ============================================================================
+// Prevents unnecessary re-renders when other parts of the UI update
+// (e.g., when subtabs update, old messages won't re-render)
+interface ChatMessageComponentProps {
+  message: ChatMessage;
+  suggestedPrompts: string[];
+  onSuggestedPromptClick?: (prompt: string) => void;
+  isLoading: boolean;
+  conversationId?: string;
+  onDownloadImage: (url: string, index: number) => void;
+}
+
+const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
+  message,
+  suggestedPrompts,
+  onSuggestedPromptClick,
+  isLoading,
+  conversationId,
+  onDownloadImage
+}) => {
+  return (
+    <div className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+      <div
+        className={`max-w-[80%] ${
+          message.role === 'user'
+            ? 'chat-message-user'
+            : 'chat-message-ai'
+        }`}
+      >
+        <div className="flex items-start gap-3">
+          {/* Avatar */}
+          <div className="flex-shrink-0">
+            {message.role === 'user' ? (
+              <UserAvatar className="w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0 text-[#D98C1F]" />
+            ) : (
+              <AIAvatar className="w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0" />
+            )}
+          </div>
+          
+          {/* Message content */}
+          <div className="flex-1 min-w-0">
+            {message.imageUrl && (
+              <div className="chat-image-container mb-3">
+                <img
+                  src={message.imageUrl}
+                  alt="Uploaded"
+                  className="w-full max-w-sm rounded-lg"
+                />
+                {/* Download button for single image */}
+                <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-[#424242]/30">
+                  <button
+                    onClick={() => onDownloadImage(message.imageUrl || '', 0)}
+                    className="flex items-center justify-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 border border-[#FF4D4D] text-[#FF4D4D] text-xs sm:text-sm font-medium rounded-lg hover:bg-[#FF4D4D] hover:text-white transition-all duration-300 hover:scale-105"
+                    title="Download this screenshot"
+                  >
+                    <DownloadIcon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                    <span className="hidden sm:inline">Download</span>
+                  </button>
+                </div>
+              </div>
+            )}
+            <div className="text-[#F5F5F5] leading-relaxed">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  h1: ({ children }) => (
+                    <h1 className="text-lg font-bold text-[#F5F5F5] mb-3 mt-2">{children}</h1>
+                  ),
+                  h2: ({ children }) => (
+                    <h2 className="text-base font-semibold text-[#F5F5F5] mb-2 mt-2">{children}</h2>
+                  ),
+                  h3: ({ children }) => (
+                    <h3 className="text-sm font-semibold text-[#F5F5F5] mb-2 mt-2">{children}</h3>
+                  ),
+                  p: ({ children }) => (
+                    <p className="text-[#CFCFCF] leading-relaxed mb-3">{children}</p>
+                  ),
+                  ul: ({ children }) => (
+                    <ul className="list-disc list-outside ml-5 text-[#CFCFCF] mb-3 space-y-1.5">{children}</ul>
+                  ),
+                  ol: ({ children }) => (
+                    <ol className="list-decimal list-outside ml-5 text-[#CFCFCF] mb-3 space-y-1.5">{children}</ol>
+                  ),
+                  li: ({ children }) => (
+                    <li className="text-[#CFCFCF] leading-relaxed">{children}</li>
+                  ),
+                  strong: ({ children }) => (
+                    <strong className="font-semibold text-[#F5F5F5]">{children}</strong>
+                  ),
+                  em: ({ children }) => (
+                    <em className="italic text-[#E0E0E0]">{children}</em>
+                  ),
+                  code: ({ children }) => (
+                    <code className="bg-[#2E2E2E] text-[#FF4D4D] px-1.5 py-0.5 rounded text-xs font-mono">
+                      {children}
+                    </code>
+                  ),
+                  pre: ({ children }) => (
+                    <pre className="bg-[#1C1C1C] border border-[#424242] rounded-lg p-3 overflow-x-auto mb-3">
+                      {children}
+                    </pre>
+                  ),
+                  blockquote: ({ children }) => (
+                    <blockquote className="border-l-4 border-[#FF4D4D] pl-4 italic text-[#B0B0B0] my-3">
+                      {children}
+                    </blockquote>
+                  ),
+                  br: () => <br className="my-1" />
+                }}
+              >
+                {message.content}
+              </ReactMarkdown>
+            </div>
+            
+            {/* Show suggested prompts after AI response */}
+            {message.role === 'assistant' && suggestedPrompts.length > 0 && onSuggestedPromptClick && !isLoading && (
+              <div className="mt-4">
+                <SuggestedPrompts
+                  prompts={suggestedPrompts}
+                  onPromptClick={onSuggestedPromptClick}
+                  isLoading={isLoading}
+                  conversationId={conversationId}
+                />
+              </div>
+            )}
+            
+            <p className="text-xs text-[#A3A3A3] mt-3">
+              {new Date(message.timestamp).toLocaleTimeString()}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Memoize the component to prevent unnecessary re-renders
+// Only re-renders if message props actually change
+const MemoizedChatMessage = memo(ChatMessageComponent, (prevProps, nextProps) => {
+  // Custom comparison: only re-render if message content, suggested prompts, or loading state changes
+  return (
+    prevProps.message.id === nextProps.message.id &&
+    prevProps.message.content === nextProps.message.content &&
+    prevProps.message.timestamp === nextProps.message.timestamp &&
+    prevProps.isLoading === nextProps.isLoading &&
+    prevProps.suggestedPrompts.length === nextProps.suggestedPrompts.length
+  );
+});
+
+MemoizedChatMessage.displayName = 'MemoizedChatMessage';
+
+// ============================================================================
+// MAIN CHAT INTERFACE COMPONENT
+// ============================================================================
 
 interface ChatInterfaceProps {
   conversation: Conversation | null;
@@ -61,6 +218,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [autocompleteSuggestions, setAutocompleteSuggestions] = useState<string[]>([]);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
+  const [isQuickActionsExpanded, setIsQuickActionsExpanded] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -196,6 +354,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       return;
     }
 
+    // Collapse quick actions when sending a message
+    if (conversation?.isGameHub) {
+      setIsQuickActionsExpanded(false);
+    }
+
     const imageUrl = imagePreview || undefined;
     console.log('📤 [ChatInterface] Submitting:', { message, hasImage: !!imageUrl, imageUrl: imageUrl?.substring(0, 50) + '...' });
     onSendMessage(message, imageUrl);
@@ -303,120 +466,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
         ) : (
           conversation.messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
-            <div
-              className={`max-w-[80%] ${
-                msg.role === 'user'
-                  ? 'chat-message-user'
-                  : 'chat-message-ai'
-              }`}
-            >
-              <div className="flex items-start gap-3">
-                {/* Avatar */}
-                <div className="flex-shrink-0">
-                  {msg.role === 'user' ? (
-                    <UserAvatar className="w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0 text-[#D98C1F]" />
-                  ) : (
-                    <AIAvatar className="w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0" />
-                  )}
-                </div>
-                
-                {/* Message content */}
-                <div className="flex-1 min-w-0">
-              {msg.imageUrl && (
-                <div className="chat-image-container mb-3">
-                  <img
-                    src={msg.imageUrl}
-                    alt="Uploaded"
-                    className="w-full max-w-sm rounded-lg"
-                  />
-                  {/* Download button for single image */}
-                  <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-[#424242]/30">
-                    <button
-                      onClick={() => downloadImage(msg.imageUrl!, 0)}
-                      className="flex items-center justify-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 border border-[#FF4D4D] text-[#FF4D4D] text-xs sm:text-sm font-medium rounded-lg hover:bg-[#FF4D4D] hover:text-white transition-all duration-300 hover:scale-105"
-                      title="Download this screenshot"
-                    >
-                      <DownloadIcon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                      <span className="hidden sm:inline">Download</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-                  <div className="text-[#F5F5F5] leading-relaxed">
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      components={{
-                        h1: ({ children }) => (
-                          <h1 className="text-lg font-bold text-[#F5F5F5] mb-3">{children}</h1>
-                        ),
-                        h2: ({ children }) => (
-                          <h2 className="text-base font-semibold text-[#F5F5F5] mb-2">{children}</h2>
-                        ),
-                        h3: ({ children }) => (
-                          <h3 className="text-sm font-semibold text-[#F5F5F5] mb-2">{children}</h3>
-                        ),
-                        p: ({ children }) => (
-                          <p className="text-[#CFCFCF] leading-relaxed mb-2">{children}</p>
-                        ),
-                        ul: ({ children }) => (
-                          <ul className="list-disc list-inside text-[#CFCFCF] mb-2 space-y-1">{children}</ul>
-                        ),
-                        ol: ({ children }) => (
-                          <ol className="list-decimal list-inside text-[#CFCFCF] mb-2 space-y-1">{children}</ol>
-                        ),
-                        li: ({ children }) => (
-                          <li className="text-[#CFCFCF]">{children}</li>
-                        ),
-                        strong: ({ children }) => (
-                          <strong className="font-semibold text-[#F5F5F5]">{children}</strong>
-                        ),
-                        em: ({ children }) => (
-                          <em className="italic text-[#E0E0E0]">{children}</em>
-                        ),
-                        code: ({ children }) => (
-                          <code className="bg-[#2E2E2E] text-[#FF4D4D] px-1 py-0.5 rounded text-xs font-mono">
-                            {children}
-                          </code>
-                        ),
-                        pre: ({ children }) => (
-                          <pre className="bg-[#1C1C1C] border border-[#424242] rounded-lg p-3 overflow-x-auto">
-                            {children}
-                          </pre>
-                        ),
-                        blockquote: ({ children }) => (
-                          <blockquote className="border-l-4 border-[#FF4D4D] pl-4 italic text-[#B0B0B0] my-2">
-                            {children}
-                          </blockquote>
-                        )
-                      }}
-                    >
-                      {msg.content}
-                    </ReactMarkdown>
-                  </div>
-                  
-                  {/* Show suggested prompts after AI response */}
-                  {msg.role === 'assistant' && suggestedPrompts.length > 0 && onSuggestedPromptClick && !isLoading && (
-                    <div className="mt-4">
-                      <SuggestedPrompts
-                        prompts={suggestedPrompts}
-                        onPromptClick={onSuggestedPromptClick}
-                        isLoading={isLoading}
-                        conversationId={conversation?.id}
-                      />
-                    </div>
-                  )}
-                  
-                  <p className="text-xs text-[#A3A3A3] mt-3">
-                    {new Date(msg.timestamp).toLocaleTimeString()}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+            <MemoizedChatMessage
+              key={msg.id}
+              message={msg}
+              suggestedPrompts={msg.role === 'assistant' ? suggestedPrompts : []}
+              onSuggestedPromptClick={onSuggestedPromptClick}
+              isLoading={isLoading}
+              conversationId={conversation?.id}
+              onDownloadImage={downloadImage}
+            />
           ))
         )}
         
@@ -468,10 +526,34 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       {/* Game Hub Quick Prompts - Only show in Game Hub tab */}
       {conversation?.isGameHub && (
         <div className="flex-shrink-0 px-3 pb-3">
-          <div className="mb-2 text-xs font-semibold text-[#A3A3A3] uppercase tracking-wider">
-            Quick Actions
-          </div>
-          <div className="grid grid-cols-2 gap-2">
+          {/* Collapsible Header */}
+          <button
+            onClick={() => setIsQuickActionsExpanded(!isQuickActionsExpanded)}
+            className="w-full flex items-center justify-between mb-2 py-2 px-3 rounded-lg bg-[#1C1C1C]/50 hover:bg-[#1C1C1C] border border-[#424242]/30 hover:border-[#424242]/60 transition-all duration-200"
+          >
+            <div className="text-xs font-semibold text-[#A3A3A3] uppercase tracking-wider">
+              Latest Gaming News
+            </div>
+            <svg
+              className={`w-4 h-4 text-[#A3A3A3] transition-transform duration-200 ${
+                isQuickActionsExpanded ? 'rotate-180' : ''
+              }`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {/* Collapsible Content */}
+          <div
+            className={`grid grid-cols-2 gap-2 transition-all duration-300 ease-in-out overflow-hidden ${
+              isQuickActionsExpanded 
+                ? 'max-h-96 opacity-100' 
+                : 'max-h-0 opacity-0'
+            }`}
+          >
             {[
               { text: "What's the latest gaming news?", shape: "✕" },
               { text: "Which games are releasing soon?", shape: "■" },
@@ -480,7 +562,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             ].map((prompt) => (
               <button
                 key={prompt.text}
-                onClick={() => onSuggestedPromptClick?.(prompt.text)}
+                onClick={() => {
+                  setIsQuickActionsExpanded(false);
+                  onSuggestedPromptClick?.(prompt.text);
+                }}
                 disabled={isLoading}
                 className="group relative px-3 py-3 rounded-xl bg-gradient-to-br from-[#1C1C1C] to-[#0F0F0F] hover:from-[#252525] hover:to-[#1A1A1A] border border-[#424242]/30 hover:border-[#E53A3A]/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-left overflow-hidden"
               >

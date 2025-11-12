@@ -39,6 +39,9 @@ class AIService {
   private proModel: GenerativeModel;
   private flashModelWithGrounding: GenerativeModel;
   private edgeFunctionUrl: string;
+  
+  // ✅ REQUEST DEDUPLICATION: Track pending requests to prevent duplicate API calls
+  private pendingRequests: Map<string, Promise<AIResponse>> = new Map();
 
   constructor() {
     // ✅ SECURITY: Initialize Edge Function URL
@@ -148,9 +151,79 @@ class AIService {
   }
 
   /**
-   * Main method to get AI chat response
+   * ✅ REQUEST DEDUPLICATION: Wrapper to prevent duplicate API calls
+   * If same request is already in progress, return the existing promise
+   */
+  private async getChatResponseWithDeduplication(
+    conversation: Conversation,
+    user: User,
+    userMessage: string,
+    isActiveSession: boolean,
+    hasImages: boolean = false,
+    imageData?: string,
+    abortSignal?: AbortSignal
+  ): Promise<AIResponse> {
+    // Create deduplication key (conversation + message + session state)
+    const dedupKey = `${conversation.id}_${userMessage}_${isActiveSession}_${hasImages}`;
+    
+    // Check if identical request is already pending
+    const pendingRequest = this.pendingRequests.get(dedupKey);
+    if (pendingRequest) {
+      console.warn('⚠️ [AIService] Duplicate request detected, returning existing promise');
+      return pendingRequest;
+    }
+    
+    // Create new request promise
+    const requestPromise = this.getChatResponseInternal(
+      conversation,
+      user,
+      userMessage,
+      isActiveSession,
+      hasImages,
+      imageData,
+      abortSignal
+    );
+    
+    // Store pending request
+    this.pendingRequests.set(dedupKey, requestPromise);
+    
+    // Clean up after completion (success or failure)
+    try {
+      const result = await requestPromise;
+      return result;
+    } finally {
+      this.pendingRequests.delete(dedupKey);
+    }
+  }
+
+  /**
+   * Main method to get AI chat response (public API)
    */
   public async getChatResponse(
+    conversation: Conversation,
+    user: User,
+    userMessage: string,
+    isActiveSession: boolean,
+    hasImages: boolean = false,
+    imageData?: string,
+    abortSignal?: AbortSignal
+  ): Promise<AIResponse> {
+    // Use deduplication wrapper
+    return this.getChatResponseWithDeduplication(
+      conversation,
+      user,
+      userMessage,
+      isActiveSession,
+      hasImages,
+      imageData,
+      abortSignal
+    );
+  }
+
+  /**
+   * Internal method to get AI chat response (actual implementation)
+   */
+  private async getChatResponseInternal(
     conversation: Conversation,
     user: User,
     userMessage: string,

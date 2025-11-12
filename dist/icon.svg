@@ -1,0 +1,45 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="256" cy="256" r="256" fill="#111111"/>
+  
+  <!-- Outer Ring -->
+  <circle cx="256" cy="256" r="240" stroke="#E53A3A" stroke-width="16" fill="none"/>
+  
+  <!-- Inner Ring -->
+  <circle cx="256" cy="256" r="200" stroke="#D98C1F" stroke-width="8" fill="none"/>
+  
+  <!-- AI Brain Symbol -->
+  <g transform="translate(156, 156)">
+    <!-- Circuit Lines -->
+    <path d="M50 50 L150 50 M50 100 L150 100 M50 150 L150 150" stroke="#FFAB40" stroke-width="4" stroke-linecap="round"/>
+    <path d="M50 50 L50 150 M100 50 L100 150 M150 50 L150 150" stroke="#FFAB40" stroke-width="4" stroke-linecap="round"/>
+    
+    <!-- Connection Nodes -->
+    <circle cx="50" cy="50" r="6" fill="#E53A3A"/>
+    <circle cx="100" cy="50" r="6" fill="#D98C1F"/>
+    <circle cx="150" cy="50" r="6" fill="#E53A3A"/>
+    <circle cx="50" cy="100" r="6" fill="#D98C1F"/>
+    <circle cx="100" cy="100" r="8" fill="#FFAB40"/>
+    <circle cx="150" cy="100" r="6" fill="#D98C1F"/>
+    <circle cx="50" cy="150" r="6" fill="#E53A3A"/>
+    <circle cx="100" cy="150" r="6" fill="#D98C1F"/>
+    <circle cx="150" cy="150" r="6" fill="#E53A3A"/>
+  </g>
+  
+  <!-- Gaming Controller Elements -->
+  <g transform="translate(256, 256)">
+    <!-- D-Pad -->
+    <rect x="-30" y="-10" width="20" height="20" fill="#424242" rx="4"/>
+    <rect x="-10" y="-30" width="20" height="20" fill="#424242" rx="4"/>
+    <rect x="10" y="-10" width="20" height="20" fill="#424242" rx="4"/>
+    <rect x="-10" y="10" width="20" height="20" fill="#424242" rx="4"/>
+    
+    <!-- Action Buttons -->
+    <circle cx="60" cy="-20" r="12" fill="#E53A3A"/>
+    <circle cx="80" cy="0" r="12" fill="#D98C1F"/>
+    <circle cx="60" cy="20" r="12" fill="#E53A3A"/>
+  </g>
+  
+  <!-- Text "OTAKON" -->
+  <text x="256" y="420" text-anchor="middle" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#FFFFFF">OTAKON</text>
+</svg>

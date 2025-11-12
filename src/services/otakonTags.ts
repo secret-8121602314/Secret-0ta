@@ -42,10 +42,11 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
     .replace(/\s+$/gm, '') // Trim end of each line
     .replace(/^$\n/gm, '') // Remove empty lines
     .replace(/\n\s*\n/g, '\n\n') // Ensure proper paragraph spacing
-    // ❌ REMOVED: .replace(/\n/g, '\n\n') - This was causing list formatting issues
     .replace(/\n\n\n+/g, '\n\n') // Remove excessive line breaks
-    .replace(/\]\s*$/, '') // Remove trailing ] characters
-    .replace(/\[\s*$/, '') // Remove trailing [ characters
+    .replace(/\s*\]\s*$/, '') // Remove trailing ] characters with surrounding whitespace
+    .replace(/\s*\[\s*$/, '') // Remove trailing [ characters with surrounding whitespace
+    .replace(/^\s*\]\s*/, '') // Remove leading ] characters with surrounding whitespace
+    .replace(/^\s*\[\s*/, '') // Remove leading [ characters with surrounding whitespace
     .trim();
 
   return { cleanContent, tags };
