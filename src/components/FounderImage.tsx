@@ -1,4 +1,5 @@
 import React from 'react';
+import { getPublicPath } from '../utils/publicPath';
 
 interface FounderImageProps {
   className?: string;
@@ -37,7 +38,7 @@ const FounderImage: React.FC<FounderImageProps> = ({
       {/* Founder Portrait */}
       <div className={`relative overflow-hidden rounded-full ${sizeClasses[size]} ${borderClasses} ${shadowClasses}`}>
         <img
-          src="/images/founder-image.jpg"
+          src={getPublicPath('/images/founder-image.jpg')}
           alt="Otagon Founder - AI Gaming Visionary"
           className="w-full h-full object-cover object-center"
           style={{
