@@ -1,0 +1,92 @@
+{
+  "name": "Otagon AI - Your Gaming Companion",
+  "short_name": "Otagon",
+  "description": "Get spoiler-free gaming hints and help with AI-powered assistance",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111111",
+  "theme_color": "#E53A3A",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en",
+  "id": "otagon-ai-gaming-companion",
+  "display_override": ["standalone", "minimal-ui"],
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "categories": ["games", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Chat",
+      "short_name": "Chat",
+      "description": "Start a new conversation",
+      "url": "/?shortcut=new-chat",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Voice Commands",
+      "short_name": "Voice",
+      "description": "Use hands-free voice commands",
+      "url": "/?shortcut=voice",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Settings",
+      "short_name": "Settings",
+      "description": "Manage your preferences",
+      "url": "/?shortcut=settings",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/screenshot-narrow.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  }
+}
