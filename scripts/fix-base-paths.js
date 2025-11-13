@@ -16,17 +16,17 @@ jsFiles.forEach(file => {
   
   const originalContent = content;
   
-  // Fix /images/ paths
-  content = content.replace(/["`']\/images\//g, match => {
-    const quote = match[0];
-    return `${quote}${baseURL}/images/`;
-  });
+  // Fix /images/ paths ONLY in template literals within src attributes
+  // But NOT inside function calls like It() which already handle BASE_URL
+  // Match patterns like: src:`/images/... or src:"/images/...
+  content = content.replace(/src:`\/images\//g, `src:\`${baseURL}/images/`);
+  content = content.replace(/src:"\/images\//g, `src:"${baseURL}/images/`);
+  content = content.replace(/src:'\/images\//g, `src:'${baseURL}/images/`);
   
-  // Fix /icons/ paths  
-  content = content.replace(/["`']\/icons\//g, match => {
-    const quote = match[0];
-    return `${quote}${baseURL}/icons/`;
-  });
+  // Fix /icons/ paths in the same way
+  content = content.replace(/src:`\/icons\//g, `src:\`${baseURL}/icons/`);
+  content = content.replace(/src:"\/icons\//g, `src:"${baseURL}/icons/`);
+  content = content.replace(/src:'\/icons\//g, `src:'${baseURL}/icons/`);
   
   if (content !== originalContent) {
     writeFileSync(filePath, content, 'utf8');
