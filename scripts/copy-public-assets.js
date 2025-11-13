@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { cpSync, mkdirSync, existsSync, copyFileSync } from 'fs';
+import { cpSync, mkdirSync, existsSync, copyFileSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 
 console.log('📦 Copying public assets to dist...');
@@ -35,5 +35,10 @@ pwaIcons.forEach(icon => {
     console.warn(`⚠️ Warning: ${icon} not found in public/`);
   }
 });
+
+// Create .nojekyll file for GitHub Pages
+const nojekyllPath = join(distDir, '.nojekyll');
+writeFileSync(nojekyllPath, '');
+console.log('✅ Created .nojekyll for GitHub Pages');
 
 console.log('✨ Public assets copy complete!');
