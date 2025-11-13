@@ -1,14 +1,15 @@
 // Service Worker for Otagon PWA - Performance Optimized with Enhanced Background Sync
-const CACHE_NAME = 'otakon-v1.2.3';
-const CHAT_CACHE_NAME = 'otakon-chat-v1.2.3';
-const STATIC_CACHE = 'otakon-static-v1.2.3';
-const API_CACHE = 'otakon-api-v1.2.3';
+const CACHE_NAME = 'otakon-v1.2.4';
+const CHAT_CACHE_NAME = 'otakon-chat-v1.2.4';
+const STATIC_CACHE = 'otakon-static-v1.2.4';
+const API_CACHE = 'otakon-api-v1.2.4';
+const BASE_PATH = '/Otagon';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png',
+  `${BASE_PATH}/`,
+  `${BASE_PATH}/index.html`,
+  `${BASE_PATH}/manifest.json`,
+  `${BASE_PATH}/icon-192.png`,
+  `${BASE_PATH}/icon-512.png`,
   // Add other assets as needed
 ];
 
@@ -464,7 +465,7 @@ self.addEventListener('notificationclick', (event) => {
   
   if (event.action === 'open') {
     event.waitUntil(
-      clients.openWindow('/')
+      clients.openWindow(`${BASE_PATH}/`)
     );
   } else if (event.action === 'dismiss') {
     // Just close the notification
@@ -472,7 +473,7 @@ self.addEventListener('notificationclick', (event) => {
   } else {
     // Default action - open app
     event.waitUntil(
-      clients.openWindow('/')
+      clients.openWindow(`${BASE_PATH}/`)
     );
   }
 });
@@ -529,7 +530,7 @@ async function handleStaticRequest(request) {
     console.log('Static request failed:', error);
     // Return offline fallback for critical assets
     if (request.url.includes('index.html')) {
-      return caches.match('/');
+      return caches.match(`${BASE_PATH}/`);
     }
     throw error;
   }
