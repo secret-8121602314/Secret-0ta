@@ -1,8 +1,8 @@
 // Service Worker for Otagon PWA - Performance Optimized with Enhanced Background Sync
-const CACHE_NAME = 'otakon-v1.2.7-feature-images';
-const CHAT_CACHE_NAME = 'otakon-chat-v1.2.7';
-const STATIC_CACHE = 'otakon-static-v1.2.7';
-const API_CACHE = 'otakon-api-v1.2.7';
+const CACHE_NAME = 'otakon-v1.2.8-pwa-fixes';
+const CHAT_CACHE_NAME = 'otakon-chat-v1.2.8';
+const STATIC_CACHE = 'otakon-static-v1.2.8';
+const API_CACHE = 'otakon-api-v1.2.8';
 const BASE_PATH = '/Otagon';
 const urlsToCache = [
   `${BASE_PATH}/`,
@@ -22,8 +22,9 @@ const BACKGROUND_SYNC_TAGS = {
   IMAGE_SYNC: 'image-sync'
 };
 
-// Install event - cache resources and clear old caches
+// Install event - cache resources and skip waiting
 self.addEventListener('install', (event) => {
+  console.log('Service Worker installing...');
   event.waitUntil(
     Promise.all([
       // Clear old caches
@@ -46,16 +47,18 @@ self.addEventListener('install', (event) => {
           console.log('Opened new cache:', CACHE_NAME);
           return cache.addAll(urlsToCache);
         })
-    ])
+    ]).then(() => {
+      // Skip waiting to activate immediately
+      return self.skipWaiting();
+    })
   );
 });
 
-// Activate event - take control and clear old caches
+// Activate event - take control immediately
 self.addEventListener('activate', (event) => {
+  console.log('Service Worker activating...');
   event.waitUntil(
     Promise.all([
-      // Take control of all clients immediately
-      self.clients.claim(),
       // Clear old caches
       caches.keys().then(cacheNames => {
         return Promise.all(
@@ -70,12 +73,17 @@ self.addEventListener('activate', (event) => {
           })
         );
       })
-    ])
+    ]).then(() => {
+      // Take control of all clients immediately
+      return self.clients.claim();
+    })
   );
 });
 
-// Fetch event - serve from cache when offline
+// Fetch event - network-first for HTML, cache-first for assets
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  
   // Handle chat API requests for offline support
   if (event.request.url.includes('/api/chat') || event.request.url.includes('/api/conversations')) {
     event.respondWith(
@@ -86,15 +94,48 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       handleInsightsRequest(event.request)
     );
+  } else if (event.request.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname === '/' || url.pathname === `${BASE_PATH}/`) {
+    // Network-first strategy for HTML pages to always get the latest version
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          // Clone the response before caching
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+          return response;
+        })
+        .catch(() => {
+          // If network fails, try cache
+          return caches.match(event.request);
+        })
+    );
   } else {
-    // Handle other requests with cache-first strategy
+    // Cache-first strategy for static assets
     event.respondWith(
       caches.match(event.request)
         .then((response) => {
           // Return cached version or fetch from network
-          return response || fetch(event.request);
+          return response || fetch(event.request).then((response) => {
+            // Cache the fetched response for future use
+            if (response.status === 200) {
+              const responseToCache = response.clone();
+              caches.open(STATIC_CACHE).then((cache) => {
+                cache.put(event.request, responseToCache);
+              });
+            }
+            return response;
+          });
         })
     );
+  }
+});
+
+// Handle messages from the client
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
   }
 });
 
