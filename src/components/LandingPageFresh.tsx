@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Logo from './ui/Logo';
 import CheckIcon from './ui/CheckIcon';
 import StarIcon from './ui/StarIcon';
@@ -6,6 +6,18 @@ import FounderImage from './FounderImage';
 import ContactUsModal from './modals/ContactUsModal';
 import { WaitlistService } from '../services/waitlistService';
 import { toastService } from '../services/toastService';
+import useEmblaCarousel from 'embla-carousel-react';
+import Autoplay from 'embla-carousel-autoplay';
+
+// Import feature images
+import feature1 from '../assets/images/feature-images/feature1.png';
+import feature2 from '../assets/images/feature-images/feature2.png';
+import feature3 from '../assets/images/feature-images/feature3.png';
+import feature4 from '../assets/images/feature-images/feature4.png';
+import feature5 from '../assets/images/feature-images/feature5.png';
+import feature6 from '../assets/images/feature-images/feature6.png';
+
+console.log('🖼️ LandingPageFresh - Feature images imported:', { feature1, feature2, feature3, feature4, feature5, feature6 });
 
 const GamepadIcon = ({ className }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -102,17 +114,202 @@ const FeatureIcon = ({ icon }: { icon: 'eye' | 'bookmark' | 'network' | 'mic' | 
     );
 };
 
-const Feature = React.memo(({ title, description, icon }: { title: React.ReactNode, description: string, icon: 'eye' | 'bookmark' | 'network' | 'mic' | 'insights' | 'cpu' }) => (
+const Feature = React.memo(({ title, description, icon, image }: { title: React.ReactNode, description: string, icon?: 'eye' | 'bookmark' | 'network' | 'mic' | 'insights' | 'cpu', image?: string }) => {
+    console.log('🎨 Feature rendering:', { title, image, hasImage: !!image });
+    return (
         <div className="flex flex-col items-center text-center group p-6 rounded-2xl hover:bg-gradient-to-br hover:from-neutral-800/20 hover:to-neutral-900/20 transition-all duration-500">
-            <div className="w-20 h-20 mb-6 animate-fade-slide-up group-hover:scale-110 transition-transform duration-500">
-                <FeatureIcon icon={icon} />
+            <div className="w-80 h-80 mb-6 animate-fade-slide-up group-hover:scale-110 transition-transform duration-500">
+                {image ? (
+                    <img 
+                        src={image} 
+                        alt={typeof title === 'string' ? title : ''} 
+                        className="w-full h-full object-contain"
+                        loading="lazy"
+                        decoding="async"
+                        onError={(e) => {
+                            console.error('❌ Image failed to load:', image, e);
+                            console.error('❌ Image element:', e.target);
+                        }}
+                        onLoad={() => console.log('✅ Image loaded successfully:', image)}
+                        style={{ 
+                            display: 'block',
+                            imageRendering: 'crisp-edges',
+                            WebkitFontSmoothing: 'antialiased',
+                            backfaceVisibility: 'hidden',
+                            transform: 'translateZ(0)'
+                        }}
+                    />
+                ) : icon ? (
+                    <FeatureIcon icon={icon} />
+                ) : null}
             </div>
             <div className="animate-fade-slide-up group-hover:translate-y-1 transition-transform duration-500">
                 <h3 className="text-2xl lg:text-3xl font-bold tracking-tight text-white mb-4 leading-tight group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#E53A3A] group-hover:to-[#D98C1F] transition-all duration-500">{title}</h3>
                 <p className="text-lg text-neutral-300 leading-relaxed group-hover:text-neutral-200 transition-colors duration-500">{description}</p>
             </div>
         </div>
-    ));
+    );
+});
+
+const FeaturesCarousel = ({ features }: { features: Array<{ title: string; description: string; image: string }> }) => {
+    const autoplayOptions = {
+        delay: 5000,
+        stopOnInteraction: true,
+        stopOnMouseEnter: true,
+        playOnInit: true
+    };
+
+    const [emblaRef, emblaApi] = useEmblaCarousel(
+        { 
+            loop: true,
+            align: 'start',
+            slidesToScroll: 1,
+            skipSnaps: false,
+            dragFree: false,
+            containScroll: 'trimSnaps',
+            breakpoints: {
+                '(min-width: 768px)': { 
+                    align: 'start'
+                }
+            }
+        },
+        [Autoplay(autoplayOptions)]
+    );
+    
+    const [selectedIndex, setSelectedIndex] = useState(0);
+    const [scrollSnaps, setScrollSnaps] = useState<number[]>([]);
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Detect mobile screen size
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    const scrollPrev = useCallback(() => {
+        if (emblaApi) emblaApi.scrollPrev();
+    }, [emblaApi]);
+    
+    const scrollNext = useCallback(() => {
+        if (emblaApi) emblaApi.scrollNext();
+    }, [emblaApi]);
+    
+    const scrollTo = useCallback((index: number) => {
+        if (emblaApi) emblaApi.scrollTo(index);
+    }, [emblaApi]);
+
+    const onSelect = useCallback(() => {
+        if (!emblaApi) return;
+        setSelectedIndex(emblaApi.selectedScrollSnap());
+    }, [emblaApi]);
+
+    useEffect(() => {
+        if (!emblaApi) return;
+        onSelect();
+        setScrollSnaps(emblaApi.scrollSnapList());
+        emblaApi.on('select', onSelect);
+        emblaApi.on('reInit', onSelect);
+        
+        return () => {
+            emblaApi.off('select', onSelect);
+            emblaApi.off('reInit', onSelect);
+        };
+    }, [emblaApi, onSelect]);
+
+    // On mobile: show 1 item per slide, on desktop: show 2 items per slide
+    const slidesToShow = isMobile ? features : (() => {
+        const grouped = [];
+        for (let i = 0; i < features.length; i += 2) {
+            grouped.push(features.slice(i, i + 2));
+        }
+        return grouped;
+    })();
+
+    return (
+        <div className="relative px-4 md:px-0">
+            {/* Embla Container */}
+            <div className="overflow-hidden" ref={emblaRef}>
+                <div className="flex touch-pan-y touch-pinch-zoom -ml-4">
+                    {isMobile ? (
+                        // Mobile: 1 item per slide
+                        features.map((feature, index) => (
+                            <div 
+                                key={index} 
+                                className="flex-[0_0_100%] min-w-0 pl-4"
+                            >
+                                <Feature
+                                    title={feature.title}
+                                    description={feature.description}
+                                    image={feature.image}
+                                />
+                            </div>
+                        ))
+                    ) : (
+                        // Desktop: 2 items per slide
+                        slidesToShow.map((group, slideIndex) => (
+                            <div 
+                                key={slideIndex} 
+                                className="flex-[0_0_100%] min-w-0 pl-4"
+                            >
+                                <div className="grid grid-cols-2 gap-8">
+                                    {Array.isArray(group) && group.map((feature, idx) => (
+                                        <Feature
+                                            key={slideIndex * 2 + idx}
+                                            title={feature.title}
+                                            description={feature.description}
+                                            image={feature.image}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+
+            {/* Navigation Arrows */}
+            <button
+                onClick={scrollPrev}
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-12 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white p-3 rounded-full hover:scale-110 active:scale-95 transition-transform duration-300 shadow-xl z-10 disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Previous slide"
+            >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+            </button>
+            <button
+                onClick={scrollNext}
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-12 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white p-3 rounded-full hover:scale-110 active:scale-95 transition-transform duration-300 shadow-xl z-10 disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Next slide"
+            >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+            </button>
+
+            {/* Pagination Dots */}
+            <div className="hidden md:flex justify-center gap-3 mt-8">
+                {scrollSnaps.map((_, idx) => (
+                    <button
+                        key={idx}
+                        onClick={() => scrollTo(idx)}
+                        className={`transition-all duration-300 rounded-full ${
+                            idx === selectedIndex
+                                ? 'w-12 h-3 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F]'
+                                : 'w-3 h-3 bg-neutral-600 hover:bg-neutral-500'
+                        }`}
+                        aria-label={`Go to slide ${idx + 1}`}
+                        aria-current={idx === selectedIndex ? 'true' : 'false'}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+};
 
 const FeatureListItem = ({ children }: { children: React.ReactNode }) => (
     <li className="flex items-start gap-4">
@@ -516,39 +713,40 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                             <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-white mb-6 leading-tight" style={{ lineHeight: '1.3', minHeight: '1.3em', height: 'auto', paddingTop: '0.5rem', paddingBottom: '0.5rem' }}>Your Journey From First Moment to Victory</h2>
                             <p className="text-xl text-neutral-300 mt-6 leading-relaxed">Features built to match your gaming style, not slow you down</p>
                         </div>
-                        {/* Desktop: 3x2 Grid, Mobile: Vertical Stack */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            <Feature
-                                title="From First Screenshot to Victory"
-                                description="Upload a screenshot. Otakon identifies your game and becomes your personal guide—no spoilers, full context."
-                                icon="eye"
-                            />
-                            <Feature
-                                title="Play Your Way"
-                                description="Story-driven explorer? Completionist? Speedrunner? Tell us once, and every hint, strategy, and insight matches your playstyle."
-                                icon="bookmark"
-                            />
-                            <Feature
-                                title="Never Pause for Help Again"
-                                description="Hands-Free mode reads AI insights aloud. Get strategy tips, lore context, or build advice without leaving the game."
-                                icon="mic"
-                            />
-                            <Feature
-                                title="Your Gaming Dashboard"
-                                description="Track multiple games at once. Each has its own conversation, progress bar, and AI-generated insight tabs tailored to that game's genre."
-                                icon="insights"
-                            />
-                            <Feature
-                                title="Play From Anywhere"
-                                description="Gaming on console? Manually upload screenshots from your phone. Help arrives instantly in the same conversation."
-                                icon="network"
-                            />
-                            <Feature
-                                title="Stay Focused, Stay Ahead"
-                                description="Skip the wiki-hunting. Otakon provides quest tips, secret locations, build optimization—all without spoiling your discovery."
-                                icon="cpu"
-                            />
-                        </div>
+                        <FeaturesCarousel 
+                            features={[
+                                {
+                                    title: "From First Screenshot to Victory",
+                                    description: "Upload a screenshot. Otakon identifies your game and becomes your personal guide—no spoilers, full context.",
+                                    image: feature1
+                                },
+                                {
+                                    title: "Play Your Way",
+                                    description: "Story-driven explorer? Completionist? Speedrunner? Tell us once, and every hint, strategy, and insight matches your playstyle.",
+                                    image: feature2
+                                },
+                                {
+                                    title: "Never Pause for Help Again",
+                                    description: "Hands-Free mode reads AI insights aloud. Get strategy tips, lore context, or build advice without leaving the game.",
+                                    image: feature3
+                                },
+                                {
+                                    title: "Your Gaming Dashboard",
+                                    description: "Track multiple games at once. Each has its own conversation, progress bar, and AI-generated insight tabs tailored to that game's genre.",
+                                    image: feature4
+                                },
+                                {
+                                    title: "Play From Anywhere",
+                                    description: "Gaming on console? Manually upload screenshots from your phone. Help arrives instantly in the same conversation.",
+                                    image: feature5
+                                },
+                                {
+                                    title: "Stay Focused, Stay Ahead",
+                                    description: "Skip the wiki-hunting. Otakon provides quest tips, secret locations, build optimization—all without spoiling your discovery.",
+                                    image: feature6
+                                }
+                            ]}
+                        />
                     </div>
                 </section>
 
