@@ -429,7 +429,8 @@ class CacheService {
         console.warn('[CacheService] Cache table needs to be created in Supabase');
       }
     } catch (error) {
-      console.warn('[CacheService] Error checking cache table:', error);
+      // Silently fail - cache table initialization is optional
+      // This prevents errors on landing page before auth
     }
   }
 }
@@ -437,8 +438,10 @@ class CacheService {
 // Export singleton instance
 export const cacheService = new CacheService();
 
-// Initialize cache table on startup
-cacheService.initializeCacheTable();
+// Initialize cache table on startup (non-blocking, silent failures)
+cacheService.initializeCacheTable().catch(() => {
+  // Silently catch errors - cache will work without the table check
+});
 
 // Auto-cleanup every 5 minutes
 setInterval(() => {
