@@ -44,14 +44,20 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
     // ✅ Fix malformed bold markers (spaces between ** and text)
     .replace(/\*\*\s+([^*]+?)\s+\*\*/g, '**$1**') // Fix ** text ** → **text**
     .replace(/\*\*\s+([^*]+?):/g, '**$1:**') // Fix ** Header: → **Header:**
-    // ✅ Format section headers with proper spacing and bold (ONLY for image responses)
-    // Apply bold formatting directly to headers at line boundaries
-    .replace(/^Hint:/i, '**Hint:**') // First Hint at very start
-    .replace(/\nHint:/gi, '\n\n**Hint:**') // Subsequent Hints after newline
-    .replace(/\nLore:/gi, '\n\n**Lore:**') // Lore after newline
-    .replace(/\nPlaces of Interest:/gi, '\n\n**Places of Interest:**') // Places after newline
-    .replace(/\nStrategy:/gi, '\n\n**Strategy:**') // Strategy after newline  
-    .replace(/\nWhat to focus on:/gi, '\n\n**What to focus on:**') // What to focus after newline
+    // ✅ Format section headers with proper spacing and bold
+    // First, ensure headers are properly closed with ** and add line breaks
+    .replace(/\*\*Hint:\*\*\s*/gi, '**Hint:**\n') // Add line break after Hint (handles trailing space)
+    .replace(/\*\*Lore:\*\*\s*/gi, '\n\n**Lore:**\n') // Add line breaks around Lore
+    .replace(/\*\*Places of Interest:\*\*\s*/gi, '\n\n**Places of Interest:**\n') // Add line breaks around Places
+    .replace(/\*\*Strategy:\*\*\s*/gi, '\n\n**Strategy:**\n') // Add line breaks around Strategy
+    .replace(/\*\*What to focus on:\*\*\s*/gi, '\n\n**What to focus on:**\n') // Add line breaks around What to focus
+    // Handle headers without existing bold (with or without trailing space)
+    .replace(/^Hint:\s*/i, '**Hint:**\n') // First Hint at very start
+    .replace(/\nHint:\s*/gi, '\n\n**Hint:**\n') // Subsequent Hints after newline
+    .replace(/\nLore:\s*/gi, '\n\n**Lore:**\n') // Lore after newline
+    .replace(/\nPlaces of Interest:\s*/gi, '\n\n**Places of Interest:**\n') // Places after newline
+    .replace(/\nStrategy:\s*/gi, '\n\n**Strategy:**\n') // Strategy after newline  
+    .replace(/\nWhat to focus on:\s*/gi, '\n\n**What to focus on:**\n') // What to focus after newline
     // Clean up spacing
     .replace(/\n{3,}/g, '\n\n') // Remove excessive line breaks (3+ newlines → 2)
     .replace(/^\s+|\s+$/g, '') // Trim start and end
