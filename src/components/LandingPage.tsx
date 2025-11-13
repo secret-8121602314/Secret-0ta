@@ -513,24 +513,24 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                 <section id="features" className="py-10 md:py-14 bg-transparent relative">
                     <div className="container mx-auto px-8 max-w-6xl relative">
                         <div className="text-center mb-8 md:mb-10 animate-fade-slide-up">
-                            <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-white mb-6 leading-tight" style={{ lineHeight: '1.3', minHeight: '1.3em', height: 'auto', paddingTop: '0.5rem', paddingBottom: '0.5rem' }}>Your All-in-One Gaming Assistant</h2>
-                            <p className="text-xl text-neutral-300 mt-6 leading-relaxed">Features built to enhance your gameplay, not spoil it</p>
+                            <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-white mb-6 leading-tight" style={{ lineHeight: '1.3', minHeight: '1.3em', height: 'auto', paddingTop: '0.5rem', paddingBottom: '0.5rem' }}>Your Journey From First Moment to Victory</h2>
+                            <p className="text-xl text-neutral-300 mt-6 leading-relaxed">Features built to match your gaming style, not slow you down</p>
                         </div>
-                        {/* Desktop: 2x2 Grid, Mobile: Vertical Stack */}
+                        {/* Desktop: 3x2 Grid, Mobile: Vertical Stack */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
                             <Feature
-                                title="Instant Contextual Hints"
+                                title="From First Screenshot to Victory"
                                 description="Our context-aware AI vision doesn't just see a game—it understands your moment. Get guidance on puzzles, lore, and boss strategies, all without spoilers."
                                 icon="eye"
                             />
                             <Feature
-                                title="Seamless PC-to-Mobile Sync"
-                                description="Connect your desktop and phone for the ultimate uninterrupted experience. A single hotkey is all it takes to get help without ever minimizing your game."
+                                title="Play From Anywhere"
+                                description="Gaming on console? Manually upload screenshots from your phone. Help arrives instantly in the same conversation."
                                 icon="network"
                             />
                             <Feature
-                                title="Your Personal Gaming Hub"
-                                description="Track your entire gaming journey. The Otaku Diary is your private journal, the Wishlist manages your backlog, and Automatic Progress Tracking organizes your game chats and story progress."
+                                title="Play Your Way"
+                                description="Story-driven explorer? Completionist? Speedrunner? Tell us once, and every hint, strategy, and insight matches your playstyle."
                                 icon="bookmark"
                             />
                             <Feature
