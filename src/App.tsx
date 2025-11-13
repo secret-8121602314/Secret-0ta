@@ -150,10 +150,15 @@ function App() {
           }
         } else {
           if (isMounted) {
+            // Check if running as PWA (standalone mode)
+            const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                         (window.navigator as any).standalone === true;
+            
+            // If PWA, always show login page instead of landing page
             setAppState((prev: AppState) => ({
               ...prev,
-              view: hasEverLoggedIn ? 'app' : 'landing',
-              onboardingStatus: hasEverLoggedIn ? 'login' : 'initial'
+              view: (hasEverLoggedIn || isPWA) ? 'app' : 'landing',
+              onboardingStatus: (hasEverLoggedIn || isPWA) ? 'login' : 'initial'
             }));
             setIsInitializing(false);
           }
