@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Cache</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        button {
+            background: #E53A3A;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 8px;
+            margin: 10px 0;
+            display: block;
+            width: 100%;
+        }
+        button:hover {
+            background: #d02929;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 15px;
+            background: #2a2a2a;
+            border-radius: 8px;
+        }
+        .success {
+            color: #4ade80;
+        }
+        .error {
+            color: #f87171;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧹 Clear All Cache</h1>
+    <p>This will unregister all service workers and clear all caches.</p>
+    
+    <button onclick="clearEverything()">Clear All Cache & Service Workers</button>
+    <button onclick="location.reload()">Reload Page</button>
+    
+    <div id="status"></div>
+
+    <script>
+        async function clearEverything() {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = '<p>Starting cleanup...</p>';
+            
+            try {
+                // Unregister all service workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    statusDiv.innerHTML += `<p class="success">Found ${registrations.length} service worker(s)</p>`;
+                    
+                    for (let registration of registrations) {
+                        await registration.unregister();
+                        statusDiv.innerHTML += `<p class="success">✓ Unregistered service worker: ${registration.scope}</p>`;
+                    }
+                }
+                
+                // Clear all caches
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    statusDiv.innerHTML += `<p class="success">Found ${cacheNames.length} cache(s)</p>`;
+                    
+                    for (let cacheName of cacheNames) {
+                        await caches.delete(cacheName);
+                        statusDiv.innerHTML += `<p class="success">✓ Deleted cache: ${cacheName}</p>`;
+                    }
+                }
+                
+                statusDiv.innerHTML += '<p class="success"><strong>✓ All done! Now reload the page.</strong></p>';
+                
+            } catch (error) {
+                statusDiv.innerHTML += `<p class="error">✗ Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
