@@ -1,11 +1,11 @@
-﻿import React from 'react';
+import React from 'react';
 import { getPublicPath } from '../../utils/publicPath';
 
 interface LogoProps {
   className?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   spin?: boolean;
-  spinOnce?: boolean;
+  spinOnce?: boolean; // New: rotates once and stops
   bounce?: boolean;
 }
 
@@ -36,6 +36,7 @@ const Logo: React.FC<LogoProps> = ({ className = '', size = 'md', spin = false, 
       alt="Otagon Logo"
       className={`${sizeClasses[size]} ${className}`}
       style={{ 
+        filter: 'drop-shadow(0 0 24px rgba(255, 140, 0, 0.3))',
         objectFit: 'contain',
         animation: getAnimation()
       }}
