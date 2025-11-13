@@ -4,6 +4,8 @@ import Button from '../ui/Button';
 import { authService } from '../../services/authService';
 import TermsModal from '../modals/TermsModal';
 import PrivacyModal from '../modals/PrivacyModal';
+import PWAInstallBanner from './PWAInstallBanner';
+// Mobile optimizations applied
 
 interface LoginSplashScreenProps {
   onComplete: () => void;
@@ -339,16 +341,16 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-[#0F0F0F] to-background text-text-primary flex flex-col items-center justify-center px-4 py-8 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-background via-[#0F0F0F] to-background text-text-primary flex flex-col items-center justify-center px-4 py-4 relative overflow-hidden">
       
       <div className={`w-full max-w-md relative z-10 transition-all duration-500 ${isAnimating ? 'scale-105' : 'scale-100'} mx-auto`}>
         {/* Logo and Title */}
-        <div className="text-center mb-6 md:mb-8">
-          <Logo size="xl" className="mx-auto mb-4 md:mb-6" spinOnce={true} />
-          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">
+        <div className="text-center mb-4 md:mb-6">
+          <Logo size="lg" className="mx-auto mb-3 md:mb-4" spinOnce={true} />
+          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-1">
             Welcome to Otagon
           </h1>
-          <p className="text-sm md:text-base text-text-secondary px-4">
+          <p className="text-xs md:text-sm text-text-secondary px-4">
             {emailMode === 'options' 
               ? 'Sign in to start your gaming adventure' 
               : emailMode === 'signin' 
@@ -362,22 +364,22 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
 
         {/* Error Message */}
         {errorMessage && (
-          <div className="mb-4 md:mb-6 p-3 md:p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-center text-sm md:text-base">
+          <div className="mb-3 md:mb-4 p-2.5 md:p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-center text-xs md:text-sm">
             {errorMessage}
           </div>
         )}
 
         {/* Success Message */}
         {successMessage && (
-          <div className="mb-4 md:mb-6 p-3 md:p-4 bg-green-500/10 border border-green-500/20 rounded-xl text-green-400 text-center text-sm md:text-base">
+          <div className="mb-3 md:mb-4 p-2.5 md:p-3 bg-green-500/10 border border-green-500/20 rounded-xl text-green-400 text-center text-xs md:text-sm">
             {successMessage}
           </div>
         )}
 
         {/* Email Form */}
         {(emailMode === 'signin' || emailMode === 'signup') && (
-          <form onSubmit={handleEmailAuth} className="space-y-4 mb-6" role="form" aria-label={`${emailMode === 'signin' ? 'Sign in' : 'Sign up'} form`}>
-            <div className="space-y-4">
+          <form onSubmit={handleEmailAuth} className="space-y-3 mb-4" role="form" aria-label={`${emailMode === 'signin' ? 'Sign in' : 'Sign up'} form`}>
+            <div className="space-y-3">
               <div>
                 <label htmlFor="email-input" className="sr-only">
                   Email address
@@ -398,14 +400,14 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
                   autoComplete="email"
                   tabIndex={1}
                   aria-describedby={emailError ? "email-error" : undefined}
-                  className={`w-full bg-surface border rounded-xl py-2.5 md:py-3 px-3 md:px-4 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-300 text-sm md:text-base ${
+                  className={`w-full bg-surface border rounded-xl py-2 md:py-2.5 px-3 md:px-4 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-300 text-sm ${
                     emailError 
                       ? 'border-red-500/50 focus:border-red-500/60' 
                       : 'border-surface-light/60 focus:border-primary/60'
                   }`}
                 />
                 {emailError && (
-                  <p id="email-error" className="mt-2 text-sm text-red-400" role="alert">{emailError}</p>
+                  <p id="email-error" className="mt-1.5 text-xs text-red-400" role="alert">{emailError}</p>
                 )}
               </div>
 
@@ -431,7 +433,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
                       autoComplete={emailMode === 'signin' ? "current-password" : "new-password"}
                       tabIndex={2}
                       aria-describedby={passwordError ? "password-error" : undefined}
-                      className={`w-full bg-surface border rounded-xl py-2.5 md:py-3 px-3 md:px-4 pr-12 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-300 text-sm md:text-base ${
+                      className={`w-full bg-surface border rounded-xl py-2 md:py-2.5 px-3 md:px-4 pr-10 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-300 text-sm ${
                         passwordError 
                           ? 'border-red-500/50 focus:border-red-500/60' 
                           : 'border-surface-light/60 focus:border-primary/60'
@@ -441,15 +443,15 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
                       <button
                         type="button"
                         onClick={togglePasswordVisibility}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors duration-200 focus:outline-none focus:text-text-primary"
+                        className="absolute right-2.5 top-1/2 transform -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors duration-200 focus:outline-none focus:text-text-primary"
                         aria-label={showPassword ? "Hide password" : "Show password"}
                       >
                         {showPassword ? (
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"></path>
                           </svg>
                         ) : (
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                           </svg>
@@ -458,10 +460,10 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
                     )}
                   </div>
                   {passwordError && (
-                    <p id="password-error" className="mt-2 text-sm text-red-400" role="alert">{passwordError}</p>
+                    <p id="password-error" className="mt-1.5 text-xs text-red-400" role="alert">{passwordError}</p>
                   )}
                   {emailMode === 'signup' && (
-                    <div className="mt-2 text-xs text-text-muted">
+                    <div className="mt-1.5 text-xs text-text-muted">
                       <p>Password must contain:</p>
                       <ul className="list-disc list-inside mt-1 space-y-1">
                         <li className={password.match(/[a-z]/) ? 'text-green-400' : 'text-text-muted'}>
@@ -487,19 +489,19 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
 
               {emailMode === 'signin' && (
                 <div className="flex items-center justify-between">
-                  <label className="flex items-center space-x-2 text-sm text-text-secondary">
+                  <label className="flex items-center space-x-2 text-xs text-text-secondary">
                     <input
                       type="checkbox"
                       checked={rememberMe}
                       onChange={(e) => setRememberMe(e.target.checked)}
-                      className="w-4 h-4 text-primary bg-surface border-surface-light/60 rounded focus:ring-primary focus:ring-2"
+                      className="w-3.5 h-3.5 text-primary bg-surface border-surface-light/60 rounded focus:ring-primary focus:ring-2"
                     />
                     <span>Remember me</span>
                   </label>
                   <button
                     type="button"
                     onClick={() => setEmailMode('forgot-password')}
-                    className="text-sm text-primary hover:text-primary/80 transition-colors"
+                    className="text-xs text-primary hover:text-primary/80 transition-colors"
                   >
                     Forgot password?
                   </button>
@@ -522,7 +524,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setEmailMode('options')}
-                className="text-text-muted hover:text-text-primary transition-colors text-sm"
+                className="text-text-muted hover:text-text-primary transition-colors text-xs"
               >
                 {emailMode === 'signup' ? '← Back to Login' : '← Back to options'}
               </button>
@@ -532,7 +534,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
 
         {/* Forgot Password Form */}
         {emailMode === 'forgot-password' && (
-          <form onSubmit={(e) => { e.preventDefault(); handleForgotPassword(); }} className="space-y-4 mb-6">
+          <form onSubmit={(e) => { e.preventDefault(); handleForgotPassword(); }} className="space-y-3 mb-4">
             <div>
               <input
                 type="email"
@@ -540,14 +542,14 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 required
-                className={`w-full bg-surface border rounded-xl py-3 px-4 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-300 ${
+                className={`w-full bg-surface border rounded-xl py-2 md:py-2.5 px-3 md:px-4 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-300 text-sm ${
                   emailError 
                     ? 'border-red-500/50 focus:border-red-500/60' 
                     : 'border-surface-light/60 focus:border-primary/60'
                 }`}
               />
               {emailError && (
-                <p className="mt-2 text-sm text-red-400">{emailError}</p>
+                <p className="mt-1.5 text-xs text-red-400">{emailError}</p>
               )}
             </div>
 
@@ -565,7 +567,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setEmailMode('signin')}
-                className="text-text-muted hover:text-text-primary transition-colors text-sm"
+                className="text-text-muted hover:text-text-primary transition-colors text-xs"
               >
                 ← Back to sign in
               </button>
@@ -575,11 +577,11 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
 
         {/* Sign-up Success Message */}
         {showSignupSuccess && (
-          <div className="text-center space-y-4">
-            <div className="text-green-500 text-6xl mb-4">✅</div>
-            <h2 className="text-2xl font-bold text-[#F5F5F5] mb-2">Account Created!</h2>
-            <p className="text-[#CFCFCF] mb-6">{successMessage}</p>
-            <div className="space-y-3">
+          <div className="text-center space-y-3">
+            <div className="text-green-500 text-5xl mb-3">✅</div>
+            <h2 className="text-xl font-bold text-[#F5F5F5] mb-1.5">Account Created!</h2>
+            <p className="text-[#CFCFCF] mb-4 text-sm">{successMessage}</p>
+            <div className="space-y-2.5">
               <Button
                 onClick={() => {
                   setShowSignupSuccess(false);
@@ -591,7 +593,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
                   setSuccessMessage('');
                 }}
                 variant="primary"
-                className="w-full hover:scale-105 transition-all duration-300 py-2.5 md:py-3"
+                className="w-full hover:scale-105 transition-all duration-300 py-2 md:py-2.5"
               >
                 Sign In Now
               </Button>
@@ -606,7 +608,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
                   setErrorMessage('');
                   setSuccessMessage('');
                 }}
-                className="text-text-muted hover:text-text-primary transition-colors text-sm"
+                className="text-text-muted hover:text-text-primary transition-colors text-xs"
               >
                 ← Back to options
               </button>
@@ -616,13 +618,13 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
 
         {/* Auth Options */}
         {emailMode === 'options' && (
-          <div className="space-y-3 md:space-y-4">
+          <div className="space-y-2.5 md:space-y-3">
             <button
               onClick={() => handleAuth('google')}
               disabled={isLoading}
-              className="w-full flex items-center justify-center space-x-2 md:space-x-3 hover:scale-105 active:scale-95 transition-all duration-300 py-2.5 md:py-3 font-bold rounded-xl bg-white text-gray-700 hover:shadow-lg hover:shadow-blue-500/25 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100 border border-gray-200"
+              className="w-full flex items-center justify-center space-x-2 md:space-x-3 hover:scale-105 active:scale-95 transition-all duration-300 py-2 md:py-2.5 font-bold rounded-xl bg-white text-gray-700 hover:shadow-lg hover:shadow-blue-500/25 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100 border border-gray-200 text-sm"
             >
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -634,19 +636,19 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
             <button
               onClick={() => handleAuth('discord')}
               disabled={isLoading}
-              className="w-full flex items-center justify-center space-x-2 md:space-x-3 hover:scale-105 active:scale-95 transition-all duration-300 py-2.5 md:py-3 font-bold rounded-xl bg-[#5865F2] text-white hover:bg-[#4752C4] hover:shadow-lg hover:shadow-indigo-500/25 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100"
+              className="w-full flex items-center justify-center space-x-2 md:space-x-3 hover:scale-105 active:scale-95 transition-all duration-300 py-2 md:py-2.5 font-bold rounded-xl bg-[#5865F2] text-white hover:bg-[#4752C4] hover:shadow-lg hover:shadow-indigo-500/25 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100 text-sm"
             >
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
               </svg>
               <span>Continue with Discord</span>
             </button>
 
-            <div className="space-y-2 md:space-y-3">
+            <div className="space-y-2 md:space-y-2.5">
               <button
                 onClick={() => setEmailMode('signin')}
                 disabled={isLoading}
-                className="w-full hover:scale-105 active:scale-95 transition-all duration-300 py-2.5 md:py-3 font-bold rounded-xl bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white hover:shadow-xl hover:shadow-[#E53A3A]/25 focus:outline-none focus:ring-2 focus:ring-[#E53A3A] focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100"
+                className="w-full hover:scale-105 active:scale-95 transition-all duration-300 py-2 md:py-2.5 font-bold rounded-xl bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white hover:shadow-xl hover:shadow-[#E53A3A]/25 focus:outline-none focus:ring-2 focus:ring-[#E53A3A] focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100 text-sm"
               >
                 Sign In with Email
               </button>
@@ -654,7 +656,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
                 onClick={() => setEmailMode('signup')}
                 disabled={isLoading}
                 variant="ghost"
-                className="w-full hover:scale-105 transition-all duration-300 py-2.5 md:py-3"
+                className="w-full hover:scale-105 transition-all duration-300 py-2 md:py-2.5 text-sm"
               >
                 Create New Account
               </Button>
@@ -664,7 +666,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
         )}
 
         {/* Back to Landing */}
-        <div className="text-center mt-6 md:mt-8">
+        <div className="text-center mt-4 md:mt-6">
           <button
             onClick={() => {
               console.log('🔙 [LoginSplashScreen] Back to landing clicked');
@@ -679,10 +681,22 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
             <span>Back to Landing Page</span>
           </button>
         </div>
+        
+        {/* PWA Install Instructions */}
+        <div className="text-center mt-3 md:mt-4 px-4">
+          <p className="text-xs text-text-muted leading-relaxed">
+            To install on mobile, select the <span className="font-semibold text-text-secondary">Kebab menu</span> of your browser and select <span className="font-semibold text-text-secondary">Add to Homescreen</span>
+          </p>
+        </div>
+        
+        {/* PWA Install Banner */}
+        <div className="mt-3 md:mt-4">
+          <PWAInstallBanner />
+        </div>
       </div>
 
       {/* Footer */}
-      <div className="absolute bottom-4 left-0 right-0 p-4 text-center">
+      <div className="absolute bottom-2 left-0 right-0 p-4 text-center">
         <p className="text-xs text-text-muted">
           By continuing, you agree to our{' '}
           <button
