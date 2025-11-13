@@ -784,12 +784,19 @@ Note: These are optional enhancements. If not applicable, omit or return empty a
           // ✅ Fix malformed bold markers (spaces between ** and text)
           .replace(/\*\*\s+([^*]+?)\s+\*\*/g, '**$1**') // Fix ** text ** → **text**
           .replace(/\*\*\s+([^*]+?):/g, '**$1:**') // Fix ** Header: → **Header:**
-          // ✅ Format section headers (ONLY for structured responses like images)
-          .replace(/^Hint:/i, '**Hint:**') // First Hint
-          .replace(/\nHint:/gi, '\n\n**Hint:**') // Subsequent Hints
-          .replace(/\nLore:/gi, '\n\n**Lore:**') // Lore sections
-          .replace(/\nPlaces of Interest:/gi, '\n\n**Places of Interest:**') // Places
-          .replace(/\nStrategy:/gi, '\n\n**Strategy:**') // Strategy
+          // ✅ Format section headers with proper spacing and bold
+          // First, ensure headers are properly closed with ** and add line breaks (handles trailing space)
+          .replace(/\*\*Hint:\*\*\s*/gi, '**Hint:**\n') // Add line break after Hint
+          .replace(/\*\*Lore:\*\*\s*/gi, '\n\n**Lore:**\n') // Add line breaks around Lore
+          .replace(/\*\*Places of Interest:\*\*\s*/gi, '\n\n**Places of Interest:**\n') // Add line breaks around Places
+          .replace(/\*\*Strategy:\*\*\s*/gi, '\n\n**Strategy:**\n') // Add line breaks around Strategy
+          .replace(/\*\*What to focus on:\*\*\s*/gi, '\n\n**What to focus on:**\n') // Add line breaks around What to focus
+          // Handle headers without existing bold (with or without trailing space)
+          .replace(/^Hint:\s*/i, '**Hint:**\n') // First Hint at very start
+          .replace(/\nHint:\s*/gi, '\n\n**Hint:**\n') // Subsequent Hints after newline
+          .replace(/\nLore:\s*/gi, '\n\n**Lore:**\n') // Lore after newline
+          .replace(/\nPlaces of Interest:\s*/gi, '\n\n**Places of Interest:**\n') // Places after newline
+          .replace(/\nStrategy:\s*/gi, '\n\n**Strategy:**\n') // Strategy after newline
           // Remove excessive newlines (but keep double newlines for paragraphs)
           .replace(/\n{3,}/g, '\n\n')
           .trim();
