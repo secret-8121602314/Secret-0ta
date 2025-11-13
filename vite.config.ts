@@ -81,9 +81,15 @@ export default defineConfig(({ mode }) => ({
   server: {
     port: 5173,
     host: true,
+    hmr: {
+      overlay: true,
+    },
     watch: {
       usePolling: true,
       interval: 100,
     },
+  },
+  optimizeDeps: {
+    force: true, // Force re-optimization
   },
 }))

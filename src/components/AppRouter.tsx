@@ -1,6 +1,6 @@
 import React from 'react';
 import { AuthState, AppState, ActiveModal, ConnectionStatus } from '../types';
-import LandingPage from './LandingPage';
+import LandingPage from './LandingPageFresh';
 import LoginSplashScreen from './splash/LoginSplashScreen';
 import InitialSplashScreen from './splash/InitialSplashScreen';
 import HowToUseSplashScreen from './splash/HowToUseSplashScreen';
@@ -119,6 +119,9 @@ const AppRouter: React.FC<AppRouterProps> = ({
 
   if (appState.view === 'landing' && !authState.user) {
     console.log('🟢 RENDERING LANDINGPAGE NOW!');
+    console.log('⚠️⚠️⚠️ ABOUT TO RENDER LANDINGPAGE COMPONENT ⚠️⚠️⚠️');
+    console.log('⚠️ LandingPage import:', LandingPage);
+    console.log('⚠️ LandingPage type:', typeof LandingPage);
     return (
       <>
         <LandingPage
