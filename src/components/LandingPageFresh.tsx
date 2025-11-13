@@ -1202,14 +1202,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
             <footer className="bg-transparent border-t border-neutral-800/50">
                 <div className="container mx-auto px-6 py-8">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-                        {/* Footer Links - Above logo on mobile, right side on desktop */}
-                        <div className="flex items-center gap-6 text-sm font-medium text-neutral-400 order-1 md:order-2">
-                           <a href="#pricing" onClick={handleScrollTo('pricing')} className="hover:text-white transition-colors">Pricing</a>
-                           <button type="button" onClick={onOpenAbout} className="hover:text-white transition-colors active:scale-95">About</button>
-                           <button type="button" onClick={onOpenTerms} className="hover:text-white transition-colors active:scale-95">Terms</button>
-                           <button type="button" onClick={onOpenPrivacy} className="hover:text-white transition-colors active:scale-95">Privacy</button>
-                           <button type="button" onClick={onOpenRefund} className="hover:text-white transition-colors active:scale-95">Refund Policy</button>
-                           <button type="button" onClick={() => setShowContactModal(true)} className="hover:text-white transition-colors active:scale-95">Contact Us</button>
+                        {/* Footer Links - Two rows on mobile, single row on desktop */}
+                        <div className="flex flex-col md:flex-row items-center gap-3 md:gap-6 text-sm font-medium text-neutral-400 order-1 md:order-2">
+                           <div className="flex items-center gap-4 md:gap-6">
+                               <a href="#pricing" onClick={handleScrollTo('pricing')} className="hover:text-white transition-colors">Pricing</a>
+                               <button type="button" onClick={onOpenAbout} className="hover:text-white transition-colors active:scale-95">About</button>
+                               <button type="button" onClick={onOpenTerms} className="hover:text-white transition-colors active:scale-95">Terms</button>
+                           </div>
+                           <div className="flex items-center gap-4 md:gap-6">
+                               <button type="button" onClick={onOpenPrivacy} className="hover:text-white transition-colors active:scale-95">Privacy</button>
+                               <button type="button" onClick={onOpenRefund} className="hover:text-white transition-colors active:scale-95">Refund Policy</button>
+                               <button type="button" onClick={() => setShowContactModal(true)} className="hover:text-white transition-colors active:scale-95">Contact Us</button>
+                           </div>
             </div>
             
                         {/* Logo and Branding - Centered on mobile, left side on desktop */}

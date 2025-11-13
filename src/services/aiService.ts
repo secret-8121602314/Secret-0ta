@@ -309,27 +309,8 @@ class AIService {
     }
     
     try {
-      // ✅ NEW: Determine if we should use grounding (web search)
-      // Use grounding for ANY query that might need current information
-      const needsWebSearch = 
-        // Keywords that indicate need for current information
-        userMessage.toLowerCase().includes('release') ||
-        userMessage.toLowerCase().includes('new games') ||
-        userMessage.toLowerCase().includes('coming out') ||
-        userMessage.toLowerCase().includes('this week') ||
-        userMessage.toLowerCase().includes('this month') ||
-        userMessage.toLowerCase().includes('latest') ||
-        userMessage.toLowerCase().includes('news') ||
-        userMessage.toLowerCase().includes('announced') ||
-        userMessage.toLowerCase().includes('update') ||
-        userMessage.toLowerCase().includes('patch') ||
-        userMessage.toLowerCase().includes('current') ||
-        userMessage.toLowerCase().includes('recent') ||
-        // Check if conversation is for a potentially new/unreleased game
-        (conversation.gameTitle && (
-          conversation.gameTitle.toLowerCase().includes('2025') ||
-          conversation.gameTitle.toLowerCase().includes('2024')
-        ));
+      // ✅ ENABLE GROUNDING FOR ALL QUERIES (text and image)
+      const needsWebSearch = true;
       
       // Use grounding model for queries that need current information
       // ✅ SECURITY: Use Edge Function if enabled
