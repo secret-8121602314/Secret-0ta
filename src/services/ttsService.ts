@@ -2,8 +2,88 @@ let synth: SpeechSynthesis;
 let voices: SpeechSynthesisVoice[] = [];
 let isInitialized = false;
 let currentText = '';
+let wakeLock: any = null;
+let audioContext: AudioContext | null = null;
+let silentAudio: HTMLAudioElement | null = null;
 
 const SPEECH_RATE_KEY = 'otakonSpeechRate';
+
+// Request Wake Lock to keep screen awake during TTS
+const requestWakeLock = async () => {
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await (navigator as any).wakeLock.request('screen');
+            wakeLock.addEventListener('release', () => {
+                console.log('Wake Lock released');
+            });
+        }
+    } catch (err) {
+        console.warn('Wake Lock not supported or failed:', err);
+    }
+};
+
+// Release Wake Lock when TTS stops
+const releaseWakeLock = async () => {
+    try {
+        if (wakeLock !== null) {
+            await wakeLock.release();
+            wakeLock = null;
+        }
+    } catch (err) {
+        console.warn('Wake Lock release failed:', err);
+    }
+};
+
+// Initialize Audio Context with silent audio to maintain background session
+const initAudioContext = () => {
+    try {
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        }
+        
+        if (!silentAudio) {
+            silentAudio = new Audio();
+            // Extremely short silent audio file (base64 encoded WAV)
+            silentAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+            silentAudio.loop = true;
+            silentAudio.volume = 0.01; // Very low volume
+            
+            // Connect to audio context to keep it active
+            if (audioContext) {
+                const source = audioContext.createMediaElementSource(silentAudio);
+                source.connect(audioContext.destination);
+            }
+        }
+    } catch (err) {
+        console.warn('Audio Context initialization failed:', err);
+    }
+};
+
+// Start silent audio to maintain audio session
+const startSilentAudio = async () => {
+    try {
+        if (silentAudio && audioContext) {
+            if (audioContext.state === 'suspended') {
+                await audioContext.resume();
+            }
+            await silentAudio.play();
+        }
+    } catch (err) {
+        console.warn('Silent audio playback failed:', err);
+    }
+};
+
+// Stop silent audio when TTS is complete
+const stopSilentAudio = () => {
+    try {
+        if (silentAudio) {
+            silentAudio.pause();
+            silentAudio.currentTime = 0;
+        }
+    } catch (err) {
+        console.warn('Silent audio stop failed:', err);
+    }
+};
 
 // Function to populate voices, returns a promise that resolves when voices are loaded.
 const populateVoiceList = (): Promise<void> => {
@@ -39,6 +119,9 @@ const cancel = () => {
     if ('mediaSession' in navigator && navigator.mediaSession.playbackState !== 'none') {
         navigator.mediaSession.playbackState = 'paused';
     }
+    // Release wake lock and stop silent audio
+    releaseWakeLock();
+    stopSilentAudio();
     // Dispatch event for UI updates
     window.dispatchEvent(new CustomEvent('otakon:ttsStopped'));
 };
@@ -96,6 +179,8 @@ const init = async () => {
         synth = window.speechSynthesis;
         await populateVoiceList();
         setupMediaSession();
+        // Initialize audio context for background playback
+        initAudioContext();
         // On some browsers (like Chrome on desktop), getVoices() is empty until speak() is called.
         // This empty utterance is a workaround to trigger the onvoiceschanged event.
         if (synth.getVoices().length === 0) {
@@ -155,14 +240,21 @@ const speak = async (text: string): Promise<void> => {
                 utterance.voice = voiceToUse;
             }
 
-            utterance.onstart = () => {
+            utterance.onstart = async () => {
+                // Request wake lock and start silent audio for background playback
+                await requestWakeLock();
+                await startSilentAudio();
+                
                 if ('mediaSession' in navigator) {
                     navigator.mediaSession.playbackState = 'playing';
                     navigator.mediaSession.metadata = new MediaMetadata({
-                        title: 'Otakon Voice Response',
+                        title: text.length > 50 ? text.substring(0, 50) + '...' : text,
                         artist: 'Your AI Gaming Companion',
                         album: 'Otakon',
-                        artwork: [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml' }]
+                        artwork: [
+                            { src: '/Otagon/icon-192.png', sizes: '192x192', type: 'image/png' },
+                            { src: '/Otagon/icon-512.png', sizes: '512x512', type: 'image/png' }
+                        ]
                     });
                 }
                 window.dispatchEvent(new CustomEvent('otakon:ttsStarted'));
@@ -173,6 +265,9 @@ const speak = async (text: string): Promise<void> => {
                 if ('mediaSession' in navigator) {
                     navigator.mediaSession.playbackState = 'paused';
                 }
+                // Release wake lock and stop silent audio when TTS completes
+                releaseWakeLock();
+                stopSilentAudio();
                 window.dispatchEvent(new CustomEvent('otakon:ttsStopped'));
                 resolve();
             };
