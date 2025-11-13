@@ -7,6 +7,27 @@ import ContactUsModal from './modals/ContactUsModal';
 import { WaitlistService } from '../services/waitlistService';
 import { toastService } from '../services/toastService';
 
+// FORCED RELOAD - TIMESTAMP: 2024-11-14-02:45:00
+console.log('🔴🔴🔴 LandingPage.tsx FILE LOADED - TIMESTAMP:', new Date().toISOString(), '🔴🔴🔴');
+console.log('BUILD VERSION: 2024-11-14-FEATURE-IMAGES-FORCED-RELOAD-V2');
+console.log('🚀🚀🚀 THIS IS THE NEW CODE - SHOULD SEE IMAGES NOT ICONS 🚀🚀🚀');
+
+// Import images as modules for proper Vite path handling
+import landing1 from '../assets/images/landing/1.png';
+import landing2 from '../assets/images/landing/2.png';
+import landing3 from '../assets/images/landing/3.png';
+import landing4 from '../assets/images/landing/4.png';
+import landing5 from '../assets/images/landing/5.png';
+import openworldIcon from '../assets/icons/openworld.svg';
+import feature1 from '../assets/images/feature-images/feature1.png';
+import feature2 from '../assets/images/feature-images/feature2.png';
+import feature3 from '../assets/images/feature-images/feature3.png';
+import feature4 from '../assets/images/feature-images/feature4.png';
+import feature5 from '../assets/images/feature-images/feature5.png';
+import feature6 from '../assets/images/feature-images/feature6.png';
+
+console.log('📸 Feature images imported:', { feature1, feature2, feature3, feature4, feature5, feature6 });
+
 const GamepadIcon = ({ className }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="2" y="6" width="20" height="12" rx="2"></rect>
@@ -15,13 +36,6 @@ const GamepadIcon = ({ className }: { className?: string }) => (
         <path d="M18 10v4"></path>
         <path d="M10 10v4"></path>
     </svg>
-);
-
-
-const ProBadge = () => (
-    <span className="text-sm font-bold bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white px-2.5 py-1 rounded-full uppercase tracking-wider ml-3">
-        PRO
-    </span>
 );
 
 const FeatureIcon = ({ icon }: { icon: 'eye' | 'bookmark' | 'network' | 'mic' | 'insights' | 'cpu' }) => {
@@ -102,17 +116,34 @@ const FeatureIcon = ({ icon }: { icon: 'eye' | 'bookmark' | 'network' | 'mic' | 
     );
 };
 
-const Feature = React.memo(({ title, description, icon }: { title: React.ReactNode, description: string, icon: 'eye' | 'bookmark' | 'network' | 'mic' | 'insights' | 'cpu' }) => (
+const Feature = ({ title, description, icon, image }: { title: React.ReactNode, description: string, icon?: 'eye' | 'bookmark' | 'network' | 'mic' | 'insights' | 'cpu', image?: string }) => {
+    console.log('🎨 Feature rendering:', { title, image, hasImage: !!image, iconProvided: !!icon, imageType: typeof image });
+    return (
         <div className="flex flex-col items-center text-center group p-6 rounded-2xl hover:bg-gradient-to-br hover:from-neutral-800/20 hover:to-neutral-900/20 transition-all duration-500">
-            <div className="w-20 h-20 mb-6 animate-fade-slide-up group-hover:scale-110 transition-transform duration-500">
-                <FeatureIcon icon={icon} />
+            <div className="w-24 h-24 mb-6 animate-fade-slide-up group-hover:scale-110 transition-transform duration-500">
+                {image ? (
+                    <img 
+                        src={image} 
+                        alt={typeof title === 'string' ? title : ''} 
+                        className="w-full h-full object-contain"
+                        onError={(e) => {
+                            console.error('❌ Image failed to load:', image, e);
+                            console.error('❌ Image element:', e.target);
+                        }}
+                        onLoad={() => console.log('✅ Image loaded successfully:', image)}
+                        style={{ display: 'block' }}
+                    />
+                ) : (
+                    <FeatureIcon icon={icon!} />
+                )}
             </div>
             <div className="animate-fade-slide-up group-hover:translate-y-1 transition-transform duration-500">
                 <h3 className="text-2xl lg:text-3xl font-bold tracking-tight text-white mb-4 leading-tight group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#E53A3A] group-hover:to-[#D98C1F] transition-all duration-500">{title}</h3>
                 <p className="text-lg text-neutral-300 leading-relaxed group-hover:text-neutral-200 transition-colors duration-500">{description}</p>
             </div>
         </div>
-    ));
+    );
+};
 
 const FeatureListItem = ({ children }: { children: React.ReactNode }) => (
     <li className="flex items-start gap-4">
@@ -164,6 +195,18 @@ interface LandingPageProps {
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, onOpenPrivacy, onOpenRefund, onOpenTerms, onDirectNavigation }) => {
+  // FORCE RECOMPILE NOW - ADDING TIMESTAMP
+  console.log('🎨 LandingPage rendering - UPDATED WITH IMAGES - TIMESTAMP:', Date.now());
+  console.log('🔴🔴🔴 LandingPage COMPONENT FUNCTION EXECUTING 🔴🔴🔴');
+  console.log('🖼️ Feature images:', { feature1, feature2, feature3, feature4, feature5, feature6 });
+  console.log('🖼️ Feature1 value:', feature1);
+  console.log('🖼️ Feature1 type:', typeof feature1);
+  console.log('🖼️ Feature2 value:', feature2);
+  console.log('🖼️ Feature3 value:', feature3);
+  console.log('🖼️ Feature4 value:', feature4);
+  console.log('🖼️ Feature5 value:', feature5);
+  console.log('🖼️ Feature6 value:', feature6);
+  
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState('');
@@ -326,15 +369,21 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-8">
                             <div className="flex items-center gap-2 text-lg text-neutral-300">
                                 <div className="flex -space-x-2">
-                                    {[...Array(5)].map((_, i) => (
-                                        <div key={i} className="w-8 h-8 rounded-full overflow-hidden">
-                                            <img 
-                                                src={`/images/landing/${i + 1}.png`}
-                                                alt={`Gamer ${i + 1}`}
-                                                className="w-full h-full rounded-full object-cover"
-                                            />
-                                        </div>
-                                    ))}
+                                    <div className="w-8 h-8 rounded-full overflow-hidden">
+                                        <img src={landing1} alt="Gamer 1" className="w-full h-full rounded-full object-cover" />
+                                    </div>
+                                    <div className="w-8 h-8 rounded-full overflow-hidden">
+                                        <img src={landing2} alt="Gamer 2" className="w-full h-full rounded-full object-cover" />
+                                    </div>
+                                    <div className="w-8 h-8 rounded-full overflow-hidden">
+                                        <img src={landing3} alt="Gamer 3" className="w-full h-full rounded-full object-cover" />
+                                    </div>
+                                    <div className="w-8 h-8 rounded-full overflow-hidden">
+                                        <img src={landing4} alt="Gamer 4" className="w-full h-full rounded-full object-cover" />
+                                    </div>
+                                    <div className="w-8 h-8 rounded-full overflow-hidden">
+                                        <img src={landing5} alt="Gamer 5" className="w-full h-full rounded-full object-cover" />
+                                    </div>
                                 </div>
                                 <span className="ml-2">
                                     <span className="font-bold text-white">1000+</span> gamers waiting
@@ -349,10 +398,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                             </div>
                         </div>
 
-                        <div className="relative mx-auto my-16 w-full max-w-2xl h-auto rounded-3xl bg-black/60 backdrop-blur-xl p-2 shadow-2xl border-2 border-[#424242]/40 group hover:border-[#E53A3A]/60 transition-all duration-500 hover:shadow-2xl hover:shadow-[#E53A3A]/25 hover:scale-105" style={{
-                            animation: 'glow 2s ease-in-out infinite alternate',
-                            boxShadow: '0 0 20px rgba(229, 58, 58, 0.3), 0 0 40px rgba(229, 58, 58, 0.1), 0 0 60px rgba(229, 58, 58, 0.1)'
-                        }}>
+                        <div className="relative mx-auto my-16 w-full max-w-2xl h-auto rounded-3xl bg-black/60 backdrop-blur-xl p-2 shadow-2xl border-2 border-[#424242]/40 group hover:border-[#E53A3A]/60 transition-all duration-500 hover:shadow-2xl hover:shadow-[#E53A3A]/25 hover:scale-105 animate-glow-pulse">
                             <div className="bg-transparent rounded-2xl p-6 space-y-6">
                                 {/* User Prompt */}
                                 <div className="flex justify-end">
@@ -509,11 +555,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                     </div>
                 </section>
 
-                {/* Features Section */}
+                {/* Features Section - Updated with custom feature images */}
                 <section id="features" className="py-10 md:py-14 bg-transparent relative">
                     <div className="container mx-auto px-8 max-w-6xl relative">
                         <div className="text-center mb-8 md:mb-10 animate-fade-slide-up">
-                            <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-white mb-6 leading-tight" style={{ lineHeight: '1.3', minHeight: '1.3em', height: 'auto', paddingTop: '0.5rem', paddingBottom: '0.5rem' }}>Your Journey From First Moment to Victory</h2>
+                            <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-white mb-6">Your Journey From First Moment to Victory</h2>
                             <p className="text-xl text-neutral-300 mt-6 leading-relaxed">Features built to match your gaming style, not slow you down</p>
                         </div>
                         {/* Desktop: 3x2 Grid, Mobile: Vertical Stack */}
@@ -521,32 +567,32 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                             <Feature
                                 title="From First Screenshot to Victory"
                                 description="Upload a screenshot. Otakon identifies your game and becomes your personal guide—no spoilers, full context."
-                                icon="eye"
+                                image={feature1}
                             />
                             <Feature
                                 title="Play Your Way"
                                 description="Story-driven explorer? Completionist? Speedrunner? Tell us once, and every hint, strategy, and insight matches your playstyle."
-                                icon="bookmark"
+                                image={feature2}
                             />
                             <Feature
                                 title="Never Pause for Help Again"
                                 description="Hands-Free mode reads AI insights aloud. Get strategy tips, lore context, or build advice without leaving the game."
-                                icon="mic"
+                                image={feature3}
                             />
                             <Feature
                                 title="Your Gaming Dashboard"
                                 description="Track multiple games at once. Each has its own conversation, progress bar, and AI-generated insight tabs tailored to that game's genre."
-                                icon="insights"
+                                image={feature4}
                             />
                             <Feature
                                 title="Play From Anywhere"
                                 description="Gaming on console? Manually upload screenshots from your phone. Help arrives instantly in the same conversation."
-                                icon="network"
+                                image={feature5}
                             />
                             <Feature
                                 title="Stay Focused, Stay Ahead"
                                 description="Skip the wiki-hunting. Otakon provides quest tips, secret locations, build optimization—all without spoiling your discovery."
-                                icon="cpu"
+                                image={feature6}
                             />
                         </div>
                     </div>
@@ -557,6 +603,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                     <div className="container mx-auto px-8 max-w-6xl relative">
                         <div className="text-center mb-8 md:mb-10 animate-fade-slide-up">
                             <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-white mb-6">For Every Challenge, In Every World</h2>
+                            <p className="text-xl text-neutral-300 mt-6 leading-relaxed">Master every genre with context-aware guidance</p>
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -644,7 +691,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                             {/* Open-World Adventures */}
                             <div className="text-center animate-fade-slide-up">
                                 <div className="flex items-center justify-center mx-auto mb-4">
-                                    <img src="/icons/openworld.svg" alt="Open World Adventures" className="w-16 h-16" />
+                                    <img src={openworldIcon} alt="Open World Adventures" className="w-16 h-16" />
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-3">Open-World Adventures</h3>
                                 <p className="text-neutral-300 leading-relaxed">
@@ -750,8 +797,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                 <section id="pricing" className="py-8 md:py-10 bg-transparent">
                     <div className="container mx-auto px-8">
                         <div className="text-center mb-8 md:mb-10 animate-fade-slide-up">
-                            <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-white mb-4">Choose Your Plan</h2>
-                            <p className="text-lg text-neutral-300 leading-relaxed">Start for free. Upgrade when you're ready.</p>
+                            <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-white mb-6">Choose Your Plan</h2>
+                            <p className="text-xl text-neutral-300 mt-6 leading-relaxed">Start for free. Upgrade when you're ready.</p>
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
@@ -1039,4 +1086,3 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
 };
 
 export default LandingPage;
-
