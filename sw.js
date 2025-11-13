@@ -1,8 +1,8 @@
 // Service Worker for Otagon PWA - Performance Optimized with Enhanced Background Sync
-const CACHE_NAME = 'otakon-v1.2.4';
-const CHAT_CACHE_NAME = 'otakon-chat-v1.2.4';
-const STATIC_CACHE = 'otakon-static-v1.2.4';
-const API_CACHE = 'otakon-api-v1.2.4';
+const CACHE_NAME = 'otakon-v1.2.5';
+const CHAT_CACHE_NAME = 'otakon-chat-v1.2.5';
+const STATIC_CACHE = 'otakon-static-v1.2.5';
+const API_CACHE = 'otakon-api-v1.2.5';
 const BASE_PATH = '/Otagon';
 const urlsToCache = [
   `${BASE_PATH}/`,
