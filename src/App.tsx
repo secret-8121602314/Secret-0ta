@@ -153,7 +153,7 @@ function App() {
             setAppState((prev: AppState) => ({
               ...prev,
               view: hasEverLoggedIn ? 'app' : 'landing',
-              onboardingStatus: 'login'
+              onboardingStatus: hasEverLoggedIn ? 'login' : 'initial'
             }));
             setIsInitializing(false);
           }

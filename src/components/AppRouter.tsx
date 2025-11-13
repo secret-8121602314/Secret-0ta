@@ -96,6 +96,16 @@ const AppRouter: React.FC<AppRouterProps> = ({
   const shouldShowLoading = (isInitializing || authState.isLoading) &&
     !(appState.view === 'landing' && !hasEverLoggedIn);
 
+  console.log('🔵 AppRouter:', { 
+    view: appState.view, 
+    onboardingStatus: appState.onboardingStatus,
+    hasUser: !!authState.user,
+    isInitializing,
+    isLoading: authState.isLoading,
+    shouldShowLoading,
+    shouldShowLanding: appState.view === 'landing' && !authState.user
+  });
+
   if (shouldShowLoading) {
     return (
       <div className="h-screen bg-gradient-to-br from-[#111111] to-[#0A0A0A] flex items-center justify-center">
@@ -108,6 +118,7 @@ const AppRouter: React.FC<AppRouterProps> = ({
   }
 
   if (appState.view === 'landing' && !authState.user) {
+    console.log('🟢 RENDERING LANDINGPAGE NOW!');
     return (
       <>
         <LandingPage
