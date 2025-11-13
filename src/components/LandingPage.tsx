@@ -517,16 +517,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                             <p className="text-xl text-neutral-300 mt-6 leading-relaxed">Features built to match your gaming style, not slow you down</p>
                         </div>
                         {/* Desktop: 3x2 Grid, Mobile: Vertical Stack */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                             <Feature
                                 title="From First Screenshot to Victory"
-                                description="Our context-aware AI vision doesn't just see a game—it understands your moment. Get guidance on puzzles, lore, and boss strategies, all without spoilers."
+                                description="Upload a screenshot. Otakon identifies your game and becomes your personal guide—no spoilers, full context."
                                 icon="eye"
-                            />
-                            <Feature
-                                title="Play From Anywhere"
-                                description="Gaming on console? Manually upload screenshots from your phone. Help arrives instantly in the same conversation."
-                                icon="network"
                             />
                             <Feature
                                 title="Play Your Way"
@@ -534,9 +529,24 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                                 icon="bookmark"
                             />
                             <Feature
-                                title={<>Go Pro for the Ultimate Edge<ProBadge /></>}
-                                description="Unlock In-Depth Insight Tabs to auto-generate a wiki for your game, use Hands-Free Voice Responses for ultimate immersion, and capture more details with Batch Screenshot Capture."
+                                title="Never Pause for Help Again"
+                                description="Hands-Free mode reads AI insights aloud. Get strategy tips, lore context, or build advice without leaving the game."
+                                icon="mic"
+                            />
+                            <Feature
+                                title="Your Gaming Dashboard"
+                                description="Track multiple games at once. Each has its own conversation, progress bar, and AI-generated insight tabs tailored to that game's genre."
                                 icon="insights"
+                            />
+                            <Feature
+                                title="Play From Anywhere"
+                                description="Gaming on console? Manually upload screenshots from your phone. Help arrives instantly in the same conversation."
+                                icon="network"
+                            />
+                            <Feature
+                                title="Stay Focused, Stay Ahead"
+                                description="Skip the wiki-hunting. Otakon provides quest tips, secret locations, build optimization—all without spoiling your discovery."
+                                icon="cpu"
                             />
                         </div>
                     </div>
