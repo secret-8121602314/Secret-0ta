@@ -1602,18 +1602,36 @@ const MainApp: React.FC<MainAppProps> = ({
             const gameInfo = { gameTitle, genre, aiResponse: response, isUnreleased };
             const newGameTab = await handleCreateGameTab(gameInfo);
             targetConversationId = newGameTab?.id || '';
+            
+            // ✅ CRITICAL: Refresh conversations immediately after creating new tab
+            // This ensures the new tab is available for message migration
+            const refreshedConversations = await ConversationService.getConversations();
+            setConversations(refreshedConversations);
+            console.log('🎮 [MainApp] Conversations refreshed, new tab available for migration');
           }
 
-          // Move the user message and AI response to the game tab if we're currently in "Game Hub"
-          const shouldMigrateMessages = targetConversationId && activeConversation.isGameHub;
-          console.log('🎮 [MainApp] Should migrate messages?', shouldMigrateMessages, {
+          // Move the user message and AI response to the game tab if we detected a DIFFERENT game
+          // Allow migration from Game Hub OR from a different game tab
+          const shouldMigrateMessages = targetConversationId && targetConversationId !== activeConversation.id;
+          console.log('🎮 [MainApp] Should migrate messages?', shouldMigrateMessages);
+          console.log('🎮 [MainApp] Migration check details:', {
             hasTargetConversation: !!targetConversationId,
-            currentConversationId: activeConversation.id,
-            isGameHub: activeConversation.isGameHub
+            currentConversation: {
+              id: activeConversation.id,
+              title: activeConversation.title,
+              isGameHub: activeConversation.isGameHub
+            },
+            targetConversation: {
+              id: targetConversationId,
+              title: conversations[targetConversationId]?.title || 'NOT IN STATE YET'
+            },
+            isDifferentTab: targetConversationId !== activeConversation.id,
+            messagesInCurrentTab: activeConversation.messages.length
           });
           
           if (shouldMigrateMessages) {
-            console.log('🎮 [MainApp] ✅ Starting ATOMIC message migration from Game Hub to game tab');
+            console.log('🎮 [MainApp] ✅ Starting ATOMIC message migration to game tab');
+            console.log('🎮 [MainApp] From:', activeConversation.title, '→ To:', targetConversationId);
             console.log('🎮 [MainApp] Message IDs to move:', { userMsgId: newMessage.id, aiMsgId: aiMessage.id });
             
             // ✅ Use atomic migration service to prevent race conditions
@@ -1668,7 +1686,7 @@ const MainApp: React.FC<MainAppProps> = ({
               }
             }
           } else {
-            console.log('🎮 [MainApp] ⚠️ Skipping message migration - not in Everything Else tab or no target');
+            console.log('🎮 [MainApp] ⚠️ Skipping message migration - already in target game tab or no target detected');
             
             // ✅ No migration - set prompts for current tab (Game Hub or existing game tab)
             if (processedSuggestions.length > 0) {

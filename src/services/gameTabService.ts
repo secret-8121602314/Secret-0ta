@@ -308,9 +308,18 @@ class GameTabService {
     playerProfile?: PlayerProfile,
     aiResponse?: AIResponse // ✅ NEW: AI response from screenshot analysis
   ): Promise<void> {
-    console.error('🤖 [GameTabService] 🔄 Generating initial insights in background for:', conversation.gameTitle);
+    const conversationId = conversation.id;
+    const gameTitle = conversation.gameTitle;
+    console.error(`🤖 [GameTabService] 🔄 [${conversationId}] Generating initial insights for: ${gameTitle}`);
 
     try {
+      // ✅ SAFETY CHECK: Verify conversation still exists before starting expensive AI call
+      const preCheckConversations = await ConversationService.getConversations(true);
+      if (!preCheckConversations[conversationId]) {
+        console.error(`🤖 [GameTabService] [${conversationId}] ⚠️ Conversation no longer exists, aborting insight generation`);
+        return; // Early exit - user may have deleted tab or switched games
+      }
+
       // ✅ CRITICAL: Use AI response content as context (not conversation.messages which is empty at creation time!)
       // Priority 1: Use AI response content (from screenshot analysis)
       // Priority 2: Use conversation messages (if migrated already)
@@ -318,44 +327,46 @@ class GameTabService {
       
       if (aiResponse?.content) {
         conversationContext = `AI Analysis: ${aiResponse.content}`;
-        console.error('🤖 [GameTabService] Using AI response as context (length:', aiResponse.content.length, ')');
+        console.error(`🤖 [GameTabService] [${conversationId}] Using AI response as context (${aiResponse.content.length} chars)`);
       } else if (conversation.messages.length > 0) {
         conversationContext = conversation.messages
           .map(msg => `${msg.role === 'user' ? 'User' : 'AI'}: ${msg.content}`)
           .join('\n\n');
-        console.error('🤖 [GameTabService] Using conversation messages as context (count:', conversation.messages.length, ')');
+        console.error(`🤖 [GameTabService] [${conversationId}] Using messages as context (${conversation.messages.length} msgs)`);
       } else {
-        console.error('🤖 [GameTabService] ⚠️ No context available, will generate generic subtabs');
+        console.error(`🤖 [GameTabService] [${conversationId}] ⚠️ No context available`);
       }
       
-      console.error('🤖 [GameTabService] Context preview:', conversationContext.substring(0, 200));
-      
-      // Generate insights for each sub-tab (this is the slow AI call)
+      console.error(`🤖 [GameTabService] [${conversationId}] 🚀 Calling AI generateInitialInsights...`);
       const insights = await aiService.generateInitialInsights(
-        conversation.gameTitle || 'Unknown Game',
+        gameTitle || 'Unknown Game',
         conversation.genre || 'Action RPG',
         playerProfile,
-        conversationContext // ✅ Pass actual conversation for context-aware generation
+        conversationContext
       );
+      console.error(`🤖 [GameTabService] [${conversationId}] 📥 AI returned:`, Object.keys(insights).length, 'insights');
+
+      // ✅ SAFETY CHECK: Verify conversation STILL exists after AI call
+      const postAICheck = await ConversationService.getConversations(true);
+      if (!postAICheck[conversationId]) {
+        console.error(`🤖 [GameTabService] [${conversationId}] ⚠️ Conversation deleted during AI call, discarding results`);
+        return;
+      }
 
       // ✅ Check if insights were actually generated (not empty object from error fallback)
       const hasInsights = insights && Object.keys(insights).length > 0;
       if (!hasInsights) {
-        console.error('🤖 [GameTabService] ⚠️ AI returned empty insights, using fallback content');
+        console.error(`🤖 [GameTabService] [${conversationId}] ❌ Empty insights, using fallback`);
       } else {
-        console.error('🤖 [GameTabService] ✅ Background insights generated successfully:', Object.keys(insights).length, 'tabs');
-        console.error('🤖 [GameTabService] Insights keys:', Object.keys(insights));
-        console.error('🤖 [GameTabService] First insight preview:', Object.values(insights)[0]?.substring(0, 100));
+        console.error(`🤖 [GameTabService] [${conversationId}] ✅ Got ${Object.keys(insights).length} insights:`, Object.keys(insights));
       }
 
       // ✅ CRITICAL FIX: Read fresh conversation data from DB before updating
-      // The conversation parameter might be stale (from before message migration)
-      // We need to get the LATEST version with migrated messages
-      const conversations = await ConversationService.getConversations(true); // skipCache = true
-      const freshConversation = conversations[conversation.id];
+      const conversations = await ConversationService.getConversations(true);
+      const freshConversation = conversations[conversationId];
       
       if (!freshConversation) {
-        console.error('🤖 [GameTabService] Conversation not found:', conversation.id);
+        console.error(`🤖 [GameTabService] [${conversationId}] ⚠️ Conversation not found, may have been deleted`);
         return;
       }
 
@@ -592,15 +603,15 @@ class GameTabService {
     conversationId: string,
     updates: Array<{ tabId: string; title: string; content: string }>
   ): Promise<void> {
-    console.error('📝 [GameTabService] Updating subtabs from AI response:', { conversationId, updateCount: updates.length });
+    console.error(`📝 [GameTabService] [${conversationId}] Updating subtabs from AI response:`, updates.length);
 
     try {
-      // Get current conversation
-      const conversations = await ConversationService.getConversations();
+      // ✅ RACE CONDITION SAFEGUARD: Get fresh conversation data
+      const conversations = await ConversationService.getConversations(true);
       const conversation = conversations[conversationId];
       
       if (!conversation || !conversation.subtabs) {
-        console.warn('📝 [GameTabService] Conversation or subtabs not found:', conversationId);
+        console.error(`📝 [GameTabService] [${conversationId}] ⚠️ Conversation or subtabs not found, aborting update`);
         return;
       }
 
@@ -610,7 +621,7 @@ class GameTabService {
         const update = updates.find(u => u.tabId === tab.id);
         if (update) {
           updatedCount++;
-          console.error('📝 [GameTabService] Updating subtab:', { tabId: tab.id, title: update.title });
+          console.error(`📝 [GameTabService] [${conversationId}] Updating subtab: ${tab.id} - ${update.title}`);
           
           // ✅ LINEAR PROGRESSION: Append new content with timestamp separator
           const timestamp = new Date().toLocaleString();
@@ -639,7 +650,7 @@ class GameTabService {
 
       // Only update if something changed
       if (updatedCount === 0) {
-        console.error('📝 [GameTabService] No subtabs matched for update');
+        console.error(`📝 [GameTabService] [${conversationId}] ⚠️ No subtabs matched for update`);
         return;
       }
 
@@ -649,9 +660,9 @@ class GameTabService {
         updatedAt: Date.now()
       });
 
-      console.error('📝 [GameTabService] Successfully updated', updatedCount, 'subtabs');
+      console.error(`📝 [GameTabService] [${conversationId}] ✅ Updated ${updatedCount} subtabs successfully`);
     } catch (error) {
-      console.error('📝 [GameTabService] Failed to update subtabs from AI response:', error);
+      console.error(`📝 [GameTabService] [${conversationId}] ❌ Failed to update subtabs:`, error);
       throw error;
     }
   }

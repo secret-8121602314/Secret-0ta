@@ -781,11 +781,15 @@ Note: These are optional enhancements. If not applicable, omit or return empty a
           .replace(/^\s*[\]}]\s*$/gm, '')
           // Clean up any remaining JSON artifacts
           .replace(/\{[\s\S]*?"OTAKON_[A-Z_]+":[\s\S]*?\}/g, '')
-          // ✅ NEW: Add proper line breaks ONLY before major section headers (not all sentences)
-          .replace(/(Hint:)\s*/gi, '$1\n\n')
-          .replace(/\s+(Lore:)\s*/gi, '\n\n$1\n\n')
-          .replace(/\s+(Places of Interest:)\s*/gi, '\n\n$1\n\n')
-          .replace(/\s+(Strategy:)\s*/gi, '\n\n$1\n\n')
+          // ✅ Fix malformed bold markers (spaces between ** and text)
+          .replace(/\*\*\s+([^*]+?)\s+\*\*/g, '**$1**') // Fix ** text ** → **text**
+          .replace(/\*\*\s+([^*]+?):/g, '**$1:**') // Fix ** Header: → **Header:**
+          // ✅ Format section headers (ONLY for structured responses like images)
+          .replace(/^Hint:/i, '**Hint:**') // First Hint
+          .replace(/\nHint:/gi, '\n\n**Hint:**') // Subsequent Hints
+          .replace(/\nLore:/gi, '\n\n**Lore:**') // Lore sections
+          .replace(/\nPlaces of Interest:/gi, '\n\n**Places of Interest:**') // Places
+          .replace(/\nStrategy:/gi, '\n\n**Strategy:**') // Strategy
           // Remove excessive newlines (but keep double newlines for paragraphs)
           .replace(/\n{3,}/g, '\n\n')
           .trim();

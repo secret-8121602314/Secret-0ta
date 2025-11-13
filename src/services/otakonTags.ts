@@ -37,16 +37,24 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
   cleanContent = cleanContent
     .replace(/^Hint:\s*\n\s*Hint:\s*/gm, 'Hint: ') // Fix duplicate Hint headers
     .replace(/^Hint:\s*\n\s*Hint:\s*/gm, 'Hint: ') // Fix multiple duplicate Hint headers
-    .replace(/\n\s*\n\s*\n/g, '\n\n') // Replace multiple newlines with double newlines
-    .replace(/^\s+|\s+$/g, '') // Trim start and end
-    .replace(/\s+$/gm, '') // Trim end of each line
-    .replace(/^$\n/gm, '') // Remove empty lines
-    .replace(/\n\s*\n/g, '\n\n') // Ensure proper paragraph spacing
-    .replace(/\n\n\n+/g, '\n\n') // Remove excessive line breaks
     .replace(/\s*\]\s*$/, '') // Remove trailing ] characters with surrounding whitespace
     .replace(/\s*\[\s*$/, '') // Remove trailing [ characters with surrounding whitespace
     .replace(/^\s*\]\s*/, '') // Remove leading ] characters with surrounding whitespace
     .replace(/^\s*\[\s*/, '') // Remove leading [ characters with surrounding whitespace
+    // ✅ Fix malformed bold markers (spaces between ** and text)
+    .replace(/\*\*\s+([^*]+?)\s+\*\*/g, '**$1**') // Fix ** text ** → **text**
+    .replace(/\*\*\s+([^*]+?):/g, '**$1:**') // Fix ** Header: → **Header:**
+    // ✅ Format section headers with proper spacing and bold (ONLY for image responses)
+    // Apply bold formatting directly to headers at line boundaries
+    .replace(/^Hint:/i, '**Hint:**') // First Hint at very start
+    .replace(/\nHint:/gi, '\n\n**Hint:**') // Subsequent Hints after newline
+    .replace(/\nLore:/gi, '\n\n**Lore:**') // Lore after newline
+    .replace(/\nPlaces of Interest:/gi, '\n\n**Places of Interest:**') // Places after newline
+    .replace(/\nStrategy:/gi, '\n\n**Strategy:**') // Strategy after newline  
+    .replace(/\nWhat to focus on:/gi, '\n\n**What to focus on:**') // What to focus after newline
+    // Clean up spacing
+    .replace(/\n{3,}/g, '\n\n') // Remove excessive line breaks (3+ newlines → 2)
+    .replace(/^\s+|\s+$/g, '') // Trim start and end
     .trim();
 
   return { cleanContent, tags };
