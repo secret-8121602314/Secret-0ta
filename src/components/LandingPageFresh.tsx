@@ -1131,11 +1131,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                         {/* Section Header */}
                         <div className="text-center mb-8 md:mb-10 animate-fade-slide-up">
                             <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white mb-6">
-                                Meet Our Founder
+                                Meet the Founder
                             </h2>
                             <p className="text-lg md:text-xl text-neutral-300 max-w-3xl mx-auto leading-relaxed">
-                                Meet Amaan, a passionate gamer from Hyderabad who spent his early days printing cheat codes at internet cafes.
-                                After graduating from Service Design at the Royal College of Art in London in 2021, he's building the future of gaming assistance.
+                                Hey, I'm Amaan—a passionate gamer from Hyderabad who spent my early days printing cheat codes at internet cafes.
+                                After years of thinking about how people interact with technology, I'm building the future of gaming assistance.
               </p>
             </div>
 
