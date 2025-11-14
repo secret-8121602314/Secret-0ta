@@ -1068,9 +1068,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                                 title="RPG Completionist"
                             />
                             <Testimonial
-                                quote="I love how it tracks my progress across different games. The Otaku Diary feature helps me remember where I left off in complex RPGs with multiple storylines."
-                                author="Alex Kim"
-                                title="Open-World Explorer"
+                                quote="Just press F1 during intense boss fights and get spoken hints without pausing the game. The hands-free mode is a lifesaver - it's like having an expert coach right beside me."
+                                author="Safi Rahman"
+                                title="Souls-like Speedrunner"
                             />
                         </div>
                     </div>
