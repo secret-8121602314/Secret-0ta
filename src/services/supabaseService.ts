@@ -205,32 +205,39 @@ export class SupabaseService {
     }
   }
 
-  async createConversation(userId: string, conversation: Omit<Conversation, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> {
+  async createConversation(userId: string, conversation: Omit<Conversation, 'createdAt' | 'updatedAt'> & { id?: string }): Promise<string | null> {
     try {
       // ✅ FIX: Use auth_user_id directly instead of RPC function
       // The RPC function get_user_id_from_auth_id was causing issues
       // Now we use auth_user_id (which references auth.users.id) directly
       // This matches the RLS policies which check auth_user_id = auth.uid()
       
+      const insertData: any = {
+        auth_user_id: userId, // ✅ Direct auth user ID
+        title: conversation.title,
+        messages: conversation.messages,
+        game_id: conversation.gameId,
+        game_title: conversation.gameTitle,
+        genre: conversation.genre,
+        subtabs: conversation.subtabs || [],
+        subtabs_order: conversation.subtabsOrder || [],
+        is_active_session: conversation.isActiveSession,
+        active_objective: conversation.activeObjective,
+        game_progress: conversation.gameProgress,
+        is_active: conversation.isActive,
+        is_pinned: conversation.isPinned,
+        pinned_at: conversation.pinnedAt ? new Date(conversation.pinnedAt).toISOString() : null,
+        is_game_hub: conversation.isGameHub,
+      };
+      
+      // ✅ CRITICAL: For Game Hub, use the provided ID to maintain consistency
+      if (conversation.id) {
+        insertData.id = conversation.id;
+      }
+      
       const { data, error } = await supabase
         .from('conversations')
-        .insert({
-          auth_user_id: userId, // ✅ Direct auth user ID
-          title: conversation.title,
-          messages: conversation.messages,
-          game_id: conversation.gameId,
-          game_title: conversation.gameTitle,
-          genre: conversation.genre,
-          subtabs: conversation.subtabs || [],
-          subtabs_order: conversation.subtabsOrder || [],
-          is_active_session: conversation.isActiveSession,
-          active_objective: conversation.activeObjective,
-          game_progress: conversation.gameProgress,
-          is_active: conversation.isActive,
-          is_pinned: conversation.isPinned,
-          pinned_at: conversation.pinnedAt ? new Date(conversation.pinnedAt).toISOString() : null,
-          is_game_hub: conversation.isGameHub,
-        } as any) // ⚠️ Temporary: auth_user_id not in types yet, regenerate after SQL fix
+        .insert(insertData)
         .select('id')
         .single();
 

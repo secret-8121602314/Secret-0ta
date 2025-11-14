@@ -336,15 +336,18 @@ export class ConversationService {
     // ✅ PRIMARY: Save to Supabase first if user logged in
     if (userId) {
       try {
+        // Pass the conversation with its ID to ensure Game Hub uses 'game-hub' consistently
         const newId = await supabaseService.createConversation(userId, conversation);
         if (newId) {
-          // Update conversation with Supabase-generated ID if different
+          // Update conversation with Supabase-returned ID if different
           if (newId !== conversation.id) {
+            console.log('🔍 [ConversationService] Supabase returned different ID, updating:', conversation.id, '→', newId);
             delete conversations[conversation.id];
             conversation.id = newId;
             conversations[newId] = conversation;
+          } else {
+            console.log('🔍 [ConversationService] Created in Supabase with consistent ID:', newId);
           }
-          console.log('🔍 [ConversationService] Created in Supabase with ID:', newId);
         }
       } catch (error) {
         console.error('🔍 [ConversationService] Failed to create in Supabase:', error);
