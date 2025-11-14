@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Logo from '../ui/Logo';
 import PWAInstallBanner from './PWAInstallBanner';
 import { supabase } from '../../lib/supabase';
@@ -11,6 +11,12 @@ interface InitialSplashScreenProps {
 
 const InitialSplashScreen: React.FC<InitialSplashScreenProps> = ({ onComplete, user }) => {
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Reset isProcessing on mount to prevent stuck state after logout
+  useEffect(() => {
+    console.log('🎯 [InitialSplashScreen] Component mounted, resetting isProcessing');
+    setIsProcessing(false);
+  }, []);
   
   console.log('🎯 [InitialSplashScreen] Component rendered');
   
@@ -126,4 +132,4 @@ const InitialSplashScreen: React.FC<InitialSplashScreenProps> = ({ onComplete, u
   );
 };
 
-export default React.memo(InitialSplashScreen);
+export default InitialSplashScreen;

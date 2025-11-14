@@ -887,13 +887,22 @@ const MainApp: React.FC<MainAppProps> = ({
   };
 
   // Handle suggested prompt clicks
-  const handleSuggestedPromptClick = (prompt: string) => {
-    console.log('🎯 [MainApp] Suggested prompt clicked:', prompt);
-    handleSendMessage(prompt).catch(error => {
+  const handleSuggestedPromptClick = async (prompt: string) => {
+    console.log('🎯 [MainApp] Suggested prompt clicked:', prompt, { isLoading, hasActiveConversation: !!activeConversation });
+    
+    // Guard: Don't allow if already loading or no active conversation
+    if (isLoading || !activeConversation) {
+      console.warn('🎯 [MainApp] Suggested prompt blocked:', { isLoading, hasActiveConversation: !!activeConversation });
+      return;
+    }
+    
+    try {
+      await handleSendMessage(prompt);
+    } catch (error) {
       console.error('🎯 [MainApp] Error in handleSuggestedPromptClick:', error);
-      // Error already handled by handleSendMessage, but ensure loading state is cleared
+      // Ensure loading state is cleared on error
       setIsLoading(false);
-    });
+    }
   };
 
   // Handle input message change
@@ -1133,6 +1142,11 @@ const MainApp: React.FC<MainAppProps> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleSendMessage = async (message: string, imageUrl?: string) => {
     if (!activeConversation || isLoading) {
+      console.warn('📸 [MainApp] handleSendMessage blocked:', { 
+        hasActiveConversation: !!activeConversation, 
+        isLoading,
+        message: message?.substring(0, 50)
+      });
       return;
     }
 
