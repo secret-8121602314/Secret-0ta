@@ -84,7 +84,11 @@ const AppRouter: React.FC<AppRouterProps> = ({
   mainAppMessageHandlerRef,
   isManualNavigationRef,
 }) => {
-  if (window.location.pathname === '/auth/callback') {
+  // Check for auth callback route (works for both dev and production)
+  const isAuthCallback = window.location.pathname === '/auth/callback' || 
+                         window.location.pathname === '/Otagon/auth/callback';
+  
+  if (isAuthCallback) {
     return (
       <AuthCallback
         onAuthSuccess={handleOAuthSuccess}

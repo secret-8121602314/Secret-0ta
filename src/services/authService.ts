@@ -25,6 +25,13 @@ export class AuthService {
   private cleanupFunctions: (() => void)[] = [];
   private isDestroyed = false;
 
+  // Helper to get the correct callback URL for both dev and production
+  private getCallbackUrl(): string {
+    const origin = window.location.origin;
+    const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    return isDev ? `${origin}/auth/callback` : `${origin}/Otagon/auth/callback`;
+  }
+
   static getInstance(): AuthService {
     if (!AuthService.instance) {
       AuthService.instance = new AuthService();
@@ -113,7 +120,9 @@ export class AuthService {
       // Handle OAuth callback if we're on the callback URL
       // Note: AuthCallback component handles OAuth callbacks, so we skip this
       // to avoid conflicts
-      if (window.location.pathname === '/auth/callback') {
+      const isAuthCallback = window.location.pathname === '/auth/callback' || 
+                             window.location.pathname === '/Otagon/auth/callback';
+      if (isAuthCallback) {
         console.log('🔐 [AuthService] OAuth callback detected, but AuthCallback component will handle it');
         return;
       }
@@ -466,12 +475,13 @@ export class AuthService {
       this.updateAuthState({ isLoading: true, error: null });
       
       console.log('🔐 [AuthService] Starting Google OAuth...');
-      console.log('🔐 [AuthService] Redirect URL:', `${window.location.origin}/auth/callback`);
+      const redirectUrl = this.getCallbackUrl();
+      console.log('🔐 [AuthService] Redirect URL:', redirectUrl);
       
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: redirectUrl,
           queryParams: {
             prompt: 'select_account' // Force Google account selection
           }
@@ -514,7 +524,7 @@ export class AuthService {
       console.log('🔐 [AuthService] Starting Discord OAuth...');
       
       // Construct the redirect URL properly using current origin
-      const redirectUrl = `${window.location.origin}/auth/callback`;
+      const redirectUrl = this.getCallbackUrl();
       console.log('🔐 [AuthService] Redirect URL:', redirectUrl);
       console.log('🔐 [AuthService] Current origin:', window.location.origin);
       console.log('🔐 [AuthService] Current pathname:', window.location.pathname);
@@ -522,7 +532,9 @@ export class AuthService {
       console.log('🔐 [AuthService] Full URL:', window.location.href);
       
       // Check if we're already on the callback page
-      if (window.location.pathname === '/auth/callback') {
+      const isAuthCallback = window.location.pathname === '/auth/callback' || 
+                             window.location.pathname === '/Otagon/auth/callback';
+      if (isAuthCallback) {
         console.log('🔐 [AuthService] Already on callback page, skipping OAuth initiation');
         this.updateAuthState({ isLoading: false, error: null });
         return { success: false, error: 'Already on callback page' };
@@ -660,7 +672,7 @@ export class AuthService {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`
+          emailRedirectTo: this.getCallbackUrl()
         }
       });
 
@@ -725,7 +737,7 @@ export class AuthService {
       this.updateAuthState({ isLoading: true, error: null });
       
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}${window.location.pathname}`
+        redirectTo: this.getCallbackUrl()
       });
 
       if (error) {
@@ -846,7 +858,7 @@ export class AuthService {
         type: 'signup',
         email: email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`
+          emailRedirectTo: this.getCallbackUrl()
         }
       });
 

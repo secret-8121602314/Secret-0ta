@@ -197,7 +197,9 @@ function App() {
   }, [isInitializing]);
 
   useEffect(() => {
-    if (window.location.pathname === '/auth/callback') {
+    const isAuthCallback = window.location.pathname === '/auth/callback' || 
+                           window.location.pathname === '/Otagon/auth/callback';
+    if (isAuthCallback) {
       // The AuthCallback component will handle the authentication
     }
   }, []);
