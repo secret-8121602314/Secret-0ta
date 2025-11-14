@@ -378,8 +378,8 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
 
         {/* Email Form */}
         {(emailMode === 'signin' || emailMode === 'signup') && (
-          <form onSubmit={handleEmailAuth} className="space-y-3 mb-4" role="form" aria-label={`${emailMode === 'signin' ? 'Sign in' : 'Sign up'} form`}>
-            <div className="space-y-3">
+          <form onSubmit={handleEmailAuth} className="space-y-4 md:space-y-5 mb-4" role="form" aria-label={`${emailMode === 'signin' ? 'Sign in' : 'Sign up'} form`}>
+            <div className="space-y-4 md:space-y-5">
               <div>
                 <label htmlFor="email-input" className="sr-only">
                   Email address
@@ -463,9 +463,9 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
                     <p id="password-error" className="mt-1.5 text-xs text-red-400" role="alert">{passwordError}</p>
                   )}
                   {emailMode === 'signup' && (
-                    <div className="mt-1.5 text-xs text-text-muted">
-                      <p>Password must contain:</p>
-                      <ul className="list-disc list-inside mt-1 space-y-1">
+                    <div className="mt-3 md:mt-4 pt-2 md:pt-3 border-t border-surface-light/30 text-xs text-text-muted">
+                      <p className="font-medium mb-2">Password must contain:</p>
+                      <ul className="list-disc list-inside space-y-1.5">
                         <li className={password.match(/[a-z]/) ? 'text-green-400' : 'text-text-muted'}>
                           At least one lowercase letter
                         </li>
@@ -514,7 +514,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
               disabled={isLoading}
               isLoading={isLoading}
               variant="primary"
-              className="w-full"
+              className="w-full mt-5 md:mt-6"
               tabIndex={3}
             >
               {isLoading ? (emailMode === 'signin' ? 'Signing in...' : 'Creating account...') : (emailMode === 'signin' ? 'Sign In' : 'Create Account')}
