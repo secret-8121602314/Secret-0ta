@@ -217,12 +217,17 @@ export class ConversationService {
     if (userId) {
       try {
         console.log('🔍 [ConversationService] Syncing to Supabase...');
+        
+        // ✅ FIX: Fetch existing conversations ONCE before the loop to prevent race conditions
+        const existingConvs = await supabaseService.getConversations(userId);
+        const existingIds = new Set(existingConvs.map(c => c.id));
+        console.log('🔍 [ConversationService] Found', existingIds.size, 'existing conversations in Supabase');
+        
         // Save each conversation to Supabase
         const savePromises = Object.values(conversations).map(async (conv) => {
           try {
-            // Check if conversation exists in Supabase
-            const existingConvs = await supabaseService.getConversations(userId);
-            const exists = existingConvs.some(c => c.id === conv.id);
+            // Check if conversation exists in Supabase (using pre-fetched list)
+            const exists = existingIds.has(conv.id);
             
             if (exists) {
               // Update existing
