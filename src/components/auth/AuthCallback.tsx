@@ -29,22 +29,25 @@ const AuthCallback: React.FC<AuthCallbackProps> = ({ onAuthSuccess, onAuthError 
         console.log('🔐 [AuthCallback] URL search params:', window.location.search);
         console.log('🔐 [AuthCallback] URL hash:', window.location.hash);
 
-        // 🛡️ SESSION PROTECTION: Check if already logged in before processing OAuth
-        const existingSession = await supabase.auth.getSession();
+        // Check for OAuth parameters FIRST before Supabase processes them
         const hasOAuthCode = window.location.search.includes('code') || window.location.hash.includes('access_token');
+        console.log('🔐 [AuthCallback] Has OAuth code/token:', hasOAuthCode);
         
-        // If we're logged in but NO OAuth code in URL, we shouldn't be on callback page
-        if (existingSession.data.session && !hasOAuthCode) {
-          console.log('🔐 [AuthCallback] Already logged in, no OAuth to process:', existingSession.data.session.user.email);
-          const basePath = window.location.hostname === 'localhost' ? '/' : '/Otagon/';
-          window.history.replaceState({}, document.title, basePath);
-          setStatus('success');
-          onAuthSuccess();
-          return;
+        // If we have OAuth code/token, always process it
+        if (!hasOAuthCode) {
+          console.log('🔐 [AuthCallback] No OAuth parameters found, checking existing session...');
+          const existingSession = await supabase.auth.getSession();
+          if (existingSession.data.session) {
+            console.log('🔐 [AuthCallback] Already logged in, no OAuth to process:', existingSession.data.session.user.email);
+            const basePath = window.location.hostname === 'localhost' ? '/' : '/Otagon/';
+            window.history.replaceState({}, document.title, basePath);
+            setStatus('success');
+            onAuthSuccess();
+            return;
+          }
         }
         
-        // If we have OAuth code, always process it (even if there's an existing session)
-        // Supabase will handle session replacement
+        // Process OAuth callback
         console.log('🔐 [AuthCallback] Processing OAuth callback...');
 
         // Check for OAuth errors in URL parameters
