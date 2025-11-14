@@ -764,7 +764,11 @@ const MainApp: React.FC<MainAppProps> = ({
   };
 
   const handleOpenGuide = () => {
-    // Guide functionality removed - no longer showing welcome screen
+    // Open a guide modal or navigate to help documentation
+    toastService.info('Opening guide...');
+    // TODO: Implement proper guide modal or redirect to documentation
+    // For now, open the settings modal as a placeholder
+    setSettingsOpen(true);
   };
 
   const handleAddGame = () => {
@@ -840,10 +844,15 @@ const MainApp: React.FC<MainAppProps> = ({
     e.preventDefault();
     e.stopPropagation();
     
-    setSettingsContextMenu({
-      isOpen: true,
-      position: { x: e.clientX, y: e.clientY },
-    });
+    // Toggle the menu if it's already open
+    if (settingsContextMenu.isOpen) {
+      closeSettingsContextMenu();
+    } else {
+      setSettingsContextMenu({
+        isOpen: true,
+        position: { x: e.clientX, y: e.clientY },
+      });
+    }
   };
 
   const closeSettingsContextMenu = () => {

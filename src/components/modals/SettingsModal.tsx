@@ -75,11 +75,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       maxWidth="2xl"
     >
       <div className="space-y-6">
-        {/* Tab Navigation */}
-        <div className="flex space-x-1 bg-surface/50 rounded-lg p-1">
+        {/* Tab Navigation - Mobile Responsive */}
+        <div className="flex space-x-1 bg-surface/50 rounded-lg p-1 overflow-x-auto">
           <button
             onClick={() => setActiveTab('account')}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors active:scale-95 ${
+            className={`flex-shrink-0 py-2.5 px-3 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-colors active:scale-95 whitespace-nowrap min-w-[80px] sm:min-w-0 sm:flex-1 ${
               activeTab === 'account'
                 ? 'bg-primary text-white'
                 : 'text-text-muted hover:text-text-primary'
@@ -89,17 +89,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('tier')}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors active:scale-95 ${
+            className={`flex-shrink-0 py-2.5 px-3 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-colors active:scale-95 whitespace-nowrap min-w-[80px] sm:min-w-0 sm:flex-1 ${
               activeTab === 'tier'
                 ? 'bg-primary text-white'
                 : 'text-text-muted hover:text-text-primary'
             }`}
           >
-            Tier & Usage
+            <span className="hidden sm:inline">Tier & Usage</span>
+            <span className="sm:hidden">Tier</span>
           </button>
           <button
             onClick={() => setActiveTab('preferences')}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors active:scale-95 ${
+            className={`flex-shrink-0 py-2.5 px-3 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-colors active:scale-95 whitespace-nowrap min-w-[80px] sm:min-w-0 sm:flex-1 ${
               activeTab === 'preferences'
                 ? 'bg-primary text-white'
                 : 'text-text-muted hover:text-text-primary'
@@ -109,7 +110,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('profile')}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors active:scale-95 ${
+            className={`flex-shrink-0 py-2.5 px-3 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-colors active:scale-95 whitespace-nowrap min-w-[80px] sm:min-w-0 sm:flex-1 ${
               activeTab === 'profile'
                 ? 'bg-primary text-white'
                 : 'text-text-muted hover:text-text-primary'
