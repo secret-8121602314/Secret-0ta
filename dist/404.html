@@ -2,21 +2,32 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Otagon</title>
+  <title>Otagon - Redirecting...</title>
   <script>
-    // GitHub Pages SPA redirect for OAuth callback
+    // GitHub Pages 404 handler for SPA routing
     (function() {
       var l = window.location;
+      
+      // Get the path after the domain
       var path = l.pathname;
       
-      // Store full path with query and hash
-      var fullPath = path + l.search + l.hash;
-      sessionStorage.setItem('spa_redirect', fullPath);
-      
-      // Redirect to base /Otagon/ keeping hash params
-      l.replace(l.protocol + '//' + l.hostname + '/Otagon/' + l.search + l.hash);
+      // Check if this looks like an OAuth callback
+      if (path.includes('auth/callback') || l.hash.includes('access_token')) {
+        // Store the full URL for OAuth processing
+        sessionStorage.setItem('oauth_callback', 'true');
+        sessionStorage.setItem('oauth_hash', l.hash);
+        
+        // Redirect to main app at /Otagon/
+        l.replace(l.protocol + '//' + l.hostname + '/Otagon/' + l.hash);
+      } else {
+        // For other 404s, store path and redirect to /Otagon/
+        sessionStorage.setItem('spa_redirect', path);
+        l.replace(l.protocol + '//' + l.hostname + '/Otagon/');
+      }
     })();
   </script>
 </head>
-<body></body>
+<body>
+  <p>Redirecting...</p>
+</body>
 </html>

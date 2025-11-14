@@ -24,16 +24,29 @@
   <body>
     <div id="root"></div>
     <script>
-      // GitHub Pages SPA redirect handler for OAuth callback
+      // GitHub Pages OAuth callback handler
       (function() {
-        var redirect = sessionStorage.getItem('spa_redirect');
-        if (redirect) {
-          sessionStorage.removeItem('spa_redirect');
-          // Extract path without /Otagon prefix
-          var path = redirect.replace('/Otagon', '');
-          if (!path.startsWith('/')) path = '/' + path;
-          // Update URL with full path including hash params
-          history.replaceState(null, null, '/Otagon' + path);
+        // Check if this is an OAuth callback redirect from 404.html
+        var isOAuthCallback = sessionStorage.getItem('oauth_callback');
+        var oauthHash = sessionStorage.getItem('oauth_hash');
+        
+        if (isOAuthCallback && oauthHash) {
+          sessionStorage.removeItem('oauth_callback');
+          sessionStorage.removeItem('oauth_hash');
+          
+          // Update URL to /Otagon/auth/callback with hash params
+          history.replaceState(null, null, '/Otagon/auth/callback' + oauthHash);
+        } else {
+          // Handle regular SPA redirects
+          var redirect = sessionStorage.getItem('spa_redirect');
+          if (redirect && redirect !== '/Otagon' && redirect !== '/Otagon/') {
+            sessionStorage.removeItem('spa_redirect');
+            // Remove /Otagon prefix if present
+            var path = redirect.replace('/Otagon', '');
+            if (path && path !== '/') {
+              history.replaceState(null, null, '/Otagon' + path);
+            }
+          }
         }
       })();
     </script>
