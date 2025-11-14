@@ -107,6 +107,14 @@ const InitialSplashScreen: React.FC<InitialSplashScreenProps> = ({ onComplete, u
           >
             Download PC Client
           </button>
+          
+          {/* Installation Instructions */}
+          <div className="w-full text-center px-4 relative z-10" style={{ pointerEvents: 'auto' }}>
+            <p className="text-xs sm:text-sm text-neutral-400 leading-relaxed">
+              <span className="block sm:inline">1. Download and install the Otagon Connector (.exe) • </span>
+              <span className="block sm:inline">2. Open the app and enter your 6-digit code</span>
+            </p>
+          </div>
         </div>
         
         {/* PWA Install Banner - In normal document flow */}
