@@ -118,7 +118,7 @@ const Feature = React.memo(({ title, description, icon, image }: { title: React.
     console.log('🎨 Feature rendering:', { title, image, hasImage: !!image });
     return (
         <div className="flex flex-col items-center text-center group p-6 rounded-2xl hover:bg-gradient-to-br hover:from-neutral-800/20 hover:to-neutral-900/20 transition-all duration-500">
-            <div className="w-80 h-80 mb-6 animate-fade-slide-up group-hover:scale-110 transition-transform duration-500">
+            <div className="w-full max-w-2xl aspect-video mb-6 animate-fade-slide-up group-hover:scale-105 transition-transform duration-500">
                 {image ? (
                     <img 
                         src={image} 
