@@ -174,6 +174,11 @@ export class ConversationService {
     let needsUpdate = false;
     Object.values(conversations).forEach((conv: Conversation) => {
       if (conv.title === 'General Chat' || conv.title === 'Everything else') {
+        console.log('🎮 [GAME_HUB_PROTECTION] Migrating legacy conversation to Game Hub:', {
+          oldTitle: conv.title,
+          oldId: conv.id,
+          oldIsGameHub: conv.isGameHub
+        });
         conv.title = DEFAULT_CONVERSATION_TITLE; // "Game Hub"
         conv.id = GAME_HUB_ID; // Ensure ID is correct
         conv.isGameHub = true; // Mark as Game Hub
@@ -181,6 +186,7 @@ export class ConversationService {
       }
       // Also ensure any conversation with game-hub ID has the flag set
       if (conv.id === GAME_HUB_ID && !conv.isGameHub) {
+        console.warn('🎮 [GAME_HUB_PROTECTION] Fixing missing isGameHub flag for:', conv.id);
         conv.isGameHub = true;
         needsUpdate = true;
       }
@@ -261,6 +267,15 @@ export class ConversationService {
     const isGameHub = title === DEFAULT_CONVERSATION_TITLE;
     // Use 'game-hub' as ID for the default Game Hub conversation
     const conversationId = id || (isGameHub ? GAME_HUB_ID : `conv_${now}`);
+    
+    console.log('🎮 [GAME_HUB_PROTECTION] createConversation called:', {
+      title,
+      providedId: id,
+      isGameHub,
+      conversationId,
+      GAME_HUB_ID_VALUE: GAME_HUB_ID,
+      DEFAULT_TITLE: DEFAULT_CONVERSATION_TITLE
+    });
     
     return {
       id: conversationId,
@@ -375,8 +390,16 @@ export class ConversationService {
     
     // ✅ PROTECTION: Prevent deletion of Game Hub
     const conversation = conversations[id];
+    console.log('🎮 [GAME_HUB_PROTECTION] deleteConversation called:', { 
+      conversationId: id, 
+      isGameHub: conversation?.isGameHub, 
+      matchesConstant: id === GAME_HUB_ID,
+      conversationTitle: conversation?.title,
+      GAME_HUB_ID_VALUE: GAME_HUB_ID
+    });
+    
     if (conversation?.isGameHub || id === GAME_HUB_ID) {
-      console.warn('🔍 [ConversationService] Cannot delete Game Hub conversation');
+      console.error('🚫 [GAME_HUB_PROTECTION] BLOCKED: Attempted to delete Game Hub conversation!');
       toastService.warning('Cannot delete the Game Hub conversation. It\'s your main conversation space!');
       throw new Error('Cannot delete the Game Hub conversation');
     }
@@ -518,12 +541,22 @@ export class ConversationService {
     const conversation = conversations[conversationId];
     
     if (!conversation) {
+      console.warn('🔍 [ConversationService] clearConversation: Conversation not found:', conversationId);
       return;
     }
     
     // ✅ PROTECTION: Prevent clearing Game Hub messages
+    console.log('🎮 [GAME_HUB_PROTECTION] clearConversation called:', { 
+      conversationId, 
+      isGameHub: conversation.isGameHub, 
+      matchesConstant: conversationId === GAME_HUB_ID,
+      conversationTitle: conversation.title,
+      messageCount: conversation.messages?.length || 0,
+      GAME_HUB_ID_VALUE: GAME_HUB_ID
+    });
+    
     if (conversation.isGameHub || conversationId === GAME_HUB_ID) {
-      console.warn('🔍 [ConversationService] Cannot clear Game Hub conversation messages');
+      console.error('🚫 [GAME_HUB_PROTECTION] BLOCKED: Attempted to clear Game Hub conversation messages!');
       toastService.warning('Cannot clear the Game Hub conversation. It\'s your main conversation space!');
       throw new Error('Cannot clear the Game Hub conversation');
     }

@@ -210,9 +210,12 @@ class SuggestedPromptsService {
    * Returns news prompts for Game Hub, game-specific prompts for game tabs
    */
   public getFallbackSuggestions(conversationId: string, isGameHub?: boolean): string[] {
+    // Import GAME_HUB_ID constant for consistency
+    const GAME_HUB_ID = 'game-hub';
+    
     // ✅ Explicit Game Hub check with multiple conditions
     const isActuallyGameHub = isGameHub === true || 
-      conversationId === 'game-hub' || 
+      conversationId === GAME_HUB_ID || 
       conversationId === 'everything-else';
     
     if (isActuallyGameHub) {
