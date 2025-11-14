@@ -222,7 +222,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [autocompleteSuggestions, setAutocompleteSuggestions] = useState<string[]>([]);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
-  const [isQuickActionsExpanded, setIsQuickActionsExpanded] = useState(true);
+  // Mobile: collapsed by default, Desktop: expanded by default
+  const [isQuickActionsExpanded, setIsQuickActionsExpanded] = useState(() => {
+    return window.innerWidth > 640; // Collapsed on mobile (<=640px), expanded on desktop
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);

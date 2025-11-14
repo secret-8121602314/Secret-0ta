@@ -26,7 +26,8 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
   onTrialStart,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
-  const [isTrialEligible, setIsTrialEligible] = useState(false);
+  // Optimistic: Show trial button immediately for free users, hide if check fails
+  const [isTrialEligible, setIsTrialEligible] = useState(userTier === 'free');
   const [isStartingTrial, setIsStartingTrial] = useState(false);
 
   // Check trial eligibility when menu opens
@@ -41,7 +42,8 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
           }
         } catch (error) {
           console.error('Error checking trial eligibility:', error);
-          setIsTrialEligible(false);
+          // Keep showing the button on error - user can try
+          setIsTrialEligible(true);
         }
       } else {
         setIsTrialEligible(false);
