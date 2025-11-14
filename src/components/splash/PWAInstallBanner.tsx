@@ -4,9 +4,16 @@ interface PWAInstallBannerProps {
   className?: string;
 }
 
+const BANNER_DISMISS_KEY = 'otakon_pwa_banner_dismissed';
+const GLOBAL_PROMPT_KEY = '__otagon_beforeinstallprompt';
+
 const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '' }) => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [showBanner, setShowBanner] = useState(false);
+  const [hasPrompt, setHasPrompt] = useState(false);
+  const [showBanner, setShowBanner] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return sessionStorage.getItem(BANNER_DISMISS_KEY) !== 'true';
+  });
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
@@ -28,10 +35,20 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '' }) =
 
     checkIfInstalled();
 
+    const globalPrompt = (window as any)[GLOBAL_PROMPT_KEY];
+    if (globalPrompt) {
+      setDeferredPrompt(globalPrompt);
+      setHasPrompt(true);
+      setShowBanner(true);
+    }
+
     // Listen for beforeinstallprompt event
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
+      (window as any)[GLOBAL_PROMPT_KEY] = e;
       setDeferredPrompt(e);
+      setHasPrompt(true);
+      sessionStorage.removeItem(BANNER_DISMISS_KEY);
       setShowBanner(true);
     };
 
@@ -40,6 +57,10 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '' }) =
       setIsInstalled(true);
       setShowBanner(false);
       localStorage.setItem('otakon_pwa_installed', 'true');
+      sessionStorage.removeItem(BANNER_DISMISS_KEY);
+      (window as any)[GLOBAL_PROMPT_KEY] = null;
+      setHasPrompt(false);
+      setDeferredPrompt(null);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -51,8 +72,19 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '' }) =
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (sessionStorage.getItem(BANNER_DISMISS_KEY) === 'true') {
+      setShowBanner(false);
+    }
+  }, []);
+
   const handleInstallClick = async () => {
     if (!deferredPrompt) {
+      // Fallback instructions already shown in banner
       return;
     }
 
@@ -75,12 +107,11 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '' }) =
 
   const handleDismiss = () => {
     setShowBanner(false);
-    // Don't show again for this session
-    sessionStorage.setItem('otakon_pwa_banner_dismissed', 'true');
+    sessionStorage.setItem(BANNER_DISMISS_KEY, 'true');
   };
 
-  // Don't show if already installed or dismissed this session
-  if (isInstalled || !showBanner || sessionStorage.getItem('otakon_pwa_banner_dismissed') === 'true') {
+  // Don't show if already installed or banner hidden for session
+  if (isInstalled || !showBanner) {
     return null;
   }
 
@@ -102,9 +133,10 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '' }) =
         <div className="flex items-center space-x-2">
           <button
             onClick={handleInstallClick}
-            className="px-3 py-1.5 bg-gradient-to-r from-[#E53A3A] to-[#FFAB40] text-white text-xs font-medium rounded-lg hover:from-[#D42A2A] hover:to-[#C87A1A] transition-all duration-200 active:scale-95"
+            disabled={!hasPrompt}
+            className={`px-3 py-1.5 bg-gradient-to-r from-[#E53A3A] to-[#FFAB40] text-white text-xs font-medium rounded-lg transition-all duration-200 active:scale-95 ${hasPrompt ? 'hover:from-[#D42A2A] hover:to-[#C87A1A]' : 'opacity-60 cursor-not-allowed'}`}
           >
-            Install
+            {hasPrompt ? 'Install' : 'How to Install'}
           </button>
           <button
             onClick={handleDismiss}
@@ -116,6 +148,17 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '' }) =
           </button>
         </div>
       </div>
+
+      {!hasPrompt && (
+        <div className="text-left text-xs text-neutral-400 mt-3 space-y-1">
+          <p className="font-medium text-white/80">Install steps:</p>
+          <ol className="list-decimal list-inside space-y-0.5">
+            <li>Tap the browser menu (⋮) in Chrome</li>
+            <li>Select <span className="text-white">Add to Home screen</span></li>
+            <li>Confirm to pin Otagon as an app</li>
+          </ol>
+        </div>
+      )}
     </div>
   );
 };
