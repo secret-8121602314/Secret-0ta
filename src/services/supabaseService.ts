@@ -137,6 +137,27 @@ export class SupabaseService {
   }
 
   // Conversation operations
+  /**
+   * Get or create Game Hub conversation using database RPC function
+   * This ensures only one Game Hub exists per user
+   */
+  async getOrCreateGameHub(userId: string): Promise<string | null> {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_or_create_game_hub', { p_user_id: userId });
+
+      if (error) {
+        console.error('Error getting/creating Game Hub:', error);
+        return null;
+      }
+
+      return data; // Returns UUID of Game Hub conversation
+    } catch (error) {
+      console.error('Error calling get_or_create_game_hub:', error);
+      return null;
+    }
+  }
+
   async getConversations(userId: string): Promise<Conversation[]> {
     try {
       // ✅ FIX: Query by auth_user_id directly (matches RLS policies)
