@@ -715,13 +715,18 @@ const MainApp: React.FC<MainAppProps> = ({
   };
 
   const handleClearConversation = async (id: string) => {
-    await ConversationService.clearConversation(id);
-    const updatedConversations = await ConversationService.getConversations();
-    setConversations(updatedConversations);
-    
-    // If this was the active conversation, update it
-    if (activeConversation?.id === id) {
-      setActiveConversation(updatedConversations[id]);
+    try {
+      await ConversationService.clearConversation(id);
+      const updatedConversations = await ConversationService.getConversations();
+      setConversations(updatedConversations);
+      
+      // If this was the active conversation, update it
+      if (activeConversation?.id === id) {
+        setActiveConversation(updatedConversations[id]);
+      }
+    } catch (error) {
+      // Error already handled by ConversationService with toast notification
+      console.error('Failed to clear conversation:', error);
     }
   };
 
@@ -883,7 +888,12 @@ const MainApp: React.FC<MainAppProps> = ({
 
   // Handle suggested prompt clicks
   const handleSuggestedPromptClick = (prompt: string) => {
-    handleSendMessage(prompt);
+    console.log('🎯 [MainApp] Suggested prompt clicked:', prompt);
+    handleSendMessage(prompt).catch(error => {
+      console.error('🎯 [MainApp] Error in handleSuggestedPromptClick:', error);
+      // Error already handled by handleSendMessage, but ensure loading state is cleared
+      setIsLoading(false);
+    });
   };
 
   // Handle input message change

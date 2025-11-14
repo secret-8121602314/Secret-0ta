@@ -515,17 +515,28 @@ export class ConversationService {
 
   static async clearConversation(conversationId: string): Promise<void> {
     const conversations = await this.getConversations();
-    if (conversations[conversationId]) {
-      // Clear messages but keep the conversation
-      conversations[conversationId] = {
-        ...conversations[conversationId],
-        messages: [],
-        updatedAt: Date.now(),
-      };
-      
-      await this.setConversations(conversations);
-      await chatMemoryService.saveConversation(conversations[conversationId]);
+    const conversation = conversations[conversationId];
+    
+    if (!conversation) {
+      return;
     }
+    
+    // ✅ PROTECTION: Prevent clearing Game Hub messages
+    if (conversation.isGameHub || conversationId === GAME_HUB_ID) {
+      console.warn('🔍 [ConversationService] Cannot clear Game Hub conversation messages');
+      toastService.warning('Cannot clear the Game Hub conversation. It\'s your main conversation space!');
+      throw new Error('Cannot clear the Game Hub conversation');
+    }
+    
+    // Clear messages but keep the conversation
+    conversations[conversationId] = {
+      ...conversations[conversationId],
+      messages: [],
+      updatedAt: Date.now(),
+    };
+    
+    await this.setConversations(conversations);
+    await chatMemoryService.saveConversation(conversations[conversationId]);
   }
 
   /**
