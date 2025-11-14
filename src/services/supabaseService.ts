@@ -51,6 +51,15 @@ export class SupabaseService {
           imageLimit: userData.image_limit || 25,
           totalRequests: userData.total_requests || 0,
           lastReset: userData.last_reset ? new Date(userData.last_reset).getTime() : Date.now(),
+          // PC Connection fields
+          connectionCode: userData.connection_code ?? undefined,
+          connectionCodeCreatedAt: userData.connection_code_created_at ? new Date(userData.connection_code_created_at).getTime() : undefined,
+          connectionActive: userData.connection_active ?? undefined,
+          connectionDeviceInfo: jsonToRecord(userData.connection_device_info),
+          lastConnectionAt: userData.last_connection_at ? new Date(userData.last_connection_at).getTime() : undefined,
+          // Trial fields
+          trialStartedAt: userData.trial_started_at ? new Date(userData.trial_started_at).getTime() : undefined,
+          trialExpiresAt: userData.trial_expires_at ? new Date(userData.trial_expires_at).getTime() : undefined,
           preferences: jsonToRecord(userData.preferences),
           // Legacy nested usage object
           usage: {
@@ -168,6 +177,8 @@ export class SupabaseService {
 
       return data.map(conv => ({
         id: conv.id,
+        authUserId: conv.auth_user_id ?? undefined,
+        userId: conv.user_id ?? undefined,
         title: conv.title,
         messages: Array.isArray(conv.messages) ? conv.messages as unknown[] : [],
         gameId: conv.game_id ?? undefined,
