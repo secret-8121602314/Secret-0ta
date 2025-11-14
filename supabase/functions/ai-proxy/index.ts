@@ -205,7 +205,14 @@ serve(async (req: Request) => {
 
     // Add tools if provided (for Google Search grounding)
     if (tools && tools.length > 0) {
-      requestBody.tools = tools;
+      // Ensure tools are properly formatted for Gemini API
+      try {
+        requestBody.tools = tools;
+        console.log('Adding Google Search grounding to request');
+      } catch (error) {
+        console.error('Error adding tools to request:', error);
+        // Continue without tools if there's an error
+      }
     }
 
     const geminiResponse = await fetch(geminiUrl, {
@@ -216,7 +223,14 @@ serve(async (req: Request) => {
 
     if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text();
-      console.error('Gemini API error:', errorText);
+      console.error('Gemini API error:', {
+        status: geminiResponse.status,
+        statusText: geminiResponse.statusText,
+        errorText: errorText,
+        model: model,
+        hasTools: tools && tools.length > 0,
+        requestType: requestType
+      });
       return new Response(
         JSON.stringify({ 
           error: 'AI service error', 

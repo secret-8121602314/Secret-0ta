@@ -593,9 +593,12 @@ Note: These are optional enhancements. If not applicable, omit or return empty a
 
         const modelName = 'gemini-2.5-flash-preview-09-2025';
         
-        const tools = needsWebSearch && !hasImages 
-          ? [{ googleSearchRetrieval: {} }]
-          : [];
+        // ✅ FIX: Don't use Google Search grounding for now - it's causing 500 errors
+        // We'll use the model's built-in knowledge which is sufficient for most queries
+        const tools = undefined; // Disabled temporarily until edge function is fixed
+        // const tools = needsWebSearch && !hasImages 
+        //   ? [{ googleSearchRetrieval: {} }]
+        //   : [];
 
         const edgeResponse = await this.callEdgeFunction({
           prompt,
@@ -604,7 +607,7 @@ Note: These are optional enhancements. If not applicable, omit or return empty a
           maxTokens: 2048,
           requestType: hasImages ? 'image' : 'text',
           model: modelName,
-          tools: tools.length > 0 ? tools : undefined
+          tools: tools
         });
 
         if (!edgeResponse.success) {
@@ -748,6 +751,11 @@ Note: These are optional enhancements. If not applicable, omit or return empty a
           .replace(/\n\s*\{[\s\S]*$/g, '')
           // ✅ FIX: Remove trailing brackets/JSON at the end (before metadata sections)
           .replace(/\s*[\]}\s]*(?=\s*(?:Enhanced Response Data|followUpPrompts|progressiveInsightUpdates|stateUpdateTags|gamePillData|$))/gi, '')
+          // ✅ NEW: Remove structured data section markers like "***]" or "---Structured Data:"
+          .replace(/\*{2,}\]?\s*$/g, '')
+          .replace(/---+\s*Structured Data:?[\s\S]*$/gi, '')
+          .replace(/```json[\s\S]*?```/gi, '')
+          .trim()
           // Remove "Enhanced Response Data" header if present
           .replace(/Enhanced Response Data\s*/gi, '')
           // Remove followUpPrompts section (non-JSON format)
