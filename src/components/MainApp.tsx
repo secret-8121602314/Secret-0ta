@@ -259,21 +259,25 @@ const MainApp: React.FC<MainAppProps> = ({
         const userConversations = await ConversationService.getConversations();
         console.log('🔍 [MainApp] Loaded conversations:', userConversations);
         
-        // Migration: Fix old "Everything else" or ensure Game Hub exists
-        // Note: conversationService.getConversations() already handles the migration
+        // ✅ CRITICAL: Ensure Game Hub exists before doing anything else
+        await ConversationService.ensureGameHubExists();
         
-        setConversations(userConversations);
+        // Reload conversations after ensuring Game Hub
+        const updatedConversations = await ConversationService.getConversations();
+        console.log('🔍 [MainApp] Conversations after Game Hub check:', updatedConversations);
+        
+        setConversations(updatedConversations);
 
         let active = await ConversationService.getActiveConversation();
         console.log('🔍 [MainApp] Active conversation from service:', active);
 
         // Handle all cases to ensure "Game Hub" is always available and active by default
-        const currentGameHub = Object.values(userConversations).find(
+        const currentGameHub = Object.values(updatedConversations).find(
           conv => conv.isGameHub || conv.title === 'Game Hub' || conv.id === 'game-hub'
         );
 
-        // Case 1: No conversations at all - create "Game Hub" and set as active
-        if (Object.keys(userConversations).length === 0) {
+        // Case 1: No conversations at all (should not happen since we call ensureGameHubExists)
+        if (Object.keys(updatedConversations).length === 0) {
           console.log('🔍 [MainApp] No conversations found, creating "Game Hub"...');
           const newConversation = ConversationService.createConversation('Game Hub', 'game-hub');
           await ConversationService.addConversation(newConversation);

@@ -884,21 +884,25 @@ Note: These are optional enhancements. If not applicable, omit or return empty a
       
       toastService.error('AI response failed. Please try again.');
       
-      // Use error recovery
+      // Use error recovery with proper retry tracking
+      const context = {
+        operation: 'getChatResponseWithStructure',
+        conversationId: conversation.id,
+        userId: user.id,
+        timestamp: Date.now(),
+        retryCount: 0
+      };
+      
       const recoveryAction = await errorRecoveryService.handleAIError(
         error as Error,
-        {
-          operation: 'getChatResponseWithStructure',
-          conversationId: conversation.id,
-          userId: user.id,
-          timestamp: Date.now(),
-          retryCount: 0
-        }
+        context
       );
       
       if (recoveryAction.type === 'retry') {
+        errorRecoveryService.incrementRetryCount(context);
         return this.getChatResponseWithStructure(conversation, user, userMessage, isActiveSession, hasImages, imageData, abortSignal);
       } else if (recoveryAction.type === 'user_notification') {
+        errorRecoveryService.resetRetryCount(context);
         return {
           content: recoveryAction.message || "I'm having trouble thinking right now. Please try again later.",
           suggestions: ["Try again", "Check your connection", "Contact support"],
