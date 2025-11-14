@@ -37,6 +37,17 @@
   <body>
     <div id="root"></div>
     <script>
+      // GitHub Pages SPA redirect handler
+      // This restores the original URL after 404.html redirect
+      (function() {
+        const redirect = sessionStorage.getItem('redirectPath');
+        sessionStorage.removeItem('redirectPath');
+        if (redirect && redirect !== l.pathname) {
+          history.replaceState(null, null, l.pathname.slice(0, -1) + redirect);
+        }
+      })();
+    </script>
+    <script>
       // Service Worker Registration for Production
       if ('serviceWorker' in navigator) {
         // Only register in production (not localhost)

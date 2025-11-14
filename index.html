@@ -23,6 +23,17 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // GitHub Pages SPA redirect handler
+      // This restores the original URL after 404.html redirect
+      (function() {
+        const redirect = sessionStorage.getItem('redirectPath');
+        sessionStorage.removeItem('redirectPath');
+        if (redirect && redirect !== l.pathname) {
+          history.replaceState(null, null, l.pathname.slice(0, -1) + redirect);
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx?v=20241114014200"></script>
     <script>
       // Service Worker Registration for Production
