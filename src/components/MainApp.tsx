@@ -29,6 +29,7 @@ import { LoadingSpinner } from './ui/LoadingSpinner';
 import SettingsContextMenu from './ui/SettingsContextMenu';
 import ProfileSetupBanner from './ui/ProfileSetupBanner';
 import GameProgressBar from './features/GameProgressBar';
+import WelcomeScreen from './welcome/WelcomeScreen';
 import { connect, disconnect } from '../services/websocketService';
 
 interface MainAppProps {
@@ -86,6 +87,7 @@ const MainApp: React.FC<MainAppProps> = ({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [creditModalOpen, setCreditModalOpen] = useState(false);
+  const [welcomeScreenOpen, setWelcomeScreenOpen] = useState(false);
   const [connectionModalOpen, setConnectionModalOpen] = useState(false);
   const [connectionCode, setConnectionCode] = useState<string | null>(null);
   const [lastSuccessfulConnection, setLastSuccessfulConnection] = useState<Date | null>(null);
@@ -764,11 +766,8 @@ const MainApp: React.FC<MainAppProps> = ({
   };
 
   const handleOpenGuide = () => {
-    // Open a guide modal or navigate to help documentation
-    toastService.info('Opening guide...');
-    // TODO: Implement proper guide modal or redirect to documentation
-    // For now, open the settings modal as a placeholder
-    setSettingsOpen(true);
+    // Open the welcome screen guide
+    setWelcomeScreenOpen(true);
   };
 
   const handleAddGame = () => {
@@ -2083,6 +2082,14 @@ const MainApp: React.FC<MainAppProps> = ({
           }
         }}
       />
+
+      {/* Welcome Screen / Guide */}
+      {welcomeScreenOpen && (
+        <WelcomeScreen
+          onStartChat={() => setWelcomeScreenOpen(false)}
+          onAddGame={handleAddGame}
+        />
+      )}
     </div>
   );
 };
