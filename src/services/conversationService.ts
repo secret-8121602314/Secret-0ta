@@ -32,17 +32,6 @@ export class ConversationService {
     }
   }
 
-  private static async getInternalUserId(): Promise<string | null> {
-    try {
-      const { authService } = await import('./authService');
-      const user = authService.getCurrentUser();
-      return user?.id || null; // Internal users table ID
-    } catch (error) {
-      console.warn('Could not get internal user ID from auth service:', error);
-      return null;
-    }
-  }
-
   // ✅ SCALABILITY: Get user tier from auth service
   private static async getUserTier(): Promise<UserTier> {
     try {
@@ -582,46 +571,27 @@ export class ConversationService {
 
   /**
    * Ensure Game Hub exists - creates it if missing
-   * Uses database RPC function to prevent duplicates
    * Returns the Game Hub conversation
    */
   static async ensureGameHubExists(): Promise<Conversation> {
-    const internalUserId = await this.getInternalUserId();
-    
-    // ✅ Use database RPC function to get or create Game Hub atomically
-    // This prevents race conditions and duplicate Game Hubs
-    if (internalUserId) {
-      const gameHubId = await supabaseService.getOrCreateGameHub(internalUserId);
-      
-      if (gameHubId) {
-        // Reload conversations to get the Game Hub with its actual database ID
-        const conversations = await this.getConversations(true); // Skip cache
-        const gameHub = Object.values(conversations).find(conv => conv.id === gameHubId);
-        
-        if (gameHub) {
-          console.log('🔍 [ConversationService] Game Hub ensured via RPC:', gameHub.id);
-          return gameHub;
-        }
-      }
-    }
-    
-    // Fallback: Check local state if RPC fails
     const conversations = await this.getConversations();
+    
+    // Check if Game Hub already exists
     const existingGameHub = Object.values(conversations).find(
       conv => conv.isGameHub || conv.id === GAME_HUB_ID || conv.title === DEFAULT_CONVERSATION_TITLE
     );
     
     if (existingGameHub) {
-      console.log('🔍 [ConversationService] Game Hub found in local state:', existingGameHub.id);
+      console.log('🔍 [ConversationService] Game Hub already exists:', existingGameHub.id);
       return existingGameHub;
     }
     
-    // Last resort: Create locally
-    console.log('🔍 [ConversationService] Creating Game Hub locally (RPC failed)...');
+    // Create new Game Hub
+    console.log('🔍 [ConversationService] Creating Game Hub...');
     const gameHub = this.createConversation(DEFAULT_CONVERSATION_TITLE, GAME_HUB_ID);
     await this.addConversation(gameHub);
     
-    console.log('🔍 [ConversationService] Game Hub created locally');
+    console.log('🔍 [ConversationService] Game Hub created successfully');
     return gameHub;
   }
 

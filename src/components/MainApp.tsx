@@ -274,14 +274,22 @@ const MainApp: React.FC<MainAppProps> = ({
 
         // Case 1: No conversations at all - create "Game Hub" and set as active
         if (Object.keys(userConversations).length === 0) {
-          console.log('🔍 [MainApp] No conversations found, ensuring Game Hub exists...');
-          const gameHub = await ConversationService.ensureGameHubExists();
-          await ConversationService.setActiveConversation(gameHub.id);
+          console.log('🔍 [MainApp] No conversations found, creating "Game Hub"...');
+          const newConversation = ConversationService.createConversation('Game Hub', 'game-hub');
+          await ConversationService.addConversation(newConversation);
+          await ConversationService.setActiveConversation(newConversation.id);
           
-          // Reload conversations to get the Game Hub
+          // 🔧 FIX: Use the newly created conversation directly
+          // If Supabase sync fails, ensure we still have the conversation in state
           const updatedConversations = await ConversationService.getConversations();
-          setConversations(updatedConversations);
-          active = updatedConversations[gameHub.id];
+          
+          // Ensure the new conversation is in the state (merge if needed)
+          const finalConversations = Object.keys(updatedConversations).length > 0 
+            ? updatedConversations 
+            : { [newConversation.id]: newConversation };
+          
+          setConversations(finalConversations);
+          active = finalConversations[newConversation.id];
           setActiveConversation(active);
           
           // Mark as first-run complete since we just created and activated Game Hub
@@ -312,23 +320,24 @@ const MainApp: React.FC<MainAppProps> = ({
         }
         // Case 4: No "Game Hub" conversation but other conversations exist - create and activate it
         else if (!currentGameHub) {
-          console.log('🔍 [MainApp] "Game Hub" missing, ensuring it exists...');
-          const gameHub = await ConversationService.ensureGameHubExists();
+          console.log('🔍 [MainApp] "Game Hub" missing, creating it...');
+          const newConversation = ConversationService.createConversation('Game Hub', 'game-hub');
+          await ConversationService.addConversation(newConversation);
           
           // If no active conversation, make "Game Hub" active
           if (!active) {
-            await ConversationService.setActiveConversation(gameHub.id);
+            await ConversationService.setActiveConversation(newConversation.id);
             const updatedConversations = await ConversationService.getConversations();
             setConversations(updatedConversations);
-            active = updatedConversations[gameHub.id];
+            active = updatedConversations['game-hub'];
             setActiveConversation(active);
-            console.log('🔍 [MainApp] Ensured Game Hub exists and set as active');
+            console.log('🔍 [MainApp] Created "Game Hub" and set as active');
           } else {
             // Otherwise, just add it but keep current active conversation
             const updatedConversations = await ConversationService.getConversations();
             setConversations(updatedConversations);
             setActiveConversation(active);
-            console.log('🔍 [MainApp] Ensured Game Hub exists but kept existing active conversation:', active.title);
+            console.log('🔍 [MainApp] Created "Game Hub" but kept existing active conversation:', active.title);
           }
         }
         // Case 5: Active conversation exists - restore it
