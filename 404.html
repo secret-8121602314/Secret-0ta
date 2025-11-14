@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Otagon</title>
+  <script>
+    // GitHub Pages SPA redirect trick
+    // This script takes the current URL and redirects to the base URL with the path as a query parameter
+    // The main index.html will then parse this and route accordingly
+    const pathSegmentsToKeep = 1; // Keep "/Otagon" as base path
+    
+    const l = window.location;
+    const repo = l.pathname.split('/')[pathSegmentsToKeep];
+    
+    // Store the path in sessionStorage so index.html can restore it
+    sessionStorage.setItem('redirectPath', l.pathname.replace(new RegExp(`^/${repo}`), '') + l.search + l.hash);
+    
+    // Redirect to the base path
+    l.replace(
+      l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+      l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') +
+      '/?redirect=' + encodeURIComponent(l.pathname.replace(new RegExp(`^/${repo}`), '') + l.search + l.hash)
+    );
+  </script>
+</head>
+<body></body>
+</html>
