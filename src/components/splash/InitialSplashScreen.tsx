@@ -112,7 +112,7 @@ const InitialSplashScreen: React.FC<InitialSplashScreenProps> = ({ onComplete, u
           <div className="w-full text-center px-4 relative z-10" style={{ pointerEvents: 'auto' }}>
             <p className="text-xs sm:text-sm text-neutral-400 leading-relaxed">
               <span className="block sm:inline">1. Download and install the Otagon Connector (.exe) • </span>
-              <span className="block sm:inline">2. Open the connector app and enter the 6-digit code shown in the Otagon App to connect app to your PC for instant screenshots.</span>
+              <span className="block sm:inline">2. Open the connector app and enter the 6-digit code shown in the Otagon Connector App to connect Otagon app to your PC for instant screenshots.</span>
             </p>
           </div>
         </div>
