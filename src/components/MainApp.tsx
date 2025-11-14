@@ -1353,6 +1353,43 @@ const MainApp: React.FC<MainAppProps> = ({
           console.error('TTS Error:', ttsError);
           // Don't block the flow if TTS fails
         }
+      } else if (!isHandsFreeMode && response.content) {
+        // 📱 Show notification if TTS is OFF and screen is locked
+        try {
+          const { showAINotification, isScreenLockedOrHidden } = await import('../services/toastService');
+          
+          if (isScreenLockedOrHidden()) {
+            // Extract hint for notification
+            const hintMatch = response.content.match(/Hint:\s*\n*\s*([\s\S]*?)(?=\n\s*(?:Lore:|Places of Interest:|Strategy:)|$)/i);
+            let notificationText = '';
+            
+            if (hintMatch && hintMatch[1]) {
+              notificationText = hintMatch[1].trim().split(/\n\s*(?:Lore:|Places of Interest:|Strategy:)/i)[0].trim();
+            } else if (!response.content.includes('Lore:') && !response.content.includes('Places of Interest:')) {
+              notificationText = response.content;
+            }
+            
+            if (notificationText) {
+              // Clean markdown for notification
+              const cleanText = notificationText
+                .replace(/[*_~`]/g, '')
+                .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+                .replace(/#{1,6}\s/g, '')
+                .replace(/```[\s\S]*?```/g, '')
+                .replace(/`([^`]+)`/g, '$1')
+                .trim();
+              
+              if (cleanText) {
+                showAINotification(
+                  cleanText,
+                  activeConversation.title || 'Otagon AI'
+                );
+              }
+            }
+          }
+        } catch (notificationError) {
+          console.error('Notification Error:', notificationError);
+        }
       }
 
       // ✅ DEFERRED: Process suggested prompts AFTER tab migration (moved to after tab switch)

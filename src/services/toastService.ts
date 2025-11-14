@@ -225,3 +225,70 @@ class ToastService {
 
 // Export singleton instance
 export const toastService = new ToastService();
+
+// System notification helpers for screen-locked scenarios
+let isScreenLocked = false;
+
+// Track screen lock state
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    isScreenLocked = document.hidden;
+  });
+  
+  window.addEventListener('blur', () => {
+    isScreenLocked = true;
+  });
+  
+  window.addEventListener('focus', () => {
+    if (!document.hidden) {
+      isScreenLocked = false;
+    }
+  });
+}
+
+/**
+ * Show system notification for AI response
+ * Only shows when screen is locked/hidden
+ */
+export const showAINotification = async (
+  messagePreview: string,
+  conversationName: string = 'Otagon AI'
+): Promise<void> => {
+  // Only show if screen is locked/hidden
+  if (!isScreenLocked && !document.hidden) {
+    return;
+  }
+  
+  // Check permission
+  if (!('Notification' in window) || Notification.permission !== 'granted') {
+    return;
+  }
+  
+  try {
+    const preview = messagePreview.length > 100 
+      ? messagePreview.substring(0, 97) + '...' 
+      : messagePreview;
+
+    const notification = new Notification(conversationName, {
+      body: preview,
+      icon: '/Otagon/icon-192.png',
+      badge: '/Otagon/icon-192.png',
+      tag: 'otagon-ai-response',
+      renotify: true,
+      requireInteraction: false,
+      silent: false,
+      vibrate: [200, 100, 200]
+    });
+
+    setTimeout(() => notification.close(), 10000);
+    
+    notification.onclick = () => {
+      window.focus();
+      notification.close();
+    };
+  } catch (error) {
+    console.error('Failed to show notification:', error);
+  }
+};
+
+export const isScreenLockedOrHidden = (): boolean => isScreenLocked || document.hidden;
