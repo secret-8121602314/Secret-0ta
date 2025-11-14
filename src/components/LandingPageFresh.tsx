@@ -427,11 +427,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
   return (
         <div 
             ref={backgroundRef}
-            className="text-white font-inter overflow-x-hidden relative custom-scrollbar animate-fade-in"
+            className="text-white font-inter relative custom-scrollbar animate-fade-in"
             style={{
                 backgroundColor: '#111111',
                 minHeight: '100vh',
-                height: 'auto'
+                height: 'auto',
+                overflowX: 'hidden',
+                overflowY: 'auto',
+                WebkitOverflowScrolling: 'touch'
             }}
         >
             {/* Enhanced Background Glows */}
