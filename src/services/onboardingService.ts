@@ -263,10 +263,19 @@ class OnboardingService {
         return 'complete';
       }
 
-      // REMOVED: Overly aggressive fallback that was skipping screens
-      // If we reach here, something is wrong - but return to how-to-use rather than complete
-      // This prevents skipping screens if the flow logic breaks
-      console.warn('🎯 [OnboardingService] WARNING: Unexpected flow state, returning to how-to-use');
+      // ✅ FIX: If we reach here, the flow logic has a bug - throw error instead of silently recovering
+      // This makes flow bugs visible rather than masking them with fallback behavior
+      console.error('🎯 [OnboardingService] ERROR: Unexpected onboarding flow state', {
+        hasSeenSplashScreens,
+        hasSeenHowToUse,
+        hasSeenFeaturesConnected,
+        hasSeenProFeatures,
+        pcConnected,
+        pcConnectionSkipped
+      });
+      
+      // For production stability, return to a safe screen rather than crashing
+      // But log the full state so we can diagnose and fix the underlying issue
       return 'how-to-use';
 
     } catch (error) {

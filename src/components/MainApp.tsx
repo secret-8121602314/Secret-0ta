@@ -31,6 +31,7 @@ import ProfileSetupBanner from './ui/ProfileSetupBanner';
 import GameProgressBar from './features/GameProgressBar';
 import WelcomeScreen from './welcome/WelcomeScreen';
 import { connect, disconnect } from '../services/websocketService';
+import { validateScreenshotDataUrl, getDataUrlSizeMB } from '../utils/imageValidation';
 
 interface MainAppProps {
   onLogout: () => void;
@@ -177,8 +178,18 @@ const MainApp: React.FC<MainAppProps> = ({
     console.log('🔗 [MainApp] Received WebSocket message:', data);
     
     if (data.type === 'screenshot' && data.dataUrl) {
+      // ✅ FIX: Validate screenshot data before processing
+      const validation = validateScreenshotDataUrl(data.dataUrl);
+      if (!validation.valid) {
+        console.error('📸 [MainApp] Screenshot validation failed:', validation.error);
+        toastService.error(`Screenshot validation failed: ${validation.error}`);
+        return;
+      }
+      
+      const sizeMB = getDataUrlSizeMB(data.dataUrl);
       console.log('📸 [MainApp] Processing screenshot:', {
         dataUrlLength: data.dataUrl.length,
+        sizeMB: sizeMB,
         dataUrlPreview: data.dataUrl.substring(0, 50),
         isManualUploadMode,
         hasActiveConversation: !!activeConversation
@@ -1666,11 +1677,13 @@ const MainApp: React.FC<MainAppProps> = ({
 
         if (!shouldCreateTab) {
           console.log('⚠️ [MainApp] Tab creation blocked:', {
+            gameTitle,
             confidence,
             isFullscreen,
-            reason: !isFullscreen ? 'Not gameplay (launcher/menu/desktop)' : 
-                    confidence !== 'high' ? 'Low confidence' : 
-                    'Generic detection'
+            reason: !isFullscreen ? '❌ Pre-game screen detected (main menu/launcher) - staying in Game Hub' : 
+                    confidence !== 'high' ? '❌ Low confidence detection' : 
+                    '❌ Generic detection',
+            hint: 'Take a gameplay or in-game menu screenshot (inventory, map, skills) to create a dedicated game tab'
           });
         }
 

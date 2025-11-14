@@ -326,8 +326,10 @@ class AIService {
         // Determine which model and tools to use
         const modelName = 'gemini-2.5-flash-preview-09-2025';
         
-        const tools = needsWebSearch && !hasImages 
-          ? [{ googleSearchRetrieval: {} }]
+        // ✅ ENHANCEMENT: Enable Google Search grounding for both text AND images
+        // This allows game detection from screenshots to access current information
+        const tools = needsWebSearch 
+          ? [{ google_search: {} }]  // Updated to Gemini 2.5 syntax
           : [];
 
         // Call Edge Function proxy

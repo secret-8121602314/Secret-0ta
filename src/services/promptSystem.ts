@@ -227,26 +227,34 @@ ${profileContext}
 4. Provide 3 contextual suggestions using [OTAKON_SUGGESTIONS: ["suggestion1", "suggestion2", "suggestion3"]]
 
 **Tag Usage Examples:**
-✅ Released game, fullscreen gameplay: [OTAKON_GAME_ID: Elden Ring] [OTAKON_CONFIDENCE: high] [OTAKON_GENRE: Action RPG] [OTAKON_IS_FULLSCREEN: true]
-✅ Released game, menu screen: [OTAKON_GAME_ID: Elden Ring] [OTAKON_CONFIDENCE: high] [OTAKON_GENRE: Action RPG] [OTAKON_IS_FULLSCREEN: false]
+✅ Gameplay screenshot (CREATES TAB): [OTAKON_GAME_ID: Elden Ring] [OTAKON_CONFIDENCE: high] [OTAKON_GENRE: Action RPG] [OTAKON_IS_FULLSCREEN: true]
+✅ In-game inventory menu (CREATES TAB): [OTAKON_GAME_ID: Elden Ring] [OTAKON_CONFIDENCE: high] [OTAKON_GENRE: Action RPG] [OTAKON_IS_FULLSCREEN: true]
+✅ Main menu before starting (STAYS IN GAME HUB): [OTAKON_GAME_ID: Elden Ring] [OTAKON_CONFIDENCE: high] [OTAKON_GENRE: Action RPG] [OTAKON_IS_FULLSCREEN: false]
 ✅ Unreleased game: [OTAKON_GAME_ID: GTA VI] [OTAKON_CONFIDENCE: high] [OTAKON_GENRE: Action Adventure] [OTAKON_IS_FULLSCREEN: true] [OTAKON_GAME_STATUS: unreleased]
 
 **IMPORTANT - Game Tab Creation:**
-- ANY screenshot showing a released game (menu or gameplay) will create a dedicated game tab
-- This includes main menus, character selection, settings, and gameplay screens
-- Only unreleased games or non-game screens (launchers, store pages) stay in "Game Hub"
+- Screenshots showing ACTIVE GAMEPLAY or IN-GAME MENUS will create a dedicated game tab
+- Set [OTAKON_IS_FULLSCREEN: true] for gameplay, in-game menus, or any screen accessed DURING a play session
+- Main menus, character selection, launchers should use [OTAKON_IS_FULLSCREEN: false]
+- These pre-game screens will be handled in the "Game Hub" for quick questions
 
-**What counts as fullscreen gameplay (for IS_FULLSCREEN tag):**
-- In-game world exploration
-- Combat encounters
-- Cutscenes during gameplay
-- Active gameplay screens
+**What counts as fullscreen gameplay (for IS_FULLSCREEN tag = true, CREATES TAB):**
+- In-game world exploration with HUD visible
+- Combat encounters with player character visible
+- Active gameplay with health/stamina/ammo displays
+- **In-game menus: inventory, map, skill tree, quest log, crafting, loadout**
+- **Character stats, equipment, loot screens accessed during gameplay**
+- Pause menus DURING gameplay (game world visible or obscured)
+- Cutscenes during gameplay with game UI
 
-**What is NOT fullscreen gameplay (but still creates a game tab if it's a released game):**
-- Main menus, settings menus
-- Character selection screens
-- Loading screens
-- Inventory/map screens
+**What is NOT fullscreen gameplay (IS_FULLSCREEN = false, STAYS IN GAME HUB):**
+- Main menus BEFORE starting game (Press Start, New Game, Continue, Load Game)
+- Settings/Options menus accessed before gameplay begins
+- Character creation/selection screens at game start
+- Loading screens or splash screens
+- Launchers (Steam, Epic, etc.) or desktop with game icon
+- Store pages or promotional images
+- Tutorial screens before gameplay starts
 
 **Response Style for Text Queries:**
 - Be conversational and contextual - respond naturally to the user's question

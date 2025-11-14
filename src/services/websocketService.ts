@@ -7,6 +7,7 @@ const sendQueue: object[] = [];
 let lastCode: string | null = null;
 let handlers: { onOpen: () => void; onMessage: (data: any) => void; onError: (error: string) => void; onClose: () => void } | null = null;
 let heartbeatTimer: number | null = null;
+let shouldReconnect = true; // ✅ FIX: Flag to prevent reconnection after explicit disconnect
 const HEARTBEAT_MS = 30000; // 30s - more frequent heartbeat to maintain connection
 
 
@@ -31,6 +32,7 @@ const connect = (
 
   lastCode = code;
   handlers = { onOpen, onMessage, onError, onClose };
+  shouldReconnect = true; // ✅ FIX: Enable reconnection for new connections
 
   const fullUrl = `${SERVER_ADDRESS}/${code}`;
 
@@ -114,14 +116,15 @@ const connect = (
       heartbeatTimer = null;
     }
 
-    // Auto-reconnect with backoff+jitter
-    if (lastCode && handlers) {
+    // Auto-reconnect with backoff+jitter (only if not explicitly disconnected)
+    // ✅ FIX: Check shouldReconnect flag to prevent reconnection after explicit disconnect
+    if (shouldReconnect && lastCode && handlers) {
       reconnectAttempts += 1;
       const base = Math.min(maxBackoffMs, 500 * Math.pow(2, reconnectAttempts - 1));
       const jitter = Math.random() * 300;
       const delay = base + jitter;
       setTimeout(() => {
-        if (!ws && handlers) {
+        if (!ws && handlers && shouldReconnect) {
           connect(lastCode!, handlers.onOpen, handlers.onMessage, handlers.onError, handlers.onClose);
         }
       }, delay);
@@ -140,6 +143,9 @@ const send = (data: object) => {
 };
 
 const disconnect = () => {
+  // ✅ FIX: Set flag FIRST to prevent race condition with onclose handler
+  shouldReconnect = false;
+  
   if (ws) {
     ws.close(1000, "User disconnected");
     ws = null;
