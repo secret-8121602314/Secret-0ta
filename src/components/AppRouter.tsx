@@ -98,7 +98,7 @@ const AppRouter: React.FC<AppRouterProps> = ({
   }
 
   const shouldShowLoading = (isInitializing || authState.isLoading) &&
-    !(appState.view === 'landing' && !hasEverLoggedIn);
+    !(appState.view === 'landing' && !hasEverLoggedIn && !authState.isLoading);
 
   console.log('🔵 AppRouter:', { 
     view: appState.view, 
@@ -121,7 +121,7 @@ const AppRouter: React.FC<AppRouterProps> = ({
     );
   }
 
-  if (appState.view === 'landing' && !authState.user) {
+  if (appState.view === 'landing' && !authState.user && !authState.isLoading) {
     console.log('🟢 RENDERING LANDINGPAGE NOW!');
     console.log('⚠️⚠️⚠️ ABOUT TO RENDER LANDINGPAGE COMPONENT ⚠️⚠️⚠️');
     console.log('⚠️ LandingPage import:', LandingPage);

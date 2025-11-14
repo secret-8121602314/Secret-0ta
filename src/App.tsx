@@ -15,7 +15,7 @@ function App() {
   });
   const [hasEverLoggedIn, setHasEverLoggedIn] = useState(false);
   const [appState, setAppState] = useState<AppState>({
-    view: 'landing',
+    view: 'landing', // Will be updated once auth state is checked
     onboardingStatus: 'initial',
     activeSubView: 'chat',
     isConnectionModalOpen: false,
