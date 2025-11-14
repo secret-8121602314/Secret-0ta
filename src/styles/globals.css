@@ -470,11 +470,13 @@ html, body {
   html, body {
     height: 100vh;
     height: 100dvh; /* Dynamic viewport height for mobile */
+    overscroll-behavior-y: none; /* Prevent pull-to-refresh from breaking layout */
   }
   
   #root {
     height: 100vh;
     height: 100dvh;
+    overscroll-behavior-y: none; /* Prevent pull-to-refresh */
   }
   
   .chat-layout-fixed {

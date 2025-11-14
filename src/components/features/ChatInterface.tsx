@@ -128,7 +128,7 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
                   br: () => <br className="my-1" />
                 }}
               >
-                {message.content}
+                {message.content.replace(/\\\*/g, '*')}
               </ReactMarkdown>
             </div>
             
