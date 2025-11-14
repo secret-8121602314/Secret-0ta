@@ -720,14 +720,28 @@ const MainApp: React.FC<MainAppProps> = ({
 
   const handleClearConversation = async (id: string) => {
     try {
+      console.log('🧹 [MainApp] Clearing conversation:', id);
       await ConversationService.clearConversation(id);
-      const updatedConversations = await ConversationService.getConversations();
+      
+      // Force a fresh read from storage/cache
+      const updatedConversations = await ConversationService.getConversations(true); // skipCache = true
+      console.log('🧹 [MainApp] Conversations after clear:', Object.keys(updatedConversations));
+      console.log('🧹 [MainApp] Cleared conversation exists:', !!updatedConversations[id]);
+      
       setConversations(updatedConversations);
       
       // If this was the active conversation, update it
       if (activeConversation?.id === id) {
-        setActiveConversation(updatedConversations[id]);
+        const clearedConv = updatedConversations[id];
+        console.log('🧹 [MainApp] Updating active conversation:', {
+          id: clearedConv?.id,
+          title: clearedConv?.title,
+          messageCount: clearedConv?.messages?.length || 0
+        });
+        setActiveConversation(clearedConv);
       }
+      
+      toastService.success('Conversation cleared');
     } catch (error) {
       // Error already handled by ConversationService with toast notification
       console.error('Failed to clear conversation:', error);
