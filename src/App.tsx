@@ -6,6 +6,7 @@ import { connect, disconnect } from './services/websocketService';
 import { supabase } from './lib/supabase';
 import AppRouter from './components/AppRouter';
 import { ToastContainer } from './components/ui/ToastContainer';
+import { SessionManager } from './utils/sessionManager';
 
 function App() {
   const [authState, setAuthState] = useState<AuthState>({
@@ -55,6 +56,7 @@ function App() {
   const lastHotkeyRequestTimestamp = useRef<number>(0); // Track last hotkey screenshot request to prevent duplicates
   const hasReceivedPCMessage = useRef<boolean>(false); // Track if we've received any message from PC client
   const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Timeout for connection verification
+  const sessionManagerRef = useRef<SessionManager | null>(null); // Cross-tab session manager
 
   useEffect(() => {
     console.log('🎯 [App] App state changed:', {
@@ -94,6 +96,65 @@ function App() {
       updateAppState();
     }
   }, [appState.view, appState.onboardingStatus, appState.activeSubView, appState.isHandsFreeMode, appState.showUpgradeScreen, appState.showDailyCheckin, appState.isFirstTime, authState.user]);
+
+  // 🛡️ SESSION PROTECTION: Prevent OAuth overwrites when PWA gains focus
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && window.location.pathname.includes('/auth/callback')) {
+        console.log('⚠️ [App] Detected OAuth callback while app was in background');
+        
+        // Check if we're already logged in
+        const currentUser = authService.getCurrentUser();
+        if (currentUser && !isProcessingAuthRef.current) {
+          console.log('🔐 [App] Already logged in, preventing OAuth overwrite:', currentUser.email);
+          
+          // Clear OAuth params from URL without processing
+          const basePath = window.location.hostname === 'localhost' ? '/' : '/Otagon/';
+          window.history.replaceState({}, document.title, basePath);
+          
+          // Show notification
+          import('./services/toastService').then(({ toastService }) => {
+            toastService.info('You\'re already logged in. OAuth login prevented.');
+          }).catch(err => console.error('Failed to show toast:', err));
+        }
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleVisibilityChange);
+    };
+  }, [authState.user]);
+
+  // 📱 SESSION MANAGER: Initialize cross-tab session conflict detection
+  useEffect(() => {
+    const handleSessionConflict = (instances: any[]) => {
+      const currentUserId = authService.getCurrentUser()?.authUserId;
+      const conflictingInstances = instances.filter(
+        i => i.userId && currentUserId && i.userId !== currentUserId
+      );
+      
+      if (conflictingInstances.length > 0) {
+        import('./services/toastService').then(({ toastService }) => {
+          toastService.warning(
+            `Multiple users detected. You're logged in as ${authService.getCurrentUser()?.email} but another instance has a different user.`,
+            { duration: 5000 }
+          );
+        }).catch(err => console.error('Failed to show toast:', err));
+      }
+    };
+
+    sessionManagerRef.current = new SessionManager(handleSessionConflict);
+
+    return () => {
+      if (sessionManagerRef.current) {
+        sessionManagerRef.current.unregisterInstance();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -244,7 +305,10 @@ function App() {
   };
 
   const handleOAuthSuccess = () => {
-    window.history.replaceState({}, document.title, '/');
+    // Use the correct base path for both dev and production
+    const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const basePath = isDev ? '/' : '/Otagon/';
+    window.history.replaceState({}, document.title, basePath);
     setAppState((prev: AppState) => ({ ...prev, view: 'app' }));
   };
 
@@ -313,6 +377,7 @@ function App() {
 
   const handleConnect = async (code: string) => {
     console.log('🔗 [App] Connecting with code:', code);
+12345
     
     // Disconnect any existing connection first
     if (connectionStatus === ConnectionStatus.CONNECTED || connectionStatus === ConnectionStatus.CONNECTING) {
@@ -539,11 +604,11 @@ function App() {
     console.log('🎯 [App] Profile setup completed');
     if (authState.user) {
       try {
-        // Use 'profile-setup' step to properly set has_profile_setup flag
-        await onboardingService.updateOnboardingStatus(authState.user.authUserId, 'profile-setup', profileData);
+        // Use markProfileSetupComplete to properly set has_profile_setup flag
+        await onboardingService.markProfileSetupComplete(authState.user.authUserId, profileData);
         console.log('🎯 [App] Profile setup data saved');
         
-        // Set flag to prevent auth subscription from overriding
+        // Set flag to prevent auth subscription from overriding navigation
         isManualNavigationRef.current = true;
         
         // Refresh user data to update hasProfileSetup flag

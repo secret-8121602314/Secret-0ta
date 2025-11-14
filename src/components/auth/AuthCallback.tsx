@@ -29,6 +29,31 @@ const AuthCallback: React.FC<AuthCallbackProps> = ({ onAuthSuccess, onAuthError 
         console.log('🔐 [AuthCallback] URL search params:', window.location.search);
         console.log('🔐 [AuthCallback] URL hash:', window.location.hash);
 
+        // 🛡️ SESSION PROTECTION: Check if already logged in before processing OAuth
+        const existingSession = await supabase.auth.getSession();
+        const hasOAuthCode = window.location.search.includes('code') || window.location.hash.includes('access_token');
+        
+        if (existingSession.data.session && !hasOAuthCode) {
+          console.log('🔐 [AuthCallback] Already logged in, skipping OAuth processing:', existingSession.data.session.user.email);
+          setStatus('success');
+          onAuthSuccess();
+          return;
+        }
+        
+        // If we have an existing session AND OAuth code, user is trying to login again
+        if (existingSession.data.session && hasOAuthCode) {
+          console.warn('⚠️ [AuthCallback] Session conflict detected: already logged in but new OAuth detected');
+          const currentUser = authService.getCurrentUser();
+          if (currentUser) {
+            console.log('🔐 [AuthCallback] Preserving existing session, clearing OAuth URL');
+            const basePath = window.location.hostname === 'localhost' ? '/' : '/Otagon/';
+            window.history.replaceState({}, document.title, basePath);
+            setStatus('success');
+            onAuthSuccess();
+            return;
+          }
+        }
+
         // Check for OAuth errors in URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
