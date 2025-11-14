@@ -37,13 +37,16 @@
   <body>
     <div id="root"></div>
     <script>
-      // GitHub Pages SPA redirect handler
-      // This restores the original URL after 404.html redirect
+      // GitHub Pages SPA redirect handler for OAuth callback
       (function() {
-        const redirect = sessionStorage.getItem('redirectPath');
-        sessionStorage.removeItem('redirectPath');
-        if (redirect && redirect !== l.pathname) {
-          history.replaceState(null, null, l.pathname.slice(0, -1) + redirect);
+        var redirect = sessionStorage.getItem('spa_redirect');
+        if (redirect) {
+          sessionStorage.removeItem('spa_redirect');
+          // Extract path without /Otagon prefix
+          var path = redirect.replace('/Otagon', '');
+          if (!path.startsWith('/')) path = '/' + path;
+          // Update URL with full path including hash params
+          history.replaceState(null, null, '/Otagon' + path);
         }
       })();
     </script>
