@@ -1,9 +1,10 @@
 // Service Worker for Otagon PWA - Performance Optimized with Enhanced Background Sync
-const CACHE_NAME = 'otakon-v1.2.8-pwa-fixes';
-const CHAT_CACHE_NAME = 'otakon-chat-v1.2.8';
-const STATIC_CACHE = 'otakon-static-v1.2.8';
-const API_CACHE = 'otakon-api-v1.2.8';
+const CACHE_NAME = 'otakon-v1.2.9-background-tts';
+const CHAT_CACHE_NAME = 'otakon-chat-v1.2.9';
+const STATIC_CACHE = 'otakon-static-v1.2.9';
+const API_CACHE = 'otakon-api-v1.2.9';
 const BASE_PATH = '/Otagon';
+let ttsKeepAliveInterval = null;
 const urlsToCache = [
   `${BASE_PATH}/`,
   `${BASE_PATH}/index.html`,
@@ -632,3 +633,57 @@ async function handleDefaultRequest(request) {
     throw error;
   }
 }
+
+// Keep service worker alive for background TTS
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'TTS_STARTED') {
+    console.log('TTS Started - keeping service worker alive');
+    startKeepAlive();
+  } else if (event.data && event.data.type === 'TTS_STOPPED') {
+    console.log('TTS Stopped - releasing keep alive');
+    stopKeepAlive();
+  } else if (event.data && event.data.type === 'KEEP_ALIVE') {
+    // Respond to keep-alive ping
+    event.ports[0].postMessage({ type: 'KEEP_ALIVE_ACK' });
+  }
+});
+
+// Start keep-alive interval to prevent service worker from sleeping
+function startKeepAlive() {
+  if (ttsKeepAliveInterval) return;
+  
+  ttsKeepAliveInterval = setInterval(() => {
+    // Send periodic message to all clients to maintain session
+    self.clients.matchAll({ includeUncontrolled: true, type: 'window' }).then(clients => {
+      clients.forEach(client => {
+        client.postMessage({ 
+          type: 'KEEP_ALIVE_PING',
+          timestamp: Date.now()
+        });
+      });
+    });
+  }, 15000); // Every 15 seconds
+}
+
+// Stop keep-alive interval
+function stopKeepAlive() {
+  if (ttsKeepAliveInterval) {
+    clearInterval(ttsKeepAliveInterval);
+    ttsKeepAliveInterval = null;
+  }
+}
+
+// Handle background sync for TTS completion
+self.addEventListener('sync', (event) => {
+  if (event.tag === BACKGROUND_SYNC_TAGS.HANDS_FREE_SYNC) {
+    event.waitUntil(
+      self.clients.matchAll({ includeUncontrolled: true, type: 'window' }).then(clients => {
+        clients.forEach(client => {
+          client.postMessage({ 
+            type: 'BACKGROUND_TTS_COMPLETE'
+          });
+        });
+      })
+    );
+  }
+});

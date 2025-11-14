@@ -88,5 +88,12 @@
   "prefer_related_applications": false,
   "edge_side_panel": {
     "preferred_width": 400
-  }
+  },
+  "permissions": [
+    "audioCapture",
+    "notifications"
+  ],
+  "background_color": "#111111",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait-primary"
 }

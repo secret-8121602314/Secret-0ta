@@ -5,6 +5,7 @@ let currentText = '';
 let wakeLock: any = null;
 let audioContext: AudioContext | null = null;
 let silentAudio: HTMLAudioElement | null = null;
+let isBackgroundPlayback = false;
 
 const SPEECH_RATE_KEY = 'otakonSpeechRate';
 
@@ -14,7 +15,11 @@ const requestWakeLock = async () => {
         if ('wakeLock' in navigator) {
             wakeLock = await (navigator as any).wakeLock.request('screen');
             wakeLock.addEventListener('release', () => {
-                console.log('Wake Lock released');
+                console.log('Wake Lock released - attempting to reacquire...');
+                // Automatically reacquire if TTS is still speaking
+                if (synth && synth.speaking && !isBackgroundPlayback) {
+                    requestWakeLock();
+                }
             });
         }
     } catch (err) {
@@ -170,6 +175,27 @@ const setupMediaSession = () => {
     }
 };
 
+// Handle visibility change to maintain audio in background
+const handleVisibilityChange = async () => {
+    if (document.hidden) {
+        // Screen locked or app backgrounded
+        isBackgroundPlayback = true;
+        console.log('App backgrounded - maintaining TTS audio');
+        // Keep silent audio playing to maintain audio session
+        if (synth && synth.speaking) {
+            await startSilentAudio();
+        }
+    } else {
+        // Screen unlocked or app foregrounded
+        isBackgroundPlayback = false;
+        console.log('App foregrounded - resuming normal operation');
+        // Reacquire wake lock if TTS is still speaking
+        if (synth && synth.speaking) {
+            await requestWakeLock();
+        }
+    }
+};
+
 const init = async () => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         if (isInitialized) {
@@ -181,6 +207,8 @@ const init = async () => {
         setupMediaSession();
         // Initialize audio context for background playback
         initAudioContext();
+        // Setup visibility change listener for background playback
+        document.addEventListener('visibilitychange', handleVisibilityChange);
         // On some browsers (like Chrome on desktop), getVoices() is empty until speak() is called.
         // This empty utterance is a workaround to trigger the onvoiceschanged event.
         if (synth.getVoices().length === 0) {
@@ -245,6 +273,13 @@ const speak = async (text: string): Promise<void> => {
                 await requestWakeLock();
                 await startSilentAudio();
                 
+                // Notify service worker that TTS started
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({
+                        type: 'TTS_STARTED'
+                    });
+                }
+                
                 if ('mediaSession' in navigator) {
                     navigator.mediaSession.playbackState = 'playing';
                     navigator.mediaSession.metadata = new MediaMetadata({
@@ -264,6 +299,12 @@ const speak = async (text: string): Promise<void> => {
                 currentText = '';
                 if ('mediaSession' in navigator) {
                     navigator.mediaSession.playbackState = 'paused';
+                }
+                // Notify service worker that TTS stopped
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({
+                        type: 'TTS_STOPPED'
+                    });
                 }
                 // Release wake lock and stop silent audio when TTS completes
                 releaseWakeLock();
