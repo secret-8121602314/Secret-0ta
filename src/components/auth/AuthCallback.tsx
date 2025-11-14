@@ -33,26 +33,19 @@ const AuthCallback: React.FC<AuthCallbackProps> = ({ onAuthSuccess, onAuthError 
         const existingSession = await supabase.auth.getSession();
         const hasOAuthCode = window.location.search.includes('code') || window.location.hash.includes('access_token');
         
+        // If we're logged in but NO OAuth code in URL, we shouldn't be on callback page
         if (existingSession.data.session && !hasOAuthCode) {
-          console.log('🔐 [AuthCallback] Already logged in, skipping OAuth processing:', existingSession.data.session.user.email);
+          console.log('🔐 [AuthCallback] Already logged in, no OAuth to process:', existingSession.data.session.user.email);
+          const basePath = window.location.hostname === 'localhost' ? '/' : '/Otagon/';
+          window.history.replaceState({}, document.title, basePath);
           setStatus('success');
           onAuthSuccess();
           return;
         }
         
-        // If we have an existing session AND OAuth code, user is trying to login again
-        if (existingSession.data.session && hasOAuthCode) {
-          console.warn('⚠️ [AuthCallback] Session conflict detected: already logged in but new OAuth detected');
-          const currentUser = authService.getCurrentUser();
-          if (currentUser) {
-            console.log('🔐 [AuthCallback] Preserving existing session, clearing OAuth URL');
-            const basePath = window.location.hostname === 'localhost' ? '/' : '/Otagon/';
-            window.history.replaceState({}, document.title, basePath);
-            setStatus('success');
-            onAuthSuccess();
-            return;
-          }
-        }
+        // If we have OAuth code, always process it (even if there's an existing session)
+        // Supabase will handle session replacement
+        console.log('🔐 [AuthCallback] Processing OAuth callback...');
 
         // Check for OAuth errors in URL parameters
         const urlParams = new URLSearchParams(window.location.search);
@@ -271,7 +264,8 @@ const AuthCallback: React.FC<AuthCallbackProps> = ({ onAuthSuccess, onAuthError 
             <button
               onClick={() => {
                 // Clear the URL parameters and redirect to login
-                window.history.replaceState({}, document.title, window.location.pathname);
+                const basePath = window.location.hostname === 'localhost' ? '/' : '/Otagon/';
+                window.history.replaceState({}, document.title, basePath);
                 onAuthError('User cancelled authentication');
               }}
               className="bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] hover:from-[#D42A2A] hover:to-[#C87A1A] text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95"
@@ -282,7 +276,8 @@ const AuthCallback: React.FC<AuthCallbackProps> = ({ onAuthSuccess, onAuthError 
               <button
                 onClick={() => {
                   // Clear the URL parameters and redirect to login with a flag to show resend option
-                  window.history.replaceState({}, document.title, window.location.pathname);
+                  const basePath = window.location.hostname === 'localhost' ? '/' : '/Otagon/';
+                  window.history.replaceState({}, document.title, basePath);
                   onAuthError('Email confirmation expired - show resend option');
                 }}
                 className="bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] hover:from-[#4338CA] hover:to-[#6D28D9] text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95"
