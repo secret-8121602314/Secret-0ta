@@ -33,7 +33,16 @@ export interface User {
   textLimit: number;
   imageLimit: number;
   totalRequests: number;
-  lastReset: number;
+  lastReset: number; // Unix timestamp (ms) - converted from DB timestamptz
+  // PC Connection fields (from database)
+  connectionCode?: string; // 6-digit pairing code for PC client
+  connectionCodeCreatedAt?: number; // Unix timestamp (ms) when code was generated
+  connectionActive?: boolean; // Whether PC connection is currently active
+  connectionDeviceInfo?: Record<string, any>; // Device information from PC client
+  lastConnectionAt?: number; // Unix timestamp (ms) of last successful connection
+  // Trial fields (from database)
+  trialStartedAt?: number; // Unix timestamp (ms) - converted from DB timestamptz
+  trialExpiresAt?: number; // Unix timestamp (ms) - converted from DB timestamptz
   // Legacy nested usage object (kept for backward compatibility)
   preferences: Record<string, any>;
   usage: Usage;
@@ -100,7 +109,9 @@ export interface ChatMessage {
 }
 
 export interface Conversation {
-  id: string;
+  id: string; // TEXT type in DB - supports custom IDs like 'game-hub'
+  authUserId?: string; // Direct auth.users.id reference for RLS policies
+  userId?: string; // Legacy internal users.id reference (still in DB)
   title: string;
   messages: ChatMessage[];
   gameId?: string;
@@ -129,13 +140,18 @@ export interface Conversations {
 // Game Types
 export interface Game {
   id: string;
+  userId?: string; // Internal users.id reference
+  authUserId?: string; // Direct auth.users.id for RLS policies
   title: string;
-  description?: string;
+  description?: string; // Maps to DB 'notes' field
   genre?: string;
   platform?: string;
-  releaseDate?: string;
+  status?: 'playing' | 'completed' | 'backlog' | 'wishlist'; // From DB CHECK constraint
+  progress?: number; // Percentage or custom progress value
+  playtimeHours?: number; // Total playtime in hours
+  tags?: string[]; // Array stored as JSONB in DB
   rating?: number;
-  imageUrl?: string;
+  imageUrl?: string; // Maps to DB 'cover_url' field
   metadata: Record<string, any>;
   createdAt: number;
   updatedAt: number;
@@ -147,7 +163,11 @@ export interface WaitlistEntry {
   email: string;
   source: string;
   createdAt: number;
-  status: 'pending' | 'invited' | 'converted';
+  status: 'pending' | 'approved' | 'rejected'; // Match DB CHECK constraint
+  invitedAt?: number; // Unix timestamp (ms) when user was invited
+  emailSentAt?: number; // Unix timestamp (ms) when email was sent
+  emailStatus?: 'pending' | 'sent' | 'failed'; // Email delivery status
+  updatedAt: number;
 }
 
 // Trial Types
@@ -185,9 +205,16 @@ export interface AuthState {
 // AI Types
 export interface SubTab {
   id: string;
+  conversationId: string; // PRIMARY foreign key to conversations.id (required in DB)
+  gameId?: string; // DEPRECATED in DB (nullable) - use conversationId instead
   title: string;
   content: string;
   type: 'chat' | 'walkthrough' | 'tips' | 'strategies' | 'story' | 'characters' | 'items';
+  orderIndex?: number; // For sorting subtabs (from DB order_index)
+  metadata?: Record<string, any>; // Additional data stored as JSONB in DB
+  createdAt?: number; // Unix timestamp (ms)
+  updatedAt?: number; // Unix timestamp (ms)
+  // Client-side only fields (not in DB)
   isNew: boolean;
   status: 'loading' | 'loaded' | 'error';
   instruction?: string;
@@ -253,7 +280,7 @@ export const newsPrompts: string[] = [
   "Show me the hottest new game trailers.",
 ];
 
-export const insightTabsConfig: Record<string, Omit<SubTab, 'content' | 'isNew' | 'status'>[]> = {
+export const insightTabsConfig: Record<string, Omit<SubTab, 'conversationId' | 'content' | 'isNew' | 'status'>[]> = {
   'Default': [
     { id: 'story_so_far', title: 'Story So Far', type: 'story', instruction: "Provide a concise summary of the main plot events that have occurred strictly up to the estimated game progress. Do not mention, hint at, or allude to any future events, characters, or plot twists. The summary should read like a journal entry of what has *already happened*." },
     { id: 'missed_items', title: 'Items You May Have Missed', type: 'items', instruction: "Based on the player's current progress, identify 2-3 significant items, secrets, or side quests they might have overlooked in areas they have already visited. Provide clear, actionable hints about their locations without giving away the exact solution. Use landmarks and environmental descriptions. Example: 'In the Whispering Caverns, a waterfall hides more than just a damp cave wall.'" },
