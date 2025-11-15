@@ -28,8 +28,9 @@
     "axios": "^0.21.1"
   },
   "devDependencies": {
-    "typescript": "^4.0.0",
-    "vscode": "^1.50.0"
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0",
+    "@vscode/vsce": "^2.20.0"
   },
   "scripts": {
     "compile": "tsc -p ./tsconfig.json",
