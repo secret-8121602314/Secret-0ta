@@ -149,6 +149,7 @@ export class SupabaseService {
   async getConversations(userId: string): Promise<Conversation[]> {
     try {
       // ✅ FIX: Query by auth_user_id directly (matches RLS policies)
+      console.log('🔍 [Supabase] Querying conversations for auth_user_id:', userId);
       const { data, error } = await supabase
         .from('conversations')
         .select('*')
@@ -156,9 +157,11 @@ export class SupabaseService {
         .order('updated_at', { ascending: false });
 
       if (error) {
-        console.error('Error getting conversations:', error);
+        console.error('❌ [Supabase] Error getting conversations:', error);
         return [];
       }
+      
+      console.log('✅ [Supabase] Query returned', data.length, 'conversations');
 
       // 🔍 DEBUG: Log what we're getting from Supabase
       if (process.env.NODE_ENV === 'development' && data.length > 0) {
@@ -237,6 +240,12 @@ export class SupabaseService {
       
       // ✅ FIX: Use UPSERT to handle duplicate Game Hub (409 Conflict)
       // If a conversation with this ID exists, update it instead of failing
+      console.log('🔍 [Supabase] Upserting conversation:', {
+        id: insertData.id,
+        title: insertData.title,
+        auth_user_id: insertData.auth_user_id
+      });
+      
       const { data, error } = await supabase
         .from('conversations')
         .upsert(insertData, { 
@@ -247,10 +256,11 @@ export class SupabaseService {
         .single();
 
       if (error) {
-        console.error('Error creating/updating conversation:', error);
+        console.error('❌ [Supabase] Error creating/updating conversation:', error);
         return null;
       }
 
+      console.log('✅ [Supabase] Conversation upserted successfully:', data.id);
       return data.id;
     } catch (error) {
       console.error('Error creating conversation:', error);

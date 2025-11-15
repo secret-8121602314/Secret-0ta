@@ -647,16 +647,19 @@ export class ConversationService {
     const gameHub = this.createConversation(DEFAULT_CONVERSATION_TITLE, GAME_HUB_ID);
     await this.addConversation(gameHub);
     
-    // ✅ Wait a bit for DB transaction to complete, then reload
-    await new Promise(resolve => setTimeout(resolve, 300));
+    // ✅ Wait longer for DB transaction to complete and propagate
+    console.log('🔍 [ConversationService] Waiting for DB sync...');
+    await new Promise(resolve => setTimeout(resolve, 800));
     
     // ✅ Force fresh reload to verify creation
     this.conversationsCache = null;
     const reloadedConversations = await this.getConversations();
+    console.log('🔍 [ConversationService] Reloaded conversations after Game Hub creation:', Object.keys(reloadedConversations).length);
     const createdGameHub = reloadedConversations[GAME_HUB_ID];
     
     if (!createdGameHub) {
       console.error('🔍 [ConversationService] Game Hub creation failed - not found after reload');
+      console.error('🔍 [ConversationService] Available conversation IDs:', Object.keys(reloadedConversations));
       // Return the in-memory version as fallback
       return gameHub;
     }
