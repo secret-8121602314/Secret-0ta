@@ -117,8 +117,8 @@ const FeatureIcon = ({ icon }: { icon: 'eye' | 'bookmark' | 'network' | 'mic' | 
 const Feature = React.memo(({ title, description, icon, image }: { title: React.ReactNode, description: string, icon?: 'eye' | 'bookmark' | 'network' | 'mic' | 'insights' | 'cpu', image?: string }) => {
     console.log('🎨 Feature rendering:', { title, image, hasImage: !!image });
     return (
-        <div className="flex flex-col items-center text-center group p-6 rounded-2xl hover:bg-gradient-to-br hover:from-neutral-800/20 hover:to-neutral-900/20 transition-all duration-500">
-            <div className="w-full max-w-4xl aspect-video mb-6 animate-fade-slide-up group-hover:scale-105 transition-transform duration-500">
+        <div className="flex flex-col items-center text-center group p-6 rounded-2xl md:hover:bg-gradient-to-br md:hover:from-neutral-800/20 md:hover:to-neutral-900/20 transition-all duration-500">
+            <div className="w-full max-w-4xl aspect-video mb-6 animate-fade-slide-up md:group-hover:scale-105 transition-transform duration-500">
                 {image ? (
                     <img 
                         src={image} 
@@ -143,9 +143,9 @@ const Feature = React.memo(({ title, description, icon, image }: { title: React.
                     <FeatureIcon icon={icon} />
                 ) : null}
             </div>
-            <div className="animate-fade-slide-up group-hover:translate-y-1 transition-transform duration-500">
-                <h3 className="text-2xl lg:text-3xl font-bold tracking-tight text-white mb-4 leading-tight group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#E53A3A] group-hover:to-[#D98C1F] transition-all duration-500">{title}</h3>
-                <p className="text-lg text-neutral-300 leading-relaxed group-hover:text-neutral-200 transition-colors duration-500">{description}</p>
+            <div className="animate-fade-slide-up md:group-hover:translate-y-1 transition-transform duration-500">
+                <h3 className="text-2xl lg:text-3xl font-bold tracking-tight text-white mb-4 leading-tight md:group-hover:text-transparent md:group-hover:bg-clip-text md:group-hover:bg-gradient-to-r md:group-hover:from-[#E53A3A] md:group-hover:to-[#D98C1F] transition-all duration-500">{title}</h3>
+                <p className="text-lg text-neutral-300 leading-relaxed md:group-hover:text-neutral-200 transition-colors duration-500">{description}</p>
             </div>
         </div>
     );
@@ -338,8 +338,15 @@ const QuoteIcon = () => (
     </svg>
 );
 
-const Testimonial = React.memo(({ quote, author, title }: { quote: string, author: string, title: string }) => (
-    <div className="bg-gradient-to-r from-[#1C1C1C]/60 to-[#0A0A0A]/60 backdrop-blur-xl border-2 border-neutral-800/60 rounded-3xl p-10 flex flex-col justify-between h-full animate-fade-slide-up transition-all duration-500 hover:bg-gradient-to-r hover:from-[#1C1C1C]/80 hover:to-[#0A0A0A]/80 hover:border-neutral-700/80 hover:scale-105 hover:shadow-2xl hover:shadow-[#E53A3A]/10">
+const Testimonial = React.memo(({ quote, author, title, index, isVisible }: { quote: string, author: string, title: string, index: number, isVisible: boolean }) => (
+    <div 
+        className={`bg-gradient-to-r from-[#1C1C1C]/60 to-[#0A0A0A]/60 backdrop-blur-xl border-2 rounded-3xl p-10 flex flex-col justify-between h-full animate-fade-slide-up transition-all duration-500 ${
+            isVisible 
+                ? 'from-[#1C1C1C]/80 to-[#0A0A0A]/80 border-neutral-700/80 scale-105 shadow-2xl shadow-[#E53A3A]/10' 
+                : 'border-neutral-800/60'
+        } md:hover:bg-gradient-to-r md:hover:from-[#1C1C1C]/80 md:hover:to-[#0A0A0A]/80 md:hover:border-neutral-700/80 md:hover:scale-105 md:hover:shadow-2xl md:hover:shadow-[#E53A3A]/10`}
+        style={{ transitionDelay: isVisible ? `${index * 150}ms` : '0ms' }}
+    >
         <div className="mb-8">
             <QuoteIcon />
             <p className="text-xl text-neutral-200 leading-relaxed">"{quote}"</p>
@@ -368,6 +375,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
   const [scrollY, setScrollY] = useState(0);
   const backgroundRef = useRef<HTMLDivElement>(null);
 
+  // Scroll animation states for mobile
+  const [chatHintVisible, setChatHintVisible] = useState(false);
+  const [testimonialsVisible, setTestimonialsVisible] = useState<Record<number, boolean>>({});
+  
+  // Refs for IntersectionObserver
+  const chatHintRef = useRef<HTMLDivElement>(null);
+  const testimonialRefs = useRef<(HTMLDivElement | null)[]>([]);
+
     // Handle direct URL navigation on component mount
     useEffect(() => {
         const path = window.location.pathname;
@@ -384,6 +399,63 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
 
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // Scroll animations for mobile only
+    useEffect(() => {
+        const isMobile = window.innerWidth < 768;
+        if (!isMobile) return;
+
+        const observerOptions: IntersectionObserverInit = {
+            threshold: 0.6,
+            rootMargin: '0px'
+        };
+
+        const chatObserverOptions: IntersectionObserverInit = {
+            threshold: 0.7,
+            rootMargin: '0px'
+        };
+
+        const handleIntersection = (
+            entries: IntersectionObserverEntry[],
+            setter: React.Dispatch<React.SetStateAction<boolean>> | React.Dispatch<React.SetStateAction<Record<number, boolean>>>,
+            index?: number
+        ) => {
+            entries.forEach((entry) => {
+                if (typeof index === 'number') {
+                    (setter as React.Dispatch<React.SetStateAction<Record<number, boolean>>>)((prev) => ({
+                        ...prev,
+                        [index]: entry.isIntersecting
+                    }));
+                } else {
+                    (setter as React.Dispatch<React.SetStateAction<boolean>>)(entry.isIntersecting);
+                }
+            });
+        };
+
+        const chatObserver = new IntersectionObserver(
+            (entries) => handleIntersection(entries, setChatHintVisible),
+            chatObserverOptions
+        );
+
+        if (chatHintRef.current) {
+            chatObserver.observe(chatHintRef.current);
+        }
+
+        const testimonialObservers = testimonialRefs.current.map((ref, index) => {
+            if (!ref) return null;
+            const observer = new IntersectionObserver(
+                (entries) => handleIntersection(entries, setTestimonialsVisible, index),
+                observerOptions
+            );
+            observer.observe(ref);
+            return observer;
+        });
+
+        return () => {
+            chatObserver.disconnect();
+            testimonialObservers.forEach((observer) => observer?.disconnect());
+        };
     }, []);
 
   const handleWaitlistSubmit = async (e: React.FormEvent) => {
@@ -549,10 +621,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                             </div>
                         </div>
 
-                        <div className="relative mx-auto my-16 w-full max-w-2xl h-auto rounded-3xl bg-black/60 backdrop-blur-xl p-2 shadow-2xl border-2 border-[#424242]/40 group hover:border-[#E53A3A]/60 transition-all duration-500 hover:shadow-2xl hover:shadow-[#E53A3A]/25 hover:scale-105" style={{
-                            animation: 'glow 2s ease-in-out infinite alternate',
-                            boxShadow: '0 0 20px rgba(229, 58, 58, 0.3), 0 0 40px rgba(229, 58, 58, 0.1), 0 0 60px rgba(229, 58, 58, 0.1)'
-                        }}>
+                        <div 
+                            ref={chatHintRef}
+                            className={`relative mx-auto my-16 w-full max-w-2xl h-auto rounded-3xl bg-black/60 backdrop-blur-xl p-2 shadow-2xl border-2 transition-all duration-500 ${
+                                chatHintVisible 
+                                    ? 'border-[#E53A3A]/60 shadow-2xl shadow-[#E53A3A]/25 scale-105' 
+                                    : 'border-[#424242]/40'
+                            } md:group md:hover:border-[#E53A3A]/60 md:hover:shadow-2xl md:hover:shadow-[#E53A3A]/25 md:hover:scale-105`}
+                            style={{
+                                animation: 'glow 2s ease-in-out infinite alternate',
+                                boxShadow: chatHintVisible ? '0 0 20px rgba(229, 58, 58, 0.5), 0 0 40px rgba(229, 58, 58, 0.3), 0 0 60px rgba(229, 58, 58, 0.2)' : '0 0 20px rgba(229, 58, 58, 0.3), 0 0 40px rgba(229, 58, 58, 0.1), 0 0 60px rgba(229, 58, 58, 0.1)'
+                            }}
+                        >
                             <div className="bg-transparent rounded-2xl p-6 space-y-6">
                                 {/* User Prompt */}
                                 <div className="flex justify-end">
@@ -1060,21 +1140,33 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            <Testimonial
-                                quote="Finally, a gaming assistant that doesn't spoil the story! I was stuck on a puzzle in Elden Ring for hours, and Otagon gave me just the right hint to figure it out myself."
-                                author="Sarah Chen"
-                                title="Souls-like Enthusiast"
-                            />
-                            <Testimonial
-                                quote="The PC-to-mobile sync is a game-changer. I can get help without alt-tabbing and losing my immersion. It's like having a gaming buddy who knows exactly when to chime in."
-                                author="Marcus Rodriguez"
-                                title="RPG Completionist"
-                            />
-                            <Testimonial
-                                quote="Just press F1 during intense boss fights and get spoken hints without pausing the game. The hands-free mode is a lifesaver - it's like having an expert coach right beside me."
-                                author="Safi Rahman"
-                                title="Souls-like Speedrunner"
-                            />
+                            <div ref={(el) => (testimonialRefs.current[0] = el)}>
+                                <Testimonial
+                                    quote="Finally, a gaming assistant that doesn't spoil the story! I was stuck on a puzzle in Elden Ring for hours, and Otagon gave me just the right hint to figure it out myself."
+                                    author="Sarah Chen"
+                                    title="Souls-like Enthusiast"
+                                    index={0}
+                                    isVisible={testimonialsVisible[0] || false}
+                                />
+                            </div>
+                            <div ref={(el) => (testimonialRefs.current[1] = el)}>
+                                <Testimonial
+                                    quote="The PC-to-mobile sync is a game-changer. I can get help without alt-tabbing and losing my immersion. It's like having a gaming buddy who knows exactly when to chime in."
+                                    author="Marcus Rodriguez"
+                                    title="RPG Completionist"
+                                    index={1}
+                                    isVisible={testimonialsVisible[1] || false}
+                                />
+                            </div>
+                            <div ref={(el) => (testimonialRefs.current[2] = el)}>
+                                <Testimonial
+                                    quote="Just press F1 during intense boss fights and get spoken hints without pausing the game. The hands-free mode is a lifesaver - it's like having an expert coach right beside me."
+                                    author="Safi Rahman"
+                                    title="Souls-like Speedrunner"
+                                    index={2}
+                                    isVisible={testimonialsVisible[2] || false}
+                                />
+                            </div>
                         </div>
                     </div>
                 </section>

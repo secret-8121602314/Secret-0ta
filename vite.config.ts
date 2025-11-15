@@ -83,6 +83,7 @@ export default defineConfig(({ mode }) => ({
     host: true,
     hmr: {
       overlay: true,
+      clientPort: 5173,
     },
     watch: {
       usePolling: true,
@@ -90,6 +91,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   optimizeDeps: {
-    force: true, // Force re-optimization
+    include: ['react', 'react-dom'],
+    force: false, // Only force when needed
   },
 }))
