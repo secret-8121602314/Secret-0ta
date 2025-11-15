@@ -114,7 +114,7 @@ export class ConversationService {
 
   // ✅ In-memory cache to reduce Supabase reads during polling
   private static conversationsCache: { data: Conversations; timestamp: number } | null = null;
-  private static CACHE_TTL = 2000; // 2 second cache (short TTL for near-real-time)
+  private static CACHE_TTL = 5000; // 5 second cache (balance between real-time and performance)
 
   /**
    * Clear the conversations cache to force fresh database read
