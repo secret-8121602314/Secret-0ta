@@ -297,14 +297,21 @@ const MainApp: React.FC<MainAppProps> = ({
 
         console.log('🔍 [MainApp] Loading conversations (attempt', retryCount + 1, ')');
         
-        // ✅ PERFORMANCE: Ensure Game Hub exists first, then single read
+        // ✅ FIX: Ensure Game Hub exists first - this returns it directly (RLS workaround)
         const gameHubFromEnsure = await ConversationService.ensureGameHubExists();
         console.log('🔍 [MainApp] ensureGameHubExists returned:', gameHubFromEnsure?.id);
         
-        // Single read after Game Hub verification
-        const userConversations = await ConversationService.getConversations();
-        console.log('🔍 [MainApp] Loaded conversations:', userConversations);
+        // ✅ CRITICAL: Use cached conversations instead of requerying Supabase
+        // getConversations() bypasses cache and queries Supabase which fails due to RLS
+        const userConversations = ConversationService.getCachedConversations() || {};
+        console.log('🔍 [MainApp] Loaded conversations from cache:', userConversations);
         console.log('🔍 [MainApp] Conversation count:', Object.keys(userConversations).length);
+        
+        // ✅ Ensure Game Hub is in the loaded conversations
+        if (gameHubFromEnsure && !userConversations[gameHubFromEnsure.id]) {
+          console.log('🔍 [MainApp] Adding Game Hub to conversations map');
+          userConversations[gameHubFromEnsure.id] = gameHubFromEnsure;
+        }
         
         setConversations(userConversations);
 
@@ -316,12 +323,10 @@ const MainApp: React.FC<MainAppProps> = ({
           conv => conv.isGameHub || conv.title === 'Game Hub' || conv.id === 'game-hub'
         );
         
-        // ✅ FIX: If Game Hub not in loaded conversations but we got it from ensure, use that
+        // ✅ FIX: If still no Game Hub found, use the one from ensure
         if (!currentGameHub && gameHubFromEnsure) {
-          console.log('🔍 [MainApp] Game Hub not in loaded conversations, using returned value');
+          console.log('🔍 [MainApp] Using Game Hub from ensureGameHubExists');
           currentGameHub = gameHubFromEnsure;
-          userConversations[gameHubFromEnsure.id] = gameHubFromEnsure;
-          setConversations(userConversations);
         }
 
         // Case 1: No conversations at all (should not happen since we call ensureGameHubExists)
