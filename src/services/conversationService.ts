@@ -124,6 +124,19 @@ export class ConversationService {
     this.conversationsCache = null;
   }
 
+  /**
+   * Get cached conversations without querying Supabase
+   * Returns null if cache is empty or expired
+   */
+  static getCachedConversations(): Conversations | null {
+    if (this.conversationsCache && Date.now() - this.conversationsCache.timestamp < this.CACHE_TTL) {
+      console.log('🔍 [ConversationService] Returning cached conversations (age:', Date.now() - this.conversationsCache.timestamp, 'ms)');
+      return this.conversationsCache.data;
+    }
+    console.log('🔍 [ConversationService] No valid cache available');
+    return null;
+  }
+
   static async getConversations(skipCache = false): Promise<Conversations> {
     const userId = await this.getCurrentUserId();
     let conversations: Conversations = {};
