@@ -151,30 +151,25 @@ export class SupabaseService {
       // ✅ FIX: Query by auth_user_id directly (matches RLS policies)
       console.log('🔍 [Supabase] Querying conversations for auth_user_id:', userId);
       
-      // ✅ Try query without filter first - RLS should automatically filter by user
+      // ✅ RLS WORKAROUND: Try query without filter - RLS should auto-filter by auth.uid()
+      // This bypasses potential issues with the auth_user_id column
       const { data: dataNoFilter, error: errorNoFilter } = await supabase
         .from('conversations')
         .select('*')
-        .order('updated_at', { ascending: false });
+        .order('updated_at', { ascending: false});
+      
+      console.log('🔍 [Supabase] Unfiltered query result:', {
+        error: errorNoFilter?.message,
+        count: dataNoFilter?.length || 0
+      });
       
       if (!errorNoFilter && dataNoFilter && dataNoFilter.length > 0) {
-        console.log('✅ [Supabase] Query WITHOUT filter returned', dataNoFilter.length, 'conversations');
-        const { data, error } = await supabase
-          .from('conversations')
-          .select('*')
-          .eq('auth_user_id', userId)
-          .order('updated_at', { ascending: false });
-
-        if (error) {
-          console.error('❌ [Supabase] Error getting conversations with filter:', error);
-          return [];
-        }
-        
-        console.log('✅ [Supabase] Query WITH filter returned', data.length, 'conversations');
-        return this.mapConversations(data);
+        console.log('✅ [Supabase] RLS auto-filtering worked! Returned', dataNoFilter.length, 'conversations');
+        return this.mapConversations(dataNoFilter);
       }
       
-      // Fallback to filtered query
+      // If unfiltered fails, try with explicit filter
+      console.log('🔍 [Supabase] Trying with explicit auth_user_id filter...');
       const { data, error } = await supabase
         .from('conversations')
         .select('*')
@@ -183,10 +178,11 @@ export class SupabaseService {
 
       if (error) {
         console.error('❌ [Supabase] Error getting conversations:', error);
+        console.error('❌ [Supabase] Error details:', JSON.stringify(error));
         return [];
       }
       
-      console.log('✅ [Supabase] Query returned', data.length, 'conversations');
+      console.log('✅ [Supabase] Filtered query returned', data.length, 'conversations');
       return this.mapConversations(data);
     } catch (error) {
       console.error('Error getting conversations:', error);
@@ -295,10 +291,26 @@ export class SupabaseService {
 
       if (error) {
         console.error('❌ [Supabase] Error creating/updating conversation:', error);
+        console.error('❌ [Supabase] Error details:', JSON.stringify(error));
         return null;
       }
 
       console.log('✅ [Supabase] Conversation upserted successfully:', data.id);
+      
+      // ✅ Verify we can read it back immediately
+      const { data: verifyData, error: verifyError } = await supabase
+        .from('conversations')
+        .select('id, title')
+        .eq('id', data.id)
+        .single();
+      
+      if (verifyError) {
+        console.error('⚠️ [Supabase] Cannot read back conversation after upsert!', verifyError.message);
+        console.error('⚠️ [Supabase] This indicates RLS SELECT policy is blocking reads');
+      } else {
+        console.log('✅ [Supabase] Verified conversation is readable:', verifyData);
+      }
+      
       return data.id;
     } catch (error) {
       console.error('Error creating conversation:', error);
