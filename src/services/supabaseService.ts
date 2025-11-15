@@ -235,14 +235,19 @@ export class SupabaseService {
         insertData.id = conversation.id;
       }
       
+      // ✅ FIX: Use UPSERT to handle duplicate Game Hub (409 Conflict)
+      // If a conversation with this ID exists, update it instead of failing
       const { data, error } = await supabase
         .from('conversations')
-        .insert(insertData)
+        .upsert(insertData, { 
+          onConflict: 'id',
+          ignoreDuplicates: false // Update existing record
+        })
         .select('id')
         .single();
 
       if (error) {
-        console.error('Error creating conversation:', error);
+        console.error('Error creating/updating conversation:', error);
         return null;
       }
 

@@ -298,11 +298,13 @@ const MainApp: React.FC<MainAppProps> = ({
         console.log('🔍 [MainApp] Loading conversations (attempt', retryCount + 1, ')');
         
         // ✅ PERFORMANCE: Ensure Game Hub exists first, then single read
-        await ConversationService.ensureGameHubExists();
+        const gameHubFromEnsure = await ConversationService.ensureGameHubExists();
+        console.log('🔍 [MainApp] ensureGameHubExists returned:', gameHubFromEnsure?.id);
         
         // Single read after Game Hub verification
         const userConversations = await ConversationService.getConversations();
         console.log('🔍 [MainApp] Loaded conversations:', userConversations);
+        console.log('🔍 [MainApp] Conversation count:', Object.keys(userConversations).length);
         
         setConversations(userConversations);
 
@@ -310,12 +312,20 @@ const MainApp: React.FC<MainAppProps> = ({
         console.log('🔍 [MainApp] Active conversation from service:', active);
 
         // Handle all cases to ensure "Game Hub" is always available and active by default
-        const currentGameHub = Object.values(updatedConversations).find(
+        let currentGameHub = Object.values(userConversations).find(
           conv => conv.isGameHub || conv.title === 'Game Hub' || conv.id === 'game-hub'
         );
+        
+        // ✅ FIX: If Game Hub not in loaded conversations but we got it from ensure, use that
+        if (!currentGameHub && gameHubFromEnsure) {
+          console.log('🔍 [MainApp] Game Hub not in loaded conversations, using returned value');
+          currentGameHub = gameHubFromEnsure;
+          userConversations[gameHubFromEnsure.id] = gameHubFromEnsure;
+          setConversations(userConversations);
+        }
 
         // Case 1: No conversations at all (should not happen since we call ensureGameHubExists)
-        if (Object.keys(updatedConversations).length === 0) {
+        if (Object.keys(userConversations).length === 0) {
           console.log('🔍 [MainApp] No conversations found, creating "Game Hub"...');
           const newConversation = ConversationService.createConversation('Game Hub', 'game-hub');
           await ConversationService.addConversation(newConversation);

@@ -233,13 +233,15 @@ export class ConversationService {
               // Update existing
               await supabaseService.updateConversation(conv.id, conv);
             } else {
-              // Create new - but need to handle the ID correctly
-              // Supabase generates UUID, so we may need to update our local ID
-              await supabaseService.createConversation(userId, conv);
+              // Create new - UPSERT will handle duplicates gracefully
+              const newId = await supabaseService.createConversation(userId, conv);
+              if (!newId) {
+                console.warn(`Failed to create conversation ${conv.id} in Supabase (returned null)`);
+              }
             }
           } catch (error) {
             console.warn(`Failed to save conversation ${conv.id} to Supabase:`, error);
-            throw error; // Re-throw to trigger retry
+            // Don't re-throw - allow other conversations to sync
           }
         });
         
@@ -626,6 +628,8 @@ export class ConversationService {
    * Returns the Game Hub conversation
    */
   static async ensureGameHubExists(): Promise<Conversation> {
+    // ✅ Force fresh load from Supabase (bypass cache)
+    this.conversationsCache = null;
     const conversations = await this.getConversations();
     
     // Check if Game Hub already exists
@@ -643,8 +647,22 @@ export class ConversationService {
     const gameHub = this.createConversation(DEFAULT_CONVERSATION_TITLE, GAME_HUB_ID);
     await this.addConversation(gameHub);
     
-    console.log('🔍 [ConversationService] Game Hub created successfully');
-    return gameHub;
+    // ✅ Wait a bit for DB transaction to complete, then reload
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    // ✅ Force fresh reload to verify creation
+    this.conversationsCache = null;
+    const reloadedConversations = await this.getConversations();
+    const createdGameHub = reloadedConversations[GAME_HUB_ID];
+    
+    if (!createdGameHub) {
+      console.error('🔍 [ConversationService] Game Hub creation failed - not found after reload');
+      // Return the in-memory version as fallback
+      return gameHub;
+    }
+    
+    console.log('🔍 [ConversationService] Game Hub created and verified:', createdGameHub.id);
+    return createdGameHub;
   }
 
   /**
