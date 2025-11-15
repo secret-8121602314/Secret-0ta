@@ -9,12 +9,32 @@ import UserAvatar from '../ui/UserAvatar';
 import AIAvatar from '../ui/AIAvatar';
 import TypingIndicator from '../ui/TypingIndicator';
 import SendIcon from '../ui/SendIcon';
+import ErrorBoundary from '../ErrorBoundary';
 import TTSControls from '../ui/TTSControls';
 import SuggestedPrompts from './SuggestedPrompts';
 import { ActiveSessionToggle } from '../ui/ActiveSessionToggle';
 import SubTabs from './SubTabs';
 import { gameTabService } from '../../services/gameTabService';
 import { tabManagementService } from '../../services/tabManagementService';
+
+// ============================================================================
+// ERROR FALLBACK COMPONENTS
+// ============================================================================
+
+// ✅ NEW: Fallback UI for SubTabs errors
+const SubTabsErrorFallback: React.FC = () => (
+  <div className="mb-4 px-3 py-4 rounded-lg bg-[#1C1C1C]/60 border border-[#FF4D4D]/30">
+    <div className="flex items-center gap-2 mb-2">
+      <span className="text-[#FF4D4D]">⚠️</span>
+      <span className="text-sm font-semibold text-[#FF4D4D]">
+        Failed to Load Insights
+      </span>
+    </div>
+    <p className="text-xs text-[#A3A3A3]">
+      There was an error loading game insights. You can still chat normally.
+    </p>
+  </div>
+);
 
 // ============================================================================
 // MEMOIZED CHAT MESSAGE COMPONENT (Performance Optimization)
@@ -522,11 +542,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       {/* Sub-tabs Section - Show for released game conversations only (not Game Hub, not unreleased) */}
       {conversation && !conversation.isGameHub && !conversation.isUnreleased && conversation.subtabs && conversation.subtabs.length > 0 && (
         <div className="flex-shrink-0 px-3 pb-2">
-          <SubTabs
-            key={`subtabs-${conversation.id}-${conversation.subtabs.filter(s => s.status === 'loaded').length}`}
-            subtabs={conversation.subtabs}
-            isLoading={isLoading}
-          />
+          <ErrorBoundary fallback={<SubTabsErrorFallback />}>
+            <SubTabs
+              key={`subtabs-${conversation.id}`}
+              subtabs={conversation.subtabs}
+              isLoading={isLoading}
+            />
+          </ErrorBoundary>
         </div>
       )}
 
