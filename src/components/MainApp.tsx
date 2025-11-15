@@ -11,6 +11,7 @@ import { gameTabService } from '../services/gameTabService';
 import { errorRecoveryService } from '../services/errorRecoveryService';
 import { UserService } from '../services/userService';
 import { SupabaseService } from '../services/supabaseService';
+import { supabase } from '../lib/supabase';
 import { tabManagementService } from '../services/tabManagementService';
 import { ttsService } from '../services/ttsService';
 import { toastService } from '../services/toastService';
@@ -29,9 +30,35 @@ import { LoadingSpinner } from './ui/LoadingSpinner';
 import SettingsContextMenu from './ui/SettingsContextMenu';
 import ProfileSetupBanner from './ui/ProfileSetupBanner';
 import GameProgressBar from './features/GameProgressBar';
+import ErrorBoundary from './ErrorBoundary';
 import WelcomeScreen from './welcome/WelcomeScreen';
 import { connect, disconnect } from '../services/websocketService';
 import { validateScreenshotDataUrl, getDataUrlSizeMB } from '../utils/imageValidation';
+
+// ============================================================================
+// ERROR FALLBACK COMPONENTS
+// ============================================================================
+
+// ✅ NEW: Fallback UI for ChatInterface errors
+const ChatErrorFallback: React.FC = () => (
+  <div className="flex-1 flex items-center justify-center p-4">
+    <div className="max-w-md text-center">
+      <div className="text-6xl mb-4">💬</div>
+      <h2 className="text-xl font-bold text-[#F5F5F5] mb-2">
+        Chat Temporarily Unavailable
+      </h2>
+      <p className="text-[#CFCFCF] mb-4">
+        We encountered an error loading the chat. Please try refreshing.
+      </p>
+      <button
+        onClick={() => window.location.reload()}
+        className="px-4 py-2 bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] text-white rounded-lg font-semibold hover:scale-105 transition-transform"
+      >
+        Refresh Page
+      </button>
+    </div>
+  </div>
+);
 
 interface MainAppProps {
   onLogout: () => void;
@@ -551,6 +578,73 @@ const MainApp: React.FC<MainAppProps> = ({
     return () => clearInterval(interval);
   }, [conversations, activeConversation]);
   */
+
+  // ✅ PHASE 2 FIX: Real-time subscription for subtab updates
+  useEffect(() => {
+    if (!activeConversation?.id) return;
+    
+    console.log('🔌 [MainApp] Setting up real-time subscription for conversation:', activeConversation.id);
+    
+    // Subscribe to conversation updates
+    const subscription = supabase
+      .channel(`conversation:${activeConversation.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'conversations',
+          filter: `id=eq.${activeConversation.id}`
+        },
+        async (payload: any) => {
+          console.log('📡 [MainApp] Real-time update received for conversation:', payload);
+          
+          // Update conversations state with fresh data
+          setConversations((prev) => {
+            const updated = { ...prev };
+            
+            // Merge the updated conversation data
+            if (payload.new && updated[activeConversation.id]) {
+              updated[activeConversation.id] = {
+                ...updated[activeConversation.id],
+                ...payload.new,
+                // Ensure subtabs array is properly handled
+                subtabs: payload.new.subtabs || updated[activeConversation.id].subtabs || []
+              };
+              
+              console.log('✅ [MainApp] Conversation updated via real-time:', updated[activeConversation.id]);
+            }
+            
+            return updated;
+          });
+          
+          // Update active conversation if it's the one that changed
+          if (activeConversation.id === payload.new?.id) {
+            setActiveConversation((prev) => {
+              if (!prev) return prev;
+              return {
+                ...prev,
+                ...payload.new,
+                subtabs: payload.new.subtabs || prev.subtabs || []
+              };
+            });
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ [MainApp] Successfully subscribed to conversation updates');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ [MainApp] Real-time subscription error');
+        }
+      });
+    
+    // Cleanup subscription on unmount or when conversation changes
+    return () => {
+      console.log('🔌 [MainApp] Unsubscribing from conversation:', activeConversation.id);
+      subscription.unsubscribe();
+    };
+  }, [activeConversation?.id]);
 
   // Function to refresh user data (for credit updates)
   const refreshUserData = async () => {
@@ -2011,25 +2105,27 @@ const MainApp: React.FC<MainAppProps> = ({
           
             {/* Chat Interface - Takes remaining space */}
             <div className="flex-1 min-h-0">
-              <ChatInterface
-                conversation={activeConversation}
-                onSendMessage={handleSendMessage}
-                isLoading={isLoading}
-                isPCConnected={connectionStatus === ConnectionStatus.CONNECTED}
-                onRequestConnect={handleConnectionModalOpen}
-                userTier={currentUser.tier}
-                onStop={handleStopAI}
-                isManualUploadMode={isManualUploadMode}
-                onToggleManualUploadMode={() => setIsManualUploadMode(!isManualUploadMode)}
-                suggestedPrompts={suggestedPrompts}
-                onSuggestedPromptClick={handleSuggestedPromptClick}
-                activeSession={session}
-                onToggleActiveSession={handleToggleActiveSession}
-                initialMessage={currentInputMessage}
-                onMessageChange={handleInputMessageChange}
-                queuedImage={queuedScreenshot}
-                onImageQueued={handleScreenshotQueued}
-              />
+              <ErrorBoundary fallback={<ChatErrorFallback />}>
+                <ChatInterface
+                  conversation={activeConversation}
+                  onSendMessage={handleSendMessage}
+                  isLoading={isLoading}
+                  isPCConnected={connectionStatus === ConnectionStatus.CONNECTED}
+                  onRequestConnect={handleConnectionModalOpen}
+                  userTier={currentUser.tier}
+                  onStop={handleStopAI}
+                  isManualUploadMode={isManualUploadMode}
+                  onToggleManualUploadMode={() => setIsManualUploadMode(!isManualUploadMode)}
+                  suggestedPrompts={suggestedPrompts}
+                  onSuggestedPromptClick={handleSuggestedPromptClick}
+                  activeSession={session}
+                  onToggleActiveSession={handleToggleActiveSession}
+                  initialMessage={currentInputMessage}
+                  onMessageChange={handleInputMessageChange}
+                  queuedImage={queuedScreenshot}
+                  onImageQueued={handleScreenshotQueued}
+                />
+              </ErrorBoundary>
             </div>
         </div>
       </div>
