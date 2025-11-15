@@ -1,3 +1,5 @@
+import { isPWAMode } from './pwaDetection';
+
 /**
  * SessionManager - Cross-tab session conflict detection
  * Prevents multiple PWA/browser instances from conflicting with each other
@@ -233,11 +235,7 @@ export class SessionManager {
    * Check if running in PWA mode
    */
   private isPWA(): boolean {
-    return (
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true ||
-      document.referrer.includes('android-app://')
-    );
+    return isPWAMode();
   }
 
   /**

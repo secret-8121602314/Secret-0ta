@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { isPWAMode, markAppAsInstalled } from '../../utils/pwaDetection';
 
 interface PWAInstallBannerProps {
   className?: string;
@@ -20,9 +21,9 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '' }) =
     // Check if app is already installed
     const checkIfInstalled = () => {
       // Check if running in standalone mode (PWA)
-      if (window.matchMedia('(display-mode: standalone)').matches || 
-          (window.navigator as any).standalone === true) {
+      if (isPWAMode()) {
         setIsInstalled(true);
+        markAppAsInstalled();
         return;
       }
       
@@ -56,7 +57,7 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '' }) =
     const handleAppInstalled = () => {
       setIsInstalled(true);
       setShowBanner(false);
-      localStorage.setItem('otakon_pwa_installed', 'true');
+      markAppAsInstalled();
       sessionStorage.removeItem(BANNER_DISMISS_KEY);
       (window as any)[GLOBAL_PROMPT_KEY] = null;
       setHasPrompt(false);

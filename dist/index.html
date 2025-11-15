@@ -20,18 +20,18 @@
     <link rel="apple-touch-icon" sizes="512x512" href="/Otagon/icon-512.png" />
     
     <title>Otagon</title>
-    <script type="module" crossorigin src="/Otagon/assets/index-DaEJr734.js"></script>
+    <script type="module" crossorigin src="/Otagon/assets/index-BN0UXz_8.js"></script>
     <link rel="modulepreload" crossorigin href="/Otagon/assets/vendor-lhgVPd4Y.js">
     <link rel="modulepreload" crossorigin href="/Otagon/assets/markdown-vendor-W_vRiG1d.js">
     <link rel="modulepreload" crossorigin href="/Otagon/assets/react-vendor-GN48U5Y-.js">
     <link rel="modulepreload" crossorigin href="/Otagon/assets/supabase-vendor-Q7d2eXAy.js">
-    <link rel="modulepreload" crossorigin href="/Otagon/assets/core-services-Dah-p-Qy.js">
-    <link rel="modulepreload" crossorigin href="/Otagon/assets/auth-pCAVSMfz.js">
-    <link rel="modulepreload" crossorigin href="/Otagon/assets/services-BND8mY4U.js">
+    <link rel="modulepreload" crossorigin href="/Otagon/assets/core-services-CJiE5Dr-.js">
+    <link rel="modulepreload" crossorigin href="/Otagon/assets/auth-BapcAVYZ.js">
+    <link rel="modulepreload" crossorigin href="/Otagon/assets/services-CRtNAVij.js">
     <link rel="modulepreload" crossorigin href="/Otagon/assets/ai-vendor-DDPwdD9r.js">
-    <link rel="modulepreload" crossorigin href="/Otagon/assets/chat-services-BzkZy3oA.js">
-    <link rel="modulepreload" crossorigin href="/Otagon/assets/features-Dfvi-1An.js">
-    <link rel="modulepreload" crossorigin href="/Otagon/assets/modals-hUxWhX6g.js">
+    <link rel="modulepreload" crossorigin href="/Otagon/assets/chat-services-DQsapga5.js">
+    <link rel="modulepreload" crossorigin href="/Otagon/assets/features-DAKj0ZAa.js">
+    <link rel="modulepreload" crossorigin href="/Otagon/assets/modals-Czxs6lAu.js">
     <link rel="stylesheet" crossorigin href="/Otagon/assets/index-DPOz07Ye.css">
   </head>
   <body>
@@ -64,43 +64,36 @@
       })();
     </script>
     <script>
-      // Service Worker Registration for Production
+      // Service Worker Registration for both Dev and Production
       if ('serviceWorker' in navigator) {
-        // Only register in production (not localhost)
-        if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-          window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/Otagon/sw.js')
-              .then((registration) => {
-                console.log('SW registered: ', registration);
-                
-                // Check for updates
-                registration.addEventListener('updatefound', () => {
-                  const newWorker = registration.installing;
-                  if (newWorker) {
-                    newWorker.addEventListener('statechange', () => {
-                      if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        // New content is available, show update notification
-                        if (confirm('New version available! Reload to update?')) {
-                          newWorker.postMessage({ type: 'SKIP_WAITING' });
-                          window.location.reload();
-                        }
+        window.addEventListener('load', () => {
+          const isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+          const swPath = isDev ? '/sw.js' : '/Otagon/sw.js';
+          
+          navigator.serviceWorker.register(swPath)
+            .then((registration) => {
+              console.log('SW registered: ', registration);
+              
+              // Check for updates
+              registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                if (newWorker) {
+                  newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                      // New content is available, show update notification
+                      if (confirm('New version available! Reload to update?')) {
+                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                        window.location.reload();
                       }
-                    });
-                  }
-                });
-              })
-              .catch((registrationError) => {
-                console.log('SW registration failed: ', registrationError);
+                    }
+                  });
+                }
               });
-          });
-        } else {
-          // Development mode - unregister service worker
-          navigator.serviceWorker.getRegistrations().then(function(registrations) {
-            for(let registration of registrations) {
-              registration.unregister();
-            }
-          });
-        }
+            })
+            .catch((registrationError) => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
       }
     </script>
   </body>

@@ -5,6 +5,7 @@ import { cacheService } from './cacheService';
 import { ErrorService } from './errorService';
 import { toastService } from './toastService';
 import { jsonToRecord } from '../utils/typeHelpers';
+import { isPWAMode } from '../utils/pwaDetection';
 
 export class AuthService {
   private static instance: AuthService;
@@ -29,7 +30,20 @@ export class AuthService {
   private getCallbackUrl(): string {
     const origin = window.location.origin;
     const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    return isDev ? `${origin}/auth/callback` : `${origin}/Otagon/auth/callback`;
+    
+    // Check if running in PWA mode
+    const isPWA = isPWAMode();
+    
+    const callback = isDev ? '/auth/callback' : '/Otagon/auth/callback';
+    
+    // For PWA, ensure we use the full URL with proper scheme
+    // This helps with OAuth redirects in standalone mode
+    if (isPWA) {
+      console.log('🔐 [AuthService] PWA mode detected, using full callback URL');
+      return `${origin}${callback}`;
+    }
+    
+    return `${origin}${callback}`;
   }
 
   static getInstance(): AuthService {

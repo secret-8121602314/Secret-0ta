@@ -52,43 +52,36 @@
     </script>
     <script type="module" src="/src/main.tsx?v=20241114014200"></script>
     <script>
-      // Service Worker Registration for Production
+      // Service Worker Registration for both Dev and Production
       if ('serviceWorker' in navigator) {
-        // Only register in production (not localhost)
-        if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-          window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/Otagon/sw.js')
-              .then((registration) => {
-                console.log('SW registered: ', registration);
-                
-                // Check for updates
-                registration.addEventListener('updatefound', () => {
-                  const newWorker = registration.installing;
-                  if (newWorker) {
-                    newWorker.addEventListener('statechange', () => {
-                      if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        // New content is available, show update notification
-                        if (confirm('New version available! Reload to update?')) {
-                          newWorker.postMessage({ type: 'SKIP_WAITING' });
-                          window.location.reload();
-                        }
+        window.addEventListener('load', () => {
+          const isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+          const swPath = isDev ? '/sw.js' : '/Otagon/sw.js';
+          
+          navigator.serviceWorker.register(swPath)
+            .then((registration) => {
+              console.log('SW registered: ', registration);
+              
+              // Check for updates
+              registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                if (newWorker) {
+                  newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                      // New content is available, show update notification
+                      if (confirm('New version available! Reload to update?')) {
+                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                        window.location.reload();
                       }
-                    });
-                  }
-                });
-              })
-              .catch((registrationError) => {
-                console.log('SW registration failed: ', registrationError);
+                    }
+                  });
+                }
               });
-          });
-        } else {
-          // Development mode - unregister service worker
-          navigator.serviceWorker.getRegistrations().then(function(registrations) {
-            for(let registration of registrations) {
-              registration.unregister();
-            }
-          });
-        }
+            })
+            .catch((registrationError) => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
       }
     </script>
   </body>

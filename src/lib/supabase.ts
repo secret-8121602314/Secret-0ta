@@ -12,6 +12,44 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   }
 });
 
+// Global auth state listener for PWA session management
+if (typeof window !== 'undefined') {
+  supabase.auth.onAuthStateChange((event, session) => {
+    console.log('🔐 [Supabase] Global auth event:', event);
+    
+    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+      if (session?.access_token) {
+        // Store session timestamp for PWA mode
+        localStorage.setItem('otakon_session_refreshed', Date.now().toString());
+        localStorage.setItem('otakon_last_session_check', Date.now().toString());
+        
+        // Notify app of session refresh
+        window.dispatchEvent(new CustomEvent('otakon:session-refreshed', {
+          detail: { event, session }
+        }));
+        
+        console.log('✅ [Supabase] Session refreshed/established');
+      }
+    } else if (event === 'SIGNED_OUT') {
+      // Clear all session data
+      localStorage.removeItem('otakon_session_refreshed');
+      localStorage.removeItem('otakon_last_session_check');
+      
+      // Notify app of signout
+      window.dispatchEvent(new CustomEvent('otakon:signed-out'));
+      
+      console.log('🔐 [Supabase] User signed out');
+    } else if (event === 'USER_UPDATED') {
+      console.log('🔐 [Supabase] User data updated');
+      
+      // Notify app of user update
+      window.dispatchEvent(new CustomEvent('otakon:user-updated', {
+        detail: { session }
+      }));
+    }
+  });
+}
+
 // Re-export Database type for convenience
 export type { Database } from '../types/database';
 

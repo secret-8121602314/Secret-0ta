@@ -1,8 +1,10 @@
 // Service Worker for Otagon PWA - Performance Optimized with Enhanced Background Sync
-const CACHE_NAME = 'otakon-v1.2.9-background-tts';
-const CHAT_CACHE_NAME = 'otakon-chat-v1.2.9';
-const STATIC_CACHE = 'otakon-static-v1.2.9';
-const API_CACHE = 'otakon-api-v1.2.9';
+// Version updated for PWA critical fixes
+const CACHE_NAME = 'otakon-v1.3.0-pwa-fixes';
+const CHAT_CACHE_NAME = 'otakon-chat-v1.3.0';
+const STATIC_CACHE = 'otakon-static-v1.3.0';
+const API_CACHE = 'otakon-api-v1.3.0';
+const AUTH_CACHE = 'otakon-auth-v1.3.0';
 const BASE_PATH = '/Otagon';
 let ttsKeepAliveInterval = null;
 const urlsToCache = [
@@ -520,7 +522,7 @@ self.addEventListener('notificationclick', (event) => {
   }
 });
 
-// Handle app updates
+// Handle app updates and auth state caching
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
@@ -530,6 +532,24 @@ self.addEventListener('message', (event) => {
     // Trigger background sync for offline data
     self.registration.sync.register('offline-data-sync');
   }
+  
+  // Cache auth state for PWA offline mode
+  if (event.data && event.data.type === 'CACHE_AUTH_STATE') {
+    const authState = event.data.payload;
+    console.log('[SW] Caching auth state for offline access');
+    
+    caches.open(AUTH_CACHE).then(cache => {
+      cache.put('/auth-state', new Response(JSON.stringify(authState), {
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'max-age=3600' // 1 hour
+        }
+      }));
+    });
+  } else if (event.data && event.data.type === 'CLEAR_AUTH_CACHE') {
+    console.log('[SW] Clearing auth cache');
+    caches.delete(AUTH_CACHE);
+  }
 });
 
 // Activate event - clean up old caches
@@ -537,19 +557,18 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME && cacheName !== CHAT_CACHE_NAME && 
-              cacheName !== STATIC_CACHE && cacheName !== API_CACHE) {
-            console.log('Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
-  );
-});
-
-// Performance-optimized request handlers
+          cacheNames.map((cacheName) => {
+            if (cacheName !== CACHE_NAME && cacheName !== CHAT_CACHE_NAME && 
+                cacheName !== STATIC_CACHE && cacheName !== API_CACHE && 
+                cacheName !== AUTH_CACHE) {
+              console.log('Deleting old cache:', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      })
+    );
+  });// Performance-optimized request handlers
 
 // Handle static assets with cache-first strategy
 async function handleStaticRequest(request) {
