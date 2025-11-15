@@ -160,7 +160,12 @@ export class SupabaseService {
       
       console.log('🔍 [Supabase] Unfiltered query result:', {
         error: errorNoFilter?.message,
-        count: dataNoFilter?.length || 0
+        count: dataNoFilter?.length || 0,
+        firstRow: dataNoFilter && dataNoFilter.length > 0 ? {
+          id: dataNoFilter[0].id,
+          title: dataNoFilter[0].title,
+          auth_user_id: dataNoFilter[0].auth_user_id
+        } : null
       });
       
       if (!errorNoFilter && dataNoFilter && dataNoFilter.length > 0) {
@@ -183,6 +188,16 @@ export class SupabaseService {
       }
       
       console.log('✅ [Supabase] Filtered query returned', data.length, 'conversations');
+      if (data.length === 0) {
+        // 🔍 If we got 0 results, check session to verify auth context
+        const { data: { session } } = await supabase.auth.getSession();
+        console.error('🔍 [Supabase] Zero results diagnostic:', {
+          requestedUserId: userId,
+          sessionUserId: session?.user?.id,
+          match: session?.user?.id === userId,
+          message: 'RLS SELECT policy may be blocking reads'
+        });
+      }
       return this.mapConversations(data);
     } catch (error) {
       console.error('Error getting conversations:', error);
@@ -297,10 +312,10 @@ export class SupabaseService {
 
       console.log('✅ [Supabase] Conversation upserted successfully:', data.id);
       
-      // ✅ Verify we can read it back immediately
+      // ✅ Verify we can read it back immediately with full data
       const { data: verifyData, error: verifyError } = await supabase
         .from('conversations')
-        .select('id, title')
+        .select('*')
         .eq('id', data.id)
         .single();
       
@@ -308,7 +323,25 @@ export class SupabaseService {
         console.error('⚠️ [Supabase] Cannot read back conversation after upsert!', verifyError.message);
         console.error('⚠️ [Supabase] This indicates RLS SELECT policy is blocking reads');
       } else {
-        console.log('✅ [Supabase] Verified conversation is readable:', verifyData);
+        console.log('✅ [Supabase] Verified conversation data:', {
+          id: verifyData.id,
+          title: verifyData.title,
+          auth_user_id: verifyData.auth_user_id,
+          auth_user_id_type: typeof verifyData.auth_user_id,
+          is_game_hub: verifyData.is_game_hub
+        });
+        
+        // 🔍 Check if this row would pass RLS
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id !== verifyData.auth_user_id) {
+          console.error('🚨 [Supabase] AUTH_USER_ID MISMATCH!', {
+            sessionUserId: session?.user?.id,
+            rowAuthUserId: verifyData.auth_user_id,
+            match: false
+          });
+        } else {
+          console.log('✅ [Supabase] auth_user_id matches session perfectly');
+        }
       }
       
       return data.id;
