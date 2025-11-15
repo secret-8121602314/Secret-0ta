@@ -288,9 +288,13 @@ export class ConversationService {
       id: conversationId,
       title: title || DEFAULT_CONVERSATION_TITLE,
       messages: [],
+      subtabs: [],
+      subtabsOrder: [],
       createdAt: now,
       updatedAt: now,
       isActive: true,
+      isActiveSession: false,
+      isPinned: false,
       isGameHub: isGameHub, // Set flag for Game Hub
     };
   }
@@ -334,6 +338,11 @@ export class ConversationService {
           reason: 'A "Game Hub" conversation already exists. Please use the existing one or create a conversation with a different title.' 
         };
       }
+    }
+    
+    // ✅ Set authUserId on the conversation object
+    if (userId) {
+      conversation.authUserId = userId;
     }
     
     // ✅ Conversations are unlimited - add the new conversation
