@@ -150,11 +150,36 @@ export class SupabaseService {
     try {
       // ✅ FIX: Query by auth_user_id directly (matches RLS policies)
       console.log('🔍 [Supabase] Querying conversations for auth_user_id:', userId);
+      
+      // ✅ Try query without filter first - RLS should automatically filter by user
+      const { data: dataNoFilter, error: errorNoFilter } = await supabase
+        .from('conversations')
+        .select('*')
+        .order('updated_at', { ascending: false });
+      
+      if (!errorNoFilter && dataNoFilter && dataNoFilter.length > 0) {
+        console.log('✅ [Supabase] Query WITHOUT filter returned', dataNoFilter.length, 'conversations');
+        const { data, error } = await supabase
+          .from('conversations')
+          .select('*')
+          .eq('auth_user_id', userId)
+          .order('updated_at', { ascending: false });
+
+        if (error) {
+          console.error('❌ [Supabase] Error getting conversations with filter:', error);
+          return [];
+        }
+        
+        console.log('✅ [Supabase] Query WITH filter returned', data.length, 'conversations');
+        return this.mapConversations(data);
+      }
+      
+      // Fallback to filtered query
       const { data, error } = await supabase
         .from('conversations')
         .select('*')
         .eq('auth_user_id', userId)
-        .order('updated_at', { ascending: false });
+        .order('updated_at', { ascending: false});
 
       if (error) {
         console.error('❌ [Supabase] Error getting conversations:', error);
@@ -162,23 +187,30 @@ export class SupabaseService {
       }
       
       console.log('✅ [Supabase] Query returned', data.length, 'conversations');
+      return this.mapConversations(data);
+    } catch (error) {
+      console.error('Error getting conversations:', error);
+      return [];
+    }
+  }
+  
+  private mapConversations(data: any[]): Conversation[] {
+    // 🔍 DEBUG: Log what we're getting from Supabase
+    if (process.env.NODE_ENV === 'development' && data.length > 0) {
+      const sample = data[0];
+      const messages = sample.messages as any;
+      const subtabs = sample.subtabs as any;
+      console.error('🔍 [Supabase] Sample conversation from DB:', {
+        id: sample.id,
+        title: sample.title,
+        messageCount: Array.isArray(messages) ? messages.length : 0,
+        hasMessagesField: 'messages' in sample,
+        messagesType: typeof messages,
+        subtabCount: Array.isArray(subtabs) ? subtabs.length : 0
+      });
+    }
 
-      // 🔍 DEBUG: Log what we're getting from Supabase
-      if (process.env.NODE_ENV === 'development' && data.length > 0) {
-        const sample = data[0];
-        const messages = sample.messages as any;
-        const subtabs = sample.subtabs as any;
-        console.error('🔍 [Supabase] Sample conversation from DB:', {
-          id: sample.id,
-          title: sample.title,
-          messageCount: Array.isArray(messages) ? messages.length : 0,
-          hasMessagesField: 'messages' in sample,
-          messagesType: typeof messages,
-          subtabCount: Array.isArray(subtabs) ? subtabs.length : 0
-        });
-      }
-
-      return data.map(conv => ({
+    return data.map(conv => ({
         id: conv.id,
         authUserId: conv.auth_user_id ?? undefined,
         userId: conv.user_id ?? undefined,
@@ -202,14 +234,18 @@ export class SupabaseService {
         contextSummary: conv.context_summary ?? undefined,
         lastSummarizedAt: conv.last_summarized_at ? new Date(conv.last_summarized_at).getTime() : undefined,
       })) as Conversation[];
-    } catch (error) {
-      console.error('Error getting conversations:', error);
-      return [];
-    }
   }
 
   async createConversation(userId: string, conversation: Omit<Conversation, 'createdAt' | 'updatedAt'> & { id?: string }): Promise<string | null> {
     try {
+      // ✅ Verify session is active
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('🔍 [Supabase] Current session user:', session?.user?.id, 'vs provided userId:', userId);
+      
+      if (!session || session.user.id !== userId) {
+        console.error('❌ [Supabase] Session mismatch! RLS will block reads. Session:', session?.user?.id, 'vs userId:', userId);
+      }
+      
       // ✅ FIX: Use auth_user_id directly instead of RPC function
       // The RPC function get_user_id_from_auth_id was causing issues
       // Now we use auth_user_id (which references auth.users.id) directly
@@ -243,7 +279,9 @@ export class SupabaseService {
       console.log('🔍 [Supabase] Upserting conversation:', {
         id: insertData.id,
         title: insertData.title,
-        auth_user_id: insertData.auth_user_id
+        auth_user_id: insertData.auth_user_id,
+        is_game_hub: insertData.is_game_hub,
+        is_active: insertData.is_active
       });
       
       const { data, error } = await supabase
