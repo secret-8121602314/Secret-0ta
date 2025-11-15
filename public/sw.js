@@ -119,8 +119,8 @@ self.addEventListener('fetch', (event) => {
         .then((response) => {
           // Return cached version or fetch from network
           return response || fetch(event.request).then((response) => {
-            // Cache the fetched response for future use
-            if (response.status === 200) {
+            // Cache the fetched response for future use (only GET requests)
+            if (response.status === 200 && event.request.method === 'GET') {
               const responseToCache = response.clone();
               caches.open(STATIC_CACHE).then((cache) => {
                 cache.put(event.request, responseToCache);
