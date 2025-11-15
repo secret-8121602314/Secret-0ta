@@ -503,23 +503,33 @@ self.addEventListener('push', (event) => {
   );
 });
 
-// Notification click handling
+// Notification click handling - Focus existing client instead of opening new window
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   
-  if (event.action === 'open') {
-    event.waitUntil(
-      clients.openWindow(`${BASE_PATH}/`)
-    );
-  } else if (event.action === 'dismiss') {
+  if (event.action === 'dismiss') {
     // Just close the notification
     return;
-  } else {
-    // Default action - open app
-    event.waitUntil(
-      clients.openWindow(`${BASE_PATH}/`)
-    );
   }
+  
+  // Try to focus an existing client first
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then(clientList => {
+        // Find an existing client that matches our app
+        for (let i = 0; i < clientList.length; i++) {
+          const client = clientList[i];
+          if (client.url.includes(BASE_PATH) && 'focus' in client) {
+            // Focus the existing window instead of opening a new one
+            return client.focus();
+          }
+        }
+        // If no existing client, then open a new window
+        if (clients.openWindow) {
+          return clients.openWindow(`${BASE_PATH}/`);
+        }
+      })
+  );
 });
 
 // Handle app updates and auth state caching

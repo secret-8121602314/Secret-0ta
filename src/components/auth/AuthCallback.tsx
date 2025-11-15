@@ -40,7 +40,10 @@ const AuthCallback: React.FC<AuthCallbackProps> = ({ onAuthSuccess, onAuthError 
           if (existingSession.data.session) {
             console.log('🔐 [AuthCallback] Already logged in, no OAuth to process:', existingSession.data.session.user.email);
             const basePath = window.location.hostname === 'localhost' ? '/' : '/Otagon/';
+            
+            // Clean URL without navigation to prevent opening PWA from browser
             window.history.replaceState({}, document.title, basePath);
+            
             setStatus('success');
             onAuthSuccess();
             return;
