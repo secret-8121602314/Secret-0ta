@@ -650,35 +650,35 @@ export class ConversationService {
    * Returns the Game Hub conversation
    */
   static async ensureGameHubExists(): Promise<Conversation> {
-    // ✅ Force fresh load from Supabase (bypass cache)
-    this.conversationsCache = null;
-    const conversations = await this.getConversations();
-    
-    // Check if Game Hub already exists
-    const existingGameHub = Object.values(conversations).find(
-      conv => conv.isGameHub || conv.id === GAME_HUB_ID || conv.title === DEFAULT_CONVERSATION_TITLE
-    );
-    
-    if (existingGameHub) {
-      console.log('🔍 [ConversationService] Game Hub already exists:', existingGameHub.id);
-      return existingGameHub;
+    // Check cache first without clearing it
+    const cachedConversations = this.getCachedConversations();
+    if (cachedConversations) {
+      const existingGameHub = Object.values(cachedConversations).find(
+        conv => conv.isGameHub || conv.id === GAME_HUB_ID || conv.title === DEFAULT_CONVERSATION_TITLE
+      );
+      
+      if (existingGameHub) {
+        console.log('🔍 [ConversationService] Game Hub found in cache:', existingGameHub.id);
+        return existingGameHub;
+      }
     }
     
-    // Create new Game Hub
+    // Not in cache, create new Game Hub
     console.log('🔍 [ConversationService] Creating Game Hub...');
     const gameHub = this.createConversation(DEFAULT_CONVERSATION_TITLE, GAME_HUB_ID);
     await this.addConversation(gameHub);
     
-    // ✅ RLS WORKAROUND: Since list queries fail but .single() works,
-    // return the newly created Game Hub directly without reloading
-    console.log('✅ [ConversationService] Game Hub created, returning directly (RLS workaround)');
+    // ✅ RLS WORKAROUND: Update cache with the new Game Hub
+    // Don't reload from Supabase as list queries fail due to RLS
+    console.log('✅ [ConversationService] Game Hub created, updating cache directly (RLS workaround)');
     
-    // Update cache with the new Game Hub
-    if (!this.conversationsCache) {
-      this.conversationsCache = {};
-    }
-    this.conversationsCache[GAME_HUB_ID] = gameHub;
-    this.conversationsCacheTimestamp = Date.now();
+    const conversations: Conversations = cachedConversations || {};
+    conversations[GAME_HUB_ID] = gameHub;
+    
+    this.conversationsCache = {
+      data: conversations,
+      timestamp: Date.now()
+    };
     
     return gameHub;
   }
