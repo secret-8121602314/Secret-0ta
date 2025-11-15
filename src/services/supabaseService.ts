@@ -151,6 +151,21 @@ export class SupabaseService {
       // ✅ FIX: Query by auth_user_id directly (matches RLS policies)
       console.log('🔍 [Supabase] Querying conversations for auth_user_id:', userId);
       
+      // 🔍 DIAGNOSTIC: Test if Game Hub exists with direct .single() query
+      const { data: gameHubTest, error: gameHubError } = await supabase
+        .from('conversations')
+        .select('id, title, auth_user_id')
+        .eq('id', 'game-hub')
+        .maybeSingle();
+      
+      if (gameHubTest) {
+        console.log('✅ [Supabase] Game Hub exists via .single():', gameHubTest);
+      } else if (gameHubError) {
+        console.log('❌ [Supabase] Game Hub .single() error:', gameHubError.message);
+      } else {
+        console.log('🔍 [Supabase] Game Hub does not exist yet');
+      }
+      
       // ✅ RLS WORKAROUND: Try query without filter - RLS should auto-filter by auth.uid()
       // This bypasses potential issues with the auth_user_id column
       const { data: dataNoFilter, error: errorNoFilter } = await supabase
