@@ -296,17 +296,15 @@ const MainApp: React.FC<MainAppProps> = ({
         }
 
         console.log('🔍 [MainApp] Loading conversations (attempt', retryCount + 1, ')');
+        
+        // ✅ PERFORMANCE: Ensure Game Hub exists first, then single read
+        await ConversationService.ensureGameHubExists();
+        
+        // Single read after Game Hub verification
         const userConversations = await ConversationService.getConversations();
         console.log('🔍 [MainApp] Loaded conversations:', userConversations);
         
-        // ✅ CRITICAL: Ensure Game Hub exists before doing anything else
-        await ConversationService.ensureGameHubExists();
-        
-        // Reload conversations after ensuring Game Hub
-        const updatedConversations = await ConversationService.getConversations();
-        console.log('🔍 [MainApp] Conversations after Game Hub check:', updatedConversations);
-        
-        setConversations(updatedConversations);
+        setConversations(userConversations);
 
         let active = await ConversationService.getActiveConversation();
         console.log('🔍 [MainApp] Active conversation from service:', active);
@@ -490,94 +488,6 @@ const MainApp: React.FC<MainAppProps> = ({
     
     return () => clearTimeout(timeout);
   }, [isInitializing, conversations, activeConversation]);
-
-  // ✅ DISABLED: This continuous polling conflicts with targeted pollForSubtabUpdates
-  // The targeted polling (triggered after game tab creation) is more efficient
-  // and prevents infinite loops. This effect was causing duplicate polling.
-  /*
-  // Poll for conversation updates when subtabs are loading
-  useEffect(() => {
-    const pollForSubtabUpdates = async () => {
-      // Check if any conversation has loading subtabs
-      const hasLoadingSubtabs = Object.values(conversations).some(conv => 
-        conv.subtabs?.some(tab => tab.status === 'loading')
-      );
-
-      if (!hasLoadingSubtabs) {
-        // All subtabs loaded, no need to poll
-        return;
-      }
-
-      console.log('🔄 [MainApp] Polling for subtab updates...');
-      
-      // ✅ FIX 1: Skip cache to get fresh data
-      const updatedConversations = await ConversationService.getConversations(true);
-      
-      // ✅ FIX 2: Only update if subtabs actually changed (prevents unnecessary re-renders)
-      setConversations(prevConversations => {
-        const freshConversations = deepCloneConversations(updatedConversations);
-        
-        // Check if subtabs have actually been updated
-        let hasChanges = false;
-        Object.keys(freshConversations).forEach(convId => {
-          const prev = prevConversations[convId];
-          const curr = freshConversations[convId];
-          
-          if (prev && curr && prev.subtabs && curr.subtabs) {
-            const prevLoadingCount = prev.subtabs.filter(t => t.status === 'loading').length;
-            const currLoadingCount = curr.subtabs.filter(t => t.status === 'loading').length;
-            
-            if (prevLoadingCount !== currLoadingCount) {
-              hasChanges = true;
-              console.log(`🔄 [MainApp] Subtab status changed in ${curr.gameTitle}: ${prevLoadingCount} → ${currLoadingCount} loading`);
-            }
-            
-            // ✅ NEW: Check content, status, and isNew changes
-            if (!hasChanges) {
-              for (let i = 0; i < prev.subtabs.length; i++) {
-                const prevTab = prev.subtabs[i];
-                const currTab = curr.subtabs[i];
-                
-                if (currTab && prevTab && (
-                  prevTab.content !== currTab.content ||      // ✅ Content changed
-                  prevTab.status !== currTab.status ||        // ✅ Status changed
-                  prevTab.isNew !== currTab.isNew             // ✅ New flag changed
-                )) {
-                  hasChanges = true;
-                  console.log(`🔄 [MainApp] Subtab updated: ${currTab.title} (status: ${prevTab.status} → ${currTab.status})`);
-                  break;
-                }
-              }
-            }
-          }
-        });
-        
-        // Only update if subtabs changed
-        if (hasChanges) {
-          console.log('🔄 [MainApp] Subtabs updated, refreshing state');
-          
-          // ✅ CRITICAL: Always update activeConversation when subtabs change
-          // This ensures the user sees newly loaded content immediately without switching tabs
-          if (activeConversation && freshConversations[activeConversation.id]) {
-            console.log('🔄 [MainApp] Updating active conversation with fresh data (including subtab content)');
-            setActiveConversation(freshConversations[activeConversation.id]);
-          }
-          
-          return freshConversations;
-        }
-        
-        console.log('🔄 [MainApp] No subtab changes, keeping current state');
-        return prevConversations; // Keep existing state (preserves messages)
-      });
-    };
-
-    // ✅ FIX: Reduce polling frequency to 2 seconds AND stop when all loaded
-    const interval = setInterval(pollForSubtabUpdates, 2000);
-    
-    // Cleanup on unmount
-    return () => clearInterval(interval);
-  }, [conversations, activeConversation]);
-  */
 
   // ✅ PHASE 2 FIX: Real-time subscription for subtab updates
   useEffect(() => {
@@ -763,33 +673,43 @@ const MainApp: React.FC<MainAppProps> = ({
 
   const handleDeleteConversation = async (id: string) => {
     const wasActive = activeConversation?.id === id;
+    const deletedConversation = conversations[id];
     
-    // Delete the conversation
-    await ConversationService.deleteConversation(id);
+    // ✅ OPTIMISTIC: Delete from local state immediately (instant UI)
+    setConversations(prev => {
+      const updated = { ...prev };
+      delete updated[id];
+      return updated;
+    });
     
-    // Get fresh conversations from service
-    const updatedConversations = await ConversationService.getConversations();
-    
-    // Force a new object reference to ensure React detects the change
-    const freshConversations = { ...updatedConversations };
-    
-    // Update conversations state immediately
-    setConversations(freshConversations);
+    // Background delete with rollback on error
+    ConversationService.deleteConversation(id).catch(error => {
+      console.error('Failed to delete conversation:', error);
+      
+      // Rollback on error
+      setConversations(prev => ({
+        ...prev,
+        [id]: deletedConversation
+      }));
+      
+      toastService.error('Failed to delete conversation.');
+      return;
+    });
     
     if (wasActive) {
       // If we're deleting the current active conversation, switch to "Game Hub" tab
-      const gameHubTab = freshConversations[GAME_HUB_ID] || freshConversations['game-hub'];
+      const gameHubTab = conversations[GAME_HUB_ID] || conversations['game-hub'];
       if (gameHubTab) {
-        // Persist the active conversation change
-        await ConversationService.setActiveConversation(gameHubTab.id);
+        // Persist the active conversation change (background, non-blocking)
+        ConversationService.setActiveConversation(gameHubTab.id).catch(console.error);
         setActiveConversation(gameHubTab);
         // Also clear any active session since we're switching away from a game tab
         setActiveSession('', false);
       } else {
         // Fallback to first available conversation
-        const firstConversation = Object.values(freshConversations)[0] || null;
+        const firstConversation = Object.values(conversations)[0] || null;
         if (firstConversation) {
-          await ConversationService.setActiveConversation(firstConversation.id);
+          ConversationService.setActiveConversation(firstConversation.id).catch(console.error);
           setActiveConversation(firstConversation);
         } else {
           setActiveConversation(null);
@@ -804,53 +724,90 @@ const MainApp: React.FC<MainAppProps> = ({
     // Check if we can pin (max 3 pinned conversations)
     const pinnedCount = Object.values(conversations).filter((conv: Conversation) => conv.isPinned).length;
     if (pinnedCount >= 3) {
-      alert('You can only pin up to 3 conversations. Please unpin another conversation first.');
+      toastService.warning('You can only pin up to 3 conversations.');
       return;
     }
 
-    await ConversationService.updateConversation(id, { 
+    const pinnedAt = Date.now();
+    
+    // ✅ OPTIMISTIC: Update local state immediately (instant UI)
+    setConversations(prev => ({
+      ...prev,
+      [id]: { ...prev[id], isPinned: true, pinnedAt }
+    }));
+    
+    // Background sync with rollback on error
+    ConversationService.updateConversation(id, { 
       isPinned: true, 
-      pinnedAt: Date.now() 
+      pinnedAt 
+    }).catch(error => {
+      console.error('Failed to pin conversation:', error);
+      
+      // Rollback on error
+      setConversations(prev => ({
+        ...prev,
+        [id]: { ...prev[id], isPinned: false, pinnedAt: undefined }
+      }));
+      
+      toastService.error('Failed to pin conversation.');
     });
-    const updatedConversations = await ConversationService.getConversations();
-    setConversations(updatedConversations);
   };
 
   const handleUnpinConversation = async (id: string) => {
-    await ConversationService.updateConversation(id, { 
+    // ✅ OPTIMISTIC: Update local state immediately (instant UI)
+    setConversations(prev => ({
+      ...prev,
+      [id]: { ...prev[id], isPinned: false, pinnedAt: undefined }
+    }));
+    
+    // Background sync with rollback on error
+    ConversationService.updateConversation(id, { 
       isPinned: false, 
       pinnedAt: undefined 
+    }).catch(error => {
+      console.error('Failed to unpin conversation:', error);
+      
+      // Rollback on error
+      setConversations(prev => ({
+        ...prev,
+        [id]: { ...prev[id], isPinned: true, pinnedAt: conversations[id].pinnedAt }
+      }));
+      
+      toastService.error('Failed to unpin conversation.');
     });
-    const updatedConversations = await ConversationService.getConversations();
-    setConversations(updatedConversations);
   };
 
   const handleClearConversation = async (id: string) => {
     try {
       console.log('🧹 [MainApp] Clearing conversation:', id);
-      await ConversationService.clearConversation(id);
       
-      // Force a fresh read from storage/cache
-      const updatedConversations = await ConversationService.getConversations(true); // skipCache = true
-      console.log('🧹 [MainApp] Conversations after clear:', Object.keys(updatedConversations));
-      console.log('🧹 [MainApp] Cleared conversation exists:', !!updatedConversations[id]);
+      // ✅ OPTIMISTIC: Clear messages locally immediately (instant UI)
+      setConversations(prev => ({
+        ...prev,
+        [id]: {
+          ...prev[id],
+          messages: [],
+          updatedAt: Date.now()
+        }
+      }));
       
-      setConversations(updatedConversations);
-      
-      // If this was the active conversation, update it
+      // Update active conversation if it's the one being cleared
       if (activeConversation?.id === id) {
-        const clearedConv = updatedConversations[id];
-        console.log('🧹 [MainApp] Updating active conversation:', {
-          id: clearedConv?.id,
-          title: clearedConv?.title,
-          messageCount: clearedConv?.messages?.length || 0
-        });
-        setActiveConversation(clearedConv);
+        setActiveConversation(prev => prev ? ({
+          ...prev,
+          messages: [],
+          updatedAt: Date.now()
+        }) : null);
       }
+      
+      // Background sync (non-blocking)
+      ConversationService.clearConversation(id).catch(error => {
+        console.error('Failed to clear conversation:', error);
+        toastService.error('Failed to clear conversation.');
+      });
       
       toastService.success('Conversation cleared');
     } catch (error) {
-      // Error already handled by ConversationService with toast notification
       console.error('Failed to clear conversation:', error);
     }
   };
@@ -1984,6 +1941,20 @@ const MainApp: React.FC<MainAppProps> = ({
   return (
     <div className="h-screen bg-background flex overflow-hidden">
       {/* Sidebar */}
+      <ErrorBoundary fallback={
+        <div className="w-64 bg-[#1C1C1C] p-4 border-r border-[#424242] flex items-center justify-center">
+          <div className="text-center text-[#CFCFCF]">
+            <p className="mb-2 text-2xl">⚠️</p>
+            <p className="text-sm mb-2">Sidebar unavailable</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="mt-2 px-3 py-1 bg-[#FF4D4D] rounded text-xs hover:bg-[#FF6B6B] transition-colors"
+            >
+              Reload
+            </button>
+          </div>
+        </div>
+      }>
         <Sidebar
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
@@ -1996,6 +1967,7 @@ const MainApp: React.FC<MainAppProps> = ({
           onClearConversation={handleClearConversation}
           onAddGame={handleAddGame}
         />
+      </ErrorBoundary>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -2060,10 +2032,12 @@ const MainApp: React.FC<MainAppProps> = ({
           {/* Profile Setup Banner - Show if user hasn't set up profile */}
           {showProfileSetupBanner && onProfileSetupComplete && onProfileSetupDismiss && (
             <div className="flex-shrink-0 pt-3 sm:pt-4 lg:pt-6">
-              <ProfileSetupBanner
-                onComplete={onProfileSetupComplete}
-                onDismiss={onProfileSetupDismiss}
-              />
+              <ErrorBoundary fallback={<div className="px-6 py-2"><p className="text-xs text-[#CFCFCF]">Profile banner unavailable</p></div>}>
+                <ProfileSetupBanner
+                  onComplete={onProfileSetupComplete}
+                  onDismiss={onProfileSetupDismiss}
+                />
+              </ErrorBoundary>
             </div>
           )}
 

@@ -362,7 +362,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       // Notify parent that image was accepted
       onImageQueued?.();
     }
-  }, [queuedImage, isManualUploadMode, imagePreview, onImageQueued]);
+    // ✅ FIX: Removed imagePreview from dependencies to prevent infinite loop
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queuedImage, isManualUploadMode, onImageQueued]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

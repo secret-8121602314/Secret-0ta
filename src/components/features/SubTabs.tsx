@@ -24,7 +24,7 @@ const SubTabs: React.FC<SubTabsProps> = ({
   const activeTab = subtabs.find(tab => tab.id === currentActiveTab);
 
   // 🔍 DEBUG: Log subtabs state on every render
-  console.error('🎨 [SubTabs] Rendering:', {
+  console.log('🎨 [SubTabs] Rendering:', {
     subtabCount: subtabs.length,
     statuses: subtabs.map(s => ({ title: s.title, status: s.status, hasContent: !!s.content })),
     isExpanded,
@@ -54,7 +54,7 @@ const SubTabs: React.FC<SubTabsProps> = ({
       tab.content.trim() !== 'Loading...'
     );
     
-    console.error('📂 [SubTabs] useEffect triggered:', {
+    console.log('📂 [SubTabs] useEffect triggered:', {
       allLoading,
       anyLoaded,
       allLoaded,
@@ -67,20 +67,20 @@ const SubTabs: React.FC<SubTabsProps> = ({
     
     // ✅ FIX: Collapse if all loading
     if (allLoading && isExpanded) {
-      console.error('📂 [SubTabs] Collapsing subtabs - all loading');
+      console.log('📂 [SubTabs] Collapsing subtabs - all loading');
       setIsExpanded(false);
     }
     
     // ✅ FIX: Expand when ANY content loads (more responsive)
     // Changed from hasLoadedContent to anyLoaded for immediate feedback
     if (anyLoaded && !isExpanded) {
-      console.error('📂 [SubTabs] ✅ AUTO-EXPANDING - detected loaded subtabs');
+      console.log('📂 [SubTabs] ✅ AUTO-EXPANDING - detected loaded subtabs');
       setIsExpanded(true);
     }
     
     // ✅ NEW: Additional check for all loaded (belt and suspenders)
     if (allLoaded && !isExpanded && subtabs.length > 0) {
-      console.error('📂 [SubTabs] ✅ AUTO-EXPANDING - all subtabs loaded');
+      console.log('📂 [SubTabs] ✅ AUTO-EXPANDING - all subtabs loaded');
       setIsExpanded(true);
     }
   }, [subtabs, isExpanded, hasUserInteracted]);
