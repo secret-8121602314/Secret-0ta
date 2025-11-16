@@ -17,11 +17,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'account' | 'tier' | 'preferences' | 'profile'>('account');
   
-  // Profile preferences state
-  const [playerFocus, setPlayerFocus] = useState(user?.profileData?.playerFocus || 'balanced');
+  // Profile preferences state (from ProfileSetupBanner)
+  const [hintStyle, setHintStyle] = useState(user?.profileData?.hintStyle || 'Balanced');
+  const [preferredTone, setPreferredTone] = useState(user?.profileData?.preferredTone || 'Encouraging');
+  const [spoilerTolerance, setSpoilerTolerance] = useState(user?.profileData?.spoilerTolerance || 'Strict');
+  
+  // Additional profile preferences (Settings-specific)
+  const [playerFocus, setPlayerFocus] = useState(user?.profileData?.playerFocus || 'Story-Driven');
+  const [gamingStyle, setGamingStyle] = useState(user?.profileData?.gamingStyle || 'balanced');
   const [experienceLevel, setExperienceLevel] = useState(user?.profileData?.experienceLevel || 'intermediate');
   const [preferredContentStyle, setPreferredContentStyle] = useState(user?.profileData?.preferredContentStyle || 'detailed');
-  const [spoilerPreference, setSpoilerPreference] = useState(user?.profileData?.spoilerPreference || 'minimal');
 
   if (!user) {
 
@@ -259,10 +264,130 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               </p>
               
               <div className="space-y-6">
-                {/* Player Focus */}
+                {/* Hint Style */}
                 <div>
                   <label className="text-sm font-medium text-text-primary mb-2 block">
-                    Player Focus
+                    How do you like your hints?
+                  </label>
+                  <p className="text-xs text-text-secondary mb-3">
+                    Choose how direct or subtle you want guidance to be
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { value: 'Cryptic', label: '🔮 Cryptic' },
+                      { value: 'Balanced', label: '⚖️ Balanced' },
+                      { value: 'Direct', label: '🎯 Direct' }
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => setHintStyle(option.value as typeof hintStyle)}
+                        className={`py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                          hintStyle === option.value
+                            ? 'bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white'
+                            : 'bg-surface/50 text-text-secondary hover:bg-surface hover:text-text-primary'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Player Focus (from banner) */}
+                <div>
+                  <label className="text-sm font-medium text-text-primary mb-2 block">
+                    What's your gaming focus?
+                  </label>
+                  <p className="text-xs text-text-secondary mb-3">
+                    What type of gamer are you?
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { value: 'Story-Driven', label: '📖 Story' },
+                      { value: 'Completionist', label: '💯 Complete' },
+                      { value: 'Strategist', label: '🧠 Strategy' }
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => setPlayerFocus(option.value as typeof playerFocus)}
+                        className={`py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                          playerFocus === option.value
+                            ? 'bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white'
+                            : 'bg-surface/50 text-text-secondary hover:bg-surface hover:text-text-primary'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Preferred Tone */}
+                <div>
+                  <label className="text-sm font-medium text-text-primary mb-2 block">
+                    Preferred tone?
+                  </label>
+                  <p className="text-xs text-text-secondary mb-3">
+                    How should Otagon communicate with you?
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { value: 'Encouraging', label: '💪 Encouraging' },
+                      { value: 'Professional', label: '💼 Professional' },
+                      { value: 'Casual', label: '😎 Casual' }
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => setPreferredTone(option.value as typeof preferredTone)}
+                        className={`py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                          preferredTone === option.value
+                            ? 'bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white'
+                            : 'bg-surface/50 text-text-secondary hover:bg-surface hover:text-text-primary'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Spoiler Tolerance */}
+                <div>
+                  <label className="text-sm font-medium text-text-primary mb-2 block">
+                    Spoiler protection?
+                  </label>
+                  <p className="text-xs text-text-secondary mb-3">
+                    How careful should Otagon be about revealing story details?
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { value: 'Strict', label: '🔒 Strict' },
+                      { value: 'Moderate', label: '🔓 Moderate' },
+                      { value: 'Relaxed', label: '🔓 Relaxed' }
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => setSpoilerTolerance(option.value as typeof spoilerTolerance)}
+                        className={`py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                          spoilerTolerance === option.value
+                            ? 'bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white'
+                            : 'bg-surface/50 text-text-secondary hover:bg-surface hover:text-text-primary'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border-t border-surface-light/20 pt-6">
+                  <h4 className="text-base font-semibold text-text-primary mb-4">Additional Preferences</h4>
+                </div>
+
+                {/* Gaming Style */}
+                <div>
+                  <label className="text-sm font-medium text-text-primary mb-2 block">
+                    Gaming Style
                   </label>
                   <p className="text-xs text-text-secondary mb-3">
                     What aspect of gaming do you focus on most?
@@ -271,9 +396,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     {['story', 'combat', 'exploration', 'completion', 'balanced'].map((focus) => (
                       <button
                         key={focus}
-                        onClick={() => setPlayerFocus(focus)}
+                        onClick={() => setGamingStyle(focus)}
                         className={`py-2 px-4 rounded-lg text-sm font-medium transition-all ${
-                          playerFocus === focus
+                          gamingStyle === focus
                             ? 'bg-primary text-white'
                             : 'bg-surface/50 text-text-secondary hover:bg-surface hover:text-text-primary'
                         }`}
@@ -334,49 +459,32 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
                 </div>
 
-                {/* Spoiler Preference */}
-                <div>
-                  <label className="text-sm font-medium text-text-primary mb-2 block">
-                    Spoiler Preference
-                  </label>
-                  <p className="text-xs text-text-secondary mb-3">
-                    How much story information do you want revealed?
-                  </p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {['none', 'minimal', 'full'].map((pref) => (
-                      <button
-                        key={pref}
-                        onClick={() => setSpoilerPreference(pref)}
-                        className={`py-2 px-4 rounded-lg text-sm font-medium transition-all ${
-                          spoilerPreference === pref
-                            ? 'bg-primary text-white'
-                            : 'bg-surface/50 text-text-secondary hover:bg-surface hover:text-text-primary'
-                        }`}
-                      >
-                        {pref.charAt(0).toUpperCase() + pref.slice(1)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
                 {/* Save Button */}
                 <button
                   onClick={async () => {
                     const profileData = {
+                      // From ProfileSetupBanner
+                      hintStyle,
+                      preferredTone,
+                      spoilerTolerance,
+                      // Additional preferences
                       playerFocus,
+                      gamingStyle,
                       experienceLevel,
-                      preferredContentStyle,
-                      spoilerPreference
+                      preferredContentStyle
                     };
                     
                     // Update user profile
-                    await authService.updateUserProfile(user.authUserId, profileData);
+                    await authService.updateUser({ 
+                      profile_data: profileData,
+                      has_profile_setup: true 
+                    });
                     
                     // Show success message (you can add a toast notification here)
                     console.log('Profile preferences saved:', profileData);
                     onClose();
                   }}
-                  className="w-full py-3 px-4 bg-primary text-white rounded-lg font-medium hover:bg-primary-dark transition-colors active:scale-95"
+                  className="w-full py-3 px-4 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] hover:from-[#D42A2A] hover:to-[#C87A1A] text-white rounded-lg font-medium transition-all hover:scale-105 active:scale-95"
                 >
                   Save Profile Preferences
                 </button>

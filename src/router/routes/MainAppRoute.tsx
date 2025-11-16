@@ -98,16 +98,24 @@ const MainAppRoute: React.FC = () => {
         isPcDisconnecting={false}
         hasPendingRequests={false}
         showProfileSetupBanner={!user?.hasProfileSetup}
-        onProfileSetupComplete={async () => {
-          console.log('[MainAppRoute] Profile setup completed');
-          // Refresh user data after profile setup
+        onProfileSetupComplete={async (profileData) => {
+          console.log('[MainAppRoute] Profile setup completed with data:', profileData);
+          // Save profile data and mark setup as complete
+          const { authService } = await import('../../services/authService');
+          await authService.updateUser({ 
+            has_profile_setup: true,
+            profile_data: profileData
+          });
+          // Refresh to show updated state
           window.location.reload();
         }}
         onProfileSetupDismiss={async () => {
           console.log('[MainAppRoute] Profile setup dismissed');
-          // Mark as dismissed in database
+          // Mark as dismissed in database (without saving profile data)
           const { authService } = await import('../../services/authService');
           await authService.updateUser({ has_profile_setup: true });
+          // Force re-render without full page reload
+          window.location.reload();
         }}
       />
       {/* Footer modals controlled by URL params */}
