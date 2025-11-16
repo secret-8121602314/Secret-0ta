@@ -38,6 +38,20 @@ const vanguardFeatures = [
 
 const ProFeaturesSplashScreen: React.FC<ProFeaturesSplashScreenProps> = ({ onComplete, onUpgrade, onUpgradeToVanguard }) => {
   const [activeTab, setActiveTab] = useState<'pro' | 'vanguard'>('pro');
+  const [isMounted, setIsMounted] = useState(false);
+
+  React.useEffect(() => {
+    // Ensure smooth render - show everything at once
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return (
+      <div className="h-screen bg-gradient-to-br from-[#111111] to-[#0A0A0A] flex items-center justify-center">
+        <div className="animate-pulse text-[#FFAB40]">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen bg-gradient-to-br from-[#111111] to-[#0A0A0A] text-[#F5F5F5] flex flex-col font-inter overflow-hidden">

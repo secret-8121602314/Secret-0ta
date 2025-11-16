@@ -41,22 +41,25 @@ const InitialSplashScreen: React.FC<InitialSplashScreenProps> = ({ onComplete, u
       localStorage.setItem('otakon_has_seen_splash_screens', 'true');
       
       if (user) {
-        console.log('🎯 [InitialSplashScreen] Updating Supabase to mark splash screens as seen');
+        console.log('🎯 [InitialSplashScreen] Updating Supabase to advance onboarding to how-to-use');
         try {
-          // Use the RPC function to update onboarding status consistently
-          const { error } = await supabase.rpc('update_user_onboarding_status', {
-            p_user_id: user.authUserId,
-            p_step: 'initial',
-            p_data: { 
+          // Update app_state with new onboarding status
+          const { error } = await supabase
+            .from('users')
+            .update({
               has_seen_splash_screens: true,
-              completed_at: new Date().toISOString()
-            }
-          });
+              app_state: {
+                onboardingStatus: 'how-to-use',
+                hasSeenSplashScreens: true,
+                completedInitialAt: new Date().toISOString()
+              }
+            })
+            .eq('auth_user_id', user.authUserId);
             
           if (error) {
             console.warn('🎯 [InitialSplashScreen] Failed to update Supabase:', error);
           } else {
-            console.log('🎯 [InitialSplashScreen] Successfully updated Supabase via RPC');
+            console.log('🎯 [InitialSplashScreen] Successfully updated onboarding status to how-to-use');
           }
         } catch (error) {
           console.warn('🎯 [InitialSplashScreen] Error updating Supabase:', error);

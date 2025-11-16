@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 export interface TTSStatus {
   status: 'available' | 'unavailable' | 'error' | 'testing';
   message: string;
-  lastError?: any;
+  lastError?: Error | null;
 }
 
 export const TTSStatusIndicator: React.FC<{

@@ -10,7 +10,7 @@ import PWAInstallBanner from './PWAInstallBanner';
 interface LoginSplashScreenProps {
   onComplete: () => void;
   onBackToLanding: () => void;
-  onSetAppState: (updater: (prev: any) => any) => void;
+  onSetAppState: (updater: (prev: AppState) => AppState) => void;
 }
 
 const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({

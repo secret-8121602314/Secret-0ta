@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
  * Replaces multiple cache instances across services with database-backed cache
  */
 class CacheService {
-  private memoryCache = new Map<string, { value: any; expires: number }>();
+  private memoryCache = new Map<string, { value: unknown; expires: number }>();
   private readonly DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
   private readonly CACHE_TABLE = 'app_cache';
   private readonly MAX_MEMORY_CACHE_SIZE = 100; // Prevent memory bloat
@@ -16,7 +16,7 @@ class CacheService {
   /**
    * Set a value in both memory and Supabase cache
    */
-  async set(key: string, value: any, ttl: number = this.DEFAULT_TTL, cacheType: string = 'general', userId?: string): Promise<void> {
+  async set(key: string, value: unknown, ttl: number = this.DEFAULT_TTL, cacheType: string = 'general', userId?: string): Promise<void> {
     const expires = Date.now() + ttl;
     
     // Store in memory cache for fast access
@@ -324,7 +324,7 @@ class CacheService {
   /**
    * Set chat context data
    */
-  async setChatContext(userId: string, context: any): Promise<void> {
+  async setChatContext(userId: string, context: Record<string, unknown>): Promise<void> {
     // Store for 90 days - chat context should persist but can expire after extended inactivity
     await this.set(`chat_context:${userId}`, context, 90 * 24 * 60 * 60 * 1000, 'context', userId); // 90 days
   }
@@ -339,7 +339,7 @@ class CacheService {
   /**
    * Set user memory data
    */
-  async setUserMemory(userId: string, memory: any): Promise<void> {
+  async setUserMemory(userId: string, memory: Record<string, unknown>): Promise<void> {
     // Store indefinitely (365 days) - user memory should persist until explicitly deleted
     await this.set(`user_memory:${userId}`, memory, 365 * 24 * 60 * 60 * 1000, 'memory', userId); // 1 year
   }
@@ -354,7 +354,7 @@ class CacheService {
   /**
    * Set game context data
    */
-  async setGameContext(userId: string, gameId: string, context: any): Promise<void> {
+  async setGameContext(userId: string, gameId: string, context: Record<string, unknown>): Promise<void> {
     // Store for 90 days - game context should persist but can expire after extended inactivity
     await this.set(`game_context:${userId}:${gameId}`, context, 90 * 24 * 60 * 60 * 1000, 'context', userId); // 90 days
   }
@@ -369,7 +369,7 @@ class CacheService {
   /**
    * Set user data with appropriate TTL
    */
-  async setUser(userId: string, user: any): Promise<void> {
+  async setUser(userId: string, user: Record<string, unknown>): Promise<void> {
     // Store indefinitely (365 days) - user data should persist until explicitly deleted
     await this.set(`user:${userId}`, user, 365 * 24 * 60 * 60 * 1000, 'user', userId); // 1 year
   }
@@ -398,7 +398,7 @@ class CacheService {
   /**
    * Set conversation data
    */
-  async setConversation(conversationId: string, conversation: any, userId?: string): Promise<void> {
+  async setConversation(conversationId: string, conversation: Record<string, unknown>, userId?: string): Promise<void> {
     // Store indefinitely (365 days) - conversations should persist until explicitly deleted
     await this.set(`conversation:${conversationId}`, conversation, 365 * 24 * 60 * 60 * 1000, 'conversation', userId); // 1 year
   }

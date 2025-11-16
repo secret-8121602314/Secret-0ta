@@ -91,7 +91,15 @@ export class MessageService {
         return [];
       }
 
-      return (data || []).map((msg: any) => ({
+      interface DbMessage {
+        id: string;
+        role: 'user' | 'assistant' | 'system';
+        content: string;
+        created_at: string;
+        image_url?: string;
+        metadata?: Record<string, unknown>;
+      }
+      return (data || []).map((msg: DbMessage) => ({
         id: msg.id,
         role: msg.role as 'user' | 'assistant' | 'system',
         content: msg.content,

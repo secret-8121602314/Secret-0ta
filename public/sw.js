@@ -1,10 +1,10 @@
 // Service Worker for Otagon PWA - Performance Optimized with Enhanced Background Sync
-// Version updated for PWA critical fixes
-const CACHE_NAME = 'otakon-v1.3.0-pwa-fixes';
-const CHAT_CACHE_NAME = 'otakon-chat-v1.3.0';
-const STATIC_CACHE = 'otakon-static-v1.3.0';
-const API_CACHE = 'otakon-api-v1.3.0';
-const AUTH_CACHE = 'otakon-auth-v1.3.0';
+// Version updated for auth fix and router dev - v1.3.2-dev
+const CACHE_NAME = 'otakon-v1.3.2-dev';
+const CHAT_CACHE_NAME = 'otakon-chat-v1.3.2-dev';
+const STATIC_CACHE = 'otakon-static-v1.3.2-dev';
+const API_CACHE = 'otakon-api-v1.3.2-dev';
+const AUTH_CACHE = 'otakon-auth-v1.3.2-dev';
 const BASE_PATH = '/Otagon';
 let ttsKeepAliveInterval = null;
 const urlsToCache = [
@@ -87,17 +87,43 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   
-  // Handle chat API requests for offline support
+  // CRITICAL: Never intercept Supabase auth requests - let them pass through directly
+  if (url.hostname.includes('supabase.co') || 
+      url.pathname.includes('/auth/') || 
+      url.pathname.includes('/rest/v1/') ||
+      url.pathname.includes('/storage/v1/') ||
+      url.hostname.includes('supabase.net')) {
+    // Let auth/database requests bypass the service worker completely
+    return;
+  }
+  
+  // CRITICAL: Don't intercept dev server requests - let HMR work
+  if (url.protocol === 'chrome-extension:' || 
+      url.hostname === 'localhost' ||
+      url.hostname === '127.0.0.1' ||
+      url.port === '5173' ||
+      url.port === '5174') {
+    // Never cache localhost during development
+    return;
+  }
+  
+  // Handle chat API requests for offline support (only internal APIs)
   if (event.request.url.includes('/api/chat') || event.request.url.includes('/api/conversations')) {
     event.respondWith(
       handleChatRequest(event.request)
     );
-  } else if (event.request.url.includes('/api/insights') || event.request.url.includes('/api/analytics')) {
+    return;
+  } 
+  
+  if (event.request.url.includes('/api/insights') || event.request.url.includes('/api/analytics')) {
     // Handle insights and analytics with enhanced caching
     event.respondWith(
       handleInsightsRequest(event.request)
     );
-  } else if (event.request.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname === '/' || url.pathname === `${BASE_PATH}/`) {
+    return;
+  } 
+  
+  if (event.request.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname === '/' || url.pathname === `${BASE_PATH}/`) {
     // Network-first strategy for HTML pages to always get the latest version
     event.respondWith(
       fetch(event.request)
@@ -111,28 +137,51 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => {
           // If network fails, try cache
-          return caches.match(event.request);
+          return caches.match(event.request).then(cached => {
+            return cached || new Response('Offline - Please check your connection', {
+              status: 503,
+              statusText: 'Service Unavailable'
+            });
+          });
         })
     );
-  } else {
-    // Cache-first strategy for static assets
+    return;
+  }
+  
+  // Cache-first strategy for static assets only (CSS, JS, images from same origin)
+  if (event.request.method === 'GET' && url.origin === self.location.origin) {
     event.respondWith(
       caches.match(event.request)
         .then((response) => {
-          // Return cached version or fetch from network
-          return response || fetch(event.request).then((response) => {
-            // Cache the fetched response for future use (only GET requests)
-            if (response.status === 200 && event.request.method === 'GET') {
+          if (response) {
+            return response;
+          }
+          
+          // Fetch from network and cache
+          return fetch(event.request).then((response) => {
+            // Only cache successful GET requests for static assets
+            if (response.status === 200) {
               const responseToCache = response.clone();
               caches.open(STATIC_CACHE).then((cache) => {
                 cache.put(event.request, responseToCache);
               });
             }
             return response;
+          }).catch(error => {
+            console.log('Fetch failed for:', event.request.url, error);
+            // Return a proper error response instead of undefined
+            return new Response('Network error', {
+              status: 408,
+              statusText: 'Request Timeout'
+            });
           });
         })
     );
+    return;
   }
+  
+  // For all other requests (POST, PUT, DELETE, external origins), don't intercept
+  // Let them go through to the network directly
 });
 
 // Handle messages from the client

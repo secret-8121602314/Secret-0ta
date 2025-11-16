@@ -30,8 +30,8 @@ class ChatMemoryService {
    */
   async saveChatContext(userId: string, context: {
     recentMessages: ChatMessage[];
-    userPreferences: any;
-    gameContext: any;
+    userPreferences: Record<string, unknown>;
+    gameContext: Record<string, unknown>;
     conversationSummary: string;
   }): Promise<void> {
     await cacheService.setChatContext(userId, context);
@@ -40,7 +40,7 @@ class ChatMemoryService {
   /**
    * Load chat context
    */
-  async loadChatContext(userId: string): Promise<any | null> {
+  async loadChatContext(userId: string): Promise<Record<string, unknown> | null> {
     return await cacheService.getChatContext(userId);
   }
 
@@ -48,11 +48,11 @@ class ChatMemoryService {
    * Save AI memory/insights about user
    */
   async saveUserMemory(userId: string, memory: {
-    preferences: any;
+    preferences: Record<string, unknown>;
     playStyle: string;
     favoriteGames: string[];
-    lastInteractions: any[];
-    personalityProfile: any;
+    lastInteractions: Array<Record<string, unknown>>;
+    personalityProfile: Record<string, unknown>;
   }): Promise<void> {
     await cacheService.setUserMemory(userId, memory);
   }
@@ -60,7 +60,7 @@ class ChatMemoryService {
   /**
    * Load AI memory about user
    */
-  async loadUserMemory(userId: string): Promise<any | null> {
+  async loadUserMemory(userId: string): Promise<Record<string, unknown> | null> {
     return await cacheService.getUserMemory(userId);
   }
 
@@ -71,7 +71,7 @@ class ChatMemoryService {
     keyPoints: string[];
     userQuestions: string[];
     aiInsights: string[];
-    gameContext: any;
+    gameContext: Record<string, unknown>;
   }): Promise<void> {
     const key = `conversation_summary:${conversationId}`;
     await cacheService.set(key, summary, this.CONTEXT_TTL);
@@ -80,7 +80,7 @@ class ChatMemoryService {
   /**
    * Load conversation summary
    */
-  async loadConversationSummary(conversationId: string): Promise<any | null> {
+  async loadConversationSummary(conversationId: string): Promise<Record<string, unknown> | null> {
     const key = `conversation_summary:${conversationId}`;
     return await cacheService.get(key);
   }
@@ -89,7 +89,7 @@ class ChatMemoryService {
    * Save game-specific context
    */
   async saveGameContext(userId: string, gameId: string, context: {
-    currentProgress: any;
+    currentProgress: Record<string, unknown>;
     lastScreenshot: string;
     recentHints: string[];
     userFrustrationLevel: number;
@@ -101,7 +101,7 @@ class ChatMemoryService {
   /**
    * Load game-specific context
    */
-  async loadGameContext(userId: string, gameId: string): Promise<any | null> {
+  async loadGameContext(userId: string, gameId: string): Promise<Record<string, unknown> | null> {
     return await cacheService.getGameContext(userId, gameId);
   }
 

@@ -85,13 +85,13 @@ export interface AppState {
   isHandsFreeMode: boolean;
   showUpgradeScreen: boolean;
   showDailyCheckin: boolean;
-  currentAchievement: any | null;
+  currentAchievement: Record<string, unknown> | null;
   loadingMessages: string[];
   isCooldownActive: boolean;
   isFirstTime: boolean;
-  contextMenu: any | null;
-  feedbackModalState: any | null;
-  confirmationModal: any | null;
+  contextMenu: Record<string, unknown> | null;
+  feedbackModalState: Record<string, unknown> | null;
+  confirmationModal: Record<string, unknown> | null;
   trialEligibility: {
     isEligible: boolean;
     hasUsedTrial: boolean;
@@ -105,7 +105,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   timestamp: number;
   imageUrl?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface Conversation {

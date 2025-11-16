@@ -3,7 +3,6 @@ import Logo from './ui/Logo';
 import CheckIcon from './ui/CheckIcon';
 import StarIcon from './ui/StarIcon';
 import FounderImage from './FounderImage';
-import ContactUsModal from './modals/ContactUsModal';
 import { WaitlistService } from '../services/waitlistService';
 import { toastService } from '../services/toastService';
 import useEmblaCarousel from 'embla-carousel-react';
@@ -364,14 +363,15 @@ interface LandingPageProps {
   onOpenPrivacy: () => void;
   onOpenRefund: () => void;
   onOpenTerms: () => void;
+  onOpenContact: () => void;
   onDirectNavigation: (_path: string) => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, onOpenPrivacy, onOpenRefund, onOpenTerms, onDirectNavigation }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, onOpenPrivacy, onOpenRefund, onOpenTerms, onOpenContact, onDirectNavigation }) => {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState('');
-  const [showContactModal, setShowContactModal] = useState(false);
+
   const [scrollY, setScrollY] = useState(0);
   const backgroundRef = useRef<HTMLDivElement>(null);
 
@@ -1307,14 +1307,17 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                            <div className="flex items-center gap-4 md:gap-6">
                                <button type="button" onClick={onOpenPrivacy} className="hover:text-white transition-colors active:scale-95">Privacy</button>
                                <button type="button" onClick={onOpenRefund} className="hover:text-white transition-colors active:scale-95">Refund Policy</button>
-                               <button type="button" onClick={() => setShowContactModal(true)} className="hover:text-white transition-colors active:scale-95">Contact Us</button>
+                               <button type="button" onClick={onOpenContact} className="hover:text-white transition-colors active:scale-95">Contact Us</button>
                            </div>
             </div>
             
                         {/* Logo and Branding - Centered on mobile, left side on desktop */}
                         <div className="flex flex-col items-center md:items-start text-center md:text-left order-2 md:order-1">
                             <button 
-                                onClick={onGetStarted}
+                                onClick={(e) => {
+                                  console.log('[LandingPageFresh] Footer logo clicked');
+                                  onGetStarted();
+                                }}
                                 className="flex items-center gap-2 cursor-pointer hover:scale-105 transition-transform duration-300"
                             >
                                 <Logo className="h-8 w-8" bounce={false} />
@@ -1326,11 +1329,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
         </div>
       </footer>
             
-            {/* Contact Us Modal */}
-            <ContactUsModal 
-                isOpen={showContactModal} 
-                onClose={() => setShowContactModal(false)} 
-            />
+
     </div>
   );
 };

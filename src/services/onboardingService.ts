@@ -17,7 +17,7 @@ export type OnboardingStep =
 export interface OnboardingProgress {
   step: OnboardingStep;
   completed_at: string;
-  data: any;
+  data: Record<string, unknown>;
 }
 
 export interface OnboardingStatus {
@@ -84,7 +84,7 @@ class OnboardingService {
     }
   }
 
-  async updateOnboardingStatus(userId: string, status: OnboardingStep, data: any = {}): Promise<boolean> {
+  async updateOnboardingStatus(userId: string, status: OnboardingStep, data: Record<string, unknown> = {}): Promise<boolean> {
     try {
       const { error } = await supabase.rpc('update_user_onboarding_status', {
         p_user_id: userId,
@@ -141,7 +141,7 @@ class OnboardingService {
     });
   }
 
-  async markProfileSetupComplete(userId: string, profileData: any): Promise<boolean> {
+  async markProfileSetupComplete(userId: string, profileData: Record<string, unknown>): Promise<boolean> {
     // Profile setup is now handled in the chat screen, not as part of onboarding
     // This function is kept for backward compatibility but doesn't affect onboarding flow
     try {
@@ -185,7 +185,7 @@ class OnboardingService {
   // ========================================
 
   // Helper function to safely get boolean values with defaults
-  private getBooleanValue(value: any, defaultValue: boolean = false): boolean {
+  private getBooleanValue(value: unknown, defaultValue: boolean = false): boolean {
     if (value === null || value === undefined) {
       return defaultValue;
     }
@@ -305,7 +305,7 @@ class OnboardingService {
   // ONBOARDING ANALYTICS
   // ========================================
 
-  async trackOnboardingStep(userId: string, step: OnboardingStep, action: string, data: any = {}): Promise<void> {
+  async trackOnboardingStep(userId: string, step: OnboardingStep, action: string, data: Record<string, unknown> = {}): Promise<void> {
     try {
       await supabase
         .from('user_analytics')
@@ -325,7 +325,7 @@ class OnboardingService {
     }
   }
 
-  async trackOnboardingDropOff(userId: string, step: OnboardingStep, reason: string, data: any = {}): Promise<void> {
+  async trackOnboardingDropOff(userId: string, step: OnboardingStep, reason: string, data: Record<string, unknown> = {}): Promise<void> {
     try {
       await supabase
         .from('user_analytics')

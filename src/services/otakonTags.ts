@@ -1,8 +1,8 @@
 /**
  * Parses AI responses to extract OTAKON tags and clean content
  */
-export const parseOtakonTags = (rawContent: string): { cleanContent: string; tags: Map<string, any> } => {
-  const tags = new Map<string, any>();
+export const parseOtakonTags = (rawContent: string): { cleanContent: string; tags: Map<string, unknown> } => {
+  const tags = new Map<string, unknown>();
   const tagRegex = /\[OTAKON_([A-Z_]+):\s*(.*?)\]/g;
 
   let cleanContent = rawContent;
@@ -10,7 +10,7 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
 
   while ((match = tagRegex.exec(rawContent)) !== null) {
     const tagName = match[1];
-    let tagValue: any = match[2].trim();
+    let tagValue: unknown = match[2].trim();
 
     console.log(`🔍 [OtakonTags] Found tag: ${tagName}, raw value: "${tagValue}"`);
 

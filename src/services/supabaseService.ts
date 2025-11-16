@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase';
 import { User, Conversation, Game, UserTier, TrialStatus } from '../types';
 import { USER_TIERS, TIER_LIMITS } from '../constants';
 import { jsonToRecord, safeParseDate, safeBoolean, safeNumber, toJson } from '../utils/typeHelpers';
+import { toastService } from './toastService';
 
 export class SupabaseService {
   private static instance: SupabaseService;
@@ -85,6 +86,7 @@ export class SupabaseService {
       return null;
     } catch (error) {
       console.error('Error getting user:', error);
+      toastService.error('Failed to load user data. Please try again.');
       return null;
     }
   }
@@ -109,7 +111,8 @@ export class SupabaseService {
         .eq('auth_user_id', userId);
 
       if (error) {
-        console.error('Error updating user:', error);
+        console.error('Error updating user:', error, { userId, updates });
+        toastService.error('Failed to update user settings.');
         return false;
       }
 
@@ -120,7 +123,7 @@ export class SupabaseService {
     }
   }
 
-  async updateUsage(userId: string, usage: any): Promise<boolean> {
+  async updateUsage(userId: string, usage: { textCount?: number; imageCount?: number; textLimit?: number; imageLimit?: number }): Promise<boolean> {
     try {
       const { error } = await supabase
         .from('users')
@@ -140,7 +143,8 @@ export class SupabaseService {
 
       return true;
     } catch (error) {
-      console.error('Error updating usage:', error);
+      console.error('Error updating usage:', error, { userId });
+      toastService.error('Failed to update usage data.');
       return false;
     }
   }
@@ -216,11 +220,12 @@ export class SupabaseService {
       return this.mapConversations(data);
     } catch (error) {
       console.error('Error getting conversations:', error);
+      toastService.error('Failed to load conversations. Please try again.');
       return [];
     }
   }
   
-  private mapConversations(data: any[]): Conversation[] {
+  private mapConversations(data: Array<Record<string, unknown>>): Conversation[] {
     // 🔍 DEBUG: Log what we're getting from Supabase
     if (process.env.NODE_ENV === 'development' && data.length > 0) {
       const sample = data[0];
@@ -232,16 +237,31 @@ export class SupabaseService {
         messageCount: Array.isArray(messages) ? messages.length : 0,
         hasMessagesField: 'messages' in sample,
         messagesType: typeof messages,
-        subtabCount: Array.isArray(subtabs) ? subtabs.length : 0
+        subtabCount: Array.isArray(subtabs) ? subtabs.length : 0,
+        messagesRaw: messages // 🔍 Let's see the actual data
       });
     }
 
-    return data.map(conv => ({
+    return data.map(conv => {
+      const messages = conv.messages as any;
+      const processedMessages = Array.isArray(messages) ? messages as unknown[] : [];
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.error('🔍 [Supabase] Processing conversation:', {
+          id: conv.id,
+          hasMessages: !!messages,
+          isArray: Array.isArray(messages),
+          messagesType: typeof messages,
+          messageCount: processedMessages.length
+        });
+      }
+      
+      return {
         id: conv.id,
         authUserId: conv.auth_user_id ?? undefined,
         userId: conv.user_id ?? undefined,
         title: conv.title,
-        messages: Array.isArray(conv.messages) ? conv.messages as unknown[] : [],
+        messages: processedMessages,
         gameId: conv.game_id ?? undefined,
         gameTitle: conv.game_title ?? undefined,
         genre: conv.genre ?? undefined,
@@ -259,7 +279,8 @@ export class SupabaseService {
         isUnreleased: conv.is_unreleased ?? undefined,
         contextSummary: conv.context_summary ?? undefined,
         lastSummarizedAt: conv.last_summarized_at ? new Date(conv.last_summarized_at).getTime() : undefined,
-      })) as Conversation[];
+      };
+    }) as Conversation[];
   }
 
   async createConversation(userId: string, conversation: Omit<Conversation, 'createdAt' | 'updatedAt'> & { id?: string }): Promise<string | null> {
@@ -277,7 +298,7 @@ export class SupabaseService {
       // Now we use auth_user_id (which references auth.users.id) directly
       // This matches the RLS policies which check auth_user_id = auth.uid()
       
-      const insertData: any = {
+      const insertData: Record<string, unknown> = {
         auth_user_id: userId, // ✅ Direct auth user ID
         title: conversation.title,
         messages: conversation.messages,
@@ -399,7 +420,8 @@ export class SupabaseService {
 
       return true;
     } catch (error) {
-      console.error('Error updating conversation:', error);
+      console.error('Error updating conversation:', error, { conversationId });
+      toastService.error('Failed to update conversation.');
       return false;
     }
   }
@@ -418,12 +440,13 @@ export class SupabaseService {
 
       return true;
     } catch (error) {
-      console.error('Error deleting conversation:', error);
+      console.error('Error deleting conversation:', error, { conversationId });
+      toastService.error('Failed to delete conversation. Please try again.');
       return false;
     }
   }
 
-  // Game operations
+  // Message operations
   async getGames(userId: string): Promise<Game[]> {
     try {
       // ✅ OPTIMIZED: Direct auth_user_id comparison (no JOIN needed)

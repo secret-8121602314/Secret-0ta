@@ -134,7 +134,7 @@ const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({
     }
     
     const processImmediate = isManualUploadMode ? false : mode === 'single';
-    const msg: any = {
+    const msg: { type: string; mode: string; processImmediate: boolean } = {
       type: 'screenshot_request',
       mode,
       processImmediate,

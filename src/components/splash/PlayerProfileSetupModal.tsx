@@ -82,7 +82,7 @@ export const PlayerProfileSetupModal: React.FC<PlayerProfileSetupModalProps> = (
     }
   };
 
-  const handleOptionSelect = (field: keyof PlayerProfile, value: any) => {
+  const handleOptionSelect = (field: keyof PlayerProfile, value: string | number) => {
     setProfile(prev => ({ ...prev, [field]: value }));
   };
 

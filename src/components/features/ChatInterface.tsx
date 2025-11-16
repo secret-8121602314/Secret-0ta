@@ -59,7 +59,10 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
   onDownloadImage
 }) => {
   return (
-    <div className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+    <div 
+      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+      data-message-id={message.id}
+    >
       <div
         className={`max-w-[80%] ${
           message.role === 'user'
@@ -247,12 +250,44 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     return window.innerWidth > 640; // Collapsed on mobile (<=640px), expanded on desktop
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const autocompleteRef = useRef<HTMLDivElement>(null);
+  const lastMessageCountRef = useRef(0);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // ✅ NEW: Scroll to show the START of new AI messages instead of the end
+  const scrollToLatestMessage = () => {
+    if (!conversation || !messagesContainerRef.current) return;
+    
+    const messages = conversation.messages;
+    const messageCount = messages.length;
+    
+    // Only scroll if a new message was added
+    if (messageCount > lastMessageCountRef.current) {
+      const lastMessage = messages[messageCount - 1];
+      
+      // If it's an AI message (assistant), scroll to show the START of the message
+      if (lastMessage.role === 'assistant') {
+        // Find the last message element in the DOM
+        const messageElements = messagesContainerRef.current.querySelectorAll('[data-message-id]');
+        const lastMessageElement = messageElements[messageElements.length - 1];
+        
+        if (lastMessageElement) {
+          // Scroll to show the top of the message with some padding
+          lastMessageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      } else {
+        // For user messages, scroll to bottom as usual
+        scrollToBottom();
+      }
+      
+      lastMessageCountRef.current = messageCount;
+    }
   };
 
   // Auto-resize textarea functionality
@@ -334,7 +369,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   useEffect(() => {
-    scrollToBottom();
+    scrollToLatestMessage();
   }, [conversation?.messages]);
 
   // Adjust textarea height when message changes
@@ -483,7 +518,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   return (
     <div className="h-full bg-gradient-to-r from-surface/30 to-background/30 flex flex-col overflow-hidden">
       {/* Messages Area - Only this should scroll */}
-      <div className={`flex-1 p-6 space-y-6 min-h-0 ${conversation.messages.length > 0 ? 'overflow-y-auto custom-scrollbar' : 'overflow-y-hidden'}`}>
+      <div 
+        ref={messagesContainerRef}
+        className={`flex-1 p-6 space-y-6 min-h-0 ${conversation.messages.length > 0 ? 'overflow-y-auto custom-scrollbar' : 'overflow-y-hidden'}`}
+      >
         {conversation.messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
