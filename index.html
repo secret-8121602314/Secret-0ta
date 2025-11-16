@@ -20,19 +20,19 @@
     <link rel="apple-touch-icon" sizes="512x512" href="/Otagon/icon-512.png" />
     
     <title>Otagon</title>
-    <script type="module" crossorigin src="/Otagon/assets/index-DyMUN-Yv.js"></script>
-    <link rel="modulepreload" crossorigin href="/Otagon/assets/vendor-lhgVPd4Y.js">
-    <link rel="modulepreload" crossorigin href="/Otagon/assets/markdown-vendor-W_vRiG1d.js">
-    <link rel="modulepreload" crossorigin href="/Otagon/assets/react-vendor-GN48U5Y-.js">
-    <link rel="modulepreload" crossorigin href="/Otagon/assets/supabase-vendor-Q7d2eXAy.js">
-    <link rel="modulepreload" crossorigin href="/Otagon/assets/core-services-CJiE5Dr-.js">
-    <link rel="modulepreload" crossorigin href="/Otagon/assets/auth-BapcAVYZ.js">
-    <link rel="modulepreload" crossorigin href="/Otagon/assets/services-CRtNAVij.js">
+    <script type="module" crossorigin src="/Otagon/assets/index-D6JG9Y5M.js"></script>
+    <link rel="modulepreload" crossorigin href="/Otagon/assets/vendor-D9yvASRR.js">
+    <link rel="modulepreload" crossorigin href="/Otagon/assets/markdown-vendor-BLIOVSB8.js">
+    <link rel="modulepreload" crossorigin href="/Otagon/assets/react-vendor-ytDMyTZl.js">
+    <link rel="modulepreload" crossorigin href="/Otagon/assets/supabase-vendor-BCAdzdMx.js">
+    <link rel="modulepreload" crossorigin href="/Otagon/assets/auth-O_ykzirs.js">
+    <link rel="modulepreload" crossorigin href="/Otagon/assets/services-D8gnUPMu.js">
     <link rel="modulepreload" crossorigin href="/Otagon/assets/ai-vendor-DDPwdD9r.js">
-    <link rel="modulepreload" crossorigin href="/Otagon/assets/chat-services-DQsapga5.js">
-    <link rel="modulepreload" crossorigin href="/Otagon/assets/features-DAKj0ZAa.js">
-    <link rel="modulepreload" crossorigin href="/Otagon/assets/modals-Czxs6lAu.js">
-    <link rel="stylesheet" crossorigin href="/Otagon/assets/index-DYZoLzXy.css">
+    <link rel="modulepreload" crossorigin href="/Otagon/assets/chat-services-B4HLNvj7.js">
+    <link rel="modulepreload" crossorigin href="/Otagon/assets/core-services-CUfXFIJc.js">
+    <link rel="modulepreload" crossorigin href="/Otagon/assets/features-jG2YRwwK.js">
+    <link rel="modulepreload" crossorigin href="/Otagon/assets/modals-CvDVowBH.js">
+    <link rel="stylesheet" crossorigin href="/Otagon/assets/index-CTiu4u3-.css">
   </head>
   <body>
     <div id="root"></div>
@@ -65,14 +65,41 @@
     </script>
     <script>
       // Service Worker Registration for both Dev and Production
+      // VERSION: 1.3.1 - Auth Fix
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
+        window.addEventListener('load', async () => {
           const isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
           const swPath = isDev ? '/sw.js' : '/Otagon/sw.js';
           
+          // Force clear old broken service workers and caches
+          const oldCacheVersion = 'v1.3.0';
+          try {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            const cacheNames = await caches.keys();
+            
+            // Delete old caches from v1.3.0 that had the auth bug
+            const deleteCachePromises = cacheNames
+              .filter(name => name.includes('v1.3.0') || name.includes('pwa-fixes'))
+              .map(name => {
+                console.log('Deleting old cache:', name);
+                return caches.delete(name);
+              });
+            
+            await Promise.all(deleteCachePromises);
+            
+            // Unregister and re-register to get fresh SW
+            for (const registration of registrations) {
+              await registration.unregister();
+              console.log('Unregistered old SW');
+            }
+          } catch (error) {
+            console.log('Error cleaning up old SW:', error);
+          }
+          
+          // Register new service worker
           navigator.serviceWorker.register(swPath)
             .then((registration) => {
-              console.log('SW registered: ', registration);
+              console.log('✅ SW v1.3.2-dev registered:', registration);
               
               // Check for updates
               registration.addEventListener('updatefound', () => {
@@ -80,18 +107,25 @@
                 if (newWorker) {
                   newWorker.addEventListener('statechange', () => {
                     if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                      // New content is available, show update notification
-                      if (confirm('New version available! Reload to update?')) {
-                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                      // New content is available, auto-update
+                      console.log('New SW version detected, updating...');
+                      newWorker.postMessage({ type: 'SKIP_WAITING' });
+                      // Auto-reload after 1 second
+                      setTimeout(() => {
                         window.location.reload();
-                      }
+                      }, 1000);
                     }
                   });
                 }
               });
+              
+              // Handle controller change
+              navigator.serviceWorker.addEventListener('controllerchange', () => {
+                console.log('SW controller changed');
+              });
             })
             .catch((registrationError) => {
-              console.log('SW registration failed: ', registrationError);
+              console.log('❌ SW registration failed:', registrationError);
             });
         });
       }
