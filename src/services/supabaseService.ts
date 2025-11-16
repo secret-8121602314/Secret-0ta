@@ -249,12 +249,12 @@ export class SupabaseService {
       const insertData: Record<string, unknown> = {
         auth_user_id: userId, // ✅ Direct auth user ID
         title: conversation.title,
-        // messages are stored in separate messages table, not in conversations table
+        // Note: messages, subtabs, subtabs_order are NOT in conversations table (removed in migration)
+        // Messages are in separate messages table
+        // Subtabs are in separate subtabs table
         game_id: conversation.gameId,
         game_title: conversation.gameTitle,
         genre: conversation.genre,
-        subtabs: conversation.subtabs || [],
-        subtabs_order: conversation.subtabsOrder || [],
         is_active_session: conversation.isActiveSession,
         active_objective: conversation.activeObjective,
         game_progress: conversation.gameProgress,
@@ -341,12 +341,10 @@ export class SupabaseService {
         .from('conversations')
         .update({
           title: updates.title,
-          // messages are stored in separate messages table, not in conversations table
+          // Note: messages, subtabs, subtabs_order are NOT in conversations table
           game_id: updates.gameId,
           game_title: updates.gameTitle,
           genre: updates.genre,
-          subtabs: updates.subtabs ? toJson(updates.subtabs) : undefined,
-          subtabs_order: updates.subtabsOrder,
           is_active_session: updates.isActiveSession,
           active_objective: updates.activeObjective,
           game_progress: updates.gameProgress,
