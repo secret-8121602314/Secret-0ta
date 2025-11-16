@@ -4,7 +4,7 @@ import path from 'path'
 
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
-  base: mode === 'development' ? '/' : '/Otagon/', // Root path in dev, /Otagon/ in production
+  base: '/', // Root path for custom domain
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
