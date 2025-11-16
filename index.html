@@ -11,14 +11,14 @@
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#111111" />
     
     <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/Otagon/manifest.json" />
+    <link rel="manifest" href="/manifest.json" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Otagon" />
-    <link rel="apple-touch-icon" href="/Otagon/icon-192.png" />
-    <link rel="apple-touch-icon" sizes="192x192" href="/Otagon/icon-192.png" />
-    <link rel="apple-touch-icon" sizes="512x512" href="/Otagon/icon-512.png" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png" />
     
     <title>Otagon</title>
   </head>
@@ -35,12 +35,12 @@
           sessionStorage.removeItem('oauth_callback');
           sessionStorage.removeItem('oauth_hash');
           
-          // Update URL to /Otagon/auth/callback with hash params
-          history.replaceState(null, null, '/Otagon/auth/callback' + oauthHash);
+          // Update URL to /auth/callback with hash params
+          history.replaceState(null, null, '/auth/callback' + oauthHash);
         } else {
           // Handle regular SPA redirects
           var redirect = sessionStorage.getItem('spa_redirect');
-          if (redirect && redirect !== '/Otagon' && redirect !== '/Otagon/') {
+          if (redirect && redirect !== '/' && redirect !== '') {
             sessionStorage.removeItem('spa_redirect');
             // Remove /Otagon prefix if present
             var path = redirect.replace('/Otagon', '');

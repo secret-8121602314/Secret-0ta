@@ -17,8 +17,8 @@
         sessionStorage.setItem('oauth_callback', 'true');
         sessionStorage.setItem('oauth_hash', l.hash);
         
-        // Redirect to main app at /Otagon/
-        l.replace(l.protocol + '//' + l.hostname + '/Otagon/' + l.hash);
+        // Redirect to main app at root
+        l.replace(l.protocol + '//' + l.hostname + '/' + l.hash);
       } else {
         // For other 404s, store path and redirect to /Otagon/
         sessionStorage.setItem('spa_redirect', path);
