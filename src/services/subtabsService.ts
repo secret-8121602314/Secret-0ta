@@ -63,6 +63,23 @@ export class SubtabsService {
    * MIGRATION STRATEGY: Write to BOTH table AND JSONB during transition
    */
   async addSubtab(conversationId: string, subtab: SubTab): Promise<SubTab | null> {
+    // ✅ UNRELEASED GAMES CHECK: Block subtab creation for unreleased games
+    const { data: conversation, error: convError } = await supabase
+      .from('conversations')
+      .select('is_unreleased, title')
+      .eq('id', conversationId)
+      .single();
+    
+    if (convError) {
+      console.error('Error checking conversation for unreleased status:', convError);
+      return null;
+    }
+    
+    if (conversation?.is_unreleased) {
+      console.warn(`⛔ Subtab creation blocked for unreleased game: ${conversation.title}`);
+      throw new Error('Subtabs cannot be created for unreleased games. This feature will be available once the game is released.');
+    }
+    
     if (FEATURE_FLAGS.USE_NORMALIZED_SUBTABS) {
       // Add to normalized table
       const tableResult = await this.addSubtabToTable(conversationId, subtab);

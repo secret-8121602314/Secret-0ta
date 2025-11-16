@@ -311,6 +311,7 @@ class OnboardingService {
         .from('user_analytics')
         .insert({
           user_id: userId,
+          auth_user_id: userId, // ✅ Use auth_user_id for RLS performance
           event_type: 'onboarding_step',
           event_data: {
             step,
@@ -331,6 +332,7 @@ class OnboardingService {
         .from('user_analytics')
         .insert({
           user_id: userId,
+          auth_user_id: userId, // ✅ Use auth_user_id for RLS performance
           event_type: 'onboarding_dropoff',
           event_data: {
             step,

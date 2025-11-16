@@ -228,6 +228,16 @@ const SubTabs: React.FC<SubTabsProps> = ({
                           {children}
                         </blockquote>
                       ),
+                      a: ({ href, children }) => (
+                        <a 
+                          href={href} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-[#FF4D4D] hover:text-[#FF6B6B] underline"
+                        >
+                          {children}
+                        </a>
+                      ),
                     }}
                   >
                     {activeTab.content}
