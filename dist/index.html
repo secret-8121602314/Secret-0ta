@@ -69,7 +69,7 @@
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', async () => {
           const isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-          const swPath = isDev ? '/sw.js' : '/Otagon/sw.js';
+          const swPath = '/sw.js'; // Always use root path for custom domain
           
           // Force clear old broken service workers and caches
           const oldCacheVersion = 'v1.3.0';
