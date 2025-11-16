@@ -23,8 +23,7 @@ const HowToUseRoute: React.FC = () => {
     const savedCode = localStorage.getItem('otakon_connection_code');
     if (savedCode) {
       setConnectionCode(savedCode);
-      console.log('[HowToUseRoute] Restored connection code from localStorage:', savedCode);
-    }
+          }
   }, []);
 
   // Cleanup: Disconnect WebSocket when user navigates away from this screen
@@ -33,8 +32,7 @@ const HowToUseRoute: React.FC = () => {
       // Only disconnect if we're in CONNECTING state (user navigated away before completion)
       // Don't disconnect if CONNECTED - user successfully connected and moved forward
       if (status === ConnectionStatus.CONNECTING) {
-        console.log('[HowToUseRoute] User navigated away during connection, disconnecting WebSocket...');
-        disconnectWebSocket();
+                disconnectWebSocket();
         // Clear the pending connection code so user can try again
         setConnectionCode(null);
         setStatus(ConnectionStatus.DISCONNECTED);
@@ -43,9 +41,7 @@ const HowToUseRoute: React.FC = () => {
   }, [status]);
 
   const handleSkipConnection = async () => {
-    console.log('[HowToUseRoute] Skip connection clicked, updating database...');
-    
-    // Update database before navigation
+        // Update database before navigation
     if (user) {
       try {
         const { error } = await supabase
@@ -77,9 +73,7 @@ const HowToUseRoute: React.FC = () => {
   };
 
   const handleConnect = (code: string) => {
-    console.log('[HowToUseRoute] Initiating PC connection with code:', code);
-    
-    // Reset error state for retry
+        // Reset error state for retry
     setError(null);
     setStatus(ConnectionStatus.CONNECTING);
     setConnectionCode(code);
@@ -93,18 +87,14 @@ const HowToUseRoute: React.FC = () => {
       code,
       // onOpen
       () => {
-        console.log('[HowToUseRoute] WebSocket connection opened');
-        // Don't set as connected yet - wait for PC client response
+                // Don't set as connected yet - wait for PC client response
       },
       // onMessage
       (data: Record<string, unknown>) => {
-        console.log('[HowToUseRoute] WebSocket message received:', data);
-        
-        // Check if this is a connection confirmation from PC client
+                // Check if this is a connection confirmation from PC client
         // PC client sends: {type: 'partner_connected'} immediately, then {type: 'connection_alive'} later
         if (data.type === 'partner_connected' || data.type === 'connection_alive' || data.type === 'connected' || data.status === 'connected') {
-          console.log('[HowToUseRoute] PC client confirmed connection');
-          setStatus(ConnectionStatus.CONNECTED);
+                    setStatus(ConnectionStatus.CONNECTED);
           setError(null);
           
           // Mark as having connected before
@@ -122,8 +112,7 @@ const HowToUseRoute: React.FC = () => {
                 if (dbError) {
                   console.error('[HowToUseRoute] Failed to update PC connection in database:', dbError);
                 } else {
-                  console.log('[HowToUseRoute] PC connection status saved to database');
-                }
+                                  }
               });
           }
         }
@@ -145,8 +134,7 @@ const HowToUseRoute: React.FC = () => {
       },
       // onClose
       () => {
-        console.log('[HowToUseRoute] WebSocket connection closed');
-        // Only set to disconnected if not in error state
+                // Only set to disconnected if not in error state
         if (status !== ConnectionStatus.ERROR) {
           setStatus(ConnectionStatus.DISCONNECTED);
         }
@@ -155,9 +143,7 @@ const HowToUseRoute: React.FC = () => {
   };
 
   const handleConnectionSuccess = async () => {
-    console.log('[HowToUseRoute] Connection successful, navigating immediately...');
-    
-    // Navigate immediately for smooth UX
+        // Navigate immediately for smooth UX
     navigate('/onboarding/features');
     
     // Update database in background (optimistic navigation)
@@ -180,8 +166,7 @@ const HowToUseRoute: React.FC = () => {
         if (error) {
           console.error('[HowToUseRoute] Background DB update failed:', error);
         } else {
-          console.log('[HowToUseRoute] Background DB update complete');
-        }
+                  }
       } catch (error) {
         console.error('[HowToUseRoute] Background DB update error:', error);
       }

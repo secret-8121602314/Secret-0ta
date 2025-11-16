@@ -73,8 +73,7 @@ export class SessionService {
       // Start heartbeat to track activity
       this.startHeartbeat();
 
-      console.log('✅ Session started:', this.currentSessionId);
-      return this.currentSessionId;
+            return this.currentSessionId;
     } catch (error) {
       console.error('Error starting session:', error);
       return null;

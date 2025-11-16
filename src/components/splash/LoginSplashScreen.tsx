@@ -93,7 +93,6 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
     setEmailMode('options');
   };
 
-
   // Clear errors when user starts typing
   useEffect(() => {
     if (emailError && email) {
@@ -137,8 +136,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
   }, [emailMode]);
 
   const handleAuth = async (method: 'google' | 'discord' | 'email') => {
-    console.log('🔐 [LoginSplashScreen] Auth method called:', method);
-    setIsLoading(true);
+        setIsLoading(true);
     setErrorMessage('');
 
     try {
@@ -258,10 +256,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
         // Handle different error types for signup
         if (emailMode === 'signup') {
           const errorMsg = result.error || 'Authentication failed. Please try again.';
-          console.log('🔐 [LoginSplashScreen] Signup error message:', errorMsg);
-          console.log('🔐 [LoginSplashScreen] Full result object:', result);
-          
-          if (errorMsg.toLowerCase().includes('user already registered') || 
+                              if (errorMsg.toLowerCase().includes('user already registered') || 
               errorMsg.toLowerCase().includes('email already registered') ||
               errorMsg.toLowerCase().includes('already registered') ||
               errorMsg.toLowerCase().includes('user with this email already exists') ||
@@ -669,8 +664,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
         <div className="text-center mt-4 md:mt-6">
           <button
             onClick={() => {
-              console.log('🔙 [LoginSplashScreen] Back to landing clicked');
-              onBackToLanding();
+                            onBackToLanding();
             }}
             className="text-text-muted hover:text-text-primary transition-colors text-xs md:text-sm flex items-center justify-center space-x-1 md:space-x-2 mx-auto hover:scale-105 transition-all duration-300"
             aria-label="Return to landing page"

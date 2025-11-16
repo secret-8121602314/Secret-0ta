@@ -75,8 +75,7 @@ class GameHubService {
    */
   async searchGames(query: string): Promise<any[]> {
     // TODO: Implement game search
-    console.log('Searching for:', query);
-    return [];
+        return [];
   }
 }
 

@@ -424,8 +424,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     
     // Allow submission if there's either a message OR an image
     if (!message.trim() && !imageFile) {
-      console.log('📤 [ChatInterface] Submission blocked: no message and no image');
-      return;
+            return;
     }
 
     // Collapse quick actions when sending a message
@@ -446,8 +445,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    console.log('📸 [ChatInterface] Image upload:', { file, fileName: file?.name, fileSize: file?.size });
-    if (file) {
+        if (file) {
       setImageFile(file);
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -497,7 +495,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       window.open(imageSrc, '_blank');
     }
   };
-
 
   // Show loading state if no conversation yet
   if (!conversation) {
@@ -587,7 +584,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       {/* Image Preview - Show inside the chat input area */}
       {/* Removed - will show preview inside the input form instead */}
-
 
       {/* Sub-tabs Section - Show for released game conversations only (not Game Hub, not unreleased) */}
       {conversation && !conversation.isGameHub && !conversation.isUnreleased && conversation.subtabs && conversation.subtabs.length > 0 && (

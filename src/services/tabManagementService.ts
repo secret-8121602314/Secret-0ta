@@ -52,8 +52,7 @@ class TabManagementService {
     const matchingTab = this.findMatchingTab(tabName, conversation.subtabs || []);
     
     if (!matchingTab) {
-      console.warn(`Tab "${tabName}" not found in conversation`);
-      return null;
+            return null;
     }
 
     // Determine command type

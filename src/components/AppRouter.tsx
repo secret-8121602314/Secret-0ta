@@ -98,17 +98,7 @@ const AppRouter: React.FC<AppRouterProps> = ({
   const shouldShowLoading = (isInitializing || authState.isLoading) &&
     !(appState.view === 'landing' && !hasEverLoggedIn && !authState.isLoading);
 
-  console.log('🔵 AppRouter:', { 
-    view: appState.view, 
-    onboardingStatus: appState.onboardingStatus,
-    hasUser: !!authState.user,
-    isInitializing,
-    isLoading: authState.isLoading,
-    shouldShowLoading,
-    shouldShowLanding: appState.view === 'landing' && !authState.user
-  });
-
-  if (shouldShowLoading) {
+    if (shouldShowLoading) {
     return (
       <div className="h-screen bg-gradient-to-br from-[#111111] to-[#0A0A0A] flex items-center justify-center">
         <div className="text-center">
@@ -120,11 +110,7 @@ const AppRouter: React.FC<AppRouterProps> = ({
   }
 
   if (appState.view === 'landing' && !authState.user && !authState.isLoading) {
-    console.log('🟢 RENDERING LANDINGPAGE NOW!');
-    console.log('⚠️⚠️⚠️ ABOUT TO RENDER LANDINGPAGE COMPONENT ⚠️⚠️⚠️');
-    console.log('⚠️ LandingPage import:', LandingPage);
-    console.log('⚠️ LandingPage type:', typeof LandingPage);
-    return (
+                    return (
       <>
         <LandingPage
           onGetStarted={handleGetStarted}

@@ -29,8 +29,7 @@ class DailyNewsCacheService {
     const cached = await cacheService.get<{ content: string; timestamp: number }>(cacheKey);
 
     if (!cached) {
-      console.log('📰 [DailyNewsCache] No cached response for:', prompt);
-      return null;
+            return null;
     }
 
     // Check if cache is still valid (24 hours)
@@ -38,8 +37,7 @@ class DailyNewsCacheService {
     const age = now - cached.timestamp;
     
     if (age > this.CACHE_DURATION_MS) {
-      console.log('📰 [DailyNewsCache] Cached response expired for:', prompt);
-      await cacheService.delete(cacheKey);
+            await cacheService.delete(cacheKey);
       return null;
     }
 
@@ -70,9 +68,7 @@ class DailyNewsCacheService {
     };
 
     await cacheService.set(cacheKey, cacheData, this.CACHE_DURATION_MS);
-    console.log('📰 [DailyNewsCache] Cached fresh response for:', prompt);
-
-    // Update last grounding search time
+        // Update last grounding search time
     localStorage.setItem(this.LAST_GROUNDING_KEY, Date.now().toString());
   }
 
@@ -142,8 +138,7 @@ class DailyNewsCacheService {
       await cacheService.delete(cacheKey);
     }
     localStorage.removeItem(this.LAST_GROUNDING_KEY);
-    console.log('📰 [DailyNewsCache] All news cache cleared');
-  }
+      }
 
   /**
    * Get cache status for all news prompts

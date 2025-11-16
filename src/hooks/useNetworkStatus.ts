@@ -38,8 +38,7 @@ export const useNetworkStatus = () => {
     };
 
     const handleOnline = async () => {
-      console.log('🌐 [NetworkStatus] Network reconnected');
-      const now = Date.now();
+            const now = Date.now();
       
       setStatus(prev => ({
         ...prev,
@@ -51,8 +50,7 @@ export const useNetworkStatus = () => {
       
       // Refresh session when network comes back
       try {
-        console.log('🔐 [NetworkStatus] Refreshing session after reconnection...');
-        const { error } = await supabase.auth.refreshSession();
+                const { error } = await supabase.auth.refreshSession();
         
         if (error) {
           console.error('❌ [NetworkStatus] Failed to refresh session:', error);
@@ -73,8 +71,7 @@ export const useNetworkStatus = () => {
             toastService.error('Could not restore connection. Please refresh the page.');
           }
         } else {
-          console.log('✅ [NetworkStatus] Session refreshed successfully');
-          reconnectAttempts = 0;
+                    reconnectAttempts = 0;
           
           // Notify user of successful reconnection
           if (status.lastOfflineAt && (now - status.lastOfflineAt) > 5000) {
@@ -93,8 +90,7 @@ export const useNetworkStatus = () => {
     };
 
     const handleOffline = () => {
-      console.log('🌐 [NetworkStatus] Network disconnected');
-      const now = Date.now();
+            const now = Date.now();
       
       setStatus(prev => ({
         ...prev,

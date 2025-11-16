@@ -54,14 +54,7 @@ export class SessionManager {
     
     this.saveInstances(instances);
     
-    console.log('📱 [SessionManager] Registered instance:', {
-      id: this.instanceId,
-      userId,
-      userEmail,
-      totalInstances: instances.length
-    });
-    
-    // Check for conflicts immediately
+        // Check for conflicts immediately
     this.checkForConflicts(instances);
   }
 
@@ -90,8 +83,7 @@ export class SessionManager {
     // Listen for storage events (cross-tab communication)
     window.addEventListener('storage', (e) => {
       if (e.key === SessionManager.STORAGE_KEY) {
-        console.log('📱 [SessionManager] Storage changed, checking for conflicts');
-        this.handleInstanceChange();
+                this.handleInstanceChange();
       }
     });
     
@@ -106,8 +98,7 @@ export class SessionManager {
     // Handle page visibility changes
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) {
-        console.log('📱 [SessionManager] Page became visible, updating heartbeat');
-        this.updateHeartbeat();
+                this.updateHeartbeat();
       }
     });
   }
@@ -179,11 +170,7 @@ export class SessionManager {
     );
     
     if (cleaned.length < instances.length) {
-      console.log('📱 [SessionManager] Cleaned up stale instances:', {
-        before: instances.length,
-        after: cleaned.length
-      });
-      this.saveInstances(cleaned);
+            this.saveInstances(cleaned);
     }
   }
 
@@ -199,8 +186,7 @@ export class SessionManager {
       clearInterval(this.cleanupInterval);
     }
     
-    console.log('📱 [SessionManager] Unregistered instance:', this.instanceId);
-  }
+      }
 
   /**
    * Get all active instances

@@ -36,8 +36,7 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
   useEffect(() => {
     if (isOpen && isConnected) {
       wasOpenedWhileConnectedRef.current = true;
-      console.log('🔍 Connection modal opened while already connected - will not auto-close');
-    } else if (!isOpen) {
+          } else if (!isOpen) {
       wasOpenedWhileConnectedRef.current = false;
     }
   }, [isOpen, isConnected]);
@@ -49,9 +48,7 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
       
       if (!hasConnectedBefore) {
         // First time connecting - trigger onboarding flow
-        console.log('🎉 First connection - triggering onboarding flow');
-        
-        // Close modal and let App.tsx handle onboarding progression
+                // Close modal and let App.tsx handle onboarding progression
         setTimeout(() => {
           onClose();
           // Trigger onboarding update to show how-to-use splash screen
@@ -61,14 +58,12 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
         }, 1000); // Small delay to show the success message first
       } else {
         // Returning user - auto-close modal and show chat screen
-        console.log('🔄 Returning user connected - will auto-close modal');
-        setTimeout(() => {
+                setTimeout(() => {
           onClose();
         }, 1500); // Show success message for 1.5 seconds then close
       }
     } else if (isConnected && wasOpenedWhileConnectedRef.current) {
-      console.log('🔍 Modal manually opened - will not auto-close');
-    }
+          }
   }, [isConnected, onClose, onShowHowToUse]);
 
   const handleSubmit = (e: React.FormEvent) => {

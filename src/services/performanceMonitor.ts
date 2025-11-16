@@ -84,8 +84,7 @@ class PerformanceMonitor {
       return;
     }
     
-    console.log('📊 [PerformanceMonitor] Starting performance monitoring...');
-    this.isMonitoring = true;
+        this.isMonitoring = true;
     
     // Monitor page load time
     this.monitorPageLoad();
@@ -113,8 +112,7 @@ class PerformanceMonitor {
       return;
     }
     
-    console.log('📊 [PerformanceMonitor] Stopping performance monitoring...');
-    this.isMonitoring = false;
+        this.isMonitoring = false;
     
     if (this.reportInterval) {
       clearInterval(this.reportInterval);

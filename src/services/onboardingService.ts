@@ -56,8 +56,7 @@ class OnboardingService {
 
   async getOnboardingStatus(userId: string): Promise<OnboardingStatus | null> {
     try {
-      console.log('🎯 [OnboardingService] Getting onboarding status for user:', userId);
-      const { data, error } = await supabase.rpc('get_user_onboarding_status', {
+            const { data, error } = await supabase.rpc('get_user_onboarding_status', {
         p_user_id: userId
       });
 
@@ -66,12 +65,9 @@ class OnboardingService {
         return null;
       }
 
-      console.log('🎯 [OnboardingService] Onboarding status raw data:', data);
-      
-      // The RPC function returns a TABLE (array), so we need to get the first element
+            // The RPC function returns a TABLE (array), so we need to get the first element
       if (!data || data.length === 0) {
-        console.log('🎯 [OnboardingService] No onboarding data found for user');
-        return null;
+                return null;
       }
       
       const status = data[0];
@@ -194,15 +190,10 @@ class OnboardingService {
 
   async getNextOnboardingStep(userId: string): Promise<OnboardingStep> {
     try {
-      console.log('🎯 [OnboardingService] Getting next step for user:', userId);
-      const status = await this.getOnboardingStatus(userId);
-      console.log('🎯 [OnboardingService] User status:', status);
-      
-      if (!status) {
-        console.log('🎯 [OnboardingService] No status found, returning login');
-        return 'login';
+            const status = await this.getOnboardingStatus(userId);
+            if (!status) {
+                return 'login';
       }
-
 
       // Safely get boolean values with defaults
       const hasSeenSplashScreens = this.getBooleanValue(status.has_seen_splash_screens);
@@ -212,55 +203,39 @@ class OnboardingService {
       const pcConnected = this.getBooleanValue(status.pc_connected);
       const pcConnectionSkipped = this.getBooleanValue(status.pc_connection_skipped);
 
-      console.log('🎯 [OnboardingService] Processed values:', {
-        hasSeenSplashScreens,
-        hasSeenHowToUse,
-        hasSeenFeaturesConnected,
-        hasSeenProFeatures,
-        pcConnected,
-        pcConnectionSkipped
-      });
-
-      // Check onboarding steps in order (matching old build logic)
+            // Check onboarding steps in order (matching old build logic)
       if (!hasSeenSplashScreens) {
-        console.log('🎯 [OnboardingService] User hasn\'t seen splash screens, returning initial');
-        return 'initial';
+                return 'initial';
       }
 
       // After initial splash, go to how-to-use (PC connection)
       if (hasSeenSplashScreens && !hasSeenHowToUse) {
-        console.log('🎯 [OnboardingService] User needs to see how-to-use screen, returning how-to-use');
-        return 'how-to-use';
+                return 'how-to-use';
       }
 
       // If PC connection was successful, show features-connected
       if (hasSeenHowToUse && pcConnected && !hasSeenFeaturesConnected) {
-        console.log('🎯 [OnboardingService] PC connected, showing features-connected screen');
-        return 'features-connected';
+                return 'features-connected';
       }
 
       // If PC connection was skipped, go to pro-features
       if (hasSeenHowToUse && !pcConnected && pcConnectionSkipped && !hasSeenProFeatures) {
-        console.log('🎯 [OnboardingService] PC connection skipped, showing pro-features screen');
-        return 'pro-features';
+                return 'pro-features';
       }
 
       // If PC connection failed (not skipped), go back to how-to-use
       if (hasSeenHowToUse && !pcConnected && !pcConnectionSkipped) {
-        console.log('🎯 [OnboardingService] PC connection failed, returning to how-to-use screen');
-        return 'how-to-use';
+                return 'how-to-use';
       }
 
       // After features-connected, go to pro-features
       if (hasSeenFeaturesConnected && !hasSeenProFeatures) {
-        console.log('🎯 [OnboardingService] User needs to see pro-features screen, returning pro-features');
-        return 'pro-features';
+                return 'pro-features';
       }
 
       // After pro features, onboarding is complete (profile setup is now an overlay)
       if (hasSeenProFeatures) {
-        console.log('🎯 [OnboardingService] User has seen pro features, onboarding complete');
-        return 'complete';
+                return 'complete';
       }
 
       // ✅ FIX: If we reach here, the flow logic has a bug - throw error instead of silently recovering

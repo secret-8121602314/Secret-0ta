@@ -67,21 +67,18 @@ const SubTabs: React.FC<SubTabsProps> = ({
     
     // ✅ FIX: Collapse if all loading
     if (allLoading && isExpanded) {
-      console.log('📂 [SubTabs] Collapsing subtabs - all loading');
-      setIsExpanded(false);
+            setIsExpanded(false);
     }
     
     // ✅ FIX: Expand when ANY content loads (more responsive)
     // Changed from hasLoadedContent to anyLoaded for immediate feedback
     if (anyLoaded && !isExpanded) {
-      console.log('📂 [SubTabs] ✅ AUTO-EXPANDING - detected loaded subtabs');
-      setIsExpanded(true);
+            setIsExpanded(true);
     }
     
     // ✅ NEW: Additional check for all loaded (belt and suspenders)
     if (allLoaded && !isExpanded && subtabs.length > 0) {
-      console.log('📂 [SubTabs] ✅ AUTO-EXPANDING - all subtabs loaded');
-      setIsExpanded(true);
+            setIsExpanded(true);
     }
   }, [subtabs, isExpanded, hasUserInteracted]);
 

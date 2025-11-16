@@ -6,7 +6,6 @@ interface CreditIndicatorProps {
   onClick: () => void;
 }
 
-
 const CreditIndicator: React.FC<CreditIndicatorProps> = ({ user, onClick }) => {
   const { textCount, textLimit, imageCount, imageLimit } = user.usage;
   

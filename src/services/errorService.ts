@@ -17,8 +17,7 @@ class ErrorService {
     
     // Check if we're hitting error rate limits
     if (this.isErrorRateLimited()) {
-      console.warn(`[ErrorService] Error rate limit exceeded, suppressing error:`, error);
-      return;
+            return;
     }
 
     // Log error with context
@@ -93,9 +92,7 @@ class ErrorService {
   private static showUserMessage(message: string): void {
     // TODO: Implement toast notification system
     // For now, we'll use console.warn as a placeholder
-    console.warn(`[User Message] ${message}`);
-    
-    // In a real implementation, this would:
+        // In a real implementation, this would:
     // 1. Show a toast notification
     // 2. Update UI state to show error
     // 3. Log to user activity tracking

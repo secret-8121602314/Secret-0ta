@@ -129,10 +129,8 @@ class MemoryManager {
     if (typeof window !== 'undefined' && 'gc' in window) {
       try {
         (window as ExtendedWindow).gc?.();
-        console.log('🧹 [MemoryManager] Forced garbage collection');
-      } catch (error) {
-        console.warn('Failed to force garbage collection:', error);
-      }
+              } catch (error) {
+              }
     }
   }
 
@@ -157,15 +155,12 @@ class MemoryManager {
 
   // ✅ SCALABILITY: Emergency cleanup when memory is high
   private performEmergencyCleanup(): void {
-    console.log('🚨 [MemoryManager] Performing emergency cleanup...');
-    
-    // Clear old intervals
+        // Clear old intervals
     this.intervals.forEach(interval => {
       try {
         clearInterval(interval);
       } catch (error) {
-        console.warn('Error clearing interval:', error);
-      }
+              }
     });
     this.intervals.clear();
     
@@ -174,8 +169,7 @@ class MemoryManager {
       try {
         clearTimeout(timeout);
       } catch (error) {
-        console.warn('Error clearing timeout:', error);
-      }
+              }
     });
     this.timeouts.clear();
     
@@ -184,16 +178,14 @@ class MemoryManager {
       try {
         controller.abort();
       } catch (error) {
-        console.warn('Error aborting controller:', error);
-      }
+              }
     });
     this.abortControllers.clear();
     
     // Force garbage collection
     this.forceGarbageCollection();
     
-    console.log('🧹 [MemoryManager] Emergency cleanup completed');
-  }
+      }
 
   // ✅ SCALABILITY: Setup global cleanup
   private setupGlobalCleanup(): void {
@@ -213,9 +205,7 @@ class MemoryManager {
       return;
     }
     
-    console.log('🧹 [MemoryManager] Starting cleanup...');
-    
-    this.isDestroyed = true;
+        this.isDestroyed = true;
     
     // Stop memory monitoring
     if (this.memoryCheckInterval) {
@@ -228,8 +218,7 @@ class MemoryManager {
       try {
         clearInterval(interval);
       } catch (error) {
-        console.warn('Error clearing interval:', error);
-      }
+              }
     });
     this.intervals.clear();
     
@@ -238,8 +227,7 @@ class MemoryManager {
       try {
         clearTimeout(timeout);
       } catch (error) {
-        console.warn('Error clearing timeout:', error);
-      }
+              }
     });
     this.timeouts.clear();
     
@@ -248,8 +236,7 @@ class MemoryManager {
       try {
         element.removeEventListener(event, handler);
       } catch (error) {
-        console.warn('Error removing event listener:', error);
-      }
+              }
     });
     this.eventListeners.clear();
     
@@ -258,8 +245,7 @@ class MemoryManager {
       try {
         controller.abort();
       } catch (error) {
-        console.warn('Error aborting controller:', error);
-      }
+              }
     });
     this.abortControllers.clear();
     
@@ -279,8 +265,7 @@ class MemoryManager {
     // Force garbage collection
     this.forceGarbageCollection();
     
-    console.log('🧹 [MemoryManager] Cleanup completed');
-  }
+      }
 
   // ✅ SCALABILITY: Get cleanup statistics
   getCleanupStats(): {

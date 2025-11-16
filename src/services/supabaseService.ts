@@ -101,9 +101,7 @@ export class SupabaseService {
   async getConversations(userId: string): Promise<Conversation[]> {
     try {
       // ✅ FIX: Query by auth_user_id directly (matches RLS policies)
-      console.log('🔍 [Supabase] Querying conversations for auth_user_id:', userId);
-      
-      // 🔍 DIAGNOSTIC: Test if Game Hub exists with direct .single() query
+            // 🔍 DIAGNOSTIC: Test if Game Hub exists with direct .single() query
       const { data: gameHubTest, error: gameHubError } = await supabase
         .from('conversations')
         .select('id, title, auth_user_id')
@@ -115,8 +113,7 @@ export class SupabaseService {
       } else if (gameHubError) {
         console.log('❌ [Supabase] Game Hub .single() error:', gameHubError.message);
       } else {
-        console.log('🔍 [Supabase] Game Hub does not exist yet');
-      }
+              }
       
       // ✅ RLS WORKAROUND: Try query without filter - RLS should auto-filter by auth.uid()
       // This bypasses potential issues with the auth_user_id column
@@ -125,24 +122,12 @@ export class SupabaseService {
         .select('*')
         .order('updated_at', { ascending: false});
       
-      console.log('🔍 [Supabase] Unfiltered query result:', {
-        error: errorNoFilter?.message,
-        count: dataNoFilter?.length || 0,
-        firstRow: dataNoFilter && dataNoFilter.length > 0 ? {
-          id: dataNoFilter[0].id,
-          title: dataNoFilter[0].title,
-          auth_user_id: dataNoFilter[0].auth_user_id
-        } : null
-      });
-      
-      if (!errorNoFilter && dataNoFilter && dataNoFilter.length > 0) {
-        console.log('✅ [Supabase] RLS auto-filtering worked! Returned', dataNoFilter.length, 'conversations');
-        return this.mapConversations(dataNoFilter);
+            if (!errorNoFilter && dataNoFilter && dataNoFilter.length > 0) {
+                return this.mapConversations(dataNoFilter);
       }
       
       // If unfiltered fails, try with explicit filter
-      console.log('🔍 [Supabase] Trying with explicit auth_user_id filter...');
-      const { data, error } = await supabase
+            const { data, error } = await supabase
         .from('conversations')
         .select('*')
         .eq('auth_user_id', userId)
@@ -154,8 +139,7 @@ export class SupabaseService {
         return [];
       }
       
-      console.log('✅ [Supabase] Filtered query returned', data.length, 'conversations');
-      if (data.length === 0) {
+            if (data.length === 0) {
         // 🔍 If we got 0 results, check session to verify auth context
         const { data: { session } } = await supabase.auth.getSession();
         console.error('🔍 [Supabase] Zero results diagnostic:', {
@@ -235,9 +219,7 @@ export class SupabaseService {
     try {
       // ✅ Verify session is active
       const { data: { session } } = await supabase.auth.getSession();
-      console.log('🔍 [Supabase] Current session user:', session?.user?.id, 'vs provided userId:', userId);
-      
-      if (!session || session.user.id !== userId) {
+            if (!session || session.user.id !== userId) {
         console.error('❌ [Supabase] Session mismatch! RLS will block reads. Session:', session?.user?.id, 'vs userId:', userId);
       }
       
@@ -271,15 +253,7 @@ export class SupabaseService {
       
       // ✅ FIX: Use UPSERT to handle duplicate Game Hub (409 Conflict)
       // If a conversation with this ID exists, update it instead of failing
-      console.log('🔍 [Supabase] Upserting conversation:', {
-        id: insertData.id,
-        title: insertData.title,
-        auth_user_id: insertData.auth_user_id,
-        is_game_hub: insertData.is_game_hub,
-        is_active: insertData.is_active
-      });
-      
-      const { data, error } = await supabase
+            const { data, error } = await supabase
         .from('conversations')
         .upsert(insertData, { 
           onConflict: 'id',
@@ -294,9 +268,7 @@ export class SupabaseService {
         return null;
       }
 
-      console.log('✅ [Supabase] Conversation upserted successfully:', data.id);
-      
-      // ✅ Verify we can read it back immediately with full data
+            // ✅ Verify we can read it back immediately with full data
       const { data: verifyData, error: verifyError } = await supabase
         .from('conversations')
         .select('*')
@@ -307,15 +279,7 @@ export class SupabaseService {
         console.error('⚠️ [Supabase] Cannot read back conversation after upsert!', verifyError.message);
         console.error('⚠️ [Supabase] This indicates RLS SELECT policy is blocking reads');
       } else {
-        console.log('✅ [Supabase] Verified conversation data:', {
-          id: verifyData.id,
-          title: verifyData.title,
-          auth_user_id: verifyData.auth_user_id,
-          auth_user_id_type: typeof verifyData.auth_user_id,
-          is_game_hub: verifyData.is_game_hub
-        });
-        
-        // 🔍 Check if this row would pass RLS
+                // 🔍 Check if this row would pass RLS
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user?.id !== verifyData.auth_user_id) {
           console.error('🚨 [Supabase] AUTH_USER_ID MISMATCH!', {
@@ -324,8 +288,7 @@ export class SupabaseService {
             match: false
           });
         } else {
-          console.log('✅ [Supabase] auth_user_id matches session perfectly');
-        }
+                  }
       }
       
       return data.id;

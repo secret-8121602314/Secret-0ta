@@ -26,9 +26,7 @@ class ErrorRecoveryService {
     // Check if we should retry
     if (this.shouldRetry(context)) {
       const delay = this.getRetryDelay(context.retryCount);
-      console.log(`🔄 [ErrorRecovery] Retrying ${context.operation} in ${delay}ms`);
-      
-      await this.delay(delay);
+            await this.delay(delay);
       return {
         type: 'retry',
         action: async () => {

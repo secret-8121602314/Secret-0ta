@@ -41,8 +41,7 @@ export class AuthService {
     // For PWA, ensure we use the full URL with proper scheme
     // This helps with OAuth redirects in standalone mode
     if (isPWA) {
-      console.log('🔐 [AuthService] PWA mode detected, using full callback URL');
-      return `${origin}${callback}`;
+            return `${origin}${callback}`;
     }
     
     return `${origin}${callback}`;
@@ -132,14 +131,12 @@ export class AuthService {
     try {
       // Always initialize auth
 
-
       // Handle OAuth callback if we're on the callback URL
       // Note: AuthCallback component handles OAuth callbacks, so we skip this
       // to avoid conflicts
       const isAuthCallback = window.location.pathname === '/auth/callback';
       if (isAuthCallback) {
-        console.log('🔐 [AuthService] OAuth callback detected, but AuthCallback component will handle it');
-        return;
+                return;
       }
 
       // Try Supabase auth if available
@@ -177,12 +174,9 @@ export class AuthService {
     }
   }
 
-
   private async createUserRecord(authUser: { id: string; email?: string; user_metadata?: Record<string, unknown> }): Promise<void> {
     try {
-      console.log('🔐 [AuthService] Creating user record for:', authUser.email);
-      
-      // Get the OAuth provider from the auth user metadata
+            // Get the OAuth provider from the auth user metadata
       // Check multiple possible locations for provider information
       let provider = 'email';
       
@@ -196,21 +190,11 @@ export class AuthService {
         provider = authUser.user_metadata.provider;
       }
       
-      console.log('🔐 [AuthService] Auth user metadata:', {
-        app_metadata: authUser.app_metadata,
-        user_metadata: authUser.user_metadata,
-        identities: authUser.identities,
-        provider: provider
-      });
-      console.log('🔐 [AuthService] OAuth provider:', provider);
-      
-      // Use the real email from OAuth provider
+                  // Use the real email from OAuth provider
       // Supabase auth.users handles uniqueness via auth_user_id
       const userEmail = authUser.email;
       
-      console.log('🔐 [AuthService] User email:', userEmail);
-      
-      const { error } = await supabase.rpc('create_user_record', {
+            const { error } = await supabase.rpc('create_user_record', {
         p_auth_user_id: authUser.id,
         p_email: userEmail,
         p_full_name: authUser.user_metadata?.full_name || authUser.user_metadata?.name || 'User',
@@ -231,8 +215,7 @@ export class AuthService {
         throw error;
       }
       
-      console.log('🔐 [AuthService] User record created successfully');
-    } catch (error: unknown) {
+          } catch (error: unknown) {
       // Check if it's a duplicate key error (23505)
       const err = error as { code?: string; message?: string };
       if (err.code === '23505' || err.message?.includes('duplicate key')) {
@@ -248,13 +231,11 @@ export class AuthService {
 
   // Helper function to extract original email from unique identifier
 
-
   async loadUserFromSupabase(authUserId: string) {
     // ✅ PERFORMANCE: Check if there's already a pending load for this user
     const existingLoad = this.pendingUserLoads.get(authUserId);
     if (existingLoad) {
-      console.log('🔐 [AuthService] Deduplicating user load request for:', authUserId);
-      return await existingLoad;
+            return await existingLoad;
     }
 
     // Create a new load promise and store it
@@ -276,22 +257,17 @@ export class AuthService {
       // ✅ SCALABILITY: Check cache first
       const cachedUser = await this.getCachedUser(authUserId);
       if (cachedUser) {
-        console.log('🔐 [AuthService] Using cached user data');
-        this.updateAuthState({ user: cachedUser, isLoading: false, error: null });
+                this.updateAuthState({ user: cachedUser, isLoading: false, error: null });
         return;
       }
 
-      console.log('🔐 [AuthService] Loading user data from database for authUserId:', authUserId);
-      
-      // Try the RPC function first
+            // Try the RPC function first
       const { data: rpcData, error: rpcError } = await supabase.rpc('get_complete_user_data', {
         p_auth_user_id: authUserId
       });
 
       if (rpcError) {
-        console.log('🔐 [AuthService] RPC function failed, trying direct table query...', rpcError);
-        
-        // Fallback: Query the table directly
+                // Fallback: Query the table directly
         const { data: tableData, error: tableError } = await supabase
           .from('users')
           .select('*')
@@ -305,8 +281,7 @@ export class AuthService {
         }
 
         if (tableData) {
-          console.log('🔐 [AuthService] User found via direct table query');
-          const user = mapUserData(tableData as Record<string, unknown>, authUserId);
+                    const user = mapUserData(tableData as Record<string, unknown>, authUserId);
 
           // ✅ SCALABILITY: Cache user data
           await this.setCachedUser(authUserId, user);
@@ -317,32 +292,17 @@ export class AuthService {
 
       // If RPC worked, use that data
       if (rpcData && rpcData.length > 0) {
-        console.log('🔐 [AuthService] User found via RPC function');
-        console.log('🔐 [AuthService] RPC data:', rpcData[0]);
-        const user = mapUserData(rpcData[0] as Record<string, unknown>, authUserId);
+                        const user = mapUserData(rpcData[0] as Record<string, unknown>, authUserId);
 
-        console.log('🔐 [AuthService] User onboarding flags:', {
-          hasProfileSetup: user.hasProfileSetup,
-          hasSeenSplashScreens: user.hasSeenSplashScreens,
-          hasSeenHowToUse: user.hasSeenHowToUse,
-          hasSeenFeaturesConnected: user.hasSeenFeaturesConnected,
-          hasSeenProFeatures: user.hasSeenProFeatures,
-          pcConnected: user.pcConnected,
-          pcConnectionSkipped: user.pcConnectionSkipped,
-          onboardingCompleted: user.onboardingCompleted
-        });
-
-        // ✅ SCALABILITY: Cache user data
+                // ✅ SCALABILITY: Cache user data
         await this.setCachedUser(authUserId, user);
         this.updateAuthState({ user, isLoading: false, error: null });
       } else {
         // User not found - try to create manually
-        console.log('🔐 [AuthService] User not found, trying to create manually...');
-        try {
+                try {
           const { data: { user: authUser } } = await supabase.auth.getUser();
           if (authUser) {
-            console.log('🔐 [AuthService] Creating user record for auth user:', authUser.email);
-            await this.createUserRecord(authUser);
+                        await this.createUserRecord(authUser);
             // ✅ PERFORMANCE: Call internal function directly to avoid deadlock with deduplication Map
             await this._loadUserFromSupabaseInternal(authUserId);
           } else {
@@ -358,7 +318,6 @@ export class AuthService {
       this.updateAuthState({ user: null, isLoading: false, error: 'Failed to load user data' });
     }
   }
-
 
   private updateAuthState(newState: Partial<AuthState>) {
     const previousState = { ...this.authState };
@@ -385,11 +344,8 @@ export class AuthService {
 
       this.updateAuthState({ isLoading: true, error: null });
       
-      console.log('🔐 [AuthService] Starting Google OAuth...');
-      const redirectUrl = this.getCallbackUrl();
-      console.log('🔐 [AuthService] Redirect URL:', redirectUrl);
-      
-      const { error } = await supabase.auth.signInWithOAuth({
+            const redirectUrl = this.getCallbackUrl();
+            const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: redirectUrl,
@@ -406,8 +362,7 @@ export class AuthService {
         return { success: false, error: error.message };
       }
 
-      console.log('🔐 [AuthService] Google OAuth initiated successfully');
-      return { success: true };
+            return { success: true };
     } catch (error) {
       ErrorService.handleAuthError(error as Error, 'signInWithGoogle');
       toastService.error('Google sign-in failed. Please try again.');
@@ -432,21 +387,12 @@ export class AuthService {
     try {
       this.updateAuthState({ isLoading: true, error: null });
       
-      console.log('🔐 [AuthService] Starting Discord OAuth...');
-      
-      // Construct the redirect URL properly using current origin
+            // Construct the redirect URL properly using current origin
       const redirectUrl = this.getCallbackUrl();
-      console.log('🔐 [AuthService] Redirect URL:', redirectUrl);
-      console.log('🔐 [AuthService] Current origin:', window.location.origin);
-      console.log('🔐 [AuthService] Current pathname:', window.location.pathname);
-      console.log('🔐 [AuthService] Current port:', window.location.port);
-      console.log('🔐 [AuthService] Full URL:', window.location.href);
-      
-      // Check if we're already on the callback page
+                                    // Check if we're already on the callback page
       const isAuthCallback = window.location.pathname === '/auth/callback';
       if (isAuthCallback) {
-        console.log('🔐 [AuthService] Already on callback page, skipping OAuth initiation');
-        this.updateAuthState({ isLoading: false, error: null });
+                this.updateAuthState({ isLoading: false, error: null });
         return { success: false, error: 'Already on callback page' };
       }
       
@@ -454,9 +400,7 @@ export class AuthService {
       localStorage.setItem('otakon_discord_auth_attempt', Date.now().toString());
       
       // Initiate Discord OAuth with proper error handling
-      console.log('🔐 [AuthService] Initiating Discord OAuth with redirectTo:', redirectUrl);
-      
-      const { data, error } = await supabase.auth.signInWithOAuth({
+            const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'discord',
         options: {
           redirectTo: redirectUrl,
@@ -491,10 +435,7 @@ export class AuthService {
         return { success: false, error: errorMessage };
       }
 
-      console.log('🔐 [AuthService] Discord OAuth initiated successfully');
-      console.log('🔐 [AuthService] OAuth data:', data);
-      
-      // OAuth will redirect, so we return success
+                  // OAuth will redirect, so we return success
       return { success: true };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -522,9 +463,7 @@ export class AuthService {
     try {
       this.updateAuthState({ isLoading: true, error: null });
       
-      console.log('🔐 [AuthService] Starting email sign-in...');
-      
-      const { data, error } = await supabase.auth.signInWithPassword({
+            const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
@@ -551,8 +490,7 @@ export class AuthService {
       }
 
       if (data.user) {
-        console.log('🔐 [AuthService] Email sign-in successful:', data.user.email);
-        toastService.success('Welcome back! Successfully signed in.');
+                toastService.success('Welcome back! Successfully signed in.');
         // Load user data (this will handle user creation if needed)
         await this.loadUserFromSupabase(data.user.id);
         return { success: true, user: this.authState.user || undefined };
@@ -568,7 +506,6 @@ export class AuthService {
     }
   }
 
-
   // ⚠️ PROTECTED EMAIL AUTH FLOW - DO NOT MODIFY WITHOUT WARNING ⚠️
   // Email signup is working correctly - any changes here could break user registration
   // If you need to modify this, add a warning comment explaining the change
@@ -576,9 +513,7 @@ export class AuthService {
     try {
       this.updateAuthState({ isLoading: true, error: null });
       
-      console.log('🔐 [AuthService] Starting email sign-up...');
-      
-      const { data, error } = await supabase.auth.signUp({
+            const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -592,8 +527,7 @@ export class AuthService {
         console.error('🔐 [AuthService] Email sign-up error:', error);
         
         if (error.message.includes('Error sending confirmation email')) {
-          console.log('🔐 [AuthService] Email confirmation disabled, proceeding with sign-up...');
-          isEmailConfirmationDisabled = true;
+                    isEmailConfirmationDisabled = true;
           // Continue with the sign-up process even if email confirmation fails
           // This is useful for development when email confirmation is disabled
         } else {
@@ -604,17 +538,11 @@ export class AuthService {
       }
 
       if (data.user) {
-        console.log('🔐 [AuthService] Email sign-up successful:', data.user.email);
-        console.log('🔐 [AuthService] User confirmation required:', !data.user.email_confirmed_at);
-        
-        // Check if email confirmation is required
+                        // Check if email confirmation is required
         if (!data.user.email_confirmed_at) {
-          console.log('🔐 [AuthService] Email confirmation required, user not yet signed in');
-          
-          // For development, if email confirmation is disabled, proceed anyway
+                    // For development, if email confirmation is disabled, proceed anyway
           if (isEmailConfirmationDisabled) {
-            console.log('🔐 [AuthService] Email confirmation disabled, creating user record anyway...');
-            toastService.success('Account created successfully! Welcome to Otakon!');
+                        toastService.success('Account created successfully! Welcome to Otakon!');
             await this.loadUserFromSupabase(data.user.id);
             return { success: true, user: this.authState.user || undefined };
           }
@@ -666,9 +594,7 @@ export class AuthService {
 
   async signOut(): Promise<void> {
     try {
-      console.log('🔐 [AuthService] Starting sign out process...');
-      
-      // End session tracking before signing out
+            // End session tracking before signing out
       await sessionService.endSession();
       
       // Sign out from Supabase FIRST to clear session tokens
@@ -683,9 +609,7 @@ export class AuthService {
         }
       }
       keysToRemove.forEach(key => localStorage.removeItem(key));
-      console.log('🔐 [AuthService] Cleared Supabase localStorage keys:', keysToRemove);
-      
-      // Clear all app-specific local storage
+            // Clear all app-specific local storage
       localStorage.removeItem('otakon_auth_method');
       localStorage.removeItem('otakon_remember_me');
       localStorage.removeItem('otakon_remembered_email');
@@ -706,8 +630,7 @@ export class AuthService {
       // Clear auth state
       this.updateAuthState({ user: null, isLoading: false, error: null });
       
-      console.log('🔐 [AuthService] Sign out completed successfully');
-      toastService.success('Successfully signed out. See you next time!');
+            toastService.success('Successfully signed out. See you next time!');
     } catch (error) {
       console.error('🔐 [AuthService] Sign out error:', error);
       toastService.error('Sign out failed. Please try again.');
@@ -724,13 +647,10 @@ export class AuthService {
     return this.authState;
   }
 
-
   // Method to clear all user data for testing multiple OAuth providers
   async clearAllUserData(): Promise<void> {
     try {
-      console.log('🔐 [AuthService] Clearing all user data for testing...');
-      
-      // Clear localStorage
+            // Clear localStorage
       localStorage.removeItem('otakon_auth_method');
       localStorage.removeItem('otakon_remember_me');
       localStorage.removeItem('otakon_remembered_email');
@@ -741,8 +661,7 @@ export class AuthService {
       // Clear auth state
       this.updateAuthState({ user: null, isLoading: false, error: null });
       
-      console.log('🔐 [AuthService] All user data cleared successfully');
-    } catch (error) {
+          } catch (error) {
       console.error('🔐 [AuthService] Error clearing user data:', error);
     }
   }
@@ -750,12 +669,9 @@ export class AuthService {
   // Method to check which provider was used for a given email
   async checkEmailProvider(email: string): Promise<{ provider: string | null; message: string }> {
     try {
-      console.log('🔐 [AuthService] Checking provider for email:', email);
-      
-      // For now, skip provider checking during sign-in to avoid 401 errors
+            // For now, skip provider checking during sign-in to avoid 401 errors
       // This will be handled by the actual sign-in attempt
-      console.log('🔐 [AuthService] Skipping provider check to avoid 401 errors during sign-in');
-      return { provider: null, message: '' };
+            return { provider: null, message: '' };
     } catch (error) {
       console.error('🔐 [AuthService] Error checking email provider:', error);
       return { provider: null, message: '' };
@@ -764,8 +680,7 @@ export class AuthService {
 
   async resendConfirmationEmail(email: string): Promise<AuthResult> {
     try {
-      console.log('🔐 [AuthService] Resending confirmation email for:', email);
-      this.updateAuthState({ isLoading: true, error: null });
+            this.updateAuthState({ isLoading: true, error: null });
 
       const { error } = await supabase.auth.resend({
         type: 'signup',
@@ -782,8 +697,7 @@ export class AuthService {
         return { success: false, error: error.message };
       }
 
-      console.log('🔐 [AuthService] Confirmation email resent successfully');
-      toastService.success('Confirmation email sent! Please check your inbox.');
+            toastService.success('Confirmation email sent! Please check your inbox.');
       this.updateAuthState({ isLoading: false, error: null });
       return { 
         success: true, 
@@ -801,9 +715,7 @@ export class AuthService {
   // Method to test Discord OAuth configuration
   async testDiscordConfiguration(): Promise<{ isValid: boolean; message: string; details: Record<string, unknown> }> {
     try {
-      console.log('🔐 [AuthService] Testing Discord OAuth configuration...');
-      
-      // Check if we can access Supabase auth
+            // Check if we can access Supabase auth
       const { error: sessionError } = await supabase.auth.getSession();
       if (sessionError) {
         return {
@@ -819,9 +731,7 @@ export class AuthService {
       
       // Test redirect URL construction
       const redirectUrl = `${window.location.origin}/auth/callback`;
-      console.log('🔐 [AuthService] Test redirect URL:', redirectUrl);
-      
-      return {
+            return {
         isValid: true,
         message: 'Discord OAuth configuration appears to be valid',
         details: {
@@ -842,8 +752,7 @@ export class AuthService {
 
   async refreshUser(): Promise<void> {
     if (this.authState.user) {
-      console.log('🔐 [AuthService] Refreshing user data...');
-      // Invalidate cache before loading to ensure fresh data
+            // Invalidate cache before loading to ensure fresh data
       await this.invalidateUserCache(this.authState.user.authUserId);
       await this.loadUserFromSupabase(this.authState.user.authUserId);
       
@@ -879,8 +788,7 @@ export class AuthService {
       await this.invalidateUserCache(authUserId);
       await this.loadUserFromSupabase(authUserId);
       
-      console.log('✅ Profile preferences updated successfully');
-      toastService.success('Profile updated successfully!');
+            toastService.success('Profile updated successfully!');
     } catch (error) {
       console.error('Failed to update profile preferences:', error);
       toastService.error('Failed to update profile. Please try again.');
@@ -909,9 +817,7 @@ export class AuthService {
       return;
     }
     
-    console.log('🧹 [AuthService] Cleaning up...');
-    
-    this.isDestroyed = true;
+        this.isDestroyed = true;
     
     // Clear cache
     this.clearCache();
@@ -931,8 +837,7 @@ export class AuthService {
     });
     this.cleanupFunctions.length = 0;
     
-    console.log('🧹 [AuthService] Cleanup completed');
-  }
+      }
 
 }
 

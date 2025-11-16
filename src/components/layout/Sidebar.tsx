@@ -164,7 +164,6 @@ const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
 
-
           {/* Add Game Button */}
           {onAddGame && (
             <div className="px-4 sm:px-6 pt-4 pb-2">

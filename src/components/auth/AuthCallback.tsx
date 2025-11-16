@@ -16,30 +16,20 @@ const AuthCallback: React.FC<AuthCallbackProps> = ({ onAuthSuccess, onAuthError 
   useEffect(() => {
     // Prevent multiple processing using ref (more reliable than state)
     if (hasProcessedRef.current) {
-      console.log('🔐 [AuthCallback] Already processed, skipping...');
-      return;
+            return;
     }
     
     hasProcessedRef.current = true;
     
     const handleAuthCallback = async () => {
       try {
-        console.log('🔐 [AuthCallback] Handling OAuth callback...');
-        console.log('🔐 [AuthCallback] Current URL:', window.location.href);
-        console.log('🔐 [AuthCallback] URL search params:', window.location.search);
-        console.log('🔐 [AuthCallback] URL hash:', window.location.hash);
-
-        // Check for OAuth parameters FIRST before Supabase processes them
+                                        // Check for OAuth parameters FIRST before Supabase processes them
         const hasOAuthCode = window.location.search.includes('code') || window.location.hash.includes('access_token');
-        console.log('🔐 [AuthCallback] Has OAuth code/token:', hasOAuthCode);
-        
-        // If we have OAuth code/token, always process it
+                // If we have OAuth code/token, always process it
         if (!hasOAuthCode) {
-          console.log('🔐 [AuthCallback] No OAuth parameters found, checking existing session...');
-          const existingSession = await supabase.auth.getSession();
+                    const existingSession = await supabase.auth.getSession();
           if (existingSession.data.session) {
-            console.log('🔐 [AuthCallback] Already logged in, no OAuth to process:', existingSession.data.session.user.email);
-            const basePath = window.location.hostname === 'localhost' ? '/' : '/Otagon/';
+                        const basePath = window.location.hostname === 'localhost' ? '/' : '/Otagon/';
             
             // Clean URL without navigation to prevent opening PWA from browser
             window.history.replaceState({}, document.title, basePath);
@@ -51,9 +41,7 @@ const AuthCallback: React.FC<AuthCallbackProps> = ({ onAuthSuccess, onAuthError 
         }
         
         // Process OAuth callback
-        console.log('🔐 [AuthCallback] Processing OAuth callback...');
-
-        // Check for OAuth errors in URL parameters
+                // Check for OAuth errors in URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         
@@ -106,31 +94,19 @@ const AuthCallback: React.FC<AuthCallbackProps> = ({ onAuthSuccess, onAuthError 
         
         // Set up auth state change listener
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-          console.log('🔐 [AuthCallback] Auth state change:', { event, session });
-          
-          if (event === 'SIGNED_IN' && session?.user) {
-            console.log('🔐 [AuthCallback] User signed in:', session.user.email);
-            console.log('🔐 [AuthCallback] User metadata:', session.user.user_metadata);
-            console.log('🔐 [AuthCallback] App metadata:', session.user.app_metadata);
-            console.log('🔐 [AuthCallback] User identities:', session.user.identities);
-            
-            // Detect the OAuth provider
+                    if (event === 'SIGNED_IN' && session?.user) {
+                                                            // Detect the OAuth provider
             const provider = session.user.app_metadata?.provider || 
                            session.user.app_metadata?.providers?.[0] || 
                            session.user.identities?.[0]?.provider || 
                            'unknown';
-            console.log('🔐 [AuthCallback] Detected provider:', provider);
-            
-            // Wait for database trigger to create user record
-            console.log('🔐 [AuthCallback] Waiting for database trigger to create user record...');
-            await new Promise(resolve => setTimeout(resolve, 1500)); // Increased wait time for Discord
+                        // Wait for database trigger to create user record
+                        await new Promise(resolve => setTimeout(resolve, 1500)); // Increased wait time for Discord
             
             // Load user data through AuthService
             try {
               await authService.loadUserFromSupabase(session.user.id);
-              console.log('🔐 [AuthCallback] User data loaded successfully');
-              
-              // User is authenticated, notify parent component
+                            // User is authenticated, notify parent component
               setStatus('success');
               onAuthSuccess();
             } catch (loadError) {
@@ -143,8 +119,7 @@ const AuthCallback: React.FC<AuthCallbackProps> = ({ onAuthSuccess, onAuthError 
             // Unsubscribe from auth state changes
             subscription.unsubscribe();
           } else if (event === 'SIGNED_OUT') {
-            console.log('🔐 [AuthCallback] User signed out');
-            setError('Authentication failed');
+                        setError('Authentication failed');
             setStatus('error');
             onAuthError('Authentication failed');
             subscription.unsubscribe();
@@ -156,9 +131,7 @@ const AuthCallback: React.FC<AuthCallbackProps> = ({ onAuthSuccess, onAuthError 
         
         // Also try to get the current session
         const { data, error } = await supabase.auth.getSession();
-        console.log('🔐 [AuthCallback] Current session:', { data, error });
-        
-        if (error) {
+                if (error) {
           console.error('🔐 [AuthCallback] Auth callback error:', error);
           setError(error.message);
           setStatus('error');
@@ -168,11 +141,8 @@ const AuthCallback: React.FC<AuthCallbackProps> = ({ onAuthSuccess, onAuthError 
         }
 
         if (data.session?.user) {
-          console.log('🔐 [AuthCallback] User already authenticated:', data.session.user.email);
-          
-          // Wait for database trigger to create user record
-          console.log('🔐 [AuthCallback] Waiting for database trigger to create user record...');
-          await new Promise(resolve => setTimeout(resolve, 1000));
+                    // Wait for database trigger to create user record
+                    await new Promise(resolve => setTimeout(resolve, 1000));
           
           // Load user data through AuthService
           await authService.loadUserFromSupabase(data.session.user.id);
@@ -182,29 +152,19 @@ const AuthCallback: React.FC<AuthCallbackProps> = ({ onAuthSuccess, onAuthError 
           onAuthSuccess();
           subscription.unsubscribe();
         } else {
-          console.log('🔐 [AuthCallback] No session found, waiting for auth state change...');
-          console.log('🔐 [AuthCallback] URL search params:', window.location.search);
-          
-          // Try to handle OAuth callback manually if there are URL parameters
+                              // Try to handle OAuth callback manually if there are URL parameters
           const urlParams = new URLSearchParams(window.location.search);
           const hashParams = new URLSearchParams(window.location.hash.substring(1));
           
           if (urlParams.has('code') || urlParams.has('error') || hashParams.has('access_token')) {
-            console.log('🔐 [AuthCallback] OAuth parameters found, trying manual handling...');
-            
-            // Wait a bit for the OAuth process to complete
+                        // Wait a bit for the OAuth process to complete
             await new Promise(resolve => setTimeout(resolve, 1000));
             
             // Try to get session again
             const retrySession = await supabase.auth.getSession();
-            console.log('🔐 [AuthCallback] Retry session after manual handling:', retrySession);
-            
-            if (retrySession.data.session?.user) {
-              console.log('🔐 [AuthCallback] User authenticated after retry:', retrySession.data.session.user.email);
-              
-              // Wait for database trigger to create user record
-              console.log('🔐 [AuthCallback] Waiting for database trigger to create user record...');
-              await new Promise(resolve => setTimeout(resolve, 500));
+                        if (retrySession.data.session?.user) {
+                            // Wait for database trigger to create user record
+                            await new Promise(resolve => setTimeout(resolve, 500));
               
               // Load user data through AuthService
               await authService.loadUserFromSupabase(retrySession.data.session.user.id);
@@ -220,8 +180,7 @@ const AuthCallback: React.FC<AuthCallbackProps> = ({ onAuthSuccess, onAuthError 
           // Set a timeout to handle cases where auth state change doesn't fire
           setTimeout(() => {
             if (status === 'loading') {
-              console.log('🔐 [AuthCallback] Timeout waiting for auth state change');
-              setError('Authentication timeout');
+                            setError('Authentication timeout');
               setStatus('error');
               onAuthError('Authentication timeout');
               subscription.unsubscribe();

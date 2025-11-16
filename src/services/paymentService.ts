@@ -26,12 +26,7 @@ class PaymentService implements IPaymentService {
    * @future Will load Stripe SDK and initialize payment provider
    */
   async initialize(config: PaymentConfig): Promise<void> {
-    console.log('[PaymentService] Initializing with config:', { 
-      provider: config.provider,
-      isTestMode: config.isTestMode 
-    });
-    
-    this.config = config;
+        this.config = config;
     this.isInitialized = true;
 
     // @todo: Load Stripe SDK
@@ -53,9 +48,7 @@ class PaymentService implements IPaymentService {
   ): Promise<Subscription> {
     this.ensureInitialized();
 
-    console.log('[PaymentService] Creating subscription:', { userId, tier, interval });
-
-    // @todo: Implement Stripe subscription creation
+        // @todo: Implement Stripe subscription creation
     // const response = await fetch('/api/subscriptions', {
     //   method: 'POST',
     //   headers: { 'Content-Type': 'application/json' },
@@ -72,9 +65,7 @@ class PaymentService implements IPaymentService {
    */
   async updateSubscription(subscriptionId: string, tier: 'pro' | 'vanguard_pro'): Promise<Subscription> {
     this.ensureInitialized();
-    console.log('[PaymentService] Updating subscription:', { subscriptionId, tier });
-    
-    // @todo: Implement subscription update
+        // @todo: Implement subscription update
     throw new Error('Payment integration not yet implemented');
   }
 
@@ -86,9 +77,7 @@ class PaymentService implements IPaymentService {
    */
   async cancelSubscription(subscriptionId: string, immediate = false): Promise<void> {
     this.ensureInitialized();
-    console.log('[PaymentService] Canceling subscription:', { subscriptionId, immediate });
-    
-    // @todo: Implement subscription cancellation
+        // @todo: Implement subscription cancellation
     throw new Error('Payment integration not yet implemented');
   }
 
@@ -97,9 +86,7 @@ class PaymentService implements IPaymentService {
    */
   async reactivateSubscription(subscriptionId: string): Promise<Subscription> {
     this.ensureInitialized();
-    console.log('[PaymentService] Reactivating subscription:', { subscriptionId });
-    
-    // @todo: Implement subscription reactivation
+        // @todo: Implement subscription reactivation
     throw new Error('Payment integration not yet implemented');
   }
 
@@ -108,9 +95,7 @@ class PaymentService implements IPaymentService {
    */
   async addPaymentMethod(userId: string, paymentMethodData: unknown): Promise<PaymentMethod> {
     this.ensureInitialized();
-    console.log('[PaymentService] Adding payment method for user:', userId);
-    
-    // @todo: Implement payment method addition
+        // @todo: Implement payment method addition
     // Use Stripe Elements or similar
     throw new Error('Payment integration not yet implemented');
   }
@@ -120,9 +105,7 @@ class PaymentService implements IPaymentService {
    */
   async removePaymentMethod(paymentMethodId: string): Promise<void> {
     this.ensureInitialized();
-    console.log('[PaymentService] Removing payment method:', paymentMethodId);
-    
-    // @todo: Implement payment method removal
+        // @todo: Implement payment method removal
     throw new Error('Payment integration not yet implemented');
   }
 
@@ -131,9 +114,7 @@ class PaymentService implements IPaymentService {
    */
   async setDefaultPaymentMethod(paymentMethodId: string): Promise<void> {
     this.ensureInitialized();
-    console.log('[PaymentService] Setting default payment method:', paymentMethodId);
-    
-    // @todo: Implement setting default payment method
+        // @todo: Implement setting default payment method
     throw new Error('Payment integration not yet implemented');
   }
 
@@ -142,9 +123,7 @@ class PaymentService implements IPaymentService {
    */
   async getPaymentMethods(userId: string): Promise<PaymentMethod[]> {
     this.ensureInitialized();
-    console.log('[PaymentService] Getting payment methods for user:', userId);
-    
-    // @todo: Implement fetching payment methods
+        // @todo: Implement fetching payment methods
     throw new Error('Payment integration not yet implemented');
   }
 
@@ -153,9 +132,7 @@ class PaymentService implements IPaymentService {
    */
   async getInvoices(userId: string, limit = 10): Promise<Invoice[]> {
     this.ensureInitialized();
-    console.log('[PaymentService] Getting invoices for user:', userId, { limit });
-    
-    // @todo: Implement fetching invoices
+        // @todo: Implement fetching invoices
     throw new Error('Payment integration not yet implemented');
   }
 
@@ -164,9 +141,7 @@ class PaymentService implements IPaymentService {
    */
   async downloadInvoice(invoiceId: string): Promise<Blob> {
     this.ensureInitialized();
-    console.log('[PaymentService] Downloading invoice:', invoiceId);
-    
-    // @todo: Implement invoice download
+        // @todo: Implement invoice download
     throw new Error('Payment integration not yet implemented');
   }
 
@@ -177,9 +152,7 @@ class PaymentService implements IPaymentService {
    */
   async handleWebhook(event: unknown): Promise<void> {
     this.ensureInitialized();
-    console.log('[PaymentService] Processing webhook event:', event);
-    
-    // @todo: Implement webhook handling for:
+        // @todo: Implement webhook handling for:
     // - payment_intent.succeeded
     // - payment_intent.failed
     // - customer.subscription.created

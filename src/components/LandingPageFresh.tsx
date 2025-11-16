@@ -16,8 +16,6 @@ import feature4 from '../assets/images/feature-images/feature4.png';
 import feature5 from '../assets/images/feature-images/feature5.png';
 import feature6 from '../assets/images/feature-images/feature6.png';
 
-console.log('🖼️ LandingPageFresh - Feature images imported:', { feature1, feature2, feature3, feature4, feature5, feature6 });
-
 const GamepadIcon = ({ className }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="2" y="6" width="20" height="12" rx="2"></rect>
@@ -27,7 +25,6 @@ const GamepadIcon = ({ className }: { className?: string }) => (
         <path d="M10 10v4"></path>
     </svg>
 );
-
 
 const ProBadge = () => (
     <span className="text-sm font-bold bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white px-2.5 py-1 rounded-full uppercase tracking-wider ml-3">
@@ -114,8 +111,7 @@ const FeatureIcon = ({ icon }: { icon: 'eye' | 'bookmark' | 'network' | 'mic' | 
 };
 
 const Feature = React.memo(({ title, description, icon, image }: { title: React.ReactNode, description: string, icon?: 'eye' | 'bookmark' | 'network' | 'mic' | 'insights' | 'cpu', image?: string }) => {
-    console.log('🎨 Feature rendering:', { title, image, hasImage: !!image });
-    return (
+        return (
         <div className="flex flex-col items-center text-center group p-6 rounded-2xl md:hover:bg-gradient-to-br md:hover:from-neutral-800/20 md:hover:to-neutral-900/20 transition-all duration-500">
             <div className="w-full max-w-4xl aspect-video mb-6 animate-fade-slide-up md:group-hover:scale-105 transition-transform duration-500">
                 {image ? (
@@ -490,12 +486,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
     }
   };
 
-
     const handleScrollTo = (id: string) => (e: React.MouseEvent) => {
         e.preventDefault();
         document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
     };
-
 
   return (
         <div 
@@ -719,7 +713,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                         </p>
                     </div>
                 </section>
-
 
                 {/* How It Works Section */}
                 <section className="py-10 md:py-14 bg-transparent relative">
@@ -1027,7 +1020,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                     </div>
                 </section>
 
-
                 {/* Pricing Section */}
                 <section id="pricing" className="py-8 md:py-10 bg-transparent">
                     <div className="container mx-auto px-8">
@@ -1172,7 +1164,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                     </div>
                 </section>
 
-
                 {/* Earn by Playing Section */}
                 <section id="earn-by-playing" className="hidden py-10 md:py-14 bg-transparent">
                     <div className="container mx-auto px-6 max-w-4xl">
@@ -1316,8 +1307,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                         <div className="flex flex-col items-center md:items-start text-center md:text-left order-2 md:order-1">
                             <button 
                                 onClick={(e) => {
-                                  console.log('[LandingPageFresh] Footer logo clicked');
-                                  onGetStarted();
+                                                                    onGetStarted();
                                 }}
                                 className="flex items-center gap-2 cursor-pointer hover:scale-105 transition-transform duration-300"
                             >

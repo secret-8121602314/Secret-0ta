@@ -13,9 +13,7 @@ const ProFeaturesRoute: React.FC = () => {
   const { user } = useLoaderData() as { user: User | null };
 
   const handleComplete = async () => {
-    console.log('[ProFeaturesRoute] Complete clicked, updating database...');
-    
-    // Update database FIRST to avoid race condition with router loader
+        // Update database FIRST to avoid race condition with router loader
     if (user) {
       try {
         const { error } = await supabase
@@ -35,8 +33,7 @@ const ProFeaturesRoute: React.FC = () => {
         if (error) {
           console.error('[ProFeaturesRoute] DB update failed:', error);
         } else {
-          console.log('[ProFeaturesRoute] DB update complete, navigating to app...');
-        }
+                  }
       } catch (error) {
         console.error('[ProFeaturesRoute] DB update error:', error);
       }
@@ -48,13 +45,11 @@ const ProFeaturesRoute: React.FC = () => {
 
   const handleUpgrade = () => {
     // TODO: Implement upgrade modal/flow
-    console.log('[ProFeaturesRoute] Upgrade to Pro clicked');
-  };
+      };
 
   const handleUpgradeToVanguard = () => {
     // TODO: Implement Vanguard upgrade modal/flow
-    console.log('[ProFeaturesRoute] Upgrade to Vanguard clicked');
-  };
+      };
 
   return (
     <ProFeaturesSplashScreen

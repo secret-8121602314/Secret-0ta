@@ -32,18 +32,13 @@ class GameTabService {
    * If tab already exists, returns it and optionally updates subtabs with new AI insights
    */
   async createGameTab(data: GameTabCreationData): Promise<Conversation> {
-    console.log('🎮 [GameTabService] Creating game tab:', data);
-
-    // ✅ IDEMPOTENT: Check if tab already exists
+        // ✅ IDEMPOTENT: Check if tab already exists
     const existingConv = await ConversationService.getConversation(data.conversationId);
     
     if (existingConv) {
-      console.log('🎮 [GameTabService] Tab already exists:', existingConv.title);
-      
-      // ✅ Update subtabs if they're loading and we have new AI response
+            // ✅ Update subtabs if they're loading and we have new AI response
       if (data.aiResponse && existingConv.subtabs?.some(tab => tab.status === 'loading' || tab.content === 'Loading...')) {
-        console.log('🎮 [GameTabService] Updating loading subtabs with new AI insights');
-        const updatedSubtabs = this.extractInsightsFromAIResponse(
+                const updatedSubtabs = this.extractInsightsFromAIResponse(
           data.aiResponse, 
           existingConv.subtabs
         );
@@ -61,9 +56,7 @@ class GameTabService {
     }
 
     // Tab doesn't exist - create new one
-    console.log('🎮 [GameTabService] Creating new tab for:', data.gameTitle);
-    
-    // For unreleased games, don't generate subtabs
+        // For unreleased games, don't generate subtabs
     let subTabs: SubTab[] = [];
     
     if (!data.isUnreleased) {

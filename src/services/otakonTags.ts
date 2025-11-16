@@ -12,21 +12,16 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
     const tagName = match[1];
     let tagValue: unknown = match[2].trim();
 
-    console.log(`🔍 [OtakonTags] Found tag: ${tagName}, raw value: "${tagValue}"`);
-
-    // Parse JSON for complex tags
+        // Parse JSON for complex tags
     try {
       if (tagValue.startsWith('{') && tagValue.endsWith('}')) {
         tagValue = JSON.parse(tagValue);
-        console.log(`🔍 [OtakonTags] Parsed as JSON object:`, tagValue);
-      }
+              }
       if (tagValue.startsWith('[') && tagValue.endsWith(']')) {
         tagValue = JSON.parse(tagValue.replace(/'/g, '"'));
-        console.log(`🔍 [OtakonTags] Parsed as JSON array:`, tagValue);
-      }
+              }
     } catch (_e) {
-      console.log(`🔍 [OtakonTags] JSON parsing failed, keeping as string:`, tagValue);
-      // Keep as string if not valid JSON
+            // Keep as string if not valid JSON
     }
 
     tags.set(tagName, tagValue);

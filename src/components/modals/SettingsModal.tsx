@@ -34,7 +34,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
   }
 
-
   const handleTrialStart = () => {
     // Refresh user data to reflect trial status
     const currentUser = authService.getCurrentUser();
@@ -44,7 +43,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       onClose();
     }
   };
-
 
   const getTierDisplayName = (tier: UserTier) => {
     switch (tier) {
@@ -481,8 +479,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     });
                     
                     // Show success message (you can add a toast notification here)
-                    console.log('Profile preferences saved:', profileData);
-                    onClose();
+                                        onClose();
                   }}
                   className="w-full py-3 px-4 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] hover:from-[#D42A2A] hover:to-[#C87A1A] text-white rounded-lg font-medium transition-all hover:scale-105 active:scale-95"
                 >

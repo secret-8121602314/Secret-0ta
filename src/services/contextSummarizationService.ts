@@ -42,9 +42,7 @@ class ContextSummarizationService {
     }
 
     const totalWords = this.getTotalWordCount(conversation.messages);
-    console.log(`📊 [ContextSummarization] Total words in conversation: ${totalWords}`);
-
-    // Summarize if exceeding 3x the target (900 words) to keep context manageable
+        // Summarize if exceeding 3x the target (900 words) to keep context manageable
     return totalWords > this.MAX_WORDS * 3;
   }
 
@@ -71,9 +69,7 @@ class ContextSummarizationService {
     gameTitle?: string,
     genre?: string
   ): Promise<SummarizationResult> {
-    console.log(`📝 [ContextSummarization] Summarizing ${messages.length} messages`);
-
-    const originalWordCount = this.getTotalWordCount(messages);
+        const originalWordCount = this.getTotalWordCount(messages);
 
     // Build context for summarization
     const conversationText = messages
@@ -169,13 +165,10 @@ Provide ONLY the summary, no additional commentary.`;
    */
   async applyContextSummarization(conversation: Conversation): Promise<Conversation> {
     if (!this.shouldSummarize(conversation)) {
-      console.log('📊 [ContextSummarization] No summarization needed');
-      return conversation;
+            return conversation;
     }
 
-    console.log('🔄 [ContextSummarization] Applying context summarization...');
-
-    const { toSummarize, toKeep } = this.splitMessages(conversation.messages);
+        const { toSummarize, toKeep } = this.splitMessages(conversation.messages);
 
     if (toSummarize.length === 0) {
       return conversation; // Nothing to summarize

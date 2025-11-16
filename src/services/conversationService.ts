@@ -33,8 +33,7 @@ export class ConversationService {
       const user = authService.getCurrentUser();
       return user?.authUserId || null;
     } catch (error) {
-      console.warn('Could not get user ID from auth service:', error);
-      return null;
+            return null;
     }
   }
 
@@ -48,8 +47,7 @@ export class ConversationService {
         return user.tier;
       }
     } catch (error) {
-      console.warn('Could not get user tier from auth service:', error);
-    }
+          }
     
     // Fallback to localStorage
     const user = StorageService.get(STORAGE_KEYS.USER, null) as import('../types').User | null;
@@ -154,8 +152,7 @@ export class ConversationService {
       
       return this.conversationsCache.data;
     }
-    console.log('🔍 [ConversationService] No valid cache available');
-    return null;
+        return null;
   }
 
   static async getConversations(skipCache = false): Promise<Conversations> {
@@ -171,8 +168,7 @@ export class ConversationService {
     // ✅ PRIMARY: Load from Supabase
     if (userId) {
       try {
-        console.log('🔍 [ConversationService] Loading conversations from Supabase for user:', userId);
-        const supabaseConvs = await getSupabaseService().getConversations(userId);
+                const supabaseConvs = await getSupabaseService().getConversations(userId);
         
         // Convert array to object format
         conversations = supabaseConvs.reduce((acc, conv) => {
@@ -221,28 +217,21 @@ export class ConversationService {
       }
     } else {
       // No user logged in, use localStorage
-      console.log('🔍 [ConversationService] No user ID, loading from localStorage');
-      conversations = StorageService.get(STORAGE_KEYS.CONVERSATIONS, {}) as Conversations;
+            conversations = StorageService.get(STORAGE_KEYS.CONVERSATIONS, {}) as Conversations;
     }
     
     // Migration: Update existing "General Chat" or "Everything else" titles to "Game Hub"
     let needsUpdate = false;
     Object.values(conversations).forEach((conv: Conversation) => {
       if (conv.title === 'General Chat' || conv.title === 'Everything else') {
-        console.log('🎮 [GAME_HUB_PROTECTION] Migrating legacy conversation to Game Hub:', {
-          oldTitle: conv.title,
-          oldId: conv.id,
-          oldIsGameHub: conv.isGameHub
-        });
-        conv.title = DEFAULT_CONVERSATION_TITLE; // "Game Hub"
+                conv.title = DEFAULT_CONVERSATION_TITLE; // "Game Hub"
         conv.id = GAME_HUB_ID; // Ensure ID is correct
         conv.isGameHub = true; // Mark as Game Hub
         needsUpdate = true;
       }
       // Also ensure any conversation with game-hub ID has the flag set
       if (conv.id === GAME_HUB_ID && !conv.isGameHub) {
-        console.warn('🎮 [GAME_HUB_PROTECTION] Fixing missing isGameHub flag for:', conv.id);
-        conv.isGameHub = true;
+                conv.isGameHub = true;
         needsUpdate = true;
       }
     });
@@ -266,19 +255,13 @@ export class ConversationService {
     
     // Always save to localStorage as backup
     StorageService.set(STORAGE_KEYS.CONVERSATIONS, conversations);
-    console.log('🔍 [ConversationService] Saved to localStorage');
-    
-    // ✅ PRIMARY: Save to Supabase if user is logged in (with retry logic)
+        // ✅ PRIMARY: Save to Supabase if user is logged in (with retry logic)
     if (userId) {
       try {
-        console.log('🔍 [ConversationService] Syncing to Supabase...');
-        
-        // ✅ FIX: Fetch existing conversations ONCE before the loop to prevent race conditions
+                // ✅ FIX: Fetch existing conversations ONCE before the loop to prevent race conditions
         const existingConvs = await getSupabaseService().getConversations(userId);
         const existingIds = new Set(existingConvs.map(c => c.id));
-        console.log('🔍 [ConversationService] Found', existingIds.size, 'existing conversations in Supabase');
-        
-        // Save each conversation to Supabase
+                // Save each conversation to Supabase
         const savePromises = Object.values(conversations).map(async (conv) => {
           try {
             // Check if conversation exists in Supabase (using pre-fetched list)
@@ -295,15 +278,12 @@ export class ConversationService {
               }
             }
           } catch (error) {
-            console.warn(`Failed to save conversation ${conv.id} to Supabase:`, error);
-            // Don't re-throw - allow other conversations to sync
+                        // Don't re-throw - allow other conversations to sync
           }
         });
         
         await Promise.all(savePromises);
-        console.log('🔍 [ConversationService] Synced to Supabase successfully');
-        
-      } catch (error) {
+              } catch (error) {
         console.error('🔍 [ConversationService] Failed to sync to Supabase:', error);
         
         // ✅ Retry with exponential backoff (3 attempts)
@@ -327,8 +307,7 @@ export class ConversationService {
   static createConversation(title?: string, id?: string): Conversation {
     // Validate title
     if (title && title.trim().length > 100) {
-      console.warn('⚠️ [ConversationService] Title too long, truncating');
-      title = title.trim().substring(0, 100);
+            title = title.trim().substring(0, 100);
     }
     
     const now = Date.now();
@@ -336,16 +315,7 @@ export class ConversationService {
     // Use 'game-hub' as ID for the default Game Hub conversation
     const conversationId = id || (isGameHub ? GAME_HUB_ID : `conv_${now}`);
     
-    console.log('🎮 [GAME_HUB_PROTECTION] createConversation called:', {
-      title,
-      providedId: id,
-      isGameHub,
-      conversationId,
-      GAME_HUB_ID_VALUE: GAME_HUB_ID,
-      DEFAULT_TITLE: DEFAULT_CONVERSATION_TITLE
-    });
-    
-    return {
+        return {
       id: conversationId,
       title: title || DEFAULT_CONVERSATION_TITLE,
       messages: [],
@@ -363,8 +333,7 @@ export class ConversationService {
   static async addConversation(conversation: Conversation): Promise<{ success: boolean; reason?: string }> {
     // ✅ PERFORMANCE: Check if there's already a pending creation for this conversation
     if (this.pendingCreations.has(conversation.id)) {
-      console.log('🔍 [ConversationService] Deduplicating conversation creation for:', conversation.id);
-      return await this.pendingCreations.get(conversation.id)!;
+            return await this.pendingCreations.get(conversation.id)!;
     }
 
     // Create a new promise and store it
@@ -408,9 +377,7 @@ export class ConversationService {
     
     // ✅ Conversations are unlimited - add the new conversation
     conversations[conversation.id] = conversation;
-    console.log('🔍 [ConversationService] Adding new conversation:', conversation.id, conversation.title);
-    
-    // ✅ PRIMARY: Save to Supabase first if user logged in
+        // ✅ PRIMARY: Save to Supabase first if user logged in
     if (userId) {
       try {
         // Pass the conversation with its ID to ensure Game Hub uses 'game-hub' consistently
@@ -418,13 +385,11 @@ export class ConversationService {
         if (newId) {
           // Update conversation with Supabase-returned ID if different
           if (newId !== conversation.id) {
-            console.log('🔍 [ConversationService] Supabase returned different ID, updating:', conversation.id, '→', newId);
-            delete conversations[conversation.id];
+                        delete conversations[conversation.id];
             conversation.id = newId;
             conversations[newId] = conversation;
           } else {
-            console.log('🔍 [ConversationService] Created in Supabase with consistent ID:', newId);
-          }
+                      }
         }
       } catch (error) {
         console.error('🔍 [ConversationService] Failed to create in Supabase:', error);
@@ -434,8 +399,7 @@ export class ConversationService {
     // Save to localStorage as backup
     await this.setConversations(conversations);
     
-    console.log('🔍 [ConversationService] New conversation persisted successfully');
-    return { success: true };
+        return { success: true };
   }
 
   static async updateConversation(id: string, updates: Partial<Conversation>): Promise<void> {
@@ -453,8 +417,7 @@ export class ConversationService {
       if (userId) {
         try {
           await getSupabaseService().updateConversation(id, conversations[id]);
-          console.log('🔍 [ConversationService] Updated conversation in Supabase:', id);
-        } catch (error) {
+                  } catch (error) {
           console.error('🔍 [ConversationService] Failed to update in Supabase:', error);
         }
       }
@@ -470,15 +433,7 @@ export class ConversationService {
     
     // ✅ PROTECTION: Prevent deletion of Game Hub
     const conversation = conversations[id];
-    console.log('🎮 [GAME_HUB_PROTECTION] deleteConversation called:', { 
-      conversationId: id, 
-      isGameHub: conversation?.isGameHub, 
-      matchesConstant: id === GAME_HUB_ID,
-      conversationTitle: conversation?.title,
-      GAME_HUB_ID_VALUE: GAME_HUB_ID
-    });
-    
-    if (conversation?.isGameHub || id === GAME_HUB_ID) {
+        if (conversation?.isGameHub || id === GAME_HUB_ID) {
       console.error('🚫 [GAME_HUB_PROTECTION] BLOCKED: Attempted to delete Game Hub conversation!');
       toastService.warning('Cannot delete the Game Hub conversation. It\'s your main conversation space!');
       throw new Error('Cannot delete the Game Hub conversation');
@@ -490,8 +445,7 @@ export class ConversationService {
     if (userId) {
       try {
         await getSupabaseService().deleteConversation(id);
-        console.log('🔍 [ConversationService] Deleted conversation from Supabase:', id);
-      } catch (error) {
+              } catch (error) {
         console.error('🔍 [ConversationService] Failed to delete from Supabase:', error);
       }
     }
@@ -511,8 +465,7 @@ export class ConversationService {
       // ✅ Check for duplicates to prevent race condition issues
       const exists = conversation.messages.some(m => m.id === message.id);
       if (exists) {
-        console.warn(`⚠️ [ConversationService] Message ${message.id} already exists in conversation ${conversationId}, skipping`);
-        return { success: true, reason: 'Message already exists' };
+                return { success: true, reason: 'Message already exists' };
       }
       
       // Simply add the message - no limits
@@ -612,8 +565,7 @@ export class ConversationService {
     try {
       await cacheService.clear();
     } catch (error) {
-      console.warn('Failed to clear conversation cache:', error);
-    }
+          }
   }
 
   static async clearConversation(conversationId: string): Promise<void> {
@@ -621,13 +573,11 @@ export class ConversationService {
     const conversation = conversations[conversationId];
     
     if (!conversation) {
-      console.warn('🔍 [ConversationService] clearConversation: Conversation not found:', conversationId);
-      return;
+            return;
     }
     
     // Clear messages but keep the conversation (including Game Hub)
-    console.log('🧹 [ConversationService] Clearing messages for conversation:', conversationId, conversation.title);
-    conversations[conversationId] = {
+        conversations[conversationId] = {
       ...conversations[conversationId],
       messages: [],
       updatedAt: Date.now(),
@@ -684,25 +634,21 @@ export class ConversationService {
    */
   static async ensureGameHubExists(): Promise<Conversation> {
     // ✅ FIX: Load from Supabase first to get the real Game Hub with messages
-    console.log('🔍 [ConversationService] Checking for Game Hub in database...');
-    const conversations = await this.getConversations();
+        const conversations = await this.getConversations();
     const existingGameHub = Object.values(conversations).find(
       conv => conv.isGameHub || conv.id === GAME_HUB_ID || conv.title === DEFAULT_CONVERSATION_TITLE
     );
     
     if (existingGameHub) {
-      console.log('🔍 [ConversationService] Game Hub found:', existingGameHub.id, 'with', existingGameHub.messages?.length || 0, 'messages');
-      return existingGameHub;
+            return existingGameHub;
     }
     
     // Not found, create new Game Hub
-    console.log('🔍 [ConversationService] Creating new Game Hub...');
-    const gameHub = this.createConversation(DEFAULT_CONVERSATION_TITLE, GAME_HUB_ID);
+        const gameHub = this.createConversation(DEFAULT_CONVERSATION_TITLE, GAME_HUB_ID);
     await this.addConversation(gameHub);
     
     // Return the newly created Game Hub
-    console.log('✅ [ConversationService] Game Hub created successfully');
-    return gameHub;
+        return gameHub;
   }
 
   /**

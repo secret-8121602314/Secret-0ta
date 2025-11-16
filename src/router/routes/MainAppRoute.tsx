@@ -24,8 +24,7 @@ const MainAppRoute: React.FC = () => {
   useEffect(() => {
     const savedCode = localStorage.getItem('otakon_connection_code');
     if (savedCode) {
-      console.log('🔌 [MainAppRoute] Restoring connection from localStorage:', savedCode);
-      setConnectionCode(savedCode);
+            setConnectionCode(savedCode);
       setConnectionStatus(ConnectionStatus.CONNECTED);
     }
   }, []);
@@ -46,8 +45,7 @@ const MainAppRoute: React.FC = () => {
 
   const handleOpenSettings = () => {
     // TODO: Implement settings navigation
-    console.log('[MainAppRoute] Open settings clicked');
-  };
+      };
 
   const handleOpenAbout = () => {
     setSearchParams({ modal: 'about' });
@@ -66,14 +64,12 @@ const MainAppRoute: React.FC = () => {
   };
 
   const handleConnect = (code: string) => {
-    console.log('🔌 [MainAppRoute] Connection established with code:', code);
-    setConnectionCode(code);
+        setConnectionCode(code);
     setConnectionStatus(ConnectionStatus.CONNECTED);
   };
 
   const handleDisconnect = () => {
-    console.log('🔌 [MainAppRoute] Disconnected');
-    setConnectionCode(null);
+        setConnectionCode(null);
     setConnectionStatus(ConnectionStatus.DISCONNECTED);
   };
 
@@ -99,8 +95,7 @@ const MainAppRoute: React.FC = () => {
         hasPendingRequests={false}
         showProfileSetupBanner={!user?.hasProfileSetup}
         onProfileSetupComplete={async (profileData) => {
-          console.log('[MainAppRoute] Profile setup completed with data:', profileData);
-          // Save profile data and mark setup as complete
+                    // Save profile data and mark setup as complete
           const { authService } = await import('../../services/authService');
           await authService.updateUser({ 
             has_profile_setup: true,
@@ -110,8 +105,7 @@ const MainAppRoute: React.FC = () => {
           window.location.reload();
         }}
         onProfileSetupDismiss={async () => {
-          console.log('[MainAppRoute] Profile setup dismissed');
-          // Mark as dismissed in database (without saving profile data)
+                    // Mark as dismissed in database (without saving profile data)
           const { authService } = await import('../../services/authService');
           await authService.updateUser({ has_profile_setup: true });
           // Force re-render without full page reload

@@ -11,9 +11,7 @@ export interface WaitlistEntry {
 export class WaitlistService {
   static async addToWaitlist(email: string, source: string = 'landing_page'): Promise<{ success: boolean; error?: string; alreadyExists?: boolean }> {
     try {
-      console.log('Adding to waitlist using direct table operations');
-      
-      // Try to insert directly first - this will fail if email already exists
+            // Try to insert directly first - this will fail if email already exists
       const { data: insertData, error: insertError } = await supabase
         .from('waitlist')
         .insert({
@@ -64,8 +62,7 @@ export class WaitlistService {
         return { success: false, error: `Failed to add to waitlist: ${insertError.message}` };
       }
 
-      console.log('Successfully added to waitlist:', insertData);
-      return { 
+            return { 
         success: true, 
         alreadyExists: false,
         error: undefined

@@ -61,8 +61,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
     // This effect transitions to the next screen ONLY if the connection
     // was successful AND it was initiated by the user clicking the button.
     if (syncInitiated && status === ConnectionStatus.CONNECTED && !connectionSuccessCalled) {
-        console.log('🔗 [SplashScreen] Connection successful, calling onConnectionSuccess');
-        setConnectionSuccessCalled(true);
+                setConnectionSuccessCalled(true);
         // Immediate navigation - no delay
         onConnectionSuccess();
     }

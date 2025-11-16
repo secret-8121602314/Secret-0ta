@@ -12,7 +12,6 @@ let heartbeatTimer: number | null = null;
 let shouldReconnect = true; // ✅ FIX: Flag to prevent reconnection after explicit disconnect
 const HEARTBEAT_MS = 30000; // 30s - more frequent heartbeat to maintain connection
 
-
 const connect = (
   code: string,
   onOpen: () => void,
@@ -108,8 +107,7 @@ const connect = (
   ws.onclose = (event: CloseEvent) => {
     // Only log unexpected closures
     if (!event.wasClean && process.env.NODE_ENV === 'development') {
-      console.warn(`WebSocket connection closed unexpectedly. Code: ${event.code}, Reason: '${event.reason}'`);
-    }
+          }
 
     if (!event.wasClean) {
       let errorMessage = "Connection closed unexpectedly.";
@@ -180,8 +178,7 @@ const disconnect = () => {
   
   // Clear any pending reconnection attempts
   if (process.env.NODE_ENV === 'development') {
-    console.log("🔌 WebSocket disconnected and all reconnection state cleared");
-  }
+      }
 };
 
 export { connect, disconnect, send };

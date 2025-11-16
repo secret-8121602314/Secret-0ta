@@ -14,9 +14,7 @@ const FeaturesConnectedRoute: React.FC = () => {
   const { user } = useLoaderData() as { user: User | null };
 
   const handleComplete = async () => {
-    console.log('[FeaturesConnectedRoute] Complete clicked, navigating immediately...');
-    
-    // Navigate immediately for smooth UX
+        // Navigate immediately for smooth UX
     navigate('/onboarding/pro-features');
     
     // Update database in background (optimistic navigation)
@@ -37,8 +35,7 @@ const FeaturesConnectedRoute: React.FC = () => {
         if (error) {
           console.error('[FeaturesConnectedRoute] Background DB update failed:', error);
         } else {
-          console.log('[FeaturesConnectedRoute] Background DB update complete');
-        }
+                  }
       } catch (error) {
         console.error('[FeaturesConnectedRoute] Background DB update error:', error);
       }

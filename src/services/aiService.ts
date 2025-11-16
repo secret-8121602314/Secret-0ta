@@ -1,4 +1,4 @@
-﻿import { GoogleGenerativeAI, GenerativeModel, SchemaType, HarmCategory, HarmBlockThreshold, SafetySetting } from "@google/generative-ai";
+import { GoogleGenerativeAI, GenerativeModel, SchemaType, HarmCategory, HarmBlockThreshold, SafetySetting } from "@google/generative-ai";
 import { parseOtakonTags } from './otakonTags';
 import { AIResponse, Conversation, User, insightTabsConfig, PlayerProfile } from '../types';
 import type { ViteImportMeta, UserProfileData } from '../types/enhanced';
@@ -12,11 +12,11 @@ import { toastService } from './toastService';
 import { supabase } from '../lib/supabase';
 import { ConversationService } from './conversationService';
 
-// ✅ SECURITY FIX: Use Edge Function proxy instead of exposed API key
+// ? SECURITY FIX: Use Edge Function proxy instead of exposed API key
 const USE_EDGE_FUNCTION = true; // Set to true to use secure server-side proxy
 const API_KEY = (import.meta as ViteImportMeta).env.VITE_GEMINI_API_KEY; // Only used if USE_EDGE_FUNCTION = false
 
-// ✅ FIX 1: Gemini API Safety Settings
+// ? FIX 1: Gemini API Safety Settings
 const SAFETY_SETTINGS: SafetySetting[] = [
   {
     category: HarmCategory.HARM_CATEGORY_HARASSMENT,
@@ -43,11 +43,11 @@ class AIService {
   private flashModelWithGrounding: GenerativeModel;
   private edgeFunctionUrl: string;
   
-  // ✅ REQUEST DEDUPLICATION: Track pending requests to prevent duplicate API calls
+  // ? REQUEST DEDUPLICATION: Track pending requests to prevent duplicate API calls
   private pendingRequests: Map<string, Promise<AIResponse>> = new Map();
 
   constructor() {
-    // ✅ SECURITY: Initialize Edge Function URL
+    // ? SECURITY: Initialize Edge Function URL
     const supabaseUrl = (import.meta as ViteImportMeta).env.VITE_SUPABASE_URL;
     this.edgeFunctionUrl = `${supabaseUrl}/functions/v1/ai-proxy`;
 
@@ -58,7 +58,7 @@ class AIService {
       }
       this.genAI = new GoogleGenerativeAI(API_KEY);
       // Using gemini-2.5-flash-preview-09-2025 for all operations (enhanced performance)
-      // ✅ FIX 2: Apply safety settings to all model initializations
+      // ? FIX 2: Apply safety settings to all model initializations
       this.flashModel = this.genAI.getGenerativeModel({ 
         model: "gemini-2.5-flash-preview-09-2025",
         safetySettings: SAFETY_SETTINGS
@@ -67,12 +67,12 @@ class AIService {
         model: "gemini-2.5-flash-preview-09-2025",
         safetySettings: SAFETY_SETTINGS
       });
-      // ✅ NEW: Model with Google Search grounding enabled
+      // ? NEW: Model with Google Search grounding enabled
       this.flashModelWithGrounding = this.genAI.getGenerativeModel({
         model: "gemini-2.5-flash-preview-09-2025",
         safetySettings: SAFETY_SETTINGS,
         tools: [{
-          google_search: {}  // ✅ Gemini 2.5 syntax, works for both text and images
+          google_search: {}  // ? Gemini 2.5 syntax, works for both text and images
         }]
       });
     } else {
@@ -85,7 +85,7 @@ class AIService {
   }
 
   /**
-   * ✅ SECURITY: Call Edge Function proxy instead of direct API
+   * ? SECURITY: Call Edge Function proxy instead of direct API
    */
   private async callEdgeFunction(request: {
     prompt: string;
@@ -125,7 +125,7 @@ class AIService {
   }
 
   /**
-   * ✅ FIX 3: Check if AI response was blocked by safety filters
+   * ? FIX 3: Check if AI response was blocked by safety filters
    */
   private checkSafetyResponse(result: Record<string, unknown>): { safe: boolean; reason?: string } {
     // Check if prompt was blocked
@@ -156,7 +156,7 @@ class AIService {
   }
 
   /**
-   * ✅ REQUEST DEDUPLICATION: Wrapper to prevent duplicate API calls
+   * ? REQUEST DEDUPLICATION: Wrapper to prevent duplicate API calls
    * If same request is already in progress, return the existing promise
    */
   private async getChatResponseWithDeduplication(
@@ -174,8 +174,7 @@ class AIService {
     // Check if identical request is already pending
     const pendingRequest = this.pendingRequests.get(dedupKey);
     if (pendingRequest) {
-      console.warn('⚠️ [AIService] Duplicate request detected, returning existing promise');
-      return pendingRequest;
+            return pendingRequest;
     }
     
     // Create new request promise
@@ -237,7 +236,7 @@ class AIService {
     imageData?: string,
     abortSignal?: AbortSignal
   ): Promise<AIResponse> {
-    // ✅ QUERY LIMIT: Check if user can send this query
+    // ? QUERY LIMIT: Check if user can send this query
     const queryCheck = hasImages 
       ? await ConversationService.canSendImageQuery()
       : await ConversationService.canSendTextQuery();
@@ -247,9 +246,7 @@ class AIService {
       throw new Error(queryCheck.reason || 'Query limit reached. Please upgrade your tier.');
     }
     
-    console.log(`📊 [AIService] Query limit check passed. ${hasImages ? 'Image' : 'Text'} queries: ${queryCheck.used}/${queryCheck.limit}`);
-    
-    // ✅ AI RESPONSE CACHING: Check if we should cache this query
+        // ? AI RESPONSE CACHING: Check if we should cache this query
     const cacheContext = {
       gameTitle: conversation.gameTitle,
       mode: isActiveSession ? 'playing' : 'planning',
@@ -259,25 +256,20 @@ class AIService {
     };
     
     const shouldUseCache = aiCacheService.shouldCache(userMessage, cacheContext);
-    console.log(`🔍 [AIService] shouldUseCache: ${shouldUseCache} for message: "${userMessage.substring(0, 50)}..."`);
-    console.log(`🔍 [AIService] Cache context:`, cacheContext);
-    
-    // Generate cache key for AI responses (persistent cache)
+    console.log(`?? [AIService] shouldUseCache: ${shouldUseCache} for message: "${userMessage.substring(0, 50)}..."`);
+        // Generate cache key for AI responses (persistent cache)
     const aiCacheKey = shouldUseCache 
       ? aiCacheService.generateCacheKey(userMessage, cacheContext)
       : '';
     
     if (aiCacheKey) {
-      console.log(`🔑 [AIService] Generated AI cache key: ${aiCacheKey}`);
-    }
+          }
     
     // Check AI cache first (persistent, cross-user for global/game queries)
     if (shouldUseCache && aiCacheKey) {
-      console.log(`🔍 [AIService] Checking AI persistent cache...`);
-      const cachedAIResponse = await aiCacheService.getCachedResponse(aiCacheKey);
+            const cachedAIResponse = await aiCacheService.getCachedResponse(aiCacheKey);
       if (cachedAIResponse) {
-        console.log(`✅ [AIService] Cache HIT in AI persistent cache!`);
-        // Parse the cached content and return as AIResponse
+                // Parse the cached content and return as AIResponse
         const { cleanContent, tags } = parseOtakonTags(cachedAIResponse.content || '');
         return {
           ...cachedAIResponse,
@@ -290,10 +282,9 @@ class AIService {
           }
         };
       } else {
-        console.log(`❌ [AIService] Cache MISS in AI persistent cache`);
-      }
+              }
     } else {
-      console.log(`⏭️ [AIService] Skipping AI cache check (shouldUseCache=${shouldUseCache}, hasKey=${!!aiCacheKey})`);
+      console.log(`?? [AIService] Skipping AI cache check (shouldUseCache=${shouldUseCache}, hasKey=${!!aiCacheKey})`);
     }
     
     // Create cache key for this request - use full message hash to avoid collisions
@@ -347,24 +338,17 @@ class AIService {
     
     const prompt = basePrompt + sessionContext + '\n\n' + immersionContext;
     
-    console.log('🤖 [AIService] Processing request:', { 
-      hasImages, 
-      hasImageData: !!imageData, 
-      imageDataLength: imageData?.length,
-      conversationId: conversation.id 
-    });
-    
-    // Check if request was aborted before starting
+        // Check if request was aborted before starting
     if (abortSignal?.aborted) {
       throw new DOMException('Request was aborted', 'AbortError');
     }
     
     try {
-      // ✅ ENABLE GROUNDING FOR ALL QUERIES (text and image)
+      // ? ENABLE GROUNDING FOR ALL QUERIES (text and image)
       const needsWebSearch = true;
       
       // Use grounding model for queries that need current information
-      // ✅ SECURITY: Use Edge Function if enabled
+      // ? SECURITY: Use Edge Function if enabled
       let rawContent: string;
 
       if (USE_EDGE_FUNCTION) {
@@ -377,7 +361,7 @@ class AIService {
         // Determine which model and tools to use
         const modelName = 'gemini-2.5-flash-preview-09-2025';
         
-        // ✅ ENHANCEMENT: Enable Google Search grounding for both text AND images
+        // ? ENHANCEMENT: Enable Google Search grounding for both text AND images
         // This allows game detection from screenshots to access current information
         const tools = needsWebSearch 
           ? [{ google_search: {} }]  // Updated to Gemini 2.5 syntax
@@ -403,13 +387,13 @@ class AIService {
 
       } else {
         // Legacy: Direct API mode (only for development)
-        // ✅ Grounding now works with both text and images in Gemini 2.5
+        // ? Grounding now works with both text and images in Gemini 2.5
         const modelToUse = needsWebSearch
           ? this.flashModelWithGrounding 
           : this.flashModel;
         
         if (needsWebSearch) {
-          console.log('🌐 [AIService] Using Google Search grounding for current information:', {
+          console.log('?? [AIService] Using Google Search grounding for current information:', {
             gameTitle: conversation.gameTitle,
             query: userMessage.substring(0, 50) + '...',
             hasImages: hasImages
@@ -442,7 +426,7 @@ class AIService {
         
         const result = await modelToUse.generateContent(content);
         
-        // ✅ FIX 4: Check safety response
+        // ? FIX 4: Check safety response
         const safetyCheck = this.checkSafetyResponse(result);
         if (!safetyCheck.safe) {
           toastService.error('Unable to generate response due to content policy');
@@ -476,7 +460,7 @@ class AIService {
         }
       };
       
-      // ✅ QUERY TRACKING: Record usage in database (non-blocking)
+      // ? QUERY TRACKING: Record usage in database (non-blocking)
       const { SupabaseService } = await import('./supabaseService');
       const supabaseService = SupabaseService.getInstance();
       supabaseService.recordQuery(user.authUserId, hasImages ? 'image' : 'text')
@@ -491,7 +475,7 @@ class AIService {
       cacheService.set(cacheKey, aiResponse, 60 * 60 * 1000)
         .catch(error => console.warn('Failed to cache AI response in memory:', error));
       
-      // ✅ AI PERSISTENT CACHE: Store in database cache if appropriate
+      // ? AI PERSISTENT CACHE: Store in database cache if appropriate
       if (shouldUseCache && aiCacheKey) {
         const cacheType = aiCacheService.determineCacheType(cacheContext);
         const ttl = aiCacheService.determineTTL(cacheType, cacheContext);
@@ -511,7 +495,7 @@ class AIService {
         }).catch(error => console.warn('Failed to cache AI response in database:', error));
       }
       
-      // ✅ GAME HUB INTERACTION LOGGING: Track Game Hub queries and responses
+      // ? GAME HUB INTERACTION LOGGING: Track Game Hub queries and responses
       if (conversation.isGameHub) {
         this.logGameHubInteraction({
           user,
@@ -521,7 +505,7 @@ class AIService {
         }).catch(error => console.warn('Failed to log Game Hub interaction:', error));
       }
       
-      // ✅ API USAGE TRACKING: Log all Gemini API calls for analytics and cost tracking
+      // ? API USAGE TRACKING: Log all Gemini API calls for analytics and cost tracking
       this.logApiUsage({
         userId: user.id,
         authUserId: user.auth_user_id,
@@ -536,7 +520,7 @@ class AIService {
     } catch (error) {
       console.error("AI Service Error:", error);
       
-      // ✅ FIX 4: Enhanced error handling for safety blocks
+      // ? FIX 4: Enhanced error handling for safety blocks
       const errorMessage = (error as Error).message || '';
       if (errorMessage.includes('blocked') || errorMessage.includes('SAFETY') || errorMessage.includes('content policy')) {
         toastService.error('Your message contains inappropriate content');
@@ -671,19 +655,13 @@ In addition to your regular response, provide structured data in the following o
     
     const prompt = basePrompt + immersionContext + structuredInstructions;
     
-    console.log('🤖 [AIService] Processing structured request:', { 
-      hasImages, 
-      conversationId: conversation.id,
-      useStructuredMode: !hasImages // Only use JSON mode for text
-    });
-    
-    // Check if request was aborted
+        // Check if request was aborted
     if (abortSignal?.aborted) {
       throw new DOMException('Request was aborted', 'AbortError');
     }
     
     try {
-      // ✅ NEW: Also use grounding for structured requests when appropriate
+      // ? NEW: Also use grounding for structured requests when appropriate
       const needsWebSearch = 
         userMessage.toLowerCase().includes('release') ||
         userMessage.toLowerCase().includes('new games') ||
@@ -699,7 +677,7 @@ In addition to your regular response, provide structured data in the following o
           conversation.gameTitle.toLowerCase().includes('2024')
         ));
       
-      // ✅ SECURITY: Use Edge Function for structured responses
+      // ? SECURITY: Use Edge Function for structured responses
       if (USE_EDGE_FUNCTION) {
         // Extract base64 image data if present
         let imageBase64: string | undefined;
@@ -709,10 +687,10 @@ In addition to your regular response, provide structured data in the following o
 
         const modelName = 'gemini-2.5-flash-preview-09-2025';
         
-        // ✅ Enable Google Search grounding for current game information
+        // ? Enable Google Search grounding for current game information
         // Works with both text and images in Gemini 2.5
         const tools = needsWebSearch
-          ? [{ google_search: {} }]  // ✅ Gemini 2.5 syntax, works for images too
+          ? [{ google_search: {} }]  // ? Gemini 2.5 syntax, works for images too
           : [];
 
         const edgeResponse = await this.callEdgeFunction({
@@ -737,7 +715,7 @@ In addition to your regular response, provide structured data in the following o
         const aiResponse: AIResponse = {
           content: cleanContent,
           suggestions: suggestions,
-          followUpPrompts: suggestions, // ✅ Match JSON mode - set followUpPrompts from SUGGESTIONS tag
+          followUpPrompts: suggestions, // ? Match JSON mode - set followUpPrompts from SUGGESTIONS tag
           otakonTags: tags,
           rawContent: rawContent,
           metadata: {
@@ -753,13 +731,13 @@ In addition to your regular response, provide structured data in the following o
       }
 
       // Legacy: Direct API mode
-      // ✅ ENHANCEMENT: Enable grounding for both text and images in Gemini 2.5
+      // ? ENHANCEMENT: Enable grounding for both text and images in Gemini 2.5
       const modelToUse = needsWebSearch
         ? this.flashModelWithGrounding 
         : this.flashModel;
       
       if (needsWebSearch) {
-        console.log('🌐 [AIService] Using Google Search grounding for structured response:', {
+        console.log('?? [AIService] Using Google Search grounding for structured response:', {
           gameTitle: conversation.gameTitle,
           query: userMessage.substring(0, 50) + '...',
           hasImages: hasImages
@@ -786,7 +764,7 @@ In addition to your regular response, provide structured data in the following o
         const aiResponse: AIResponse = {
           content: cleanContent,
           suggestions: suggestions,
-          followUpPrompts: suggestions, // ✅ Set followUpPrompts from SUGGESTIONS tag
+          followUpPrompts: suggestions, // ? Set followUpPrompts from SUGGESTIONS tag
           otakonTags: tags,
           rawContent: rawContent,
           metadata: {
@@ -849,7 +827,7 @@ In addition to your regular response, provide structured data in the following o
           }
         });
         
-        // ✅ FIX 5: Check safety response
+        // ? FIX 5: Check safety response
         const safetyCheck = this.checkSafetyResponse(result);
         if (!safetyCheck.safe) {
           toastService.error('Unable to generate response due to content policy');
@@ -859,57 +837,52 @@ In addition to your regular response, provide structured data in the following o
         const rawResponse = await result.response.text();
         const structuredData = JSON.parse(rawResponse);
         
-        // ✅ DEBUG: Log what Gemini actually returns
-        console.log('🔍 [AIService] Gemini response keys:', Object.keys(structuredData));
-        console.log('🔍 [AIService] followUpPrompts exists:', !!structuredData.followUpPrompts);
-        console.log('🔍 [AIService] followUpPrompts value:', structuredData.followUpPrompts);
-        console.log('🔍 [AIService] followUpPrompts length:', structuredData.followUpPrompts?.length || 0);
-        
-        // ✅ Clean content: Remove any JSON-like structured data from the main content
+        // ? DEBUG: Log what Gemini actually returns
+        console.log('?? [AIService] Gemini response keys:', Object.keys(structuredData));
+                                // ? Clean content: Remove any JSON-like structured data from the main content
         let cleanContent = structuredData.content || '';
         
-        console.log('🧹 [AIService] Raw content length:', cleanContent.length);
-        console.log('🧹 [AIService] Last 200 chars:', cleanContent.slice(-200));
+                console.log('?? [AIService] Last 200 chars:', cleanContent.slice(-200));
         
         // Remove structured fields if AI accidentally includes them in content
         // Apply cleaning in order of most specific to most general
         cleanContent = cleanContent
-          // ✅ STEP 1: Remove EVERYTHING after "Internal Data Structure" (most aggressive first)
+          // ? STEP 1: Remove EVERYTHING after "Internal Data Structure" (most aggressive first)
           .replace(/\*+\s*#+\s*Internal Data Structure[\s\S]*$/gi, '') // ***## Internal Data Structure
           .replace(/\*+\s*Internal Data Structure[\s\S]*$/gi, '') // *** Internal Data Structure  
           .replace(/#+\s*Internal Data Structure[\s\S]*$/gi, '') // ## Internal Data Structure
           .replace(/Internal Data Structure[\s\S]*$/gi, '') // Internal Data Structure (any case)
-          // ✅ STEP 2: Remove JSON blocks with specific fields (before general JSON removal)
+          // ? STEP 2: Remove JSON blocks with specific fields (before general JSON removal)
           .replace(/\{[\s\S]*?"followUpPrompts"[\s\S]*?\}/gi, '')
           .replace(/\{[\s\S]*?"progressiveInsightUpdates"[\s\S]*?\}/gi, '')
           .replace(/\{[\s\S]*?"gamePillData"[\s\S]*?\}/gi, '')
           .replace(/\{[\s\S]*?"stateUpdateTags"[\s\S]*?\}/gi, '')
-          // ✅ STEP 3: Remove code blocks
+          // ? STEP 3: Remove code blocks
           .replace(/```json[\s\S]*?```/gi, '')
           .replace(/```\s*\{[\s\S]*?```/gi, '')
-          // ✅ STEP 4: Remove "Enhanced Response Data" sections
+          // ? STEP 4: Remove "Enhanced Response Data" sections
           .replace(/Enhanced Response Data[\s\S]*$/gi, '')
           .replace(/\*\*Enhanced Response Data\*\*[\s\S]*$/gi, '')
-          // ✅ STEP 5: Remove standalone artifacts at end
+          // ? STEP 5: Remove standalone artifacts at end
           .replace(/\*+\s*\]\s*$/g, '') // ***]
           .replace(/\]\s*$/g, '') // ]
           .replace(/\*+\s*$/g, '') // ***
-          // ✅ STEP 6: Remove any JSON structure at the end
+          // ? STEP 6: Remove any JSON structure at the end
           .replace(/\n\s*\{[\s\S]*$/g, '')
           .replace(/\s*[\]}]\s*$/g, '')
-          // ✅ STEP 7: Remove OTAKON tags
+          // ? STEP 7: Remove OTAKON tags
           .replace(/\{[\s\S]*?"OTAKON_[A-Z_]+":[\s\S]*?\}/g, '')
-          // ✅ STEP 8: Remove separator lines
+          // ? STEP 8: Remove separator lines
           .replace(/_{3,}/g, '')
-          // ✅ STEP 9: Clean leading/trailing junk
+          // ? STEP 9: Clean leading/trailing junk
           .replace(/^[\s\]}\[{),]+/g, '')
           .replace(/\s*[\]}\s]*$/g, '')
           // Clean up any remaining JSON artifacts
           .replace(/\{[\s\S]*?"OTAKON_[A-Z_]+":[\s\S]*?\}/g, '')
-          // ✅ Fix malformed bold markers (spaces between ** and text)
-          .replace(/\*\*\s+([^*]+?)\s+\*\*/g, '**$1**') // Fix ** text ** → **text**
-          .replace(/\*\*\s+([^*]+?):/g, '**$1:**') // Fix ** Header: → **Header:**
-          // ✅ Format section headers with proper spacing and bold
+          // ? Fix malformed bold markers (spaces between ** and text)
+          .replace(/\*\*\s+([^*]+?)\s+\*\*/g, '**$1**') // Fix ** text ** ? **text**
+          .replace(/\*\*\s+([^*]+?):/g, '**$1:**') // Fix ** Header: ? **Header:**
+          // ? Format section headers with proper spacing and bold
           // First, ensure headers are properly closed with ** and add line breaks (handles trailing space)
           .replace(/\*\*Hint:\*\*\s*/gi, '**Hint:**\n') // Add line break after Hint
           .replace(/\*\*Lore:\*\*\s*/gi, '\n\n**Lore:**\n') // Add line breaks around Lore
@@ -922,10 +895,10 @@ In addition to your regular response, provide structured data in the following o
           .replace(/\nLore:\s*/gi, '\n\n**Lore:**\n') // Lore after newline
           .replace(/\nPlaces of Interest:\s*/gi, '\n\n**Places of Interest:**\n') // Places after newline
           .replace(/\nStrategy:\s*/gi, '\n\n**Strategy:**\n') // Strategy after newline
-          // ✅ STEP 10: Fix malformed bold markers
-          .replace(/\*\*\s+([^*]+?)\s+\*\*/g, '**$1**') // ** text ** → **text**
-          .replace(/\*\*\s+([^*]+?):/g, '**$1:**') // ** Header: → **Header:**
-          // ✅ STEP 11: Format section headers with spacing
+          // ? STEP 10: Fix malformed bold markers
+          .replace(/\*\*\s+([^*]+?)\s+\*\*/g, '**$1**') // ** text ** ? **text**
+          .replace(/\*\*\s+([^*]+?):/g, '**$1:**') // ** Header: ? **Header:**
+          // ? STEP 11: Format section headers with spacing
           .replace(/\*\*Hint:\*\*\s*/gi, '**Hint:**\n')
           .replace(/\*\*Lore:\*\*\s*/gi, '\n\n**Lore:**\n')
           .replace(/\*\*Places of Interest:\*\*\s*/gi, '\n\n**Places of Interest:**\n')
@@ -936,16 +909,15 @@ In addition to your regular response, provide structured data in the following o
           .replace(/\nLore:\s*/gi, '\n\n**Lore:**\n')
           .replace(/\nPlaces of Interest:\s*/gi, '\n\n**Places of Interest:**\n')
           .replace(/\nStrategy:\s*/gi, '\n\n**Strategy:**\n')
-          // ✅ STEP 12: Fix paragraph formatting
+          // ? STEP 12: Fix paragraph formatting
           .replace(/(\*\*[^*]+\*\*:?)([A-Z])/g, '$1\n\n$2') // Break after bold headers
           .replace(/\.([A-Z][a-z])/g, '.\n\n$1') // Period + Capital = new paragraph
           .replace(/\.(\*\*[A-Z])/g, '.\n\n$1') // Period + Bold = new paragraph
-          // ✅ STEP 13: Final cleanup
+          // ? STEP 13: Final cleanup
           .replace(/\n{3,}/g, '\n\n') // Remove excessive newlines
           .trim();
         
-        console.log('🧹 [AIService] Cleaned content length:', cleanContent.length);
-        console.log('🧹 [AIService] Last 200 chars after cleaning:', cleanContent.slice(-200));
+                console.log('?? [AIService] Last 200 chars after cleaning:', cleanContent.slice(-200));
         
         // Parse wikiContent if it's a JSON string
         let gamePillData = structuredData.gamePillData;
@@ -957,8 +929,7 @@ In addition to your regular response, provide structured data in the following o
             };
           } catch {
             // If parsing fails, keep it as is
-            console.warn('Failed to parse wikiContent as JSON');
-          }
+                      }
         }
         
         // Build enhanced AIResponse
@@ -982,7 +953,7 @@ In addition to your regular response, provide structured data in the following o
         
         cacheService.set(cacheKey, aiResponse, 60 * 60 * 1000).catch(err => console.warn(err));
         
-        // ✅ AI PERSISTENT CACHE: Store structured response too
+        // ? AI PERSISTENT CACHE: Store structured response too
         if (shouldUseCache && aiCacheKey) {
           const cacheType = aiCacheService.determineCacheType(cacheContext);
           const ttl = aiCacheService.determineTTL(cacheType, cacheContext);
@@ -1008,9 +979,7 @@ In addition to your regular response, provide structured data in the following o
         return aiResponse;
         
       } catch (jsonError) {
-        console.warn('JSON mode failed, falling back to OTAKON_TAG parsing:', jsonError);
-        
-        // Fallback to regular OTAKON_TAG parsing
+                // Fallback to regular OTAKON_TAG parsing
         let rawContent: string;
 
         if (USE_EDGE_FUNCTION) {
@@ -1032,7 +1001,7 @@ In addition to your regular response, provide structured data in the following o
           // Legacy: Direct API
           const result = await modelToUse.generateContent(prompt);
           
-          // ✅ FIX 5: Check safety response in fallback
+          // ? FIX 5: Check safety response in fallback
           const safetyCheck = this.checkSafetyResponse(result);
           if (!safetyCheck.safe) {
             toastService.error('Unable to generate response due to content policy');
@@ -1048,7 +1017,7 @@ In addition to your regular response, provide structured data in the following o
         const aiResponse: AIResponse = {
           content: cleanContent,
           suggestions: suggestions,
-          followUpPrompts: suggestions, // ✅ Set followUpPrompts from SUGGESTIONS tag
+          followUpPrompts: suggestions, // ? Set followUpPrompts from SUGGESTIONS tag
           otakonTags: tags,
           rawContent: rawContent,
           metadata: {
@@ -1066,7 +1035,7 @@ In addition to your regular response, provide structured data in the following o
     } catch (error) {
       console.error("Structured AI Service Error:", error);
       
-      // ✅ FIX 5: Enhanced error handling for safety blocks
+      // ? FIX 5: Enhanced error handling for safety blocks
       const errorMessage = (error as Error).message || '';
       if (errorMessage.includes('blocked') || errorMessage.includes('SAFETY') || errorMessage.includes('content policy')) {
         toastService.error('Your message contains inappropriate content');
@@ -1119,9 +1088,9 @@ In addition to your regular response, provide structured data in the following o
     gameTitle: string, 
     genre: string,
     playerProfile?: PlayerProfile,
-    conversationContext?: string // ✅ NEW: Actual conversation messages for context-aware generation
+    conversationContext?: string // ? NEW: Actual conversation messages for context-aware generation
   ): Promise<Record<string, string>> {
-    // ✅ CRITICAL: Use conversation context in cache key if provided
+    // ? CRITICAL: Use conversation context in cache key if provided
     const contextHash = conversationContext 
       ? conversationContext.substring(0, 50).replace(/[^a-z0-9]/gi, '') 
       : 'default';
@@ -1142,9 +1111,9 @@ In addition to your regular response, provide structured data in the following o
     const profile = playerProfile || profileAwareTabService.getDefaultProfile();
     const profileContext = profileAwareTabService.buildProfileContext(profile);
 
-    // ✅ CRITICAL: Include conversation context for relevant subtab generation
+    // ? CRITICAL: Include conversation context for relevant subtab generation
     const contextSection = conversationContext 
-      ? `\nConversation Context:\n${conversationContext}\n\n✅ USE THIS CONTEXT to generate relevant subtab content based on what was discussed!\n` 
+      ? `\nConversation Context:\n${conversationContext}\n\n? USE THIS CONTEXT to generate relevant subtab content based on what was discussed!\n` 
       : '';
 
     const prompt = `
@@ -1166,7 +1135,7 @@ CRITICAL FORMATTING RULES:
    - Use \\n\\n for paragraph breaks (double newline)
    - Escape ALL quotes with \\"
    - NO line breaks inside strings (use \\n instead)
-   - Use bullet points with • for lists when appropriate
+   - Use bullet points with � for lists when appropriate
 5. Content should be detailed, spoiler-free, and helpful for players at this stage
 6. Adapt content style based on the Player Profile above
 7. YOU MUST generate comprehensive content for ALL ${config.length} tab IDs listed below
@@ -1175,9 +1144,9 @@ CRITICAL FORMATTING RULES:
 Example valid JSON (TARGET THIS LEVEL OF DETAIL):
 {
   "story_so_far": "Following the disastrous **Konpeki Plaza heist**, you barely escaped with your life. The Relic, an advanced biochip containing the digital ghost of legendary rockerboy **Johnny Silverhand**, is now killing you from the inside. You have mere weeks to find a solution.\\n\\nYou've been working with **Takemura**, a disgraced Arasaka bodyguard seeking to clear his name and expose the conspiracy behind the assassination of his former boss. The investigation has led you through Night City's criminal underworld, uncovering corporate secrets and dangerous truths.\\n\\nYour current location in **Jig-Jig Street** suggests you're deep in the heart of Westbrook, a district known for high-end entertainment and corporate intrigue. Every decision matters as you race against time.",
-  "quest_log": "**Main Quest: The Space in Between**\\nTakemura has information crucial to your survival. His message indicated urgency and possible security concerns. Meeting him could provide vital leads on removing the Relic or expose you to Arasaka operatives still hunting you both.\\n\\n**Recommended Side Activities:**\\n• Explore Jig-Jig Street for vendors offering rare cyberware upgrades\\n• Check nearby ripperdocs for health monitoring and neural optimization\\n• Investigate gig opportunities from local fixers to build street cred",
+  "quest_log": "**Main Quest: The Space in Between**\\nTakemura has information crucial to your survival. His message indicated urgency and possible security concerns. Meeting him could provide vital leads on removing the Relic or expose you to Arasaka operatives still hunting you both.\\n\\n**Recommended Side Activities:**\\n� Explore Jig-Jig Street for vendors offering rare cyberware upgrades\\n� Check nearby ripperdocs for health monitoring and neural optimization\\n� Investigate gig opportunities from local fixers to build street cred",
   "build_optimization": "Based on your current progress, consider these optimization strategies:\\n\\n**Cyberware Focus:** Invest in neural processors and reflex boosters to improve combat responsiveness. The **Sandevistan** operating system offers time dilation for tactical advantages during firefights.\\n\\n**Skill Synergies:** Balance Technical Ability for crafting legendary gear with Intelligence for quickhacking capabilities. This combination allows both direct combat and stealthy netrunning approaches.\\n\\n**Weapon Loadout:** Maintain variety - keep a silenced pistol for stealth, a tech weapon for cover penetration, and a power weapon for raw damage.",
-  "boss_strategy": "Upcoming encounters in this arc will test your combat adaptability. **Tactical Recommendations:**\\n\\nYour opponents likely use advanced corporate-grade cyberware and coordinated tactics. Prioritize cover-based gameplay and use the environment to your advantage. Explosive barrels and electrical panels can turn the battlefield in your favor.\\n\\n**Key Strategies:**\\n• Maintain distance and use tech weapons to attack through walls\\n• Neutralize enemy netrunners first to prevent quickhacks\\n• Stock up on MaxDoc inhalers and bounce-back injectors\\n• Save frequently before major confrontations",
+  "boss_strategy": "Upcoming encounters in this arc will test your combat adaptability. **Tactical Recommendations:**\\n\\nYour opponents likely use advanced corporate-grade cyberware and coordinated tactics. Prioritize cover-based gameplay and use the environment to your advantage. Explosive barrels and electrical panels can turn the battlefield in your favor.\\n\\n**Key Strategies:**\\n� Maintain distance and use tech weapons to attack through walls\\n� Neutralize enemy netrunners first to prevent quickhacks\\n� Stock up on MaxDoc inhalers and bounce-back injectors\\n� Save frequently before major confrontations",
   "hidden_paths": "**Jig-Jig Street Secrets:**\\nLook for the **Clouds** entertainment establishment - there's a hidden databank terminal behind the reception desk containing valuable corporate intel. Access requires moderate Technical Ability or convincing dialogue options.\\n\\n**Exploration Tip:**\\nThe alleyways near the main street have vertical access points leading to rooftop areas. These elevated positions offer tactical advantages and often contain loot crates with rare crafting components. Watch for glowing yellow ledges indicating climbable surfaces."
 }
 
@@ -1192,7 +1161,7 @@ NOW generate COMPREHENSIVE valid JSON for ALL these tab IDs (MUST include every 
         const edgeResponse = await this.callEdgeFunction({
           prompt,
           temperature: 0.7,
-          maxTokens: 5000, // ✅ Increased to 5000 to accommodate comprehensive 150-250 word insights per tab
+          maxTokens: 5000, // ? Increased to 5000 to accommodate comprehensive 150-250 word insights per tab
           requestType: 'text',
           model: 'gemini-2.5-flash-preview-09-2025' // Back to Flash model
         });
@@ -1206,7 +1175,7 @@ NOW generate COMPREHENSIVE valid JSON for ALL these tab IDs (MUST include every 
         // Legacy: Direct API
         const result = await this.proModel.generateContent(prompt);
         
-        // ✅ FIX 6: Check safety response
+        // ? FIX 6: Check safety response
         const safetyCheck = this.checkSafetyResponse(result);
         if (!safetyCheck.safe) {
           toastService.error('Unable to generate insights due to content policy');
@@ -1218,7 +1187,7 @@ NOW generate COMPREHENSIVE valid JSON for ALL these tab IDs (MUST include every 
       
       const cleanedJson = responseText.replace(/```json\n?|\n?```/g, '').trim();
       
-      // ✅ FIX: Better JSON parsing with fallback
+      // ? FIX: Better JSON parsing with fallback
       let insights: Record<string, string>;
       try {
         insights = JSON.parse(cleanedJson);
@@ -1229,13 +1198,13 @@ NOW generate COMPREHENSIVE valid JSON for ALL these tab IDs (MUST include every 
         // Try to fix common JSON issues
         let fixedJson = cleanedJson;
         
-        // ✅ IMPROVED: More robust unterminated string fixing
+        // ? IMPROVED: More robust unterminated string fixing
         // Step 1: Find the last complete property before truncation
         const lastCompleteProperty = fixedJson.lastIndexOf('",');
         if (lastCompleteProperty > 0 && !fixedJson.endsWith('}')) {
           // Truncate at last complete property and close JSON
           fixedJson = fixedJson.substring(0, lastCompleteProperty + 1) + '\n}';
-          console.error("⚠️ Detected truncated response, using last complete property");
+          console.error("?? Detected truncated response, using last complete property");
         } else {
           // Try pattern-based fixes
           // Fix unterminated strings by adding closing quote
@@ -1261,22 +1230,22 @@ NOW generate COMPREHENSIVE valid JSON for ALL these tab IDs (MUST include every 
         
         try {
           insights = JSON.parse(fixedJson);
-          console.error("✅ Successfully fixed malformed JSON");
-          console.error("✅ Recovered", Object.keys(insights).length, "insights");
+          console.error("? Successfully fixed malformed JSON");
+          console.error("? Recovered", Object.keys(insights).length, "insights");
           
-          // ✅ NEW: If AI only returned some insights, generate fallback for missing ones
+          // ? NEW: If AI only returned some insights, generate fallback for missing ones
           const config = insightTabsConfig[genre] || insightTabsConfig['Default'];
           const missingTabs = config.filter(tab => !insights[tab.id]);
           if (missingTabs.length > 0) {
-            console.error(`⚠️ AI only generated ${Object.keys(insights).length}/${config.length} insights, filling ${missingTabs.length} missing tabs with fallback`);
+            console.error(`?? AI only generated ${Object.keys(insights).length}/${config.length} insights, filling ${missingTabs.length} missing tabs with fallback`);
             missingTabs.forEach(tab => {
               insights[tab.id] = `Welcome to **${tab.title}** for ${gameTitle}!\n\nThis section will be populated as you explore and chat about the game.`;
             });
           }
         } catch (_secondError) {
-          console.error("❌ Could not fix JSON, using fallback content for all tabs");
-          console.error("❌ Raw response that failed (first 1000 chars):", responseText.substring(0, 1000));
-          console.error("❌ This may be an AI generation issue - consider retrying or checking prompt");
+          console.error("? Could not fix JSON, using fallback content for all tabs");
+          console.error("? Raw response that failed (first 1000 chars):", responseText.substring(0, 1000));
+          console.error("? This may be an AI generation issue - consider retrying or checking prompt");
           
           // Return generic welcome content for each tab
           const config = insightTabsConfig[genre] || insightTabsConfig['Default'];
@@ -1294,7 +1263,7 @@ NOW generate COMPREHENSIVE valid JSON for ALL these tab IDs (MUST include every 
     } catch (error) {
       console.error("Failed to generate initial insights:", error);
       
-      // ✅ FIX 6: Enhanced error handling for safety blocks
+      // ? FIX 6: Enhanced error handling for safety blocks
       const errorMessage = (error as Error).message || '';
       if (errorMessage.includes('blocked') || errorMessage.includes('SAFETY') || errorMessage.includes('content policy')) {
         toastService.warning('Unable to generate insights due to content policy');
@@ -1307,7 +1276,7 @@ NOW generate COMPREHENSIVE valid JSON for ALL these tab IDs (MUST include every 
   }
 
   /**
-   * ✅ GAME HUB INTERACTION LOGGING: Track queries and responses in Game Hub
+   * ? GAME HUB INTERACTION LOGGING: Track queries and responses in Game Hub
    * Stores metadata about game detections, user actions, and AI responses
    */
   private async logGameHubInteraction(data: {
@@ -1355,20 +1324,14 @@ NOW generate COMPREHENSIVE valid JSON for ALL these tab IDs (MUST include every 
       if (error) {
         console.error('Failed to log Game Hub interaction:', error);
       } else {
-        console.log('✅ Game Hub interaction logged:', {
-          game: detectedGame,
-          genre: detectedGenre,
-          confidence,
-          queryType
-        });
-      }
+              }
     } catch (error) {
       console.error('Error logging Game Hub interaction:', error);
     }
   }
 
   /**
-   * ✅ GAME HUB TAB CREATION TRACKING: Update interaction when tab is created
+   * ? GAME HUB TAB CREATION TRACKING: Update interaction when tab is created
    * Call this when user creates a game tab from Game Hub suggestion
    */
   public async markGameHubTabCreated(
@@ -1393,15 +1356,14 @@ NOW generate COMPREHENSIVE valid JSON for ALL these tab IDs (MUST include every 
       if (error) {
         console.error('Failed to mark Game Hub tab created:', error);
       } else {
-        console.log('✅ Game Hub tab creation tracked for:', gameTitle);
-      }
+              }
     } catch (error) {
       console.error('Error marking Game Hub tab created:', error);
     }
   }
 
   /**
-   * ✅ API USAGE TRACKING: Log Gemini API calls to api_usage table
+   * ? API USAGE TRACKING: Log Gemini API calls to api_usage table
    * Call this after every successful AI response to track costs and usage
    */
   private async logApiUsage(params: {

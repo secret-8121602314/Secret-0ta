@@ -17,12 +17,7 @@ export class MessageRoutingService {
     toConversationId: string
   ): Promise<void> {
     if (process.env.NODE_ENV === 'development') {
-      console.log('📦 [MessageRouting] Starting atomic migration:', {
-        messageIds,
-        from: fromConversationId,
-        to: toConversationId
-      });
-    }
+          }
 
     // ✅ FIX: Use cached data (in-memory) which has the most recent state
     // Including the newly created game tab AND the game-hub with its messages
@@ -48,8 +43,7 @@ export class MessageRoutingService {
     const messagesToMove = fromConv.messages.filter(m => messageIds.includes(m.id));
     
     if (messagesToMove.length === 0) {
-      console.warn('⚠️ [MessageRouting] No messages found to migrate');
-      return;
+            return;
     }
     
     // Check for duplicates in destination (prevent duplicate messages)
@@ -58,12 +52,7 @@ export class MessageRoutingService {
     );
     
     if (process.env.NODE_ENV === 'development') {
-      console.log('📦 [MessageRouting] Migration details:', {
-        found: messagesToMove.length,
-        toAdd: messagesToAdd.length,
-        duplicatesSkipped: messagesToMove.length - messagesToAdd.length
-      });
-    }
+          }
     
     // ATOMIC UPDATE: Modify both conversations in a single object
     const updatedConversations: Conversations = {
@@ -84,12 +73,7 @@ export class MessageRoutingService {
     await ConversationService.setConversations(updatedConversations);
     
     if (process.env.NODE_ENV === 'development') {
-      console.log('✅ [MessageRouting] Migration complete:', {
-        migrated: messagesToAdd.length,
-        fromMessages: updatedConversations[fromConversationId].messages.length,
-        toMessages: updatedConversations[toConversationId].messages.length
-      });
-    }
+          }
   }
 
   /**

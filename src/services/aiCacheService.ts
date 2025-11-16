@@ -58,9 +58,7 @@ export class AICacheService {
    * Check if a response exists in cache
    */
   async getCachedResponse(cacheKey: string): Promise<AICacheResponseData | null> {
-    console.log(`🔍 [aiCacheService] getCachedResponse called with key: ${cacheKey}`);
-    
-    try {
+        try {
       const { data, error } = await supabase
         .from('ai_responses')
         .select('response_data, created_at, model_used, tokens_used, cache_type')
@@ -197,8 +195,7 @@ export class AICacheService {
     
     // Don't cache if explicitly disabled
     if (context.noCache === true) {
-      console.log(`❌ [aiCacheService] Not caching: noCache=true`);
-      return false;
+            return false;
     }
 
     // Don't cache very short prompts (likely greetings or clarifications)
@@ -212,13 +209,11 @@ export class AICacheService {
     const lowerPrompt = prompt.toLowerCase();
     const foundTimeSensitive = timeSensitive.find(word => lowerPrompt.includes(word));
     if (foundTimeSensitive) {
-      console.log(`❌ [aiCacheService] Not caching: time-sensitive word found: "${foundTimeSensitive}"`);
-      return false;
+            return false;
     }
 
     // Cache everything else
-    console.log(`✅ [aiCacheService] Should cache this query`);
-    return true;
+        return true;
   }
 
   /**
@@ -239,9 +234,7 @@ export class AICacheService {
       }
 
       const deletedCount = data?.length || 0;
-      console.log(`🧹 Cleaned up ${deletedCount} expired cache entries`);
-
-      return { deleted: deletedCount };
+            return { deleted: deletedCount };
     } catch (error) {
       console.error('Error in cleanupExpiredCache:', error);
       return { deleted: 0 };
@@ -302,8 +295,7 @@ export class AICacheService {
         return false;
       }
 
-      console.log(`🗑️ Invalidated cache for game: ${gameTitle}`);
-      return true;
+            return true;
     } catch (error) {
       console.error('Error in invalidateGameCache:', error);
       return false;

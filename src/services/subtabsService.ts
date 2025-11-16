@@ -76,8 +76,7 @@ export class SubtabsService {
     }
     
     if (conversation?.is_unreleased) {
-      console.warn(`⛔ Subtab creation blocked for unreleased game: ${conversation.title}`);
-      throw new Error('Subtabs cannot be created for unreleased games. This feature will be available once the game is released.');
+            throw new Error('Subtabs cannot be created for unreleased games. This feature will be available once the game is released.');
     }
     
     if (FEATURE_FLAGS.USE_NORMALIZED_SUBTABS) {

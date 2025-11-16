@@ -196,8 +196,7 @@ const MainApp: React.FC<MainAppProps> = ({
   // Initialize TTS service on mount
   useEffect(() => {
     ttsService.init().catch((err: Error) => {
-      console.warn('Failed to initialize TTS service:', err);
-    });
+          });
   }, []);
 
   // Persist auto-upload mode setting to localStorage
@@ -207,23 +206,16 @@ const MainApp: React.FC<MainAppProps> = ({
 
   // Handle WebSocket messages for screenshot processing
   const handleWebSocketMessage = useCallback((data: Record<string, unknown>) => {
-    console.log('🔗 [MainApp] Received WebSocket message:', data);
-    
-    // Check if this is a connection confirmation from PC client
+        // Check if this is a connection confirmation from PC client
     if (data.type === 'partner_connected' || data.type === 'connection_alive' || data.type === 'connected' || data.status === 'connected') {
-      console.log('🔗 [MainApp] PC client confirmed connection');
-      // Get connection code from state or localStorage
+            // Get connection code from state or localStorage
       const codeToUse = connectionCode || localStorage.getItem('otakon_connection_code');
-      console.log('🔗 [MainApp] propOnConnect:', !!propOnConnect, 'connectionCode:', codeToUse);
-      // Update connection status in parent
+            // Update connection status in parent
       if (propOnConnect && codeToUse) {
-        console.log('🔗 [MainApp] Calling propOnConnect with code:', codeToUse);
-        propOnConnect(codeToUse);
+                propOnConnect(codeToUse);
       } else if (!propOnConnect) {
-        console.warn('🔗 [MainApp] propOnConnect not provided');
-      } else if (!codeToUse) {
-        console.warn('🔗 [MainApp] connectionCode not available in state or localStorage');
-      }
+              } else if (!codeToUse) {
+              }
     }
     
     if (data.type === 'screenshot' && data.dataUrl) {
@@ -246,22 +238,18 @@ const MainApp: React.FC<MainAppProps> = ({
       
       if (isManualUploadMode) {
         // ✅ FIXED: In manual mode, queue the image for ChatInterface (not text input!)
-        console.log('📸 [MainApp] Manual mode: Setting queuedScreenshot state');
-        setQueuedScreenshot(data.dataUrl);
-        console.log('📸 [MainApp] queuedScreenshot state should now be set');
-        toastService.info('Screenshot queued. Review and send when ready.');
+                setQueuedScreenshot(data.dataUrl);
+                toastService.info('Screenshot queued. Review and send when ready.');
         return; // Don't send automatically in manual mode
       }
       
       // Auto mode: Send the screenshot to the active conversation immediately
       if (activeConversation && handleSendMessageRef.current) {
-        console.log('📸 Auto mode: Sending screenshot immediately');
-        handleSendMessageRef.current("", data.dataUrl);
+                handleSendMessageRef.current("", data.dataUrl);
         // Clear the queued screenshot immediately after sending in auto mode
         setQueuedScreenshot(null);
       } else {
-        console.warn('📸 No active conversation to send screenshot to');
-        toastService.warning('No active conversation. Please select or create a conversation first.');
+                toastService.warning('No active conversation. Please select or create a conversation first.');
       }
     }
   }, [isManualUploadMode, activeConversation, propOnConnect, connectionCode]);
@@ -291,14 +279,12 @@ const MainApp: React.FC<MainAppProps> = ({
     const loadData = async (retryCount = 0) => {
       // ✅ PERFORMANCE: Guard against concurrent loads
       if (isLoadingConversationsRef.current) {
-        console.log('🔍 [MainApp] Already loading conversations, skipping...');
-        return;
+                return;
       }
       
       // ✅ PERFORMANCE: Skip if already loaded (unless retry)
       if (hasLoadedConversationsRef.current && retryCount === 0) {
-        console.log('🔍 [MainApp] Conversations already loaded, skipping...');
-        return;
+                return;
       }
       
       isLoadingConversationsRef.current = true;
@@ -312,8 +298,7 @@ const MainApp: React.FC<MainAppProps> = ({
           UserService.setCurrentUser(currentUser);
         } else if (retryCount === 0) {
           // If no user on first attempt, wait a bit for auth state to settle after onboarding
-          console.log('🔍 [MainApp] No user found, retrying in 500ms...');
-          setTimeout(() => loadData(1), 500);
+                    setTimeout(() => loadData(1), 500);
           return;
         }
 
@@ -321,40 +306,32 @@ const MainApp: React.FC<MainAppProps> = ({
         
         // ✅ FIX: Ensure Game Hub exists first - this returns it directly (RLS workaround)
         const gameHubFromEnsure = await ConversationService.ensureGameHubExists();
-        console.log('🔍 [MainApp] ensureGameHubExists returned:', gameHubFromEnsure?.id);
-        
-        // ✅ CRITICAL: Use cached conversations instead of requerying Supabase
+                // ✅ CRITICAL: Use cached conversations instead of requerying Supabase
         // getConversations() bypasses cache and queries Supabase which fails due to RLS
         const userConversations = ConversationService.getCachedConversations() || {};
-        console.log('🔍 [MainApp] Loaded conversations from cache:', userConversations);
-        console.log('🔍 [MainApp] Conversation count:', Object.keys(userConversations).length);
+                console.log('🔍 [MainApp] Conversation count:', Object.keys(userConversations).length);
         
         // ✅ Ensure Game Hub is in the loaded conversations
         if (gameHubFromEnsure && !userConversations[gameHubFromEnsure.id]) {
-          console.log('🔍 [MainApp] Adding Game Hub to conversations map');
-          userConversations[gameHubFromEnsure.id] = gameHubFromEnsure;
+                    userConversations[gameHubFromEnsure.id] = gameHubFromEnsure;
         }
         
         setConversations(userConversations);
 
         let active = await ConversationService.getActiveConversation();
-        console.log('🔍 [MainApp] Active conversation from service:', active);
-
-        // Handle all cases to ensure "Game Hub" is always available and active by default
+                // Handle all cases to ensure "Game Hub" is always available and active by default
         let currentGameHub = Object.values(userConversations).find(
           conv => conv.isGameHub || conv.title === 'Game Hub' || conv.id === 'game-hub'
         );
         
         // ✅ FIX: If still no Game Hub found, use the one from ensure
         if (!currentGameHub && gameHubFromEnsure) {
-          console.log('🔍 [MainApp] Using Game Hub from ensureGameHubExists');
-          currentGameHub = gameHubFromEnsure;
+                    currentGameHub = gameHubFromEnsure;
         }
 
         // Case 1: No conversations at all (should not happen since we call ensureGameHubExists)
         if (Object.keys(userConversations).length === 0) {
-          console.log('🔍 [MainApp] No conversations found, creating "Game Hub"...');
-          const newConversation = ConversationService.createConversation('Game Hub', 'game-hub');
+                    const newConversation = ConversationService.createConversation('Game Hub', 'game-hub');
           await ConversationService.addConversation(newConversation);
           await ConversationService.setActiveConversation(newConversation.id);
           
@@ -374,33 +351,19 @@ const MainApp: React.FC<MainAppProps> = ({
           // Mark as first-run complete since we just created and activated Game Hub
           localStorage.setItem('otakon_has_used_app', 'true');
           console.log('🔍 [MainApp] Created and activated "Game Hub" conversation (first-run complete)');
-          console.log('🔍 [MainApp] Active conversation details:', {
-            id: active?.id,
-            title: active?.title,
-            isActive: active?.isActive,
-            isGameHub: active?.isGameHub,
-            messageCount: active?.messages?.length || 0
-          });
-        }
+                  }
         // Case 2: Game Hub exists but nothing is active - set Game Hub as active
         // This handles first-time users after onboarding, as well as returning users
         else if (!active && currentGameHub) {
-          console.log('🔍 [MainApp] No active conversation found, activating Game Hub');
-          await ConversationService.setActiveConversation(currentGameHub.id);
+                    await ConversationService.setActiveConversation(currentGameHub.id);
           const updatedConversations = await ConversationService.getConversations();
           setConversations(updatedConversations);
           active = updatedConversations[currentGameHub.id];
           setActiveConversation(active);
-          console.log('🔍 [MainApp] Game Hub activated:', {
-            id: active?.id,
-            title: active?.title,
-            isActive: active?.isActive
-          });
-        }
+                  }
         // Case 4: No "Game Hub" conversation but other conversations exist - create and activate it
         else if (!currentGameHub) {
-          console.log('🔍 [MainApp] "Game Hub" missing, creating it...');
-          const newConversation = ConversationService.createConversation('Game Hub', 'game-hub');
+                    const newConversation = ConversationService.createConversation('Game Hub', 'game-hub');
           await ConversationService.addConversation(newConversation);
           
           // If no active conversation, make "Game Hub" active
@@ -410,24 +373,20 @@ const MainApp: React.FC<MainAppProps> = ({
             setConversations(updatedConversations);
             active = updatedConversations['game-hub'];
             setActiveConversation(active);
-            console.log('🔍 [MainApp] Created "Game Hub" and set as active');
-          } else {
+                      } else {
             // Otherwise, just add it but keep current active conversation
             const updatedConversations = await ConversationService.getConversations();
             setConversations(updatedConversations);
             setActiveConversation(active);
-            console.log('🔍 [MainApp] Created "Game Hub" but kept existing active conversation:', active.title);
-          }
+                      }
         }
         // Case 5: Active conversation exists - restore it
         else if (active) {
-          console.log('🔍 [MainApp] Restoring active conversation:', active.title, 'with ID:', active.id);
-          setActiveConversation(active);
+                    setActiveConversation(active);
         }
         // Case 6: FALLBACK - No active conversation but Game Hub exists
         else if (currentGameHub) {
-          console.log('🔍 [MainApp] No active conversation, falling back to Game Hub');
-          await ConversationService.setActiveConversation(currentGameHub.id);
+                    await ConversationService.setActiveConversation(currentGameHub.id);
           const updatedConversations = await ConversationService.getConversations();
           setConversations(updatedConversations);
           setActiveConversation(updatedConversations[currentGameHub.id]);
@@ -454,8 +413,7 @@ const MainApp: React.FC<MainAppProps> = ({
         // 🔧 CRITICAL: Only mark initialization as complete if we have an active conversation
         // This prevents showing "Loading chat..." when there's no active conversation set
         if (finalActive) {
-          console.log('🔍 [MainApp] Initialization complete with active conversation:', finalActive.title);
-          setIsInitializing(false);
+                    setIsInitializing(false);
         } else {
           console.error('🔍 [MainApp] ERROR: No active conversation after initialization!');
           // Force Game Hub as active if we somehow got here without one
@@ -479,8 +437,7 @@ const MainApp: React.FC<MainAppProps> = ({
         // Retry up to 3 times with exponential backoff
         if (retryCount < 3) {
           const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
-          console.log(`🔍 [MainApp] Retrying in ${delay}ms...`);
-          setTimeout(() => loadData(retryCount + 1), delay);
+                    setTimeout(() => loadData(retryCount + 1), delay);
         } else {
           console.error('🔍 [MainApp] Failed to load data after 3 attempts');
           toastService.error('Failed to load conversations. Please refresh the page.', {
@@ -508,12 +465,10 @@ const MainApp: React.FC<MainAppProps> = ({
       if (isInitializing) {
         // Only force complete if we have conversations, even without user
         if (Object.keys(conversations).length > 0 || activeConversation) {
-          console.warn('⚠️ [MainApp] Initialization timeout - but we have conversations, forcing completion');
-          setIsInitializing(false);
+                    setIsInitializing(false);
         } else {
           // Try to get user and load conversations one more time
-          console.warn('⚠️ [MainApp] Initialization timeout - retrying to load user and conversations');
-          const currentUser = authService.getCurrentUser();
+                    const currentUser = authService.getCurrentUser();
           if (currentUser) {
             setUser(currentUser);
             UserService.setCurrentUser(currentUser);
@@ -530,9 +485,7 @@ const MainApp: React.FC<MainAppProps> = ({
   useEffect(() => {
     if (!activeConversation?.id) return;
     
-    console.log('🔌 [MainApp] Setting up real-time subscription for conversation:', activeConversation.id);
-    
-    // Subscribe to conversation updates
+        // Subscribe to conversation updates
     const subscription = supabase
       .channel(`conversation:${activeConversation.id}`)
       .on(
@@ -544,9 +497,7 @@ const MainApp: React.FC<MainAppProps> = ({
           filter: `id=eq.${activeConversation.id}`
         },
         async (payload: Record<string, unknown>) => {
-          console.log('📡 [MainApp] Real-time update received for conversation:', payload);
-          
-          // Update conversations state with fresh data
+                    // Update conversations state with fresh data
           setConversations((prev) => {
             const updated = { ...prev };
             
@@ -559,8 +510,7 @@ const MainApp: React.FC<MainAppProps> = ({
                 subtabs: payload.new.subtabs || updated[activeConversation.id].subtabs || []
               };
               
-              console.log('✅ [MainApp] Conversation updated via real-time:', updated[activeConversation.id]);
-            }
+                          }
             
             return updated;
           });
@@ -580,16 +530,14 @@ const MainApp: React.FC<MainAppProps> = ({
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          console.log('✅ [MainApp] Successfully subscribed to conversation updates');
-        } else if (status === 'CHANNEL_ERROR') {
+                  } else if (status === 'CHANNEL_ERROR') {
           console.error('❌ [MainApp] Real-time subscription error');
         }
       });
     
     // Cleanup subscription on unmount or when conversation changes
     return () => {
-      console.log('🔌 [MainApp] Unsubscribing from conversation:', activeConversation.id);
-      subscription.unsubscribe();
+            subscription.unsubscribe();
     };
   }, [activeConversation?.id]);
 
@@ -600,11 +548,9 @@ const MainApp: React.FC<MainAppProps> = ({
       if (currentUser) {
         setUser(currentUser);
         UserService.setCurrentUser(currentUser);
-        console.log('📊 [MainApp] User data refreshed for credit update');
-      }
+              }
     } catch (error) {
-      console.warn('Failed to refresh user data:', error);
-      toastService.warning('Failed to refresh user data. Please refresh the page if you experience issues.');
+            toastService.warning('Failed to refresh user data. Please refresh the page if you experience issues.');
     }
   };
 
@@ -615,8 +561,7 @@ const MainApp: React.FC<MainAppProps> = ({
     };
 
     const handleWebSocketOpen = () => {
-      console.log('🔌 WebSocket connected');
-      // Save connection time for status tracking
+            // Save connection time for status tracking
       setLastSuccessfulConnection(new Date());
       // Update connection status in parent
       if (propOnConnect && connectionCode) {
@@ -625,14 +570,12 @@ const MainApp: React.FC<MainAppProps> = ({
     };
 
     const handleWebSocketClose = () => {
-      console.log('🔌 WebSocket disconnected');
-    };
+          };
 
     // Check if we have a stored connection code and try to reconnect
     const storedCode = localStorage.getItem('otakon_connection_code');
     if (storedCode) {
-      console.log('🔌 [MainApp] Found stored connection code, attempting to reconnect:', storedCode);
-      setConnectionCode(storedCode);
+            setConnectionCode(storedCode);
       connect(storedCode, handleWebSocketOpen, handleWebSocketMessage, handleWebSocketError, handleWebSocketClose);
     }
 
@@ -857,9 +800,7 @@ const MainApp: React.FC<MainAppProps> = ({
 
   const handleClearConversation = async (id: string) => {
     try {
-      console.log('🧹 [MainApp] Clearing conversation:', id);
-      
-      // ✅ OPTIMISTIC: Clear messages locally immediately (instant UI)
+            // ✅ OPTIMISTIC: Clear messages locally immediately (instant UI)
       setConversations(prev => ({
         ...prev,
         [id]: {
@@ -890,8 +831,6 @@ const MainApp: React.FC<MainAppProps> = ({
     }
   };
 
-
-
   const handleCreditModalOpen = () => {
     setCreditModalOpen(true);
   };
@@ -902,8 +841,7 @@ const MainApp: React.FC<MainAppProps> = ({
 
   const handleUpgrade = () => {
     // TODO: Implement upgrade functionality
-    console.log('Upgrade clicked');
-  };
+      };
 
   const handleOpenGuide = () => {
     // Open the welcome screen guide
@@ -1028,14 +966,12 @@ const MainApp: React.FC<MainAppProps> = ({
           localStorage.setItem('otakonHasConnectedBefore', 'true');
         },
         (data: Record<string, unknown>) => {
-          console.log('Connection message:', data);
-        },
+                  },
         (error: string) => {
           console.error('Connection error:', error);
         },
         () => {
-          console.log('Connection closed');
-        }
+                  }
       );
     }
   };
@@ -1054,12 +990,9 @@ const MainApp: React.FC<MainAppProps> = ({
 
   // Handle suggested prompt clicks
   const handleSuggestedPromptClick = async (prompt: string) => {
-    console.log('🎯 [MainApp] Suggested prompt clicked:', prompt, { isLoading, hasActiveConversation: !!activeConversation });
-    
-    // Guard: Don't allow if already loading or no active conversation
+        // Guard: Don't allow if already loading or no active conversation
     if (isLoading || !activeConversation) {
-      console.warn('🎯 [MainApp] Suggested prompt blocked:', { isLoading, hasActiveConversation: !!activeConversation });
-      return;
+            return;
     }
     
     try {
@@ -1088,8 +1021,7 @@ const MainApp: React.FC<MainAppProps> = ({
     // Create summary of current session before switching
     if (wasPlaying) {
       // Switching from Playing to Planning - create playing session summary
-      console.log('📝 [MainApp] Creating Playing session summary for Planning mode');
-      try {
+            try {
         const playingSummary = await sessionSummaryService.generatePlayingSessionSummary(activeConversation);
         await sessionSummaryService.storeSessionSummary(activeConversation.id, playingSummary);
         
@@ -1120,8 +1052,7 @@ const MainApp: React.FC<MainAppProps> = ({
       }
     } else if (willBePlaying) {
       // Switching from Planning to Playing - create planning session summary
-      console.log('📝 [MainApp] Creating Planning session summary for Playing mode');
-      try {
+            try {
         const planningSummary = await sessionSummaryService.generatePlanningSessionSummary(activeConversation);
         await sessionSummaryService.storeSessionSummary(activeConversation.id, planningSummary);
         
@@ -1258,9 +1189,7 @@ const MainApp: React.FC<MainAppProps> = ({
 
   // Placeholder for game tab creation - will be implemented in Week 3
   const handleCreateGameTab = async (gameInfo: { gameTitle: string; genre?: string; aiResponse?: Record<string, unknown>; isUnreleased?: boolean }): Promise<Conversation | null> => {
-    console.log('🎮 [MainApp] Game tab creation requested:', gameInfo);
-    
-    try {
+        try {
       const user = authService.getCurrentUser();
       if (!user) {
         console.error('User not authenticated for game tab creation');
@@ -1275,8 +1204,7 @@ const MainApp: React.FC<MainAppProps> = ({
       // Check if game tab already exists
       const existingConversation = conversations[conversationId];
       if (existingConversation) {
-        console.log('🎮 [MainApp] Game tab already exists, returning it');
-        return existingConversation;
+                return existingConversation;
       }
 
       // Create new game tab with AI response data
@@ -1301,8 +1229,7 @@ const MainApp: React.FC<MainAppProps> = ({
           .catch(error => console.warn('Failed to track Game Hub tab creation:', error));
       }
 
-      console.log('🎮 [MainApp] Game tab created successfully:', newGameTab.title);
-      toastService.success(`Game tab "${gameInfo.gameTitle}" created!`);
+            toastService.success(`Game tab "${gameInfo.gameTitle}" created!`);
       return newGameTab;
     } catch (error) {
       console.error('Failed to create game tab:', error);
@@ -1330,8 +1257,7 @@ const MainApp: React.FC<MainAppProps> = ({
     // Prevent duplicate/concurrent sends
     if (!activeConversation || isLoading) {
       if (isLoading) {
-        console.log('📸 [MainApp] Already processing a message, ignoring duplicate request');
-      }
+              }
       console.warn('📸 [MainApp] handleSendMessage blocked:', { 
         hasActiveConversation: !!activeConversation, 
         isLoading,
@@ -1367,8 +1293,7 @@ const MainApp: React.FC<MainAppProps> = ({
     if (isGameHelpRequest && !activeConversation.isGameHub) {
       // Switch to Playing mode if not already active
       if (!session.isActive || session.currentGameId !== activeConversation.id) {
-        console.log('🎮 [MainApp] Auto-switching to Playing mode for game help request');
-        setActiveSession(activeConversation.id, true);
+                setActiveSession(activeConversation.id, true);
       }
     }
 
@@ -1405,8 +1330,7 @@ const MainApp: React.FC<MainAppProps> = ({
     if (tabManagementService.hasTabCommand(message)) {
       const command = tabManagementService.parseTabCommand(message, activeConversation);
       if (command) {
-        console.log('📝 [MainApp] Tab command detected:', command);
-        console.log('📝 [MainApp] Command description:', tabManagementService.describeCommand(command));
+                console.log('📝 [MainApp] Command description:', tabManagementService.describeCommand(command));
       }
     }
 
@@ -1471,8 +1395,7 @@ const MainApp: React.FC<MainAppProps> = ({
       const supabaseService = new SupabaseService();
       supabaseService.incrementUsage(user.authUserId, queryType)
         .then(() => {
-          console.log(`📊 [MainApp] Credit usage updated: ${queryType} query`);
-          // Refresh user data in background to update credit indicator
+                    // Refresh user data in background to update credit indicator
           return refreshUserData();
         })
         .catch(error => console.warn('Failed to update usage in Supabase:', error));
@@ -1498,8 +1421,7 @@ const MainApp: React.FC<MainAppProps> = ({
         const { contextSummarizationService } = await import('../services/contextSummarizationService');
         
         if (contextSummarizationService.shouldSummarize(activeConversation)) {
-          console.log('📊 [MainApp] Applying context summarization...');
-          const summarizedConversation = await contextSummarizationService.applyContextSummarization(activeConversation);
+                    const summarizedConversation = await contextSummarizationService.applyContextSummarization(activeConversation);
           
           // Update conversation with summarized context
           await ConversationService.updateConversation(activeConversation.id, summarizedConversation);
@@ -1512,8 +1434,7 @@ const MainApp: React.FC<MainAppProps> = ({
           }));
           setActiveConversation(summarizedConversation);
           
-          console.log('✅ [MainApp] Context summarized successfully');
-        }
+                  }
       }
 
       const response = await aiService.getChatResponseWithStructure(
@@ -1528,8 +1449,7 @@ const MainApp: React.FC<MainAppProps> = ({
 
       // Check if request was aborted before adding response to conversation
       if (controller.signal.aborted) {
-        console.log('AI request was aborted, skipping response');
-        return;
+                return;
       }
 
       const aiMessage = {
@@ -1636,18 +1556,12 @@ const MainApp: React.FC<MainAppProps> = ({
 
       // ✅ DEFERRED: Process suggested prompts AFTER tab migration (moved to after tab switch)
       // This ensures prompts are based on the FINAL active tab, not the intermediate Game Hub state
-      console.log('🔍 [MainApp] ===== SUGGESTIONS DEBUG =====');
-      console.log('🔍 [MainApp] response.followUpPrompts:', response.followUpPrompts);
-      console.log('🔍 [MainApp] response.suggestions:', response.suggestions);
-      
-      const suggestionsToUse = response.followUpPrompts || response.suggestions;
+                        const suggestionsToUse = response.followUpPrompts || response.suggestions;
       console.log('🔍 [MainApp] suggestionsToUse (before processing):', suggestionsToUse);
       
       const processedSuggestions = suggestedPromptsService.processAISuggestions(suggestionsToUse);
       console.log('🔍 [MainApp] processedSuggestions (after processing):', processedSuggestions);
-      console.log('🔍 [MainApp] ===== END SUGGESTIONS DEBUG =====');
-
-      // Handle state update tags (game progress, objectives, etc.)
+            // Handle state update tags (game progress, objectives, etc.)
       if (response.stateUpdateTags && response.stateUpdateTags.length > 0) {
         console.error('🎮 [MainApp] Processing state update tags:', response.stateUpdateTags);
         
@@ -1712,16 +1626,12 @@ const MainApp: React.FC<MainAppProps> = ({
 
       // Handle progressive insight updates (if AI provided updates to existing subtabs)
       if (response.progressiveInsightUpdates && response.progressiveInsightUpdates.length > 0) {
-        console.log('📝 [MainApp] AI provided progressive insight updates:', response.progressiveInsightUpdates.length);
-        
-        // Update subtabs in background (non-blocking)
+                // Update subtabs in background (non-blocking)
         gameTabService.updateSubTabsFromAIResponse(
           activeConversation.id,
           response.progressiveInsightUpdates
         ).then(() => {
-          console.log('📝 [MainApp] Subtabs updated successfully');
-          
-          // Refresh conversations to show updated subtabs
+                    // Refresh conversations to show updated subtabs
           ConversationService.getConversations().then(updatedConversations => {
             const freshConversations = deepCloneConversations(updatedConversations);
             setConversations(freshConversations);
@@ -1742,14 +1652,10 @@ const MainApp: React.FC<MainAppProps> = ({
           response.otakonTags.has('OTAKON_INSIGHT_MODIFY_PENDING') || 
           response.otakonTags.has('OTAKON_INSIGHT_DELETE_REQUEST')) {
         
-        console.log('📝 [MainApp] Processing tab management commands from AI');
-
-        // Handle INSIGHT_UPDATE (update content of existing tab)
+                // Handle INSIGHT_UPDATE (update content of existing tab)
         if (response.otakonTags.has('OTAKON_INSIGHT_UPDATE')) {
           const updateData = response.otakonTags.get('OTAKON_INSIGHT_UPDATE');
-          console.log('📝 [MainApp] INSIGHT_UPDATE:', updateData);
-          
-          if (typeof updateData === 'string') {
+                    if (typeof updateData === 'string') {
             try {
               const parsed = JSON.parse(updateData);
               if (parsed.id && parsed.content) {
@@ -1757,8 +1663,7 @@ const MainApp: React.FC<MainAppProps> = ({
                   activeConversation.id,
                   [{ tabId: parsed.id, title: '', content: parsed.content }]
                 ).then(() => {
-                  console.log('📝 [MainApp] Tab updated via command:', parsed.id);
-                  // Refresh UI
+                                    // Refresh UI
                   ConversationService.getConversations().then(updatedConversations => {
                     const freshConversations = deepCloneConversations(updatedConversations);
                     setConversations(freshConversations);
@@ -1778,9 +1683,7 @@ const MainApp: React.FC<MainAppProps> = ({
         // Handle INSIGHT_MODIFY_PENDING (modify/rename tab)
         if (response.otakonTags.has('OTAKON_INSIGHT_MODIFY_PENDING')) {
           const modifyData = response.otakonTags.get('OTAKON_INSIGHT_MODIFY_PENDING');
-          console.log('📝 [MainApp] INSIGHT_MODIFY_PENDING:', modifyData);
-          
-          if (typeof modifyData === 'string') {
+                    if (typeof modifyData === 'string') {
             try {
               const parsed = JSON.parse(modifyData);
               if (parsed.id && (parsed.title || parsed.content)) {
@@ -1788,8 +1691,7 @@ const MainApp: React.FC<MainAppProps> = ({
                   activeConversation.id,
                   [{ tabId: parsed.id, title: parsed.title || '', content: parsed.content || '' }]
                 ).then(() => {
-                  console.log('📝 [MainApp] Tab modified via command:', parsed.id);
-                  // Refresh UI
+                                    // Refresh UI
                   ConversationService.getConversations().then(updatedConversations => {
                     const freshConversations = deepCloneConversations(updatedConversations);
                     setConversations(freshConversations);
@@ -1809,9 +1711,7 @@ const MainApp: React.FC<MainAppProps> = ({
         // Handle INSIGHT_DELETE_REQUEST (delete tab)
         if (response.otakonTags.has('OTAKON_INSIGHT_DELETE_REQUEST')) {
           const deleteData = response.otakonTags.get('OTAKON_INSIGHT_DELETE_REQUEST');
-          console.log('📝 [MainApp] INSIGHT_DELETE_REQUEST:', deleteData);
-          
-          if (typeof deleteData === 'string') {
+                    if (typeof deleteData === 'string') {
             try {
               const parsed = JSON.parse(deleteData);
               if (parsed.id) {
@@ -1820,8 +1720,7 @@ const MainApp: React.FC<MainAppProps> = ({
                 ConversationService.updateConversation(activeConversation.id, {
                   subtabs: updatedSubtabs
                 }).then(() => {
-                  console.log('📝 [MainApp] Tab deleted via command:', parsed.id);
-                  // Refresh UI
+                                    // Refresh UI
                   ConversationService.getConversations().then(updatedConversations => {
                     setConversations(updatedConversations);
                     const refreshedConversation = updatedConversations[activeConversation.id];
@@ -1845,16 +1744,7 @@ const MainApp: React.FC<MainAppProps> = ({
         const isUnreleased = response.otakonTags.get('GAME_STATUS') === 'unreleased';
         const genre = response.otakonTags.get('GENRE') || 'Default';
 
-        console.log('🎮 [MainApp] Game detection:', { 
-          gameTitle, 
-          confidence, 
-          isUnreleased, 
-          genre,
-          currentTab: activeConversation.id,
-          messageIds: { user: newMessage.id, ai: aiMessage.id }
-        });
-
-        // Create game tab if:
+                // Create game tab if:
         // 1. Confidence is high (game is valid)
         // 2. IS_FULLSCREEN is true (actual gameplay, not launcher/menu)
         // 3. Game can be unreleased OR released - both get tabs
@@ -1882,8 +1772,7 @@ const MainApp: React.FC<MainAppProps> = ({
           let targetConversationId: string;
           
           if (existingGameTab) {
-            console.log('🎮 [MainApp] Found existing game tab:', existingGameTab.title);
-            targetConversationId = existingGameTab.id;
+                        targetConversationId = existingGameTab.id;
           } else {
             console.log('🎮 [MainApp] Creating new game tab for:', gameTitle, isUnreleased ? '(unreleased)' : '(released)');
             const gameInfo = { gameTitle, genre, aiResponse: response, isUnreleased };
@@ -1894,50 +1783,26 @@ const MainApp: React.FC<MainAppProps> = ({
             // This ensures the new tab is available for message migration
             const refreshedConversations = await ConversationService.getConversations();
             setConversations(refreshedConversations);
-            console.log('🎮 [MainApp] Conversations refreshed, new tab available for migration');
-          }
+                      }
 
           // Move the user message and AI response to the game tab if we detected a DIFFERENT game
           // Allow migration from Game Hub OR from a different game tab
           const shouldMigrateMessages = targetConversationId && targetConversationId !== activeConversation.id;
-          console.log('🎮 [MainApp] Should migrate messages?', shouldMigrateMessages);
-          console.log('🎮 [MainApp] Migration check details:', {
-            hasTargetConversation: !!targetConversationId,
-            currentConversation: {
-              id: activeConversation.id,
-              title: activeConversation.title,
-              isGameHub: activeConversation.isGameHub
-            },
-            targetConversation: {
-              id: targetConversationId,
-              title: conversations[targetConversationId]?.title || 'NOT IN STATE YET'
-            },
-            isDifferentTab: targetConversationId !== activeConversation.id,
-            messagesInCurrentTab: activeConversation.messages.length
-          });
-          
-          if (shouldMigrateMessages) {
-            console.log('🎮 [MainApp] ✅ Starting ATOMIC message migration to game tab');
-            console.log('🎮 [MainApp] From:', activeConversation.title, '→ To:', targetConversationId);
-            console.log('🎮 [MainApp] Message IDs to move:', { userMsgId: newMessage.id, aiMsgId: aiMessage.id });
-            
-            // ✅ Use atomic migration service to prevent race conditions
+                              if (shouldMigrateMessages) {
+                                                // ✅ Use atomic migration service to prevent race conditions
             await MessageRoutingService.migrateMessagesAtomic(
               [newMessage.id, aiMessage.id],
               activeConversation.id,
               targetConversationId
             );
-            console.log('🎮 [MainApp] ✅ Atomic migration complete');
-            
-            // Update state to reflect the changes
+                        // Update state to reflect the changes
             const updatedConversations = await ConversationService.getConversations();
             setConversations(updatedConversations);
             
             // Switch to the game tab
             const gameTab = updatedConversations[targetConversationId];
             if (gameTab) {
-              console.log('🎮 [MainApp] ✅ Switching to game tab:', gameTab.title, 'with', gameTab.messages.length, 'messages');
-              await ConversationService.setActiveConversation(targetConversationId);
+                            await ConversationService.setActiveConversation(targetConversationId);
               setActiveConversation(gameTab);
               // Auto-switch to Playing mode for new/existing game tabs
               setActiveSession(targetConversationId, true);
@@ -1946,13 +1811,11 @@ const MainApp: React.FC<MainAppProps> = ({
               
               // ✅ Set suggested prompts AFTER tab switch (based on FINAL active tab)
               if (processedSuggestions.length > 0) {
-                console.log('✅ [MainApp] Setting AI-provided suggestions:', processedSuggestions);
-                setSuggestedPrompts(processedSuggestions);
+                                setSuggestedPrompts(processedSuggestions);
               } else {
                 // Use fallback suggestions based on the GAME TAB, not Game Hub
                 const fallbackSuggestions = suggestedPromptsService.getFallbackSuggestions(gameTab.id, false);
-                console.log('⚠️ [MainApp] AI returned no suggestions - using fallback for game tab:', fallbackSuggestions);
-                setSuggestedPrompts(fallbackSuggestions);
+                                setSuggestedPrompts(fallbackSuggestions);
               }
               
               // Poll for subtab updates if they're still loading
@@ -1974,23 +1837,17 @@ const MainApp: React.FC<MainAppProps> = ({
               }
             }
           } else {
-            console.log('🎮 [MainApp] ⚠️ Skipping message migration - already in target game tab or no target detected');
-            
-            // ✅ No migration - set prompts for current tab (Game Hub or existing game tab)
+                        // ✅ No migration - set prompts for current tab (Game Hub or existing game tab)
             if (processedSuggestions.length > 0) {
               console.log('✅ [MainApp] Setting AI-provided suggestions (no migration):', processedSuggestions);
               setSuggestedPrompts(processedSuggestions);
             } else {
               const fallbackSuggestions = suggestedPromptsService.getFallbackSuggestions(activeConversation.id, activeConversation.isGameHub);
-              console.log('⚠️ [MainApp] AI returned no suggestions - using fallback:', fallbackSuggestions);
-              setSuggestedPrompts(fallbackSuggestions);
+                            setSuggestedPrompts(fallbackSuggestions);
             }
           }
         } else {
-          console.log('🎮 [MainApp] Not creating game tab:', { 
-            reason: !confidence ? 'no confidence' : confidence !== 'high' ? 'low confidence' : 'unreleased game'
-          });
-        }
+                  }
       }
 
     } catch (error) {
@@ -1998,8 +1855,7 @@ const MainApp: React.FC<MainAppProps> = ({
       
       // Check if it was aborted
       if (error instanceof Error && error.name === 'AbortError') {
-        console.log('AI request was aborted by user');
-        return;
+                return;
       }
       
       // Use error recovery service

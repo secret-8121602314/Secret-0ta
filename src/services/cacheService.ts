@@ -21,9 +21,7 @@ class CacheService {
     
     // Store in memory cache for fast access
     this.memoryCache.set(key, { value, expires });
-    console.log(`[CacheService] Stored in memory cache: ${key}`);
-    
-    // Store in Supabase for persistence
+        // Store in Supabase for persistence
     try {
       console.log(`[CacheService] Storing in Supabase: ${key} (type: ${cacheType}, user: ${userId || 'none'})`);
       const { error } = await supabase
@@ -39,13 +37,10 @@ class CacheService {
         });
       
       if (error) {
-        console.warn(`[CacheService] Failed to store cache in Supabase for key ${key}:`, error);
-      } else {
-        console.log(`[CacheService] Successfully stored in Supabase: ${key}`);
-      }
+              } else {
+              }
     } catch (error) {
-      console.warn(`[CacheService] Supabase cache unavailable for key ${key}, using memory only:`, error);
-    }
+          }
     
     // Cleanup memory cache if it gets too large
     if (this.memoryCache.size > this.MAX_MEMORY_CACHE_SIZE) {
@@ -62,8 +57,7 @@ class CacheService {
   async get<T>(key: string, memoryOnly: boolean = false): Promise<T | null> {
     // Check if there's already a pending request for this key
     if (this.pendingRequests.has(key)) {
-      console.log(`[CacheService] Request deduplication: waiting for pending request for key: ${key}`);
-      return await this.pendingRequests.get(key) as T | null;
+            return await this.pendingRequests.get(key) as T | null;
     }
     
     // Try memory cache first
@@ -110,8 +104,7 @@ class CacheService {
         .maybeSingle(); // Use maybeSingle() instead of single() to avoid 406 errors
       
       if (error) {
-        console.warn(`[CacheService] Supabase error for key ${key}:`, error);
-        return null;
+                return null;
       }
       
       if (!data) {
@@ -132,8 +125,7 @@ class CacheService {
       return value as T;
       
     } catch (error) {
-      console.warn(`[CacheService] Error retrieving cache for key ${key}:`, error);
-      return null;
+            return null;
     }
   }
 
@@ -160,11 +152,9 @@ class CacheService {
         .eq('key', key);
       
       if (error) {
-        console.warn(`[CacheService] Failed to delete cache from Supabase:`, error);
-      }
+              }
     } catch (error) {
-      console.warn(`[CacheService] Error deleting cache:`, error);
-    }
+          }
     
     return memoryDeleted;
   }
@@ -187,11 +177,9 @@ class CacheService {
         .neq('key', 'never_delete'); // Delete all except this placeholder
       
       if (error) {
-        console.warn(`[CacheService] Failed to clear Supabase cache:`, error);
-      }
+              }
     } catch (error) {
-      console.warn(`[CacheService] Error clearing cache:`, error);
-    }
+          }
   }
 
   /**
@@ -211,11 +199,9 @@ class CacheService {
         .lt('expires_at', new Date(now).toISOString());
       
       if (error) {
-        console.warn(`[CacheService] Failed to cleanup Supabase cache:`, error);
-      }
+              }
     } catch (error) {
-      console.warn(`[CacheService] Error cleaning up cache:`, error);
-    }
+          }
   }
 
   /**
@@ -260,13 +246,11 @@ class CacheService {
     try {
       const { data, error } = await supabase.rpc('get_cache_stats');
       if (error) {
-        console.warn('[CacheService] Failed to get Supabase stats:', error);
-        return null;
+                return null;
       }
       return data;
     } catch (error) {
-      console.warn('[CacheService] Error getting Supabase stats:', error);
-      return null;
+            return null;
     }
   }
 
@@ -277,13 +261,11 @@ class CacheService {
     try {
       const { data, error } = await supabase.rpc('get_cache_performance_metrics');
       if (error) {
-        console.warn('[CacheService] Failed to get performance metrics:', error);
-        return null;
+                return null;
       }
       return data;
     } catch (error) {
-      console.warn('[CacheService] Error getting performance metrics:', error);
-      return null;
+            return null;
     }
   }
 
@@ -294,13 +276,11 @@ class CacheService {
     try {
       const { data, error } = await supabase.rpc('get_user_cache_entries', { p_user_id: userId });
       if (error) {
-        console.warn('[CacheService] Failed to get user cache entries:', error);
-        return [];
+                return [];
       }
       return data || [];
     } catch (error) {
-      console.warn('[CacheService] Error getting user cache entries:', error);
-      return [];
+            return [];
     }
   }
 
@@ -311,13 +291,11 @@ class CacheService {
     try {
       const { data, error } = await supabase.rpc('clear_user_cache', { p_user_id: userId });
       if (error) {
-        console.warn('[CacheService] Failed to clear user cache:', error);
-        return 0;
+                return 0;
       }
       return data || 0;
     } catch (error) {
-      console.warn('[CacheService] Error clearing user cache:', error);
-      return 0;
+            return 0;
     }
   }
 
@@ -423,11 +401,9 @@ class CacheService {
       
       if (error && error.code === 'PGRST116') {
         // Table doesn't exist, create it
-        console.log('[CacheService] Creating cache table...');
-        // Note: This would typically be done via a migration
+                // Note: This would typically be done via a migration
         // For now, we'll just log that it needs to be created
-        console.warn('[CacheService] Cache table needs to be created in Supabase');
-      }
+              }
     } catch (error) {
       // Silently fail - cache table initialization is optional
       // This prevents errors on landing page before auth

@@ -59,13 +59,7 @@ function App() {
   const sessionManagerRef = useRef<SessionManager | null>(null); // Cross-tab session manager
 
   useEffect(() => {
-    console.log('🎯 [App] App state changed:', {
-      view: appState.view,
-      onboardingStatus: appState.onboardingStatus,
-      hasUser: !!authState.user,
-      userEmail: authState.user?.email
-    });
-  }, [appState.view, appState.onboardingStatus, authState.user]);
+      }, [appState.view, appState.onboardingStatus, authState.user]);
 
   useEffect(() => {
     if (authState.user && !authState.isLoading) {
@@ -101,14 +95,10 @@ function App() {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && window.location.pathname.includes('/auth/callback')) {
-        console.log('⚠️ [App] Detected OAuth callback while app was in background');
-        
-        // Check if we're already logged in
+                // Check if we're already logged in
         const currentUser = authService.getCurrentUser();
         if (currentUser && !isProcessingAuthRef.current) {
-          console.log('🔐 [App] Already logged in, preventing OAuth overwrite:', currentUser.email);
-          
-          // Clear OAuth params from URL without processing
+                    // Clear OAuth params from URL without processing
           const basePath = window.location.hostname === 'localhost' ? '/' : '/Otagon/';
           window.history.replaceState({}, document.title, basePath);
           
@@ -165,33 +155,24 @@ function App() {
       
       // Skip auto-navigation if we're manually navigating through onboarding
       if (isManualNavigationRef.current) {
-        console.log('🎯 [App] Skipping auto-navigation due to manual navigation flag');
-        isManualNavigationRef.current = false; // Reset the flag
+                isManualNavigationRef.current = false; // Reset the flag
         return;
       }
       
       isProcessingAuthRef.current = true;
-      console.log('🎯 [App] Processing auth state:', {
-        hasUser: !!newAuthState.user,
-        userEmail: newAuthState.user?.email,
-        onboardingCompleted: newAuthState.user?.onboardingCompleted
-      });
-      try {
+            try {
         if (newAuthState.user) {
           setHasEverLoggedIn(true);
           const savedAppState = newAuthState.user.appState || {};
           const nextStep = await onboardingService.getNextOnboardingStep(newAuthState.user.authUserId);
-          console.log('🎯 [App] Next onboarding step:', nextStep);
-          
-          // Returning users: Skip onboarding if they've completed it before
+                    // Returning users: Skip onboarding if they've completed it before
           // This ensures users go straight to chat on login/refresh
           const isReturningUser = nextStep === 'complete';
           
           if (isMounted) {
             if (isReturningUser) {
               // Returning user - skip all onboarding, go to main app
-              console.log('🎯 [App] Returning user detected - skipping onboarding');
-              setAppState((prev: AppState) => ({
+                            setAppState((prev: AppState) => ({
                 ...prev,
                 ...savedAppState,
                 view: 'app',
@@ -199,8 +180,7 @@ function App() {
               }));
             } else {
               // New user or incomplete onboarding - continue onboarding flow
-              console.log('🎯 [App] New user or incomplete onboarding - continuing from:', nextStep);
-              setAppState((prev: AppState) => ({
+                            setAppState((prev: AppState) => ({
                 ...prev,
                 ...savedAppState,
                 view: 'app',
@@ -287,17 +267,14 @@ function App() {
   };
 
   const handleLoginComplete = async () => {
-    console.log('🎯 [App] Email login completed, setting view to app');
-    setAppState((prev: AppState) => {
+        setAppState((prev: AppState) => {
       const newState: AppState = { ...prev, view: 'app', onboardingStatus: 'loading' };
-      console.log('🎯 [App] Setting view to app with loading status:', newState);
-      return newState;
+            return newState;
     });
   };
 
   const handleBackToLanding = () => {
-    console.log('🔙 [App] Back to landing clicked, resetting to landing page');
-    setAppState((prev: AppState) => ({
+        setAppState((prev: AppState) => ({
       ...prev,
       view: 'landing',
       onboardingStatus: 'initial'
@@ -322,8 +299,7 @@ function App() {
   };
 
   const confirmLogout = async () => {
-    console.log('🎯 [App] Starting logout process...');
-    setShowLogoutConfirm(false);
+        setShowLogoutConfirm(false);
     
     // Preserve welcome screen flag (user has seen it once, don't show again)
     const welcomeShown = localStorage.getItem('otakon_welcome_shown');
@@ -343,8 +319,7 @@ function App() {
     }));
     setAuthState({ user: null, isLoading: false, error: null });
     isProcessingAuthRef.current = false;
-    console.log('🎯 [App] Logout completed, showing login screen');
-  };
+      };
 
   const openModal = (modal: ActiveModal) => {
     setActiveModal(modal);
@@ -355,15 +330,13 @@ function App() {
   };
 
   const handleOnboardingComplete = async (step: string) => {
-    console.log('🎯 [App] Onboarding step completed:', step);
-    if (authState.user) {
+        if (authState.user) {
       const nextStep = await onboardingService.getNextOnboardingStep(authState.user.authUserId);
       
       // 🔧 FIX: If onboarding is complete, set the flag BEFORE MainApp renders
       // This ensures Game Hub is properly activated for first-time users
       if (nextStep === 'complete') {
-        console.log('🎯 [App] Onboarding fully complete - setting first-run flag');
-        localStorage.setItem('otakon_has_used_app', 'true');
+                localStorage.setItem('otakon_has_used_app', 'true');
       }
       
       setAppState((prev: AppState) => ({
@@ -376,13 +349,11 @@ function App() {
   };
 
   const handleConnect = async (code: string) => {
-    console.log('🔗 [App] Connecting with code:', code);
-12345
+    12345
     
     // Disconnect any existing connection first
     if (connectionStatus === ConnectionStatus.CONNECTED || connectionStatus === ConnectionStatus.CONNECTING) {
-      console.log('🔗 [App] Disconnecting existing connection before reconnecting');
-      disconnect();
+            disconnect();
       // Wait briefly for cleanup to complete
       await new Promise(resolve => setTimeout(resolve, 100));
     }
@@ -411,26 +382,17 @@ function App() {
       () => {
         // WebSocket opened - but DON'T set as connected yet
         // Wait for actual message from PC client
-        console.log('🔗 [App] WebSocket connection opened, waiting for PC client response...');
-        console.log('🔗 [App] hasReceivedPCMessage:', hasReceivedPCMessage.current);
-        console.log('🔗 [App] Timeout will fire in 5 seconds if no message received');
-      },
+                              },
       (data) => {
-        console.log('🔗 [App] Message received:', data);
-        console.log('🔗 [App] hasReceivedPCMessage before:', hasReceivedPCMessage.current);
-        
-        // First message from PC client confirms the connection is real
+                        // First message from PC client confirms the connection is real
         if (!hasReceivedPCMessage.current) {
           hasReceivedPCMessage.current = true;
-          console.log('🔗 [App] hasReceivedPCMessage set to:', hasReceivedPCMessage.current);
-          setConnectionStatus(ConnectionStatus.CONNECTED);
+                    setConnectionStatus(ConnectionStatus.CONNECTED);
           if (connectionTimeoutRef.current) {
             clearTimeout(connectionTimeoutRef.current);
             connectionTimeoutRef.current = null;
-            console.log('🔗 [App] Timeout cleared successfully');
-          }
-          console.log('🔗 [App] ✅ PC client confirmed - connection established');
-        }
+                      }
+                  }
         
         handleWebSocketMessage(data);
       },
@@ -444,8 +406,7 @@ function App() {
         }
       },
       () => {
-        console.log('🔗 [App] Connection closed');
-        setConnectionStatus(ConnectionStatus.DISCONNECTED);
+                setConnectionStatus(ConnectionStatus.DISCONNECTED);
         hasReceivedPCMessage.current = false;
         if (connectionTimeoutRef.current) {
           clearTimeout(connectionTimeoutRef.current);
@@ -456,8 +417,7 @@ function App() {
   };
 
   const handleConnectionSuccess = async () => {
-    console.log('🔗 [App] Connection success callback triggered');
-    setConnectionStatus(ConnectionStatus.CONNECTED);
+        setConnectionStatus(ConnectionStatus.CONNECTED);
     setConnectionError(null);
     if (authState.user) {
       try {
@@ -467,18 +427,13 @@ function App() {
           pc_connected: true,
           pc_connection_skipped: false
         });
-        console.log('🔗 [App] Database updated successfully');
-        
-        // Set flag to prevent auth subscription from overriding navigation
+                // Set flag to prevent auth subscription from overriding navigation
         isManualNavigationRef.current = true;
         
         // Then refresh user data from database
         await authService.refreshUser();
-        console.log('🔗 [App] User data refreshed');
-        
-        // Finally, navigate to the next screen
-        console.log('🔗 [App] Navigating to features-connected splash screen after connection success');
-        setAppState((prev: AppState) => ({
+                // Finally, navigate to the next screen
+                setAppState((prev: AppState) => ({
           ...prev,
           onboardingStatus: 'features-connected'
         }));
@@ -490,8 +445,7 @@ function App() {
   };
 
   const handleDisconnect = () => {
-    console.log('🔗 [App] Disconnecting...');
-    disconnect();
+        disconnect();
     setConnectionStatus(ConnectionStatus.DISCONNECTED);
     setConnectionError(null);
   };
@@ -501,10 +455,8 @@ function App() {
   };
 
   const handleWebSocketMessage = (data: any) => {
-    console.log('🔗 [App] Processing WebSocket message:', data);
-    if (data.type === 'screenshot_batch') {
-      console.log("📸 Processing screenshot batch:", data);
-      const batchData = data.payload || data;
+        if (data.type === 'screenshot_batch') {
+            const batchData = data.payload || data;
       if (batchData.images && batchData.images.length > 0) {
         batchData.images.forEach((imgSrc: string, index: number) => {
           const properDataUrl = imgSrc.startsWith('data:') ? imgSrc : `data:image/png;base64,${imgSrc}`;
@@ -518,30 +470,23 @@ function App() {
         });
       }
     } else if (data.type === 'screenshot_success') {
-      console.log("📸 [App] Screenshot success message received:", data);
-      console.log("📸 [App] Success object:", data.success);
-      console.log("📸 [App] Has dataUrl?", !!data.success?.dataUrl);
-      console.log("📸 [App] Success keys:", data.success ? Object.keys(data.success) : 'no success object');
-      console.log("📸 [App] Details object:", data.success?.details);
-      console.log("📸 [App] Details keys:", data.success?.details ? Object.keys(data.success.details) : 'no details');
+                        console.log("📸 [App] Success keys:", data.success ? Object.keys(data.success) : 'no success object');
+            console.log("📸 [App] Details keys:", data.success?.details ? Object.keys(data.success.details) : 'no details');
       
       // Check if dataUrl is in the details object
       const dataUrl = data.success?.dataUrl || data.success?.details?.dataUrl;
       
       if (dataUrl) {
-        console.log("📸 [App] Processing individual screenshot with dataUrl");
-        const properDataUrl = dataUrl.startsWith('data:')
+                const properDataUrl = dataUrl.startsWith('data:')
           ? dataUrl
           : `data:image/png;base64,${dataUrl}`;
         if (mainAppMessageHandlerRef.current) {
-          console.log("📸 [App] Forwarding to MainApp via ref");
-          mainAppMessageHandlerRef.current({
+                    mainAppMessageHandlerRef.current({
             type: 'screenshot',
             dataUrl: properDataUrl
           });
         } else {
-          console.warn("📸 [App] mainAppMessageHandlerRef.current is null!");
-        }
+                  }
       } else if (data.success?.details?.addedToBuffer) {
         // Screenshot was added to buffer by F1/F2 hotkey
         // Only send screenshot_request if we haven't sent one in the last 2 seconds (prevent feedback loop)
@@ -549,8 +494,7 @@ function App() {
         const timeSinceLastRequest = now - lastHotkeyRequestTimestamp.current;
         
         if (timeSinceLastRequest > 2000) {
-          console.log("📸 [App] Screenshot buffered by hotkey, sending screenshot_request to trigger batch send");
-          lastHotkeyRequestTimestamp.current = now;
+                    lastHotkeyRequestTimestamp.current = now;
           
           import('./services/websocketService').then(({ send }) => {
             send({
@@ -564,14 +508,12 @@ function App() {
           console.log("📸 [App] Ignoring duplicate screenshot_success (within 2s of last request) - preventing feedback loop");
         }
       } else {
-        console.warn("📸 [App] screenshot_success received but no dataUrl found and not buffered");
-      }
+              }
     }
   };
 
   const handleSkipConnection = async () => {
-    console.log('🔗 [App] Skipping PC connection, going to pro-features');
-    if (authState.user) {
+        if (authState.user) {
       try {
         // Wait for the database update to complete
         await onboardingService.updateOnboardingStatus(authState.user.authUserId, 'how-to-use', {
@@ -586,9 +528,7 @@ function App() {
         
         // Then refresh user data from database
         await authService.refreshUser();
-        console.log('🔗 [App] User data refreshed');
-        
-        // Finally, navigate to the next screen
+                // Finally, navigate to the next screen
         setAppState((prev: AppState) => ({
           ...prev,
           onboardingStatus: 'pro-features'
@@ -601,20 +541,16 @@ function App() {
   };
 
   const handleProfileSetupComplete = async (profileData: any) => {
-    console.log('🎯 [App] Profile setup completed');
-    if (authState.user) {
+        if (authState.user) {
       try {
         // Use markProfileSetupComplete to properly set has_profile_setup flag
         await onboardingService.markProfileSetupComplete(authState.user.authUserId, profileData);
-        console.log('🎯 [App] Profile setup data saved');
-        
-        // Set flag to prevent auth subscription from overriding navigation
+                // Set flag to prevent auth subscription from overriding navigation
         isManualNavigationRef.current = true;
         
         // Refresh user data to update hasProfileSetup flag
         await authService.refreshUser();
-        console.log('🎯 [App] User data refreshed after profile setup');
-      } catch (error) {
+              } catch (error) {
         console.error('🎯 [App] Failed to save profile setup:', error);
         isManualNavigationRef.current = false;
       }
@@ -622,22 +558,18 @@ function App() {
   };
 
   const handleProfileSetupSkip = async () => {
-    console.log('🎯 [App] Profile setup skipped');
-    if (authState.user) {
+        if (authState.user) {
       try {
         // Use 'profile-setup' step to properly set has_profile_setup flag
         await onboardingService.updateOnboardingStatus(authState.user.authUserId, 'profile-setup', {
           profile_setup_skipped: true
         });
-        console.log('🎯 [App] Profile setup skipped, flag saved');
-        
-        // Set flag to prevent auth subscription from overriding
+                // Set flag to prevent auth subscription from overriding
         isManualNavigationRef.current = true;
         
         // Refresh user data to update hasProfileSetup flag
         await authService.refreshUser();
-        console.log('🎯 [App] User data refreshed after skipping profile setup');
-      } catch (error) {
+              } catch (error) {
         console.error('🎯 [App] Failed to skip profile setup:', error);
         isManualNavigationRef.current = false;
       }

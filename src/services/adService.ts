@@ -28,14 +28,11 @@ class AdService implements IAdService {
    * @future Will load Google AdSense script and configure ads
    */
   async initialize(config: AdConfig): Promise<void> {
-    console.log('[AdService] Initializing with publisher ID:', config.publisherId);
-    
-    this.config = config;
+        this.config = config;
     this.isInitialized = true;
 
     if (!config.isEnabled) {
-      console.log('[AdService] Ads are disabled in config');
-      return;
+            return;
     }
 
     // @todo: Load AdSense script
@@ -67,14 +64,12 @@ class AdService implements IAdService {
 
     // Never show ads to paid users
     if (tier === 'pro' || tier === 'vanguard_pro') {
-      console.log('[AdService] Not showing ad - user has paid tier:', tier);
-      return false;
+            return false;
     }
 
     // Check if user has consented (GDPR/CCPA)
     if (!this.hasUserConsent && !this.config.isTestMode) {
-      console.log('[AdService] Not showing ad - no user consent');
-      return false;
+            return false;
     }
 
     // Find slot for this placement
@@ -85,8 +80,7 @@ class AdService implements IAdService {
     );
 
     if (!slot) {
-      console.log('[AdService] No active slot found for placement:', placement);
-      return false;
+            return false;
     }
 
     // Check impression cap and time limits
@@ -96,16 +90,14 @@ class AdService implements IAdService {
 
       // Check impression cap per session
       if (slot.impressionCap && impressions.length >= slot.impressionCap) {
-        console.log('[AdService] Impression cap reached for slot:', slot.id);
-        return false;
+                return false;
       }
 
       // Check minimum time between ads
       if (slot.minTimeBetweenAds && impressions.length > 0) {
         const lastImpression = impressions[impressions.length - 1];
         if (now - lastImpression < slot.minTimeBetweenAds) {
-          console.log('[AdService] Too soon since last ad for slot:', slot.id);
-          return false;
+                    return false;
         }
       }
     }
@@ -118,9 +110,7 @@ class AdService implements IAdService {
    */
   async loadAd(slotId: string): Promise<void> {
     this.ensureInitialized();
-    console.log('[AdService] Loading ad for slot:', slotId);
-
-    // @todo: Implement ad loading with AdSense
+        // @todo: Implement ad loading with AdSense
     // const adElement = document.querySelector(`[data-ad-slot="${slotId}"]`);
     // if (adElement && window.adsbygoogle) {
     //   (window.adsbygoogle = window.adsbygoogle || []).push({});
@@ -132,9 +122,7 @@ class AdService implements IAdService {
    */
   async refreshAd(slotId: string): Promise<void> {
     this.ensureInitialized();
-    console.log('[AdService] Refreshing ad for slot:', slotId);
-
-    // @todo: Implement ad refresh
+        // @todo: Implement ad refresh
     // Note: AdSense doesn't officially support ad refresh
     // May need to use a different ad network for this feature
   }
@@ -143,9 +131,7 @@ class AdService implements IAdService {
    * Request user consent for personalized ads (GDPR/CCPA)
    */
   async requestConsent(): Promise<boolean> {
-    console.log('[AdService] Requesting user consent for personalized ads');
-
-    // @todo: Implement consent management
+        // @todo: Implement consent management
     // Use Google's Consent Mode or a CMP (Consent Management Platform)
     // Example: https://developers.google.com/tag-platform/security/guides/consent
     
@@ -164,8 +150,7 @@ class AdService implements IAdService {
    * Revoke user consent
    */
   revokeConsent(): void {
-    console.log('[AdService] Revoking user consent');
-    this.hasUserConsent = false;
+        this.hasUserConsent = false;
     
     // @todo: Update consent settings in AdSense
   }
@@ -178,18 +163,14 @@ class AdService implements IAdService {
     impressions.push(Date.now());
     this.impressionTracking.set(slotId, impressions);
 
-    console.log('[AdService] Tracked impression for slot:', slotId, { userId });
-
-    // @todo: Send impression data to analytics
+        // @todo: Send impression data to analytics
   }
 
   /**
    * Track ad click
    */
   trackClick(slotId: string, userId?: string): void {
-    console.log('[AdService] Tracked click for slot:', slotId, { userId });
-
-    // @todo: Send click data to analytics
+        // @todo: Send click data to analytics
   }
 
   /**
@@ -197,9 +178,7 @@ class AdService implements IAdService {
    */
   async getPerformance(startDate: number, endDate: number): Promise<AdPerformance[]> {
     this.ensureInitialized();
-    console.log('[AdService] Getting performance metrics:', { startDate, endDate });
-
-    // @todo: Fetch from AdSense API or analytics
+        // @todo: Fetch from AdSense API or analytics
     return [];
   }
 
@@ -221,8 +200,7 @@ class AdService implements IAdService {
       const isBlocked = testAd.offsetHeight === 0;
       document.body.removeChild(testAd);
 
-      console.log('[AdService] Ad blocker detected:', isBlocked);
-      return isBlocked;
+            return isBlocked;
     } catch (error) {
       console.error('[AdService] Error detecting ad blocker:', error);
       return false;

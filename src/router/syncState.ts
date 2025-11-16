@@ -114,8 +114,7 @@ export async function syncRouterStateToDatabase(
       return { success: false, error: updateError.message };
     }
     
-    console.log(`[syncRouterStateToDatabase] Synced state for ${pathname}:`, { view, onboardingStatus });
-    return { success: true };
+        return { success: true };
     
   } catch (error) {
     console.error('[syncRouterStateToDatabase] Unexpected error:', error);

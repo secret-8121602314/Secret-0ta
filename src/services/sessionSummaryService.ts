@@ -127,8 +127,7 @@ ${planningMessages.slice(-3).map(msg => `- ${msg.content.substring(0, 100)}...`)
   async storeSessionSummary(conversationId: string, summary: SessionSummary): Promise<void> {
     // Store in conversation metadata or cache
     // This would integrate with your existing conversation service
-    console.log('Storing session summary for conversation:', conversationId, summary);
-  }
+      }
 
   /**
    * Get the most recent session summary
@@ -136,8 +135,7 @@ ${planningMessages.slice(-3).map(msg => `- ${msg.content.substring(0, 100)}...`)
   async getLatestSessionSummary(conversationId: string): Promise<SessionSummary | null> {
     // Retrieve from conversation metadata or cache
     // This would integrate with your existing conversation service
-    console.log('Getting latest session summary for conversation:', conversationId);
-    return null;
+        return null;
   }
 }
 

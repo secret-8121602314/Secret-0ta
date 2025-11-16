@@ -19,8 +19,7 @@ class SuggestedPromptsService {
         this.usedPrompts = new Set(prompts);
       }
     } catch (error) {
-      console.warn('Failed to load used suggested prompts:', error);
-      this.usedPrompts = new Set();
+            this.usedPrompts = new Set();
     }
   }
 
@@ -29,8 +28,7 @@ class SuggestedPromptsService {
       const prompts = Array.from(this.usedPrompts);
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(prompts));
     } catch (error) {
-      console.warn('Failed to save used suggested prompts:', error);
-    }
+          }
   }
 
   /**
@@ -42,13 +40,11 @@ class SuggestedPromptsService {
       const now = Date.now();
       
       if (!lastResetTime || (now - parseInt(lastResetTime)) >= this.RESET_INTERVAL_MS) {
-        console.log('🔄 24 hours passed - resetting suggested prompts for fresh daily news');
-        this.resetUsedPrompts();
+                this.resetUsedPrompts();
         localStorage.setItem(this.LAST_RESET_KEY, now.toString());
       }
     } catch (error) {
-      console.warn('Failed to check/reset suggested prompts:', error);
-    }
+          }
   }
 
   /**
@@ -86,8 +82,7 @@ class SuggestedPromptsService {
   public resetUsedPrompts(): void {
     this.usedPrompts.clear();
     localStorage.removeItem(this.STORAGE_KEY);
-    console.log('🔄 Suggested prompts reset - all 4 prompts will be available again');
-  }
+      }
 
   /**
    * Get count of used prompts
@@ -109,8 +104,7 @@ class SuggestedPromptsService {
       const nextResetTime = parseInt(lastResetTime) + this.RESET_INTERVAL_MS;
       return Math.max(0, nextResetTime - Date.now());
     } catch (error) {
-      console.warn('Failed to calculate time until next reset:', error);
-      return 0;
+            return 0;
     }
   }
 
@@ -126,23 +120,17 @@ class SuggestedPromptsService {
    * Process AI-generated suggestions and format them for display
    */
   public processAISuggestions(suggestions: unknown): string[] {
-    console.log('🔍 [SuggestedPromptsService] Input suggestions:', suggestions, 'Type:', typeof suggestions);
-    
-    // Handle different types of suggestions
+        // Handle different types of suggestions
     if (!suggestions) {
-      console.log('🔍 [SuggestedPromptsService] No suggestions provided');
-      return [];
+            return [];
     }
     
     let suggestionsArray: string[] = [];
     
     if (Array.isArray(suggestions)) {
-      console.log('🔍 [SuggestedPromptsService] Suggestions is already an array');
-      suggestionsArray = suggestions;
+            suggestionsArray = suggestions;
     } else if (typeof suggestions === 'string') {
-      console.log('🔍 [SuggestedPromptsService] Suggestions is a string, attempting to parse');
-      
-      // Clean up common formatting issues first
+            // Clean up common formatting issues first
       let cleanedSuggestions = suggestions.trim();
       
       // Fix malformed JSON arrays that start with [" but might be incomplete
@@ -154,8 +142,7 @@ class SuggestedPromptsService {
         if (!cleanedSuggestions.endsWith(']')) {
           cleanedSuggestions += ']';
         }
-        console.log('🔍 [SuggestedPromptsService] Fixed malformed JSON array:', cleanedSuggestions);
-      }
+              }
       
       // If it's a string, try to parse it as JSON
       try {
@@ -163,46 +150,37 @@ class SuggestedPromptsService {
         const parsed = JSON.parse(cleanedSuggestions);
         if (Array.isArray(parsed)) {
           suggestionsArray = parsed;
-          console.log('🔍 [SuggestedPromptsService] Successfully parsed as JSON array');
-        } else {
+                  } else {
           suggestionsArray = [suggestions];
-          console.log('🔍 [SuggestedPromptsService] Parsed as single value, wrapped in array');
-        }
+                  }
       } catch (_e) {
-        console.log('🔍 [SuggestedPromptsService] JSON parsing failed, trying delimiter splitting');
-        // If JSON parsing fails, try to split by common delimiters
+                // If JSON parsing fails, try to split by common delimiters
         if (cleanedSuggestions.includes('", "') || cleanedSuggestions.includes('",\n"')) {
           // Split by comma and clean up
           suggestionsArray = cleanedSuggestions
             .split(/",\s*"/)
             .map(s => s.replace(/^["\s]+|["\s]+$/g, ''))
             .filter(s => s.length > 0);
-          console.log('🔍 [SuggestedPromptsService] Split by comma delimiters');
-        } else if (cleanedSuggestions.includes('\n')) {
+                  } else if (cleanedSuggestions.includes('\n')) {
           // Split by newlines for multi-line format
           suggestionsArray = cleanedSuggestions
             .split('\n')
             .map(s => s.replace(/^["\s]+|["\s]+$/g, ''))
             .filter(s => s.length > 0);
-          console.log('🔍 [SuggestedPromptsService] Split by quote delimiters');
-        } else {
+                  } else {
           // Single suggestion
           suggestionsArray = [suggestions];
-          console.log('🔍 [SuggestedPromptsService] Treated as single suggestion');
-        }
+                  }
       }
     }
     
-    console.log('🔍 [SuggestedPromptsService] Raw suggestions array:', suggestionsArray);
-    
-    // Clean and format suggestions
+        // Clean and format suggestions
     const result = suggestionsArray
       .filter(suggestion => suggestion && typeof suggestion === 'string' && suggestion.trim().length > 0)
       .map(suggestion => suggestion.trim())
       .slice(0, 3); // Limit to 3 suggestions
     
-    console.log('🔍 [SuggestedPromptsService] Final processed suggestions:', result);
-    return result;
+        return result;
   }
 
   /**

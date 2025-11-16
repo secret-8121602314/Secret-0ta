@@ -14,35 +14,26 @@ const InitialSplashScreen: React.FC<InitialSplashScreenProps> = ({ onComplete, u
   
   // Reset isProcessing on mount to prevent stuck state after logout
   useEffect(() => {
-    console.log('🎯 [InitialSplashScreen] Component mounted, resetting isProcessing');
-    setIsProcessing(false);
+        setIsProcessing(false);
   }, []);
   
-  console.log('🎯 [InitialSplashScreen] Component rendered');
-  
-  const handleDownloadPCClient = () => {
-    console.log('🎯 [InitialSplashScreen] Download PC Client clicked');
-    const downloadUrl = 'https://github.com/readmet3xt/otakon-pc-client/releases/tag/v1.0.0';
+    const handleDownloadPCClient = () => {
+        const downloadUrl = 'https://github.com/readmet3xt/otakon-pc-client/releases/tag/v1.0.0';
     window.open(downloadUrl, '_blank');
   };
 
   const handleStartAdventure = async () => {
-    console.log('🎯 [InitialSplashScreen] Start the Adventure button clicked');
-    if (isProcessing) {
-      console.log('🎯 [InitialSplashScreen] Already processing, ignoring click');
-      return;
+        if (isProcessing) {
+            return;
     }
     
     setIsProcessing(true);
     
     try {
-      console.log('🎯 [InitialSplashScreen] Start the Adventure processing...');
-      
-      localStorage.setItem('otakon_has_seen_splash_screens', 'true');
+            localStorage.setItem('otakon_has_seen_splash_screens', 'true');
       
       if (user) {
-        console.log('🎯 [InitialSplashScreen] Updating Supabase to advance onboarding to how-to-use');
-        try {
+                try {
           // Update app_state with new onboarding status
           const { error } = await supabase
             .from('users')
@@ -57,13 +48,10 @@ const InitialSplashScreen: React.FC<InitialSplashScreenProps> = ({ onComplete, u
             .eq('auth_user_id', user.authUserId);
             
           if (error) {
-            console.warn('🎯 [InitialSplashScreen] Failed to update Supabase:', error);
-          } else {
-            console.log('🎯 [InitialSplashScreen] Successfully updated onboarding status to how-to-use');
-          }
+                      } else {
+                      }
         } catch (error) {
-          console.warn('🎯 [InitialSplashScreen] Error updating Supabase:', error);
-        }
+                  }
       }
       
       onComplete();

@@ -10,8 +10,7 @@ const AuthCallbackRoute: React.FC = () => {
   const navigate = useNavigate();
 
   const handleAuthSuccess = () => {
-    console.log('[AuthCallbackRoute] Auth success, navigating to onboarding');
-    // After successful OAuth, navigate to onboarding
+        // After successful OAuth, navigate to onboarding
     // The onboarding loader will determine the correct step
     navigate('/onboarding');
   };

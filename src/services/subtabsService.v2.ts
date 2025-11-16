@@ -56,9 +56,7 @@ export class SubtabsServiceV2 {
       // Parse JSONB to SubTab array
       const subtabs = (data?.subtabs as unknown as SubTab[]) || [];
       
-      console.log(`[SubtabsV2] Loaded ${subtabs.length} subtabs for conversation ${conversationId}`);
-      
-      return subtabs;
+            return subtabs;
     } catch (error) {
       console.error('[SubtabsV2] Exception loading subtabs:', error);
       return [];
@@ -71,9 +69,7 @@ export class SubtabsServiceV2 {
    */
   async setSubtabs(conversationId: string, subtabs: SubTab[]): Promise<boolean> {
     try {
-      console.log(`[SubtabsV2] Saving ${subtabs.length} subtabs for conversation ${conversationId}`);
-      
-      const { error } = await supabase
+            const { error } = await supabase
         .from('conversations')
         .update({
           subtabs: subtabs as unknown as never,
@@ -87,8 +83,7 @@ export class SubtabsServiceV2 {
         return false;
       }
 
-      console.log(`[SubtabsV2] Successfully saved ${subtabs.length} subtabs`);
-      return true;
+            return true;
     } catch (error) {
       console.error('[SubtabsV2] Exception saving subtabs:', error);
       return false;
@@ -101,16 +96,13 @@ export class SubtabsServiceV2 {
    */
   async addSubtab(conversationId: string, subtab: SubTab): Promise<SubTab | null> {
     try {
-      console.log(`[SubtabsV2] Adding subtab "${subtab.title}" to conversation ${conversationId}`);
-      
-      // Get current subtabs
+            // Get current subtabs
       const currentSubtabs = await this.getSubtabs(conversationId);
       
       // Check if subtab with same ID already exists
       const exists = currentSubtabs.some(t => t.id === subtab.id);
       if (exists) {
-        console.warn(`[SubtabsV2] Subtab ${subtab.id} already exists, updating instead`);
-        return this.updateSubtab(conversationId, subtab.id, subtab);
+                return this.updateSubtab(conversationId, subtab.id, subtab);
       }
       
       // Add new subtab
@@ -136,9 +128,7 @@ export class SubtabsServiceV2 {
     updates: Partial<SubTab>
   ): Promise<SubTab | null> {
     try {
-      console.log(`[SubtabsV2] Updating subtab ${subtabId} in conversation ${conversationId}`);
-      
-      // Get current subtabs
+            // Get current subtabs
       const currentSubtabs = await this.getSubtabs(conversationId);
       
       // Find and update subtab
@@ -172,9 +162,7 @@ export class SubtabsServiceV2 {
    */
   async deleteSubtab(conversationId: string, subtabId: string): Promise<boolean> {
     try {
-      console.log(`[SubtabsV2] Deleting subtab ${subtabId} from conversation ${conversationId}`);
-      
-      // Get current subtabs
+            // Get current subtabs
       const currentSubtabs = await this.getSubtabs(conversationId);
       
       // Filter out the subtab
@@ -182,8 +170,7 @@ export class SubtabsServiceV2 {
       
       // Check if anything was deleted
       if (updatedSubtabs.length === currentSubtabs.length) {
-        console.warn(`[SubtabsV2] Subtab ${subtabId} not found, nothing deleted`);
-        return false;
+                return false;
       }
       
       // Save back
@@ -203,9 +190,7 @@ export class SubtabsServiceV2 {
     updates: Array<{ id: string; updates: Partial<SubTab> }>
   ): Promise<boolean> {
     try {
-      console.log(`[SubtabsV2] Batch updating ${updates.length} subtabs in conversation ${conversationId}`);
-      
-      // Get current subtabs
+            // Get current subtabs
       const currentSubtabs = await this.getSubtabs(conversationId);
       
       // Create update map for O(1) lookups
@@ -230,9 +215,7 @@ export class SubtabsServiceV2 {
    */
   async reorderSubtabs(conversationId: string, orderedIds: string[]): Promise<boolean> {
     try {
-      console.log(`[SubtabsV2] Reordering subtabs in conversation ${conversationId}`);
-      
-      // Get current subtabs
+            // Get current subtabs
       const currentSubtabs = await this.getSubtabs(conversationId);
       
       // Create ID to subtab map
@@ -325,8 +308,7 @@ export class SubtabsServiceV2 {
    * Clear all subtabs from a conversation
    */
   async clearSubtabs(conversationId: string): Promise<boolean> {
-    console.log(`[SubtabsV2] Clearing all subtabs from conversation ${conversationId}`);
-    return await this.setSubtabs(conversationId, []);
+        return await this.setSubtabs(conversationId, []);
   }
 }
 

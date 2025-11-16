@@ -18,16 +18,14 @@ const requestWakeLock = async () => {
         if (nav.wakeLock) {
             wakeLock = await nav.wakeLock.request('screen');
             wakeLock.addEventListener('release', () => {
-                console.log('Wake Lock released - attempting to reacquire...');
-                // Automatically reacquire if TTS is still speaking
+                                // Automatically reacquire if TTS is still speaking
                 if (synth && synth.speaking && !isBackgroundPlayback) {
                     requestWakeLock();
                 }
             });
         }
     } catch (err) {
-        console.warn('Wake Lock not supported or failed:', err);
-    }
+            }
 };
 
 // Release Wake Lock when TTS stops
@@ -38,8 +36,7 @@ const releaseWakeLock = async () => {
             wakeLock = null;
         }
     } catch (err) {
-        console.warn('Wake Lock release failed:', err);
-    }
+            }
 };
 
 // Initialize Audio Context with silent audio to maintain background session
@@ -64,8 +61,7 @@ const initAudioContext = () => {
             }
         }
     } catch (err) {
-        console.warn('Audio Context initialization failed:', err);
-    }
+            }
 };
 
 // Start silent audio to maintain audio session
@@ -78,8 +74,7 @@ const startSilentAudio = async () => {
             await silentAudio.play();
         }
     } catch (err) {
-        console.warn('Silent audio playback failed:', err);
-    }
+            }
 };
 
 // Stop silent audio when TTS is complete
@@ -90,8 +85,7 @@ const stopSilentAudio = () => {
             silentAudio.currentTime = 0;
         }
     } catch (err) {
-        console.warn('Silent audio stop failed:', err);
-    }
+            }
 };
 
 // Function to populate voices, returns a promise that resolves when voices are loaded.
@@ -112,8 +106,7 @@ const populateVoiceList = (): Promise<void> => {
         // Fallback timeout in case onvoiceschanged never fires
         setTimeout(() => {
             if (voices.length === 0) {
-                console.warn("TTS voices did not load within a reasonable time.");
-                voices = synth.getVoices(); // Try one last time
+                                voices = synth.getVoices(); // Try one last time
             }
             resolve();
         }, 1000);
@@ -184,16 +177,14 @@ const handleVisibilityChange = async () => {
     if (document.hidden) {
         // Screen locked or app backgrounded
         isBackgroundPlayback = true;
-        console.log('App backgrounded - maintaining TTS audio');
-        // Keep silent audio playing to maintain audio session
+                // Keep silent audio playing to maintain audio session
         if (synth && synth.speaking) {
             await startSilentAudio();
         }
     } else {
         // Screen unlocked or app foregrounded
         isBackgroundPlayback = false;
-        console.log('App foregrounded - resuming normal operation');
-        // Reacquire wake lock if TTS is still speaking
+                // Reacquire wake lock if TTS is still speaking
         if (synth && synth.speaking) {
             await requestWakeLock();
         }
@@ -219,8 +210,7 @@ const init = async () => {
             synth.speak(new SpeechSynthesisUtterance(''));
         }
     } else {
-        console.warn("Speech Synthesis not supported in this browser.");
-    }
+            }
 };
 
 const getAvailableVoices = (): SpeechSynthesisVoice[] => {
@@ -341,5 +331,4 @@ export const ttsService = {
     restart,
     isSpeaking,
 };
-
 

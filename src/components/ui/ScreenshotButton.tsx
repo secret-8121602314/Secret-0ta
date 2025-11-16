@@ -76,7 +76,6 @@ const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({
     setMenuOpen(true);
   };
 
-
   const handleContextMenu = (e: React.MouseEvent) => {
     // Explicitly handle right-click
     e.preventDefault();
@@ -146,10 +145,8 @@ const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({
     // Send screenshot request via websocket
     if (typeof send === 'function') {
       send(msg);
-      console.log('📸 Screenshot request sent:', msg);
-    } else {
-      console.warn('WebSocket send function not available');
-    }
+          } else {
+          }
   };
 
   const handleMultishotClick = () => {

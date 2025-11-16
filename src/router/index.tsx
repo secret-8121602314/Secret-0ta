@@ -20,39 +20,31 @@ async function authLoader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const pathname = url.pathname;
 
-  console.log('[Router authLoader] 🔐 Checking auth for path:', pathname);
-
-  // Get current auth session
+    // Get current auth session
   const { data: { session } } = await supabase.auth.getSession();
   
   if (!session) {
     // Not authenticated - allow access to landing and login pages
-    console.log('[Router authLoader] ❌ No session found, user not authenticated');
-    if (pathname !== '/' && pathname !== '/login') {
-      console.log('[Router authLoader] 📍 Redirecting to landing page');
-      return redirect('/');
+        if (pathname !== '/' && pathname !== '/login') {
+            return redirect('/');
     }
     return { user: null, onboardingStatus: 'login' as OnboardingStatus };
   }
 
-  console.log('[Router authLoader] ✅ Session found for user:', session.user.email);
-
-  // Use RPC function to get complete user data
+    // Use RPC function to get complete user data
   const { data: rpcData, error: rpcError } = await supabase
     .rpc('get_complete_user_data', { p_auth_user_id: session.user.id });
 
   if (rpcError || !rpcData || rpcData.length === 0) {
     // If user has a session but no database record, redirect to onboarding
     if (session) {
-      console.log('[Router authLoader] 👤 New user detected - no database record yet, redirecting to onboarding');
-      if (pathname === '/' || pathname === '/login') {
+            if (pathname === '/' || pathname === '/login') {
         return redirect('/onboarding');
       }
       return { user: null, onboardingStatus: 'initial' as OnboardingStatus };
     }
     
-    console.warn('[Router authLoader] ⚠️ RPC error:', rpcError);
-    return { user: null, onboardingStatus: 'login' as OnboardingStatus };
+        return { user: null, onboardingStatus: 'login' as OnboardingStatus };
   }
 
   const userData = rpcData[0];
@@ -61,16 +53,12 @@ async function authLoader({ request }: LoaderFunctionArgs) {
   const appState = (userData.app_state || {}) as import('../types/enhanced').UserAppState;
   const onboardingStatus: OnboardingStatus = (appState.onboardingStatus as OnboardingStatus) || 'initial';
 
-  console.log('[Router authLoader] 👤 Loaded user:', userData.email, '| Onboarding status:', onboardingStatus);
-
-  // Redirect authenticated users away from landing/login pages
+    // Redirect authenticated users away from landing/login pages
   if (pathname === '/' || pathname === '/login') {
     if (onboardingStatus === 'complete') {
-      console.log('[Router authLoader] 🚀 User authenticated with complete onboarding, redirecting to /app');
-      return redirect('/app');
+            return redirect('/app');
     } else if (onboardingStatus !== 'login') {
-      console.log('[Router authLoader] 🎓 User authenticated but onboarding incomplete, redirecting to /onboarding');
-      return redirect('/onboarding');
+            return redirect('/onboarding');
     }
   }
 
@@ -112,18 +100,14 @@ async function onboardingLoader({ request }: LoaderFunctionArgs) {
   const { user, onboardingStatus } = result as { user: Partial<User>; onboardingStatus: string };
   
   if (!user) {
-    console.log('[Router onboardingLoader] ❌ No user, redirecting to landing');
-    return redirect('/');
+        return redirect('/');
   }
 
-  console.log('[Router onboardingLoader] 🎓 Processing onboarding for:', user.email, '| Status:', onboardingStatus);
-
-  const currentPath = new URL(request.url).pathname;
+    const currentPath = new URL(request.url).pathname;
 
   // If onboarding is complete, redirect to app (unless they're explicitly viewing onboarding screens)
   if (onboardingStatus === 'complete') {
-    console.log('[Router onboardingLoader] ✅ Onboarding complete, redirecting to /app');
-    return redirect('/app');
+        return redirect('/app');
   }
 
   // Define valid onboarding paths
@@ -136,19 +120,16 @@ async function onboardingLoader({ request }: LoaderFunctionArgs) {
 
   // Allow free navigation through all onboarding screens
   if (validOnboardingPaths.includes(currentPath)) {
-    console.log('[Router onboardingLoader] ✅ Valid onboarding screen, allowing access:', currentPath);
-    return { user, onboardingStatus };
+        return { user, onboardingStatus };
   }
 
   // Handle /onboarding root path - redirect to first screen
   if (currentPath === '/onboarding') {
-    console.log('[Router onboardingLoader] 📍 Redirecting /onboarding to welcome screen');
-    return redirect('/onboarding/welcome');
+        return redirect('/onboarding/welcome');
   }
 
   // Invalid path - redirect to welcome
-  console.log('[Router onboardingLoader] ⚠️ Invalid onboarding path, redirecting to welcome');
-  return redirect('/onboarding/welcome');
+    return redirect('/onboarding/welcome');
 }
 
 /**
@@ -159,19 +140,14 @@ async function appLoader({ request }: LoaderFunctionArgs) {
   const { user, onboardingStatus } = result as { user: Partial<User>; onboardingStatus: string };
   
   if (!user) {
-    console.log('[Router appLoader] ❌ No user, redirecting to landing');
-    return redirect('/');
+        return redirect('/');
   }
 
-  console.log('[Router appLoader] 🚀 Attempting to access /app | User:', user.email, '| Onboarding:', onboardingStatus);
-
-  if (onboardingStatus !== 'complete') {
-    console.log('[Router appLoader] ⏸️  Onboarding not complete, redirecting to /onboarding');
-    return redirect('/onboarding');
+    if (onboardingStatus !== 'complete') {
+        return redirect('/onboarding');
   }
 
-  console.log('[Router appLoader] ✅ Onboarding complete, loading main app');
-  return { user, onboardingStatus };
+    return { user, onboardingStatus };
 }
 
 /**

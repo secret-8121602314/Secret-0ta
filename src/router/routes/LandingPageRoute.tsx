@@ -18,23 +18,16 @@ const LandingPageRoute: React.FC = () => {
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const loaderData = useLoaderData() as { user: Partial<User> | null; onboardingStatus: OnboardingStatus };
 
-  console.log('[LandingPageRoute] Component rendered, current URL:', window.location.href);
-  console.log('[LandingPageRoute] Search params:', Object.fromEntries(searchParams.entries()));
-  console.log('[LandingPageRoute] Loader data:', loaderData);
-
-  // Redirect authenticated users to appropriate screen
+    console.log('[LandingPageRoute] Search params:', Object.fromEntries(searchParams.entries()));
+    // Redirect authenticated users to appropriate screen
   useEffect(() => {
     if (loaderData?.user && loaderData.onboardingStatus) {
       const { onboardingStatus } = loaderData;
-      console.log('[LandingPageRoute] User is authenticated, onboarding status:', onboardingStatus);
-      
-      // Only redirect if onboarding status is valid
+            // Only redirect if onboarding status is valid
       if (onboardingStatus === 'complete') {
-        console.log('[LandingPageRoute] Onboarding complete, redirecting to /app');
-        navigate('/app', { replace: true });
+                navigate('/app', { replace: true });
       } else if (onboardingStatus !== 'login') {
-        console.log('[LandingPageRoute] Onboarding in progress, redirecting to /onboarding');
-        navigate('/onboarding', { replace: true });
+                navigate('/onboarding', { replace: true });
       }
     }
   }, [loaderData, navigate]);
@@ -46,8 +39,7 @@ const LandingPageRoute: React.FC = () => {
   }, [searchParams]);
 
   const handleGetStarted = () => {
-    console.log('[LandingPageRoute] handleGetStarted clicked, navigating to /login');
-    navigate('/login');
+        navigate('/login');
   };
 
   const handleOpenAbout = () => {

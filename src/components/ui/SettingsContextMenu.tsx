@@ -88,8 +88,7 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
       const success = await supabaseService.startTrial(currentUser.authUserId);
       
       if (success) {
-        console.log('✅ Trial started successfully');
-        toastService.success('Pro trial activated! Enjoy your 7-day trial.');
+                toastService.success('Pro trial activated! Enjoy your 7-day trial.');
         if (onTrialStart) {
           onTrialStart();
         }

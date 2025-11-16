@@ -143,8 +143,7 @@ export const conversationToasts = {
    * Show warning when trying to delete Game Hub
    */
   cannotDeleteGameHub: () => {
-    console.warn('🔍 [ConversationService] Cannot delete Game Hub conversation');
-    toastService.warning(
+        toastService.warning(
       'The Game Hub conversation cannot be deleted.'
     );
   },

@@ -16,14 +16,10 @@ const LoginRoute: React.FC = () => {
   useEffect(() => {
     if (loaderData?.user) {
       const { onboardingStatus } = loaderData;
-      console.log('[LoginRoute] User already authenticated, onboarding status:', onboardingStatus);
-      
-      if (onboardingStatus === 'complete') {
-        console.log('[LoginRoute] Redirecting to /app');
-        navigate('/app', { replace: true });
+            if (onboardingStatus === 'complete') {
+                navigate('/app', { replace: true });
       } else {
-        console.log('[LoginRoute] Redirecting to /onboarding');
-        navigate('/onboarding', { replace: true });
+                navigate('/onboarding', { replace: true });
       }
     }
   }, [loaderData, navigate]);
@@ -41,8 +37,7 @@ const LoginRoute: React.FC = () => {
   const handleSetAppState = () => {
     // In router mode, state updates are handled by router loaders
     // This is a no-op since navigation state is derived from URL
-    console.log('[LoginRoute] State update ignored in router mode');
-  };
+      };
 
   return (
     <LoginSplashScreen
