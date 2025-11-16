@@ -42,17 +42,16 @@ async function authLoader({ request }: LoaderFunctionArgs) {
     .rpc('get_complete_user_data', { p_auth_user_id: session.user.id });
 
   if (rpcError || !rpcData || rpcData.length === 0) {
-    console.error('[Router authLoader] ❌ Failed to load user data:', rpcError);
-    
     // If user has a session but no database record, redirect to onboarding
     if (session) {
-      console.log('[Router authLoader] 👤 Session exists but no user record - redirecting to onboarding');
+      console.log('[Router authLoader] 👤 New user detected - no database record yet, redirecting to onboarding');
       if (pathname === '/' || pathname === '/login') {
         return redirect('/onboarding');
       }
       return { user: null, onboardingStatus: 'initial' as OnboardingStatus };
     }
     
+    console.warn('[Router authLoader] ⚠️ RPC error:', rpcError);
     return { user: null, onboardingStatus: 'login' as OnboardingStatus };
   }
 

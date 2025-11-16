@@ -101,8 +101,8 @@ const HowToUseRoute: React.FC = () => {
         console.log('[HowToUseRoute] WebSocket message received:', data);
         
         // Check if this is a connection confirmation from PC client
-        // PC client sends: {type: 'connection_alive'} or {type: 'connected'} or {status: 'connected'}
-        if (data.type === 'connection_alive' || data.type === 'connected' || data.status === 'connected') {
+        // PC client sends: {type: 'partner_connected'} immediately, then {type: 'connection_alive'} later
+        if (data.type === 'partner_connected' || data.type === 'connection_alive' || data.type === 'connected' || data.status === 'connected') {
           console.log('[HowToUseRoute] PC client confirmed connection');
           setStatus(ConnectionStatus.CONNECTED);
           setError(null);
