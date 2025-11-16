@@ -136,8 +136,7 @@ export class AuthService {
       // Handle OAuth callback if we're on the callback URL
       // Note: AuthCallback component handles OAuth callbacks, so we skip this
       // to avoid conflicts
-      const isAuthCallback = window.location.pathname === '/auth/callback' || 
-                             window.location.pathname === '/Otagon/auth/callback';
+      const isAuthCallback = window.location.pathname === '/auth/callback';
       if (isAuthCallback) {
         console.log('🔐 [AuthService] OAuth callback detected, but AuthCallback component will handle it');
         return;
@@ -444,8 +443,7 @@ export class AuthService {
       console.log('🔐 [AuthService] Full URL:', window.location.href);
       
       // Check if we're already on the callback page
-      const isAuthCallback = window.location.pathname === '/auth/callback' || 
-                             window.location.pathname === '/Otagon/auth/callback';
+      const isAuthCallback = window.location.pathname === '/auth/callback';
       if (isAuthCallback) {
         console.log('🔐 [AuthService] Already on callback page, skipping OAuth initiation');
         this.updateAuthState({ isLoading: false, error: null });
