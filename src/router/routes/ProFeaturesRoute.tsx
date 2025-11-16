@@ -13,12 +13,9 @@ const ProFeaturesRoute: React.FC = () => {
   const { user } = useLoaderData() as { user: User | null };
 
   const handleComplete = async () => {
-    console.log('[ProFeaturesRoute] Complete clicked, navigating immediately...');
+    console.log('[ProFeaturesRoute] Complete clicked, updating database...');
     
-    // Navigate immediately for smooth UX
-    navigate('/app');
-    
-    // Complete onboarding in background (optimistic navigation)
+    // Update database FIRST to avoid race condition with router loader
     if (user) {
       try {
         const { error } = await supabase
@@ -36,14 +33,17 @@ const ProFeaturesRoute: React.FC = () => {
           .eq('auth_user_id', user.authUserId);
           
         if (error) {
-          console.error('[ProFeaturesRoute] Background DB update failed:', error);
+          console.error('[ProFeaturesRoute] DB update failed:', error);
         } else {
-          console.log('[ProFeaturesRoute] Background DB update complete');
+          console.log('[ProFeaturesRoute] DB update complete, navigating to app...');
         }
       } catch (error) {
-        console.error('[ProFeaturesRoute] Background DB update error:', error);
+        console.error('[ProFeaturesRoute] DB update error:', error);
       }
     }
+    
+    // Navigate after DB update to prevent race condition
+    navigate('/app');
   };
 
   const handleUpgrade = () => {
