@@ -10,8 +10,8 @@ import { supabase } from '../lib/supabase';
  * Derive AppView from current pathname
  */
 export function deriveAppViewFromPath(pathname: string): AppView {
-  // Remove base path if present (/Otagon/ for GitHub Pages)
-  const cleanPath = pathname.replace(/^\/Otagon/, '');
+  // Path is already clean for custom domain
+  const cleanPath = pathname;
   
   if (cleanPath === '/' || cleanPath === '') {
     return 'landing';

@@ -20,9 +20,9 @@
         // Redirect to main app at root
         l.replace(l.protocol + '//' + l.hostname + '/' + l.hash);
       } else {
-        // For other 404s, store path and redirect to /Otagon/
+        // For other 404s, store path and redirect to root
         sessionStorage.setItem('spa_redirect', path);
-        l.replace(l.protocol + '//' + l.hostname + '/Otagon/');
+        l.replace(l.protocol + '//' + l.hostname + '/');
       }
     })();
   </script>

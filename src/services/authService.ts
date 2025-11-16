@@ -36,7 +36,7 @@ export class AuthService {
     // Check if running in PWA mode
     const isPWA = isPWAMode();
     
-    const callback = isDev ? '/auth/callback' : '/Otagon/auth/callback';
+    const callback = '/auth/callback';
     
     // For PWA, ensure we use the full URL with proper scheme
     // This helps with OAuth redirects in standalone mode

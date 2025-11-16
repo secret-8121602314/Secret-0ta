@@ -21,18 +21,18 @@
     <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png" />
     
     <title>Otagon</title>
-    <script type="module" crossorigin src="/assets/index-DuS76eWF.js"></script>
+    <script type="module" crossorigin src="/assets/index-ChIdSb4A.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/vendor-D9yvASRR.js">
     <link rel="modulepreload" crossorigin href="/assets/markdown-vendor-BLIOVSB8.js">
     <link rel="modulepreload" crossorigin href="/assets/react-vendor-ytDMyTZl.js">
     <link rel="modulepreload" crossorigin href="/assets/supabase-vendor-BCAdzdMx.js">
-    <link rel="modulepreload" crossorigin href="/assets/auth-D1ew0pLl.js">
+    <link rel="modulepreload" crossorigin href="/assets/auth-Do3ywLnO.js">
     <link rel="modulepreload" crossorigin href="/assets/ai-vendor-DDPwdD9r.js">
-    <link rel="modulepreload" crossorigin href="/assets/chat-services-KQ1oHSP4.js">
-    <link rel="modulepreload" crossorigin href="/assets/services-BEpIACFA.js">
-    <link rel="modulepreload" crossorigin href="/assets/core-services-CkzefVlC.js">
-    <link rel="modulepreload" crossorigin href="/assets/features-DP78kXYS.js">
-    <link rel="modulepreload" crossorigin href="/assets/modals-Ce-5Lt7Z.js">
+    <link rel="modulepreload" crossorigin href="/assets/chat-services-C7y42nXe.js">
+    <link rel="modulepreload" crossorigin href="/assets/services-BEqe-IG-.js">
+    <link rel="modulepreload" crossorigin href="/assets/core-services-Dq-9Alxp.js">
+    <link rel="modulepreload" crossorigin href="/assets/features-CVlIfxkt.js">
+    <link rel="modulepreload" crossorigin href="/assets/modals-DSV4nC41.js">
     <link rel="stylesheet" crossorigin href="/assets/index-2OvVF_QK.css">
   </head>
   <body>
@@ -55,10 +55,9 @@
           var redirect = sessionStorage.getItem('spa_redirect');
           if (redirect && redirect !== '/' && redirect !== '') {
             sessionStorage.removeItem('spa_redirect');
-            // Remove /Otagon prefix if present
-            var path = redirect.replace('/Otagon', '');
-            if (path && path !== '/') {
-              history.replaceState(null, null, '/Otagon' + path);
+            // Use redirect path directly for custom domain
+            if (redirect && redirect !== '/') {
+              history.replaceState(null, null, redirect);
             }
           }
         }

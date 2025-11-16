@@ -28,7 +28,7 @@ async function authLoader({ request }: LoaderFunctionArgs) {
   if (!session) {
     // Not authenticated - allow access to landing and login pages
     console.log('[Router authLoader] ❌ No session found, user not authenticated');
-    if (pathname !== '/' && pathname !== '/login' && pathname !== '/Otagon/' && pathname !== '/Otagon') {
+    if (pathname !== '/' && pathname !== '/login') {
       console.log('[Router authLoader] 📍 Redirecting to landing page');
       return redirect('/');
     }

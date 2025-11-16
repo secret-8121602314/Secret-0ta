@@ -291,8 +291,8 @@ const speak = async (text: string): Promise<void> => {
                         artist: 'Your AI Gaming Companion',
                         album: 'Otakon',
                         artwork: [
-                            { src: '/Otagon/icon-192.png', sizes: '192x192', type: 'image/png' },
-                            { src: '/Otagon/icon-512.png', sizes: '512x512', type: 'image/png' }
+                            { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+                            { src: '/icon-512.png', sizes: '512x512', type: 'image/png' }
                         ]
                     });
                 }

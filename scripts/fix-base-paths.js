@@ -4,7 +4,7 @@ import { join } from 'path';
 
 // Fix base paths for GitHub Pages deployment
 const distDir = './dist/assets';
-const baseURL = '/Otagon';
+const baseURL = '';
 
 console.log('🔧 Fixing base paths for GitHub Pages...');
 

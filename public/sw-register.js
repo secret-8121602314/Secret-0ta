@@ -5,8 +5,8 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
       // Register service worker
-      const registration = await navigator.serviceWorker.register('/Otagon/sw.js', {
-        scope: '/Otagon/'
+      const registration = await navigator.serviceWorker.register('/sw.js', {
+        scope: '/'
       });
       
       console.log('Service Worker registered successfully:', registration.scope);

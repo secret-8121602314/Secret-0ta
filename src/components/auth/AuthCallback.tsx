@@ -282,7 +282,7 @@ const AuthCallback: React.FC<AuthCallbackProps> = ({ onAuthSuccess, onAuthError 
               <button
                 onClick={() => {
                   // Clear the URL parameters and redirect to login with a flag to show resend option
-                  const basePath = window.location.hostname === 'localhost' ? '/' : '/Otagon/';
+                  const basePath = '/';
                   window.history.replaceState({}, document.title, basePath);
                   onAuthError('Email confirmation expired - show resend option');
                 }}

@@ -271,8 +271,8 @@ export const showAINotification = async (
 
     const notification = new Notification(conversationName, {
       body: preview,
-      icon: '/Otagon/icon-192.png',
-      badge: '/Otagon/icon-192.png',
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
       tag: 'otagon-ai-response',
       renotify: true,
       requireInteraction: false,
