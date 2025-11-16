@@ -81,7 +81,7 @@ export default [
         caughtErrorsIgnorePattern: '^_',
         ignoreRestSiblings: true
       }],
-      '@typescript-eslint/no-explicit-any': 'off', // Allow any type - can be tightened later
+      '@typescript-eslint/no-explicit-any': 'warn', // Warn on any usage - gradually improve type safety
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-non-null-assertion': 'warn',
       

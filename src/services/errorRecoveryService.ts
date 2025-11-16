@@ -188,7 +188,7 @@ class ErrorRecoveryService {
   /**
    * Log error for debugging
    */
-  logError(error: Error, context: ErrorContext, additionalInfo?: any): void {
+  logError(error: Error, context: ErrorContext, additionalInfo?: unknown): void {
     console.error('Error Details:', {
       error: error.message,
       stack: error.stack,

@@ -131,6 +131,21 @@ export class ConversationService {
   static getCachedConversations(): Conversations | null {
     if (this.conversationsCache && Date.now() - this.conversationsCache.timestamp < this.CACHE_TTL) {
       console.log('🔍 [ConversationService] Returning cached conversations (age:', Date.now() - this.conversationsCache.timestamp, 'ms)');
+      
+      // 🔍 DEBUG: Check messages when returning from cache
+      const gameHub = this.conversationsCache.data['game-hub'];
+      if (gameHub) {
+        console.error('🔍 [ConversationService] Game Hub from cache:', {
+          id: gameHub.id,
+          messageCount: gameHub.messages?.length || 0,
+          messagesPreview: gameHub.messages?.slice(0, 2).map((m: any) => ({
+            id: m.id,
+            role: m.role,
+            contentLength: m.content?.length || 0
+          }))
+        });
+      }
+      
       return this.conversationsCache.data;
     }
     console.log('🔍 [ConversationService] No valid cache available');
@@ -161,11 +176,32 @@ export class ConversationService {
         
         console.log('🔍 [ConversationService] Loaded', Object.keys(conversations).length, 'conversations from Supabase');
         
+        // 🔍 DEBUG: Check messages before caching
+        const gameHubBeforeCache = conversations['game-hub'];
+        if (gameHubBeforeCache) {
+          console.error('🔍 [ConversationService] Game Hub BEFORE cache:', {
+            id: gameHubBeforeCache.id,
+            messageCount: gameHubBeforeCache.messages?.length || 0,
+            hasMessages: !!gameHubBeforeCache.messages,
+            messagesType: typeof gameHubBeforeCache.messages
+          });
+        }
+        
         // ✅ Update cache
         this.conversationsCache = {
           data: conversations,
           timestamp: Date.now()
         };
+        
+        // 🔍 DEBUG: Check messages after caching
+        const gameHubAfterCache = this.conversationsCache.data['game-hub'];
+        if (gameHubAfterCache) {
+          console.error('🔍 [ConversationService] Game Hub AFTER cache:', {
+            id: gameHubAfterCache.id,
+            messageCount: gameHubAfterCache.messages?.length || 0,
+            hasMessages: !!gameHubAfterCache.messages
+          });
+        }
         
         // Also update localStorage as backup
         if (Object.keys(conversations).length > 0) {
@@ -283,6 +319,12 @@ export class ConversationService {
   }
 
   static createConversation(title?: string, id?: string): Conversation {
+    // Validate title
+    if (title && title.trim().length > 100) {
+      console.warn('⚠️ [ConversationService] Title too long, truncating');
+      title = title.trim().substring(0, 100);
+    }
+    
     const now = Date.now();
     const isGameHub = title === DEFAULT_CONVERSATION_TITLE;
     // Use 'game-hub' as ID for the default Game Hub conversation
@@ -577,23 +619,8 @@ export class ConversationService {
       return;
     }
     
-    // ✅ PROTECTION: Prevent clearing Game Hub messages
-    console.log('🎮 [GAME_HUB_PROTECTION] clearConversation called:', { 
-      conversationId, 
-      isGameHub: conversation.isGameHub, 
-      matchesConstant: conversationId === GAME_HUB_ID,
-      conversationTitle: conversation.title,
-      messageCount: conversation.messages?.length || 0,
-      GAME_HUB_ID_VALUE: GAME_HUB_ID
-    });
-    
-    if (conversation.isGameHub || conversationId === GAME_HUB_ID) {
-      console.error('🚫 [GAME_HUB_PROTECTION] BLOCKED: Attempted to clear Game Hub conversation messages!');
-      toastService.warning('Cannot clear the Game Hub conversation. It\'s your main conversation space!');
-      throw new Error('Cannot clear the Game Hub conversation');
-    }
-    
-    // Clear messages but keep the conversation
+    // Clear messages but keep the conversation (including Game Hub)
+    console.log('🧹 [ConversationService] Clearing messages for conversation:', conversationId, conversation.title);
     conversations[conversationId] = {
       ...conversations[conversationId],
       messages: [],
@@ -650,36 +677,25 @@ export class ConversationService {
    * Returns the Game Hub conversation
    */
   static async ensureGameHubExists(): Promise<Conversation> {
-    // Check cache first without clearing it
-    const cachedConversations = this.getCachedConversations();
-    if (cachedConversations) {
-      const existingGameHub = Object.values(cachedConversations).find(
-        conv => conv.isGameHub || conv.id === GAME_HUB_ID || conv.title === DEFAULT_CONVERSATION_TITLE
-      );
-      
-      if (existingGameHub) {
-        console.log('🔍 [ConversationService] Game Hub found in cache:', existingGameHub.id);
-        return existingGameHub;
-      }
+    // ✅ FIX: Load from Supabase first to get the real Game Hub with messages
+    console.log('🔍 [ConversationService] Checking for Game Hub in database...');
+    const conversations = await this.getConversations();
+    const existingGameHub = Object.values(conversations).find(
+      conv => conv.isGameHub || conv.id === GAME_HUB_ID || conv.title === DEFAULT_CONVERSATION_TITLE
+    );
+    
+    if (existingGameHub) {
+      console.log('🔍 [ConversationService] Game Hub found:', existingGameHub.id, 'with', existingGameHub.messages?.length || 0, 'messages');
+      return existingGameHub;
     }
     
-    // Not in cache, create new Game Hub
-    console.log('🔍 [ConversationService] Creating Game Hub...');
+    // Not found, create new Game Hub
+    console.log('🔍 [ConversationService] Creating new Game Hub...');
     const gameHub = this.createConversation(DEFAULT_CONVERSATION_TITLE, GAME_HUB_ID);
     await this.addConversation(gameHub);
     
-    // ✅ RLS WORKAROUND: Update cache with the new Game Hub
-    // Don't reload from Supabase as list queries fail due to RLS
-    console.log('✅ [ConversationService] Game Hub created, updating cache directly (RLS workaround)');
-    
-    const conversations: Conversations = cachedConversations || {};
-    conversations[GAME_HUB_ID] = gameHub;
-    
-    this.conversationsCache = {
-      data: conversations,
-      timestamp: Date.now()
-    };
-    
+    // Return the newly created Game Hub
+    console.log('✅ [ConversationService] Game Hub created successfully');
     return gameHub;
   }
 

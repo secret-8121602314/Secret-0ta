@@ -125,7 +125,7 @@ class SuggestedPromptsService {
   /**
    * Process AI-generated suggestions and format them for display
    */
-  public processAISuggestions(suggestions: any): string[] {
+  public processAISuggestions(suggestions: unknown): string[] {
     console.log('🔍 [SuggestedPromptsService] Input suggestions:', suggestions, 'Type:', typeof suggestions);
     
     // Handle different types of suggestions

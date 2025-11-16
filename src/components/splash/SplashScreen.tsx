@@ -63,6 +63,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
     if (syncInitiated && status === ConnectionStatus.CONNECTED && !connectionSuccessCalled) {
         console.log('🔗 [SplashScreen] Connection successful, calling onConnectionSuccess');
         setConnectionSuccessCalled(true);
+        // Immediate navigation - no delay
         onConnectionSuccess();
     }
   }, [status, onConnectionSuccess, syncInitiated, connectionSuccessCalled]);
@@ -179,10 +180,32 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
                       style={{ textAlign: 'center' }}
                       />
                   </div>
-                  <div className="h-6 text-center text-base">
-                      {error && <p className="text-[#E53A3A]">{error}</p>}
+                  <div className="min-h-[60px] pt-4 text-center text-base">
+                      {error && (
+                        <div className="space-y-2">
+                          <p className="text-[#E53A3A] whitespace-pre-line">{error}</p>
+                          <button
+                            onClick={() => {
+                              setCode('');
+                              onConnect('');
+                            }}
+                            className="text-sm text-[#FFAB40] hover:text-[#FF4D4D] underline transition-colors"
+                          >
+                            Try Again
+                          </button>
+                        </div>
+                      )}
                       {isConnected && <p className="text-[#5CBB7B]">You're all set! Your PC is now connected.</p>}
-                      {isConnecting && <p className="text-[#A3A3A3]">Attempting to connect...</p>}
+                      {isConnecting && (
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="flex space-x-1">
+                            <div className="w-2 h-2 bg-[#FFAB40] rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                            <div className="w-2 h-2 bg-[#FFAB40] rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                            <div className="w-2 h-2 bg-[#FFAB40] rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                          </div>
+                          <p className="text-[#FFAB40]">Connecting to PC...</p>
+                        </div>
+                      )}
                   </div>
               </div>
           )}
@@ -193,36 +216,24 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
         <div className="w-full max-w-lg mx-auto">
             {isLastStep ? (
                 <div className="flex flex-col gap-4">
-                    {!isConnected ? (
-                        <>
-                            <button
-                                onClick={handleConnectClick}
-                                disabled={isConnecting || !isCodeValid}
-                                className={`w-full font-bold py-3 sm:py-4 px-6 sm:px-8 rounded-xl transition-all duration-300 flex items-center justify-center text-sm sm:text-base active:scale-95 ${
-                                    isCodeValid && !isConnecting 
-                                        ? 'bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] hover:from-[#D42A2A] hover:to-[#C87A1A] text-white hover:scale-105 hover:shadow-xl hover:shadow-[#E53A3A]/25' 
-                                        : 'bg-gradient-to-r from-neutral-600 to-neutral-500 text-neutral-300 cursor-not-allowed opacity-25'
-                                }`}
-                            >
-                                {isConnecting ? "Connecting..." : "Sync Now"}
-                            </button>
-                            <button
-                                onClick={onSkipConnection}
-                                className="w-full bg-gradient-to-r from-neutral-700 to-neutral-600 hover:from-neutral-600 hover:to-neutral-500 text-white font-bold py-3 sm:py-4 px-6 sm:px-8 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95 flex items-center justify-center text-sm sm:text-base"
-                            >
-                                Skip for Now
-                            </button>
-                        </>
-                    ) : (
-                        <div className="text-center py-4">
-                            <div className="text-green-400 text-lg font-semibold mb-2">
-                                ✅ You're all set! PC is connected
-                            </div>
-                            <div className="text-neutral-400 text-sm">
-                                Taking you to the next step...
-                            </div>
-                        </div>
-                    )}
+                    <button
+                        onClick={handleConnectClick}
+                        disabled={isConnecting || !isCodeValid || error !== null}
+                        className={`w-full font-bold py-3 sm:py-4 px-6 sm:px-8 rounded-xl transition-all duration-300 flex items-center justify-center text-sm sm:text-base active:scale-95 ${
+                            isCodeValid && !isConnecting && !error
+                                ? 'bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] hover:from-[#D42A2A] hover:to-[#C87A1A] text-white hover:scale-105 hover:shadow-xl hover:shadow-[#E53A3A]/25' 
+                                : 'bg-gradient-to-r from-neutral-600 to-neutral-500 text-neutral-300 cursor-not-allowed opacity-25'
+                        }`}
+                    >
+                        {isConnecting ? "Connecting..." : "Sync Now"}
+                    </button>
+                    <button
+                        onClick={onSkipConnection}
+                        disabled={isConnecting}
+                        className="w-full bg-gradient-to-r from-neutral-700 to-neutral-600 hover:from-neutral-600 hover:to-neutral-500 text-white font-bold py-3 sm:py-4 px-6 sm:px-8 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95 flex items-center justify-center text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Skip for Now
+                    </button>
             </div>
             ) : (
                 <button

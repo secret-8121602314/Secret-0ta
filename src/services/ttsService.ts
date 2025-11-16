@@ -2,7 +2,7 @@ let synth: SpeechSynthesis;
 let voices: SpeechSynthesisVoice[] = [];
 let isInitialized = false;
 let currentText = '';
-let wakeLock: any = null;
+let wakeLock: WakeLockSentinel | null = null;
 let audioContext: AudioContext | null = null;
 let silentAudio: HTMLAudioElement | null = null;
 let isBackgroundPlayback = false;

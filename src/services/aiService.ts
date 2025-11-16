@@ -2,6 +2,7 @@
 import { parseOtakonTags } from './otakonTags';
 import { AIResponse, Conversation, User, insightTabsConfig, PlayerProfile } from '../types';
 import { cacheService } from './cacheService';
+import { aiCacheService } from './aiCacheService';
 import { getPromptForPersona } from './promptSystem';
 import { errorRecoveryService } from './errorRecoveryService';
 import { characterImmersionService } from './characterImmersionService';
@@ -92,8 +93,9 @@ class AIService {
     maxTokens?: number;
     requestType: 'text' | 'image';
     model?: string;
-    tools?: any[];
-  }): Promise<{ response: string; success: boolean; usage?: any; groundingMetadata?: any }> {
+    tools?: Array<Record<string, unknown>>;
+    abortSignal?: AbortSignal;
+  }): Promise<{ response: string; success: boolean; usage?: Record<string, unknown>; groundingMetadata?: Record<string, unknown> }> {
     // Get user's JWT token
     const { data: { session } } = await supabase.auth.getSession();
     
@@ -108,7 +110,8 @@ class AIService {
         'Authorization': `Bearer ${session.access_token}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(request)
+      body: JSON.stringify(request),
+      signal: request.abortSignal
     });
 
     if (!response.ok) {
@@ -122,7 +125,7 @@ class AIService {
   /**
    * ✅ FIX 3: Check if AI response was blocked by safety filters
    */
-  private checkSafetyResponse(result: any): { safe: boolean; reason?: string } {
+  private checkSafetyResponse(result: Record<string, unknown>): { safe: boolean; reason?: string } {
     // Check if prompt was blocked
     if (result.response.promptFeedback?.blockReason) {
       return {
@@ -245,6 +248,53 @@ class AIService {
     
     console.log(`📊 [AIService] Query limit check passed. ${hasImages ? 'Image' : 'Text'} queries: ${queryCheck.used}/${queryCheck.limit}`);
     
+    // ✅ AI RESPONSE CACHING: Check if we should cache this query
+    const cacheContext = {
+      gameTitle: conversation.gameTitle,
+      mode: isActiveSession ? 'playing' : 'planning',
+      hasImages,
+      conversationId: conversation.id,
+      hasUserContext: false // Don't cache user-specific responses
+    };
+    
+    const shouldUseCache = aiCacheService.shouldCache(userMessage, cacheContext);
+    console.log(`🔍 [AIService] shouldUseCache: ${shouldUseCache} for message: "${userMessage.substring(0, 50)}..."`);
+    console.log(`🔍 [AIService] Cache context:`, cacheContext);
+    
+    // Generate cache key for AI responses (persistent cache)
+    const aiCacheKey = shouldUseCache 
+      ? aiCacheService.generateCacheKey(userMessage, cacheContext)
+      : '';
+    
+    if (aiCacheKey) {
+      console.log(`🔑 [AIService] Generated AI cache key: ${aiCacheKey}`);
+    }
+    
+    // Check AI cache first (persistent, cross-user for global/game queries)
+    if (shouldUseCache && aiCacheKey) {
+      console.log(`🔍 [AIService] Checking AI persistent cache...`);
+      const cachedAIResponse = await aiCacheService.getCachedResponse(aiCacheKey);
+      if (cachedAIResponse) {
+        console.log(`✅ [AIService] Cache HIT in AI persistent cache!`);
+        // Parse the cached content and return as AIResponse
+        const { cleanContent, tags } = parseOtakonTags(cachedAIResponse.content || '');
+        return {
+          ...cachedAIResponse,
+          content: cleanContent,
+          otakonTags: tags,
+          metadata: {
+            ...cachedAIResponse.metadata,
+            fromCache: true,
+            cacheType: 'ai_persistent'
+          }
+        };
+      } else {
+        console.log(`❌ [AIService] Cache MISS in AI persistent cache`);
+      }
+    } else {
+      console.log(`⏭️ [AIService] Skipping AI cache check (shouldUseCache=${shouldUseCache}, hasKey=${!!aiCacheKey})`);
+    }
+    
     // Create cache key for this request - use full message hash to avoid collisions
     // Simple hash function for cache key
     const hashString = (str: string) => {
@@ -260,10 +310,10 @@ class AIService {
     const messageHash = hashString(userMessage + (imageData || ''));
     const cacheKey = `ai_response_${conversation.id}_${messageHash}_${isActiveSession}_${hasImages}`;
     
-    // Check cache first (memory only for speed - skip Supabase for real-time operations)
+    // Check memory cache second (fast, conversation-specific)
     const cachedResponse = await cacheService.get<AIResponse>(cacheKey, true); // true = memory only
     if (cachedResponse) {
-      return { ...cachedResponse, metadata: { ...cachedResponse.metadata, fromCache: true } };
+      return { ...cachedResponse, metadata: { ...cachedResponse.metadata, fromCache: true, cacheType: 'memory' } };
     }
 
     // Skip session context for now - it's returning null and slowing things down
@@ -340,7 +390,8 @@ class AIService {
           maxTokens: 2048,
           requestType: hasImages ? 'image' : 'text',
           model: modelName,
-          tools: tools.length > 0 ? tools : undefined
+          tools: tools.length > 0 ? tools : undefined,
+          abortSignal
         });
 
         if (!edgeResponse.success) {
@@ -364,7 +415,7 @@ class AIService {
         }
         
         // Prepare content for Gemini API
-        let content: any;
+        let content: string | Array<Record<string, unknown>>;
         if (hasImages && imageData) {
           // Extract MIME type from data URL
           const mimeType = imageData.split(';')[0].split(':')[1] || 'image/jpeg';
@@ -434,9 +485,29 @@ class AIService {
       authService.refreshUser()
         .catch(error => console.warn('Failed to refresh user after query:', error));
       
-      // Cache the response for 1 hour (non-blocking - fire and forget)
+      // Cache the response for 1 hour in memory (non-blocking - fire and forget)
       cacheService.set(cacheKey, aiResponse, 60 * 60 * 1000)
-        .catch(error => console.warn('Failed to cache AI response:', error));
+        .catch(error => console.warn('Failed to cache AI response in memory:', error));
+      
+      // ✅ AI PERSISTENT CACHE: Store in database cache if appropriate
+      if (shouldUseCache && aiCacheKey) {
+        const cacheType = aiCacheService.determineCacheType(cacheContext);
+        const ttl = aiCacheService.determineTTL(cacheType, cacheContext);
+        
+        aiCacheService.cacheResponse(aiCacheKey, {
+          content: rawContent,
+          suggestions: aiResponse.suggestions,
+          otakonTags: Array.from(aiResponse.otakonTags.entries()),
+          metadata: aiResponse.metadata
+        }, {
+          cacheType,
+          gameTitle: conversation.gameTitle,
+          conversationId: conversation.id,
+          modelUsed: 'gemini-2.5-flash-preview-09-2025',
+          tokensUsed: aiResponse.metadata.tokens || 0,
+          ttlHours: ttl
+        }).catch(error => console.warn('Failed to cache AI response in database:', error));
+      }
       
       return aiResponse;
 
@@ -535,24 +606,45 @@ class AIService {
       });
     }
 
+    // Detect if this is a gaming news query
+    const isGamingNewsQuery = 
+      userMessage.toLowerCase().includes('latest') ||
+      userMessage.toLowerCase().includes('news') ||
+      userMessage.toLowerCase().includes('new games') ||
+      userMessage.toLowerCase().includes('announced') ||
+      userMessage.toLowerCase().includes('upcoming') ||
+      userMessage.toLowerCase().includes('release');
+
     // Add structured response instructions
     const structuredInstructions = `
 
 **ENHANCED RESPONSE FORMAT:**
 In addition to your regular response, provide structured data in the following optional fields:
 
-1. **followUpPrompts** (array of 3-4 strings): Generate contextual follow-up questions directly related to your response content
-   ${!conversation.isGameHub ? `
+1. **followUpPrompts** (array of 3-4 strings): Generate contextual follow-up questions DIRECTLY RELATED to the specific content of your response
+   ${isGamingNewsQuery ? `
+   - NEWS MODE: Generate follow-ups about the SPECIFIC games/news you just mentioned
+   - Example: If you mentioned "Elden Ring DLC", ask "When is the Elden Ring DLC releasing?"
+   - Example: If you mentioned "Dragon's Dogma 2", ask "What's new in Dragon's Dogma 2?"
+   - DO NOT use generic questions like "Who are the main demigods?" unless you specifically discussed demigods` : 
+   !conversation.isGameHub ? `
+   - GAME MODE (${conversation.gameTitle}): Generate follow-ups about the SPECIFIC topic you just discussed
    - Session Mode: ${isActiveSession ? 'PLAYING MODE - User is actively playing' : 'PLANNING MODE - User is preparing/strategizing'}
    - ${isActiveSession 
-       ? 'Generate immediate, actionable prompts (e.g., "How do I beat this boss?", "What should I do next?")'
-       : 'Generate strategic, planning prompts (e.g., "What should I prepare?", "What builds are recommended?")'
-     }` : ''}
+       ? 'Generate immediate, actionable prompts about what you just explained (e.g., "How do I counter [specific enemy]?", "Where do I go after [location]?")'
+       : 'Generate strategic prompts about what you just discussed (e.g., "What items do I need for [specific build]?", "How do I prepare for [specific boss]?")'
+     }
+   - Example: If you explained boss mechanics, ask about strategies for THAT boss
+   - Example: If you explained a location, ask about secrets or NPCs in THAT location` :
+   `
+   - GAME HUB MODE: Generate follow-ups about the SPECIFIC games/topics you just discussed
+   - Example: If you explained a game's story, ask about specific characters or plot points from that game
+   - DO NOT use generic gaming questions - tie them to what you just said`}
 2. **progressiveInsightUpdates** (array): If conversation provides new info, update existing subtabs (e.g., story_so_far, characters)
 3. **stateUpdateTags** (array): Detect game events (e.g., "OBJECTIVE_COMPLETE: true", "TRIUMPH: Boss Name")
 4. **gamePillData** (object): ${conversation.isGameHub ? 'Set shouldCreate: true if user asks about a specific game, and include game details with pre-filled wikiContent' : 'Set shouldCreate: false (already in game tab)'}
 
-Note: These are optional enhancements. If not applicable, omit or return empty arrays.
+**CRITICAL**: Only include the content field in your response. DO NOT add "Internal Data Structure" or any JSON after your main content. The system will extract the structured fields automatically.
 `;
     
     const prompt = basePrompt + immersionContext + structuredInstructions;
@@ -609,7 +701,8 @@ Note: These are optional enhancements. If not applicable, omit or return empty a
           maxTokens: 2048,
           requestType: hasImages ? 'image' : 'text',
           model: modelName,
-          tools: tools
+          tools: tools,
+          abortSignal
         });
 
         if (!edgeResponse.success) {
@@ -619,9 +712,11 @@ Note: These are optional enhancements. If not applicable, omit or return empty a
         const rawContent = edgeResponse.response;
         const { cleanContent, tags } = parseOtakonTags(rawContent);
 
+        const suggestions = tags.get('SUGGESTIONS') || [];
         const aiResponse: AIResponse = {
           content: cleanContent,
-          suggestions: tags.get('SUGGESTIONS') || [],
+          suggestions: suggestions,
+          followUpPrompts: suggestions, // ✅ Match JSON mode - set followUpPrompts from SUGGESTIONS tag
           otakonTags: tags,
           rawContent: rawContent,
           metadata: {
@@ -649,7 +744,7 @@ Note: These are optional enhancements. If not applicable, omit or return empty a
       }
       
       // Prepare content
-      let content: any;
+      let content: string | Array<Record<string, unknown>>;
       if (hasImages && imageData) {
         const mimeType = imageData.split(';')[0].split(':')[1] || 'image/jpeg';
         const base64Data = imageData.split(',')[1];
@@ -664,9 +759,11 @@ Note: These are optional enhancements. If not applicable, omit or return empty a
         const rawContent = await result.response.text();
         const { cleanContent, tags } = parseOtakonTags(rawContent);
         
+        const suggestions = tags.get('SUGGESTIONS') || [];
         const aiResponse: AIResponse = {
           content: cleanContent,
-          suggestions: tags.get('SUGGESTIONS') || [],
+          suggestions: suggestions,
+          followUpPrompts: suggestions, // ✅ Set followUpPrompts from SUGGESTIONS tag
           otakonTags: tags,
           rawContent: rawContent,
           metadata: {
@@ -724,7 +821,7 @@ Note: These are optional enhancements. If not applicable, omit or return empty a
                   }
                 }
               },
-              required: ["content"]
+              required: ["content", "followUpPrompts"]
             }
           }
         });
@@ -739,37 +836,51 @@ Note: These are optional enhancements. If not applicable, omit or return empty a
         const rawResponse = await result.response.text();
         const structuredData = JSON.parse(rawResponse);
         
+        // ✅ DEBUG: Log what Gemini actually returns
+        console.log('🔍 [AIService] Gemini response keys:', Object.keys(structuredData));
+        console.log('🔍 [AIService] followUpPrompts exists:', !!structuredData.followUpPrompts);
+        console.log('🔍 [AIService] followUpPrompts value:', structuredData.followUpPrompts);
+        console.log('🔍 [AIService] followUpPrompts length:', structuredData.followUpPrompts?.length || 0);
+        
         // ✅ Clean content: Remove any JSON-like structured data from the main content
         let cleanContent = structuredData.content || '';
         
+        console.log('🧹 [AIService] Raw content length:', cleanContent.length);
+        console.log('🧹 [AIService] Last 200 chars:', cleanContent.slice(-200));
+        
         // Remove structured fields if AI accidentally includes them in content
-        // This handles cases where AI outputs: "Hint: ... followUpPrompts: [...]"
+        // Apply cleaning in order of most specific to most general
         cleanContent = cleanContent
-          // ✅ FIX: Remove ANY leading brackets/JSON artifacts more aggressively
-          .replace(/^[\s\]}\[{),]+/g, '') // eslint-disable-line no-useless-escape
-          // ✅ CRITICAL: Remove entire JSON block at the end (starts with { and contains "followUpPrompts")
-          .replace(/\s*\{[\s\S]*?"followUpPrompts"[\s\S]*?\}\s*$/gi, '')
-          // Alternative: Remove JSON block if it starts with newline + {
-          .replace(/\n\s*\{[\s\S]*$/g, '')
-          // ✅ FIX: Remove trailing brackets/JSON at the end (before metadata sections)
-          .replace(/\s*[\]}\s]*(?=\s*(?:Enhanced Response Data|followUpPrompts|progressiveInsightUpdates|stateUpdateTags|gamePillData|$))/gi, '')
-          // ✅ NEW: Remove structured data section markers like "***]" or "---Structured Data:"
-          .replace(/\*{2,}\]?\s*$/g, '')
-          .replace(/---+\s*Structured Data:?[\s\S]*$/gi, '')
+          // ✅ STEP 1: Remove EVERYTHING after "Internal Data Structure" (most aggressive first)
+          .replace(/\*+\s*#+\s*Internal Data Structure[\s\S]*$/gi, '') // ***## Internal Data Structure
+          .replace(/\*+\s*Internal Data Structure[\s\S]*$/gi, '') // *** Internal Data Structure  
+          .replace(/#+\s*Internal Data Structure[\s\S]*$/gi, '') // ## Internal Data Structure
+          .replace(/Internal Data Structure[\s\S]*$/gi, '') // Internal Data Structure (any case)
+          // ✅ STEP 2: Remove JSON blocks with specific fields (before general JSON removal)
+          .replace(/\{[\s\S]*?"followUpPrompts"[\s\S]*?\}/gi, '')
+          .replace(/\{[\s\S]*?"progressiveInsightUpdates"[\s\S]*?\}/gi, '')
+          .replace(/\{[\s\S]*?"gamePillData"[\s\S]*?\}/gi, '')
+          .replace(/\{[\s\S]*?"stateUpdateTags"[\s\S]*?\}/gi, '')
+          // ✅ STEP 3: Remove code blocks
           .replace(/```json[\s\S]*?```/gi, '')
-          .trim()
-          // Remove "Enhanced Response Data" header if present
-          .replace(/Enhanced Response Data\s*/gi, '')
-          // Remove followUpPrompts section (non-JSON format)
-          .replace(/followUpPrompts:\s*\[[\s\S]*?\](?=\s*(?:progressiveInsightUpdates|stateUpdateTags|gamePillData|$))/gi, '')
-          // Remove progressiveInsightUpdates section
-          .replace(/progressiveInsightUpdates:\s*\[[\s\S]*?\](?=\s*(?:followUpPrompts|stateUpdateTags|gamePillData|$))/gi, '')
-          // Remove stateUpdateTags section
-          .replace(/stateUpdateTags:\s*\[[\s\S]*?\](?=\s*(?:followUpPrompts|progressiveInsightUpdates|gamePillData|$))/gi, '')
-          // Remove gamePillData section (most complex - handles multi-line objects)
-          .replace(/gamePillData:\s*\{[\s\S]*?\}(?=\s*$)/gi, '')
-          // ✅ FIX: Remove any standalone brackets that might appear in the middle
-          .replace(/^\s*[\]}]\s*$/gm, '')
+          .replace(/```\s*\{[\s\S]*?```/gi, '')
+          // ✅ STEP 4: Remove "Enhanced Response Data" sections
+          .replace(/Enhanced Response Data[\s\S]*$/gi, '')
+          .replace(/\*\*Enhanced Response Data\*\*[\s\S]*$/gi, '')
+          // ✅ STEP 5: Remove standalone artifacts at end
+          .replace(/\*+\s*\]\s*$/g, '') // ***]
+          .replace(/\]\s*$/g, '') // ]
+          .replace(/\*+\s*$/g, '') // ***
+          // ✅ STEP 6: Remove any JSON structure at the end
+          .replace(/\n\s*\{[\s\S]*$/g, '')
+          .replace(/\s*[\]}]\s*$/g, '')
+          // ✅ STEP 7: Remove OTAKON tags
+          .replace(/\{[\s\S]*?"OTAKON_[A-Z_]+":[\s\S]*?\}/g, '')
+          // ✅ STEP 8: Remove separator lines
+          .replace(/_{3,}/g, '')
+          // ✅ STEP 9: Clean leading/trailing junk
+          .replace(/^[\s\]}\[{),]+/g, '')
+          .replace(/\s*[\]}\s]*$/g, '')
           // Clean up any remaining JSON artifacts
           .replace(/\{[\s\S]*?"OTAKON_[A-Z_]+":[\s\S]*?\}/g, '')
           // ✅ Fix malformed bold markers (spaces between ** and text)
@@ -788,9 +899,30 @@ Note: These are optional enhancements. If not applicable, omit or return empty a
           .replace(/\nLore:\s*/gi, '\n\n**Lore:**\n') // Lore after newline
           .replace(/\nPlaces of Interest:\s*/gi, '\n\n**Places of Interest:**\n') // Places after newline
           .replace(/\nStrategy:\s*/gi, '\n\n**Strategy:**\n') // Strategy after newline
-          // Remove excessive newlines (but keep double newlines for paragraphs)
-          .replace(/\n{3,}/g, '\n\n')
+          // ✅ STEP 10: Fix malformed bold markers
+          .replace(/\*\*\s+([^*]+?)\s+\*\*/g, '**$1**') // ** text ** → **text**
+          .replace(/\*\*\s+([^*]+?):/g, '**$1:**') // ** Header: → **Header:**
+          // ✅ STEP 11: Format section headers with spacing
+          .replace(/\*\*Hint:\*\*\s*/gi, '**Hint:**\n')
+          .replace(/\*\*Lore:\*\*\s*/gi, '\n\n**Lore:**\n')
+          .replace(/\*\*Places of Interest:\*\*\s*/gi, '\n\n**Places of Interest:**\n')
+          .replace(/\*\*Strategy:\*\*\s*/gi, '\n\n**Strategy:**\n')
+          .replace(/\*\*What to focus on:\*\*\s*/gi, '\n\n**What to focus on:**\n')
+          .replace(/^Hint:\s*/i, '**Hint:**\n')
+          .replace(/\nHint:\s*/gi, '\n\n**Hint:**\n')
+          .replace(/\nLore:\s*/gi, '\n\n**Lore:**\n')
+          .replace(/\nPlaces of Interest:\s*/gi, '\n\n**Places of Interest:**\n')
+          .replace(/\nStrategy:\s*/gi, '\n\n**Strategy:**\n')
+          // ✅ STEP 12: Fix paragraph formatting
+          .replace(/(\*\*[^*]+\*\*:?)([A-Z])/g, '$1\n\n$2') // Break after bold headers
+          .replace(/\.([A-Z][a-z])/g, '.\n\n$1') // Period + Capital = new paragraph
+          .replace(/\.(\*\*[A-Z])/g, '.\n\n$1') // Period + Bold = new paragraph
+          // ✅ STEP 13: Final cleanup
+          .replace(/\n{3,}/g, '\n\n') // Remove excessive newlines
           .trim();
+        
+        console.log('🧹 [AIService] Cleaned content length:', cleanContent.length);
+        console.log('🧹 [AIService] Last 200 chars after cleaning:', cleanContent.slice(-200));
         
         // Parse wikiContent if it's a JSON string
         let gamePillData = structuredData.gamePillData;
@@ -826,6 +958,30 @@ Note: These are optional enhancements. If not applicable, omit or return empty a
         };
         
         cacheService.set(cacheKey, aiResponse, 60 * 60 * 1000).catch(err => console.warn(err));
+        
+        // ✅ AI PERSISTENT CACHE: Store structured response too
+        if (shouldUseCache && aiCacheKey) {
+          const cacheType = aiCacheService.determineCacheType(cacheContext);
+          const ttl = aiCacheService.determineTTL(cacheType, cacheContext);
+          
+          aiCacheService.cacheResponse(aiCacheKey, {
+            content: rawResponse,
+            suggestions: aiResponse.suggestions,
+            metadata: aiResponse.metadata,
+            followUpPrompts: aiResponse.followUpPrompts,
+            progressiveInsightUpdates: aiResponse.progressiveInsightUpdates,
+            stateUpdateTags: aiResponse.stateUpdateTags,
+            gamePillData: aiResponse.gamePillData
+          }, {
+            cacheType,
+            gameTitle: conversation.gameTitle,
+            conversationId: conversation.id,
+            modelUsed: 'gemini-2.5-flash-preview-09-2025',
+            tokensUsed: aiResponse.metadata.tokens || 0,
+            ttlHours: ttl
+          }).catch(error => console.warn('Failed to cache structured AI response:', error));
+        }
+        
         return aiResponse;
         
       } catch (jsonError) {
@@ -865,9 +1021,11 @@ Note: These are optional enhancements. If not applicable, omit or return empty a
 
         const { cleanContent, tags } = parseOtakonTags(rawContent);
         
+        const suggestions = tags.get('SUGGESTIONS') || [];
         const aiResponse: AIResponse = {
           content: cleanContent,
-          suggestions: tags.get('SUGGESTIONS') || [],
+          suggestions: suggestions,
+          followUpPrompts: suggestions, // ✅ Set followUpPrompts from SUGGESTIONS tag
           otakonTags: tags,
           rawContent: rawContent,
           metadata: {

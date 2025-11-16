@@ -73,9 +73,9 @@ interface MainAppProps {
   onConnect?: (_code: string) => void;
   onDisconnect?: () => void;
   onClearConnectionError?: () => void;
-  onWebSocketMessage?: (_data: any) => void;
+  onWebSocketMessage?: (_data: Record<string, unknown>) => void;
   showProfileSetupBanner?: boolean;
-  onProfileSetupComplete?: (_profileData: any) => void;
+  onProfileSetupComplete?: (_profileData: Record<string, unknown>) => void;
   onProfileSetupDismiss?: () => void;
 }
 
@@ -201,7 +201,7 @@ const MainApp: React.FC<MainAppProps> = ({
   }, [isManualUploadMode]);
 
   // Handle WebSocket messages for screenshot processing
-  const handleWebSocketMessage = useCallback((data: any) => {
+  const handleWebSocketMessage = useCallback((data: Record<string, unknown>) => {
     console.log('🔗 [MainApp] Received WebSocket message:', data);
     
     if (data.type === 'screenshot' && data.dataUrl) {
@@ -521,7 +521,7 @@ const MainApp: React.FC<MainAppProps> = ({
           table: 'conversations',
           filter: `id=eq.${activeConversation.id}`
         },
-        async (payload: any) => {
+        async (payload: Record<string, unknown>) => {
           console.log('📡 [MainApp] Real-time update received for conversation:', payload);
           
           // Update conversations state with fresh data
@@ -586,14 +586,8 @@ const MainApp: React.FC<MainAppProps> = ({
     }
   };
 
-  // WebSocket message handling (only if using local websocket)
+  // WebSocket message handling and auto-reconnection
   useEffect(() => {
-    if (propOnConnect) {
-      // Using App.tsx connection state, no local websocket needed
-      return;
-    }
-
-
     const handleWebSocketError = (error: string) => {
       console.error('WebSocket error:', error);
     };
@@ -602,6 +596,10 @@ const MainApp: React.FC<MainAppProps> = ({
       console.log('🔌 WebSocket connected');
       // Save connection time for status tracking
       setLastSuccessfulConnection(new Date());
+      // Update connection status in parent
+      if (propOnConnect && connectionCode) {
+        propOnConnect(connectionCode);
+      }
     };
 
     const handleWebSocketClose = () => {
@@ -611,14 +609,57 @@ const MainApp: React.FC<MainAppProps> = ({
     // Check if we have a stored connection code and try to reconnect
     const storedCode = localStorage.getItem('otakon_connection_code');
     if (storedCode) {
+      console.log('🔌 [MainApp] Found stored connection code, attempting to reconnect:', storedCode);
       setConnectionCode(storedCode);
       connect(storedCode, handleWebSocketOpen, handleWebSocketMessage, handleWebSocketError, handleWebSocketClose);
     }
 
     // Note: Removed automatic disconnect on unmount to maintain persistent connection
     // WebSocket should only disconnect when user explicitly disconnects or logs out
-  }, [activeConversation, propOnConnect, handleWebSocketMessage]);
+  }, [activeConversation, propOnConnect, handleWebSocketMessage, connectionCode]);
 
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input/textarea
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return;
+      }
+
+      // Ctrl/Cmd + K: Focus search/input
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        const chatInput = document.querySelector('textarea[placeholder*="message"]') as HTMLTextAreaElement;
+        if (chatInput) {
+          chatInput.focus();
+          toastService.info('Chat input focused');
+        }
+      }
+
+      // Ctrl/Cmd + G: Switch to Game Hub (changed from Ctrl+N to avoid browser conflict)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'g') {
+        e.preventDefault();
+        const gameHub = Object.values(conversations).find(c => c.isGameHub);
+        if (gameHub) {
+          handleConversationSelect(gameHub.id);
+          toastService.info('Switched to Game Hub');
+        }
+      }
+
+      // Escape: Stop generation
+      if (e.key === 'Escape' && isLoading) {
+        e.preventDefault();
+        if (abortController) {
+          abortController.abort();
+          toastService.info('Generation stopped');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [conversations, isLoading, abortController]);
 
   const handleConversationSelect = async (id: string) => {
     console.error('🔄 [MainApp] Switching to conversation:', id);
@@ -964,7 +1005,7 @@ const MainApp: React.FC<MainAppProps> = ({
           setLastSuccessfulConnection(new Date());
           localStorage.setItem('otakonHasConnectedBefore', 'true');
         },
-        (data: any) => {
+        (data: Record<string, unknown>) => {
           console.log('Connection message:', data);
         },
         (error: string) => {
@@ -1194,7 +1235,7 @@ const MainApp: React.FC<MainAppProps> = ({
   };
 
   // Placeholder for game tab creation - will be implemented in Week 3
-  const handleCreateGameTab = async (gameInfo: { gameTitle: string; genre?: string; aiResponse?: any; isUnreleased?: boolean }): Promise<Conversation | null> => {
+  const handleCreateGameTab = async (gameInfo: { gameTitle: string; genre?: string; aiResponse?: Record<string, unknown>; isUnreleased?: boolean }): Promise<Conversation | null> => {
     console.log('🎮 [MainApp] Game tab creation requested:', gameInfo);
     
     try {
@@ -1244,12 +1285,27 @@ const MainApp: React.FC<MainAppProps> = ({
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleSendMessage = async (message: string, imageUrl?: string) => {
+    // Prevent duplicate/concurrent sends
     if (!activeConversation || isLoading) {
+      if (isLoading) {
+        console.log('📸 [MainApp] Already processing a message, ignoring duplicate request');
+      }
       console.warn('📸 [MainApp] handleSendMessage blocked:', { 
         hasActiveConversation: !!activeConversation, 
         isLoading,
         message: message?.substring(0, 50)
       });
+      return;
+    }
+
+    // Validate message content
+    if (!imageUrl && !message?.trim()) {
+      toastService.error('Please enter a message');
+      return;
+    }
+
+    if (message && message.length > 10000) {
+      toastService.error('Message is too long (max 10,000 characters)');
       return;
     }
 
@@ -1521,10 +1577,16 @@ const MainApp: React.FC<MainAppProps> = ({
 
       // ✅ DEFERRED: Process suggested prompts AFTER tab migration (moved to after tab switch)
       // This ensures prompts are based on the FINAL active tab, not the intermediate Game Hub state
-      console.log('🔍 [MainApp] Raw suggestions from AI:', response.suggestions);
+      console.log('🔍 [MainApp] ===== SUGGESTIONS DEBUG =====');
+      console.log('🔍 [MainApp] response.followUpPrompts:', response.followUpPrompts);
+      console.log('🔍 [MainApp] response.suggestions:', response.suggestions);
+      
       const suggestionsToUse = response.followUpPrompts || response.suggestions;
+      console.log('🔍 [MainApp] suggestionsToUse (before processing):', suggestionsToUse);
+      
       const processedSuggestions = suggestedPromptsService.processAISuggestions(suggestionsToUse);
-      console.log('🔍 [MainApp] Processed suggestions:', processedSuggestions);
+      console.log('🔍 [MainApp] processedSuggestions (after processing):', processedSuggestions);
+      console.log('🔍 [MainApp] ===== END SUGGESTIONS DEBUG =====');
 
       // Handle state update tags (game progress, objectives, etc.)
       if (response.stateUpdateTags && response.stateUpdateTags.length > 0) {
@@ -1825,11 +1887,12 @@ const MainApp: React.FC<MainAppProps> = ({
               
               // ✅ Set suggested prompts AFTER tab switch (based on FINAL active tab)
               if (processedSuggestions.length > 0) {
+                console.log('✅ [MainApp] Setting AI-provided suggestions:', processedSuggestions);
                 setSuggestedPrompts(processedSuggestions);
               } else {
                 // Use fallback suggestions based on the GAME TAB, not Game Hub
                 const fallbackSuggestions = suggestedPromptsService.getFallbackSuggestions(gameTab.id, false);
-                console.log('🔍 [MainApp] Using fallback suggestions for game tab:', fallbackSuggestions);
+                console.log('⚠️ [MainApp] AI returned no suggestions - using fallback for game tab:', fallbackSuggestions);
                 setSuggestedPrompts(fallbackSuggestions);
               }
               
@@ -1856,10 +1919,11 @@ const MainApp: React.FC<MainAppProps> = ({
             
             // ✅ No migration - set prompts for current tab (Game Hub or existing game tab)
             if (processedSuggestions.length > 0) {
+              console.log('✅ [MainApp] Setting AI-provided suggestions (no migration):', processedSuggestions);
               setSuggestedPrompts(processedSuggestions);
             } else {
               const fallbackSuggestions = suggestedPromptsService.getFallbackSuggestions(activeConversation.id, activeConversation.isGameHub);
-              console.log('🔍 [MainApp] Using fallback suggestions:', fallbackSuggestions);
+              console.log('⚠️ [MainApp] AI returned no suggestions - using fallback:', fallbackSuggestions);
               setSuggestedPrompts(fallbackSuggestions);
             }
           }

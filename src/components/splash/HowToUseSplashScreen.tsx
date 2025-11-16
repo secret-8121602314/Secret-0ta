@@ -37,6 +37,21 @@ const FeatureItem: React.FC<{ icon: React.ReactNode; title: React.ReactNode; chi
 };
 
 const HowToUseSplashScreen: React.FC<HowToUseSplashScreenProps> = ({ onComplete }) => {
+  const [isMounted, setIsMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    // Ensure smooth render - show everything at once
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return (
+      <div className="h-screen bg-gradient-to-br from-[#111111] to-[#0A0A0A] flex items-center justify-center">
+        <div className="animate-pulse text-[#FFAB40]">Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-screen bg-gradient-to-br from-[#111111] to-[#0A0A0A] text-[#F5F5F5] flex flex-col font-inter">
       {/* Fixed Header */}

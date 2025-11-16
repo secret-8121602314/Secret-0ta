@@ -140,35 +140,38 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
             </div>
           )}
           
-          <div className="mb-8">
-            <div className="bg-gradient-to-r from-[#2E2E2E]/60 to-[#1A1A1A]/60 border-2 border-[#424242]/60 rounded-2xl p-6 backdrop-blur-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold text-[#F5F5F5]">PC Client</h3>
-                <span className="text-sm text-[#A3A3A3] bg-gradient-to-r from-[#1C1C1C]/80 to-[#0A0A0A]/80 px-3 py-1.5 rounded-xl border border-[#424242]/60">
-                  v1.0.0
-                </span>
-              </div>
-              
-              <div className="space-y-3 mb-4">
-                <p className="text-base text-[#A3A3A3] leading-relaxed">
-                  PC Client for Otagon - Your Spoiler-Free Gaming Companion
-                </p>
-                <div className="text-sm text-[#6E6E6E]">
-                  Download and install to get started
+          {/* Only show download section when not connected */}
+          {!isConnected && (
+            <div className="mb-8">
+              <div className="bg-gradient-to-r from-[#2E2E2E]/60 to-[#1A1A1A]/60 border-2 border-[#424242]/60 rounded-2xl p-6 backdrop-blur-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-semibold text-[#F5F5F5]">PC Client</h3>
+                  <span className="text-sm text-[#A3A3A3] bg-gradient-to-r from-[#1C1C1C]/80 to-[#0A0A0A]/80 px-3 py-1.5 rounded-xl border border-[#424242]/60">
+                    v1.0.0
+                  </span>
                 </div>
+                
+                <div className="space-y-3 mb-4">
+                  <p className="text-base text-[#A3A3A3] leading-relaxed">
+                    PC Client for Otagon - Your Spoiler-Free Gaming Companion
+                  </p>
+                  <div className="text-sm text-[#6E6E6E]">
+                    Download and install to get started
+                  </div>
+                </div>
+                
+                <button
+                  onClick={() => {
+                    const downloadUrl = 'https://github.com/readmet3xt/otakon-pc-client/releases/tag/v1.0.0';
+                    window.open(downloadUrl, '_blank');
+                  }}
+                  className="w-full bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white px-6 py-3 rounded-xl font-medium hover:from-[#D42A2A] hover:to-[#C87A1A] transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#E53A3A]/25"
+                >
+                  Download PC Client
+                </button>
               </div>
-              
-              <button
-                onClick={() => {
-                  const downloadUrl = 'https://github.com/readmet3xt/otakon-pc-client/releases/tag/v1.0.0';
-                  window.open(downloadUrl, '_blank');
-                }}
-                className="w-full bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white px-6 py-3 rounded-xl font-medium hover:from-[#D42A2A] hover:to-[#C87A1A] transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#E53A3A]/25"
-              >
-                Download PC Client
-              </button>
             </div>
-          </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>

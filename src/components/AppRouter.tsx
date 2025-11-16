@@ -42,13 +42,11 @@ interface AppRouterProps {
   handleDisconnect: () => void;
   handleClearConnectionError: () => void;
   handleSkipConnection: () => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  handleProfileSetupComplete: (_profileData: any) => void;
+  handleProfileSetupComplete: (_profileData: Record<string, unknown>) => void;
   handleProfileSetupSkip: () => void;
   setSettingsOpen: (_isOpen: boolean) => void;
   setShowLogoutConfirm: (_isOpen: boolean) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  mainAppMessageHandlerRef: React.MutableRefObject<((_data: any) => void) | null>;
+  mainAppMessageHandlerRef: React.MutableRefObject<((_data: Record<string, unknown>) => void) | null>;
   isManualNavigationRef: React.MutableRefObject<boolean>;
 }
 

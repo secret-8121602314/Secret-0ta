@@ -1,11 +1,13 @@
+import { toastService } from './toastService';
+
 let ws: WebSocket | null = null;
 const SERVER_ADDRESS = 'wss://otakon-relay.onrender.com';
 
 let reconnectAttempts = 0;
 const maxBackoffMs = 5000;
-const sendQueue: object[] = [];
+const sendQueue: Record<string, unknown>[] = [];
 let lastCode: string | null = null;
-let handlers: { onOpen: () => void; onMessage: (data: any) => void; onError: (error: string) => void; onClose: () => void } | null = null;
+let handlers: { onOpen: () => void; onMessage: (data: Record<string, unknown>) => void; onError: (error: string) => void; onClose: () => void } | null = null;
 let heartbeatTimer: number | null = null;
 let shouldReconnect = true; // ✅ FIX: Flag to prevent reconnection after explicit disconnect
 const HEARTBEAT_MS = 30000; // 30s - more frequent heartbeat to maintain connection
@@ -14,7 +16,7 @@ const HEARTBEAT_MS = 30000; // 30s - more frequent heartbeat to maintain connect
 const connect = (
   code: string,
   onOpen: () => void,
-  onMessage: (data: any) => void,
+  onMessage: (data: Record<string, unknown>) => void,
   onError: (error: string) => void,
   onClose: () => void
 ) => {
@@ -26,7 +28,9 @@ const connect = (
 
   // Only accept 6-digit codes
   if (!/^\d{6}$/.test(code)) {
-    onError("Invalid code format. Please enter a 6-digit code.");
+    const errorMsg = "Invalid code format. Please enter a 6-digit code.";
+    onError(errorMsg);
+    toastService.error(errorMsg);
     return;
   }
 
@@ -40,7 +44,9 @@ const connect = (
     ws = new WebSocket(fullUrl);
   } catch (e) {
     const message = e instanceof Error ? e.message : "An unknown error occurred.";
-    onError(`Connection failed: ${message}. Please check the URL and your network connection.`);
+    const errorMsg = `Connection failed: ${message}. Please check the URL and your network connection.`;
+    onError(errorMsg);
+    toastService.error('PC connection failed. Please check your network and try again.');
     return;
   }
 
@@ -48,6 +54,14 @@ const connect = (
     // Connection established - no need to log every connection
     reconnectAttempts = 0;
     onOpen();
+    
+    // Immediately send connection request to speed up handshake
+    try {
+      ws.send(JSON.stringify({ type: 'connection_request', code: code, ts: Date.now() }));
+    } catch {
+      // Ignore send errors
+    }
+    
     // Flush queued messages
     while (sendQueue.length && ws && ws.readyState === WebSocket.OPEN) {
       const payload = sendQueue.shift();
@@ -101,6 +115,10 @@ const connect = (
       let errorMessage = "Connection closed unexpectedly.";
       if (event.code === 1006) {
         errorMessage = "Connection to the server failed. Please check your network, verify the code, and ensure the PC client is running.";
+        // Only show toast for critical connection failures, not during auto-reconnect
+        if (reconnectAttempts === 0) {
+          toastService.warning('PC connection lost. Attempting to reconnect...');
+        }
       } else if (event.reason) {
         errorMessage = `Connection closed: ${event.reason}`;
       }
@@ -132,7 +150,7 @@ const connect = (
   };
 };
 
-const send = (data: object) => {
+const send = (data: Record<string, unknown>) => {
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(data));
   } else {

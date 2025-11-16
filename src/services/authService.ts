@@ -177,7 +177,7 @@ export class AuthService {
   }
 
 
-  private async createUserRecord(authUser: any): Promise<void> {
+  private async createUserRecord(authUser: { id: string; email?: string; user_metadata?: Record<string, unknown> }): Promise<void> {
     try {
       console.log('🔐 [AuthService] Creating user record for:', authUser.email);
       
@@ -237,9 +237,10 @@ export class AuthService {
       }
       
       console.log('🔐 [AuthService] User record created successfully');
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Check if it's a duplicate key error (23505)
-      if (error.code === '23505' || error.message?.includes('duplicate key')) {
+      const err = error as { code?: string; message?: string };
+      if (err.code === '23505' || err.message?.includes('duplicate key')) {
         console.log('🔐 [AuthService] User record already exists (duplicate key in catch), continuing...');
         // This is not actually an error - the user already exists
         return;
@@ -900,7 +901,7 @@ export class AuthService {
   }
 
   // Method to test Discord OAuth configuration
-  async testDiscordConfiguration(): Promise<{ isValid: boolean; message: string; details: any }> {
+  async testDiscordConfiguration(): Promise<{ isValid: boolean; message: string; details: Record<string, unknown> }> {
     try {
       console.log('🔐 [AuthService] Testing Discord OAuth configuration...');
       
@@ -953,7 +954,7 @@ export class AuthService {
   /**
    * Update user profile preferences
    */
-  async updateUserProfile(authUserId: string, profileData: any): Promise<void> {
+  async updateUserProfile(authUserId: string, profileData: Record<string, unknown>): Promise<void> {
     try {
       // Update in Supabase
       const { error } = await supabase
