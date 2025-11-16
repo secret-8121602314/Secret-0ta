@@ -212,15 +212,17 @@ const MainApp: React.FC<MainAppProps> = ({
     // Check if this is a connection confirmation from PC client
     if (data.type === 'partner_connected' || data.type === 'connection_alive' || data.type === 'connected' || data.status === 'connected') {
       console.log('🔗 [MainApp] PC client confirmed connection');
-      console.log('🔗 [MainApp] propOnConnect:', !!propOnConnect, 'connectionCode:', connectionCode);
+      // Get connection code from state or localStorage
+      const codeToUse = connectionCode || localStorage.getItem('otakon_connection_code');
+      console.log('🔗 [MainApp] propOnConnect:', !!propOnConnect, 'connectionCode:', codeToUse);
       // Update connection status in parent
-      if (propOnConnect && connectionCode) {
-        console.log('🔗 [MainApp] Calling propOnConnect with code:', connectionCode);
-        propOnConnect(connectionCode);
+      if (propOnConnect && codeToUse) {
+        console.log('🔗 [MainApp] Calling propOnConnect with code:', codeToUse);
+        propOnConnect(codeToUse);
       } else if (!propOnConnect) {
         console.warn('🔗 [MainApp] propOnConnect not provided');
-      } else if (!connectionCode) {
-        console.warn('🔗 [MainApp] connectionCode not available');
+      } else if (!codeToUse) {
+        console.warn('🔗 [MainApp] connectionCode not available in state or localStorage');
       }
     }
     

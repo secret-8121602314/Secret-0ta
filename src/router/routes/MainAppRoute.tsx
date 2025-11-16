@@ -18,6 +18,7 @@ const MainAppRoute: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.DISCONNECTED);
+  const [connectionCode, setConnectionCode] = useState<string | null>(null);
 
   // Sync modal state with URL params
   useEffect(() => {
@@ -56,11 +57,13 @@ const MainAppRoute: React.FC = () => {
 
   const handleConnect = (code: string) => {
     console.log('🔌 [MainAppRoute] Connection established with code:', code);
+    setConnectionCode(code);
     setConnectionStatus(ConnectionStatus.CONNECTED);
   };
 
   const handleDisconnect = () => {
     console.log('🔌 [MainAppRoute] Disconnected');
+    setConnectionCode(null);
     setConnectionStatus(ConnectionStatus.DISCONNECTED);
   };
 
@@ -76,7 +79,7 @@ const MainAppRoute: React.FC = () => {
         connectionStatus={connectionStatus}
         onConnect={handleConnect}
         onDisconnect={handleDisconnect}
-        pcConnectionCode={null}
+        pcConnectionCode={connectionCode}
         pcConnectionError={null}
         isGamesRefreshing={false}
         isConversationsRefreshing={false}
