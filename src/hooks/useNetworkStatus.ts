@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { toastService } from '../services/toastService';
+import type { ExtendedNavigator } from '../types/enhanced';
 
 export interface NetworkStatus {
   isOnline: boolean;
@@ -25,14 +26,13 @@ export const useNetworkStatus = () => {
     const MAX_RECONNECT_ATTEMPTS = 3;
 
     const updateConnectionType = () => {
-      const connection = (navigator as any).connection || 
-                        (navigator as any).mozConnection || 
-                        (navigator as any).webkitConnection;
+      const nav = navigator as ExtendedNavigator;
+      const connection = nav.connection || nav.mozConnection || nav.webkitConnection;
       
       if (connection) {
         setStatus(prev => ({
           ...prev,
-          connectionType: connection.effectiveType || connection.type || null
+          connectionType: connection.effectiveType || null
         }));
       }
     };
@@ -115,9 +115,8 @@ export const useNetworkStatus = () => {
     window.addEventListener('offline', handleOffline);
 
     // Listen for connection type changes
-    const connection = (navigator as any).connection || 
-                      (navigator as any).mozConnection || 
-                      (navigator as any).webkitConnection;
+    const nav = navigator as ExtendedNavigator;
+    const connection = nav.connection || nav.mozConnection || nav.webkitConnection;
     
     if (connection) {
       connection.addEventListener('change', updateConnectionType);

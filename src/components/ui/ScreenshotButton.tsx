@@ -65,9 +65,9 @@ const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({
       }
     };
     if (menuOpen) {
-      document.addEventListener('mousedown', handler, { passive: true } as any);
+      document.addEventListener('mousedown', handler, { passive: true } as AddEventListenerOptions);
     }
-    return () => document.removeEventListener('mousedown', handler as any);
+    return () => document.removeEventListener('mousedown', handler);
   }, [menuOpen]);
 
   const openMenu = (e?: { preventDefault?: () => void; stopPropagation?: () => void }) => {

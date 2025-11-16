@@ -4,6 +4,8 @@
 // Centralized memory management to prevent leaks and optimize performance
 // for 100K+ users
 
+import type { ExtendedPerformance, ExtendedWindow } from '../types/enhanced';
+
 interface MemoryStats {
   usedJSHeapSize: number;
   totalJSHeapSize: number;
@@ -102,7 +104,10 @@ class MemoryManager {
       return null;
     }
 
-    const memory = (performance as any).memory;
+    const memory = (performance as ExtendedPerformance).memory;
+    if (!memory) {
+      return null;
+    }
     const usagePercentage = (memory.usedJSHeapSize / memory.jsHeapSizeLimit) * 100;
 
     return {
@@ -123,7 +128,7 @@ class MemoryManager {
   forceGarbageCollection(): void {
     if (typeof window !== 'undefined' && 'gc' in window) {
       try {
-        (window as any).gc();
+        (window as ExtendedWindow).gc?.();
         console.log('🧹 [MemoryManager] Forced garbage collection');
       } catch (error) {
         console.warn('Failed to force garbage collection:', error);

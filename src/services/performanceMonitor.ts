@@ -3,6 +3,8 @@
  * Tracks app performance, errors, and user experience metrics
  */
 
+import type { ExtendedPerformance } from '../types/enhanced';
+
 interface PerformanceMetrics {
   // Core performance metrics
   pageLoadTime: number;
@@ -148,11 +150,13 @@ class PerformanceMonitor {
     
     setInterval(() => {
       if ('memory' in performance) {
-        const memory = (performance as any).memory;
-        this.metrics.memoryUsage = memory.usedJSHeapSize;
-        
-        if (memory.usedJSHeapSize > this.thresholds.memoryUsage) {
-          this.addAlert('warning', `High memory usage: ${(memory.usedJSHeapSize / 1024 / 1024).toFixed(2)}MB`, 'high');
+        const memory = (performance as import('../types/enhanced').ExtendedPerformance).memory;
+        if (memory) {
+          this.metrics.memoryUsage = memory.usedJSHeapSize;
+          
+          if (memory.usedJSHeapSize > this.thresholds.memoryUsage) {
+            this.addAlert('warning', `High memory usage: ${(memory.usedJSHeapSize / 1024 / 1024).toFixed(2)}MB`, 'high');
+          }
         }
       }
     }, 10000); // Check every 10 seconds

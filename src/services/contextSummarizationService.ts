@@ -122,7 +122,7 @@ Provide ONLY the summary, no additional commentary.`;
         id: 'system',
         email: 'system@otakon.ai',
         profileData: null
-      } as any;
+      };
 
       const response = await aiService.getChatResponse(
         tempConversation,

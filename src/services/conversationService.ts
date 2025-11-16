@@ -46,7 +46,7 @@ export class ConversationService {
     }
     
     // Fallback to localStorage
-    const user = StorageService.get(STORAGE_KEYS.USER, null) as any;
+    const user = StorageService.get(STORAGE_KEYS.USER, null) as import('../types').User | null;
     return user?.tier || USER_TIERS.FREE;
   }
 
@@ -138,7 +138,7 @@ export class ConversationService {
         console.error('🔍 [ConversationService] Game Hub from cache:', {
           id: gameHub.id,
           messageCount: gameHub.messages?.length || 0,
-          messagesPreview: gameHub.messages?.slice(0, 2).map((m: any) => ({
+          messagesPreview: gameHub.messages?.slice(0, 2).map((m: import('../types').ChatMessage) => ({
             id: m.id,
             role: m.role,
             contentLength: m.content?.length || 0
