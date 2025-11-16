@@ -6,8 +6,14 @@ import { toastService } from './toastService';
 import { Conversations, Conversation, ChatMessage, UserTier } from '../types';
 import { STORAGE_KEYS, DEFAULT_CONVERSATION_TITLE, GAME_HUB_ID, USER_TIERS } from '../constants';
 
-// Initialize Supabase service instance
-const supabaseService = SupabaseService.getInstance();
+// Lazy-load Supabase service instance to avoid circular dependency
+let supabaseService: SupabaseService;
+const getSupabaseService = () => {
+  if (!supabaseService) {
+    supabaseService = SupabaseService.getInstance();
+  }
+  return supabaseService;
+};
 
 // ✅ QUERY-BASED LIMITS: Conversations are unlimited for all tiers.
 // Limits are based on queries (text vs image) per month, tracked in database:
@@ -166,7 +172,7 @@ export class ConversationService {
     if (userId) {
       try {
         console.log('🔍 [ConversationService] Loading conversations from Supabase for user:', userId);
-        const supabaseConvs = await supabaseService.getConversations(userId);
+        const supabaseConvs = await getSupabaseService().getConversations(userId);
         
         // Convert array to object format
         conversations = supabaseConvs.reduce((acc, conv) => {
@@ -268,7 +274,7 @@ export class ConversationService {
         console.log('🔍 [ConversationService] Syncing to Supabase...');
         
         // ✅ FIX: Fetch existing conversations ONCE before the loop to prevent race conditions
-        const existingConvs = await supabaseService.getConversations(userId);
+        const existingConvs = await getSupabaseService().getConversations(userId);
         const existingIds = new Set(existingConvs.map(c => c.id));
         console.log('🔍 [ConversationService] Found', existingIds.size, 'existing conversations in Supabase');
         
@@ -280,10 +286,10 @@ export class ConversationService {
             
             if (exists) {
               // Update existing
-              await supabaseService.updateConversation(conv.id, conv);
+              await getSupabaseService().updateConversation(conv.id, conv);
             } else {
               // Create new - UPSERT will handle duplicates gracefully
-              const newId = await supabaseService.createConversation(userId, conv);
+              const newId = await getSupabaseService().createConversation(userId, conv);
               if (!newId) {
                 console.warn(`Failed to create conversation ${conv.id} in Supabase (returned null)`);
               }
@@ -408,7 +414,7 @@ export class ConversationService {
     if (userId) {
       try {
         // Pass the conversation with its ID to ensure Game Hub uses 'game-hub' consistently
-        const newId = await supabaseService.createConversation(userId, conversation);
+        const newId = await getSupabaseService().createConversation(userId, conversation);
         if (newId) {
           // Update conversation with Supabase-returned ID if different
           if (newId !== conversation.id) {
@@ -446,7 +452,7 @@ export class ConversationService {
       // ✅ PRIMARY: Update in Supabase first
       if (userId) {
         try {
-          await supabaseService.updateConversation(id, conversations[id]);
+          await getSupabaseService().updateConversation(id, conversations[id]);
           console.log('🔍 [ConversationService] Updated conversation in Supabase:', id);
         } catch (error) {
           console.error('🔍 [ConversationService] Failed to update in Supabase:', error);
@@ -483,7 +489,7 @@ export class ConversationService {
     // ✅ PRIMARY: Delete from Supabase first
     if (userId) {
       try {
-        await supabaseService.deleteConversation(id);
+        await getSupabaseService().deleteConversation(id);
         console.log('🔍 [ConversationService] Deleted conversation from Supabase:', id);
       } catch (error) {
         console.error('🔍 [ConversationService] Failed to delete from Supabase:', error);
