@@ -6,6 +6,8 @@ import { ErrorService } from './errorService';
 import { toastService } from './toastService';
 import { jsonToRecord } from '../utils/typeHelpers';
 import { isPWAMode } from '../utils/pwaDetection';
+import { mapUserData } from '../utils/userMapping';
+import { sessionService } from './sessionService';
 
 export class AuthService {
   private static instance: AuthService;
@@ -203,21 +205,15 @@ export class AuthService {
       });
       console.log('🔐 [AuthService] OAuth provider:', provider);
       
-      // Create a unique identifier that includes the provider
-      // For email authentication, use the original email
-      // For OAuth providers, use provider prefix
-      let uniqueEmail;
-      if (provider === 'email') {
-        uniqueEmail = authUser.email; // Use original email for email authentication
-      } else {
-        uniqueEmail = `${provider}_${authUser.email}`; // Use provider prefix for OAuth
-      }
+      // Use the real email from OAuth provider
+      // Supabase auth.users handles uniqueness via auth_user_id
+      const userEmail = authUser.email;
       
-      console.log('🔐 [AuthService] Unique email identifier:', uniqueEmail);
+      console.log('🔐 [AuthService] User email:', userEmail);
       
       const { error } = await supabase.rpc('create_user_record', {
         p_auth_user_id: authUser.id,
-        p_email: uniqueEmail,
+        p_email: userEmail,
         p_full_name: authUser.user_metadata?.full_name || authUser.user_metadata?.name || 'User',
         p_avatar_url: authUser.user_metadata?.avatar_url,
         p_is_developer: false,
@@ -252,19 +248,7 @@ export class AuthService {
   }
 
   // Helper function to extract original email from unique identifier
-  private extractOriginalEmail(uniqueEmail: string): string {
-    // Check if this is an OAuth provider email (has provider prefix)
-    const oauthProviders = ['google', 'discord', 'github', 'facebook', 'twitter', 'apple'];
-    const parts = uniqueEmail.split('_');
-    
-    if (parts.length > 1 && oauthProviders.includes(parts[0])) {
-      // This is an OAuth provider email, remove the provider prefix
-      return parts.slice(1).join('_'); // Join in case email contains underscores
-    }
-    
-    // This is either an email authentication or doesn't have a recognized prefix
-    return uniqueEmail;
-  }
+
 
   async loadUserFromSupabase(authUserId: string) {
     // ✅ PERFORMANCE: Check if there's already a pending load for this user
@@ -323,50 +307,7 @@ export class AuthService {
 
         if (tableData) {
           console.log('🔐 [AuthService] User found via direct table query');
-          const user: User = {
-            id: tableData.id,
-            authUserId: tableData.auth_user_id || authUserId, // Fallback to the authUserId parameter
-            email: this.extractOriginalEmail(tableData.email), // Extract original email from unique identifier
-            tier: tableData.tier as UserTier,
-            hasProfileSetup: tableData.has_profile_setup || false,
-            hasSeenSplashScreens: tableData.has_seen_splash_screens || false,
-            hasSeenHowToUse: tableData.has_seen_how_to_use || false,
-            hasSeenFeaturesConnected: tableData.has_seen_features_connected || false,
-            hasSeenProFeatures: tableData.has_seen_pro_features || false,
-            pcConnected: tableData.pc_connected || false,
-            pcConnectionSkipped: tableData.pc_connection_skipped || false,
-            onboardingCompleted: tableData.onboarding_completed || false,
-            hasWelcomeMessage: tableData.has_welcome_message || false,
-            isNewUser: tableData.is_new_user || true,
-            hasUsedTrial: tableData.has_used_trial || false,
-            lastActivity: Date.now(),
-            // ✅ Query-based usage limits (top-level for easy access)
-            textCount: tableData.text_count || 0,
-            imageCount: tableData.image_count || 0,
-            textLimit: tableData.text_limit || TIER_LIMITS[tableData.tier as UserTier]?.text || 0,
-            imageLimit: tableData.image_limit || TIER_LIMITS[tableData.tier as UserTier]?.image || 0,
-            totalRequests: tableData.total_requests || 0,
-            lastReset: tableData.last_reset ? new Date(tableData.last_reset).getTime() : Date.now(),
-            preferences: jsonToRecord(tableData.preferences),
-            // Legacy nested usage object (kept for backward compatibility)
-            usage: {
-              textCount: tableData.text_count || 0,
-              imageCount: tableData.image_count || 0,
-              textLimit: tableData.text_limit || TIER_LIMITS[tableData.tier as UserTier]?.text || 0,
-              imageLimit: tableData.image_limit || TIER_LIMITS[tableData.tier as UserTier]?.image || 0,
-              totalRequests: tableData.total_requests || 0,
-              lastReset: tableData.last_reset ? new Date(tableData.last_reset).getTime() : Date.now(),
-              tier: tableData.tier as UserTier,
-            },
-            appState: jsonToRecord(tableData.app_state),
-            profileData: jsonToRecord(tableData.profile_data),
-            onboardingData: jsonToRecord(tableData.onboarding_data),
-            behaviorData: jsonToRecord(tableData.behavior_data),
-            feedbackData: jsonToRecord(tableData.feedback_data),
-            usageData: jsonToRecord(tableData.usage_data),
-            createdAt: tableData.created_at ? new Date(tableData.created_at).getTime() : Date.now(),
-            updatedAt: tableData.updated_at ? new Date(tableData.updated_at).getTime() : Date.now(),
-          };
+          const user = mapUserData(tableData as Record<string, unknown>, authUserId);
 
           // ✅ SCALABILITY: Cache user data
           await this.setCachedUser(authUserId, user);
@@ -379,51 +320,7 @@ export class AuthService {
       if (rpcData && rpcData.length > 0) {
         console.log('🔐 [AuthService] User found via RPC function');
         console.log('🔐 [AuthService] RPC data:', rpcData[0]);
-        const userData = rpcData[0];
-        const user: User = {
-          id: userData.id,
-          authUserId: userData.auth_user_id || authUserId, // Fallback to the authUserId parameter
-          email: this.extractOriginalEmail(userData.email), // Extract original email from unique identifier
-          tier: userData.tier as UserTier,
-          hasProfileSetup: userData.has_profile_setup || false,
-          hasSeenSplashScreens: userData.has_seen_splash_screens || false,
-          hasSeenHowToUse: userData.has_seen_how_to_use || false,
-          hasSeenFeaturesConnected: userData.has_seen_features_connected || false,
-          hasSeenProFeatures: userData.has_seen_pro_features || false,
-          pcConnected: userData.pc_connected || false,
-          pcConnectionSkipped: userData.pc_connection_skipped || false,
-          onboardingCompleted: userData.onboarding_completed || false,
-          hasWelcomeMessage: userData.has_welcome_message || false,
-          isNewUser: userData.is_new_user || true,
-          hasUsedTrial: userData.has_used_trial || false,
-          lastActivity: Date.now(),
-          // ✅ Query-based usage limits (top-level for easy access)
-          textCount: userData.text_count || 0,
-          imageCount: userData.image_count || 0,
-          textLimit: userData.text_limit || TIER_LIMITS[userData.tier as UserTier]?.text || 0,
-          imageLimit: userData.image_limit || TIER_LIMITS[userData.tier as UserTier]?.image || 0,
-          totalRequests: userData.total_requests || 0,
-          lastReset: userData.last_reset ? new Date(userData.last_reset).getTime() : Date.now(),
-          preferences: jsonToRecord(userData.preferences),
-          // Legacy nested usage object (kept for backward compatibility)
-          usage: {
-            textCount: userData.text_count || 0,
-            imageCount: userData.image_count || 0,
-            textLimit: userData.text_limit || TIER_LIMITS[userData.tier as UserTier]?.text || 0,
-            imageLimit: userData.image_limit || TIER_LIMITS[userData.tier as UserTier]?.image || 0,
-            totalRequests: userData.total_requests || 0,
-            lastReset: userData.last_reset ? new Date(userData.last_reset).getTime() : Date.now(),
-            tier: userData.tier as UserTier,
-          },
-          appState: jsonToRecord(userData.app_state),
-          profileData: jsonToRecord(userData.profile_data),
-          onboardingData: jsonToRecord(userData.onboarding_data),
-          behaviorData: jsonToRecord(userData.behavior_data),
-          feedbackData: jsonToRecord(userData.feedback_data),
-          usageData: jsonToRecord(userData.usage_data),
-          createdAt: userData.created_at ? new Date(userData.created_at).getTime() : Date.now(),
-          updatedAt: userData.updated_at ? new Date(userData.updated_at).getTime() : Date.now(),
-        };
+        const user = mapUserData(rpcData[0] as Record<string, unknown>, authUserId);
 
         console.log('🔐 [AuthService] User onboarding flags:', {
           hasProfileSetup: user.hasProfileSetup,
@@ -773,6 +670,9 @@ export class AuthService {
     try {
       console.log('🔐 [AuthService] Starting sign out process...');
       
+      // End session tracking before signing out
+      await sessionService.endSession();
+      
       // Sign out from Supabase FIRST to clear session tokens
       await supabase.auth.signOut();
       
@@ -948,6 +848,15 @@ export class AuthService {
       // Invalidate cache before loading to ensure fresh data
       await this.invalidateUserCache(this.authState.user.authUserId);
       await this.loadUserFromSupabase(this.authState.user.authUserId);
+      
+      // Start session tracking if not already started
+      if (this.authState.user && !sessionService.getCurrentSessionId()) {
+        await sessionService.startSession(
+          this.authState.user.id,
+          this.authState.user.authUserId,
+          window.location.pathname
+        );
+      }
     }
   }
 

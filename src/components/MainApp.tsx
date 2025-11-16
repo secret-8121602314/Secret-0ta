@@ -16,6 +16,7 @@ import { tabManagementService } from '../services/tabManagementService';
 import { ttsService } from '../services/ttsService';
 import { toastService } from '../services/toastService';
 import { MessageRoutingService } from '../services/messageRoutingService';
+import { sessionService } from '../services/sessionService';
 import Sidebar from './layout/Sidebar';
 import ChatInterface from './features/ChatInterface';
 import SettingsModal from './modals/SettingsModal';
@@ -139,6 +140,10 @@ const MainApp: React.FC<MainAppProps> = ({
   
   // ✅ Ref to store latest handleSendMessage function
   const handleSendMessageRef = useRef<((message: string, imageUrl?: string) => Promise<void>) | null>(null);
+  
+  // ✅ RATE LIMITING: Track last request time to prevent rapid-fire duplicate requests
+  const lastRequestTimeRef = useRef<number>(0);
+  const RATE_LIMIT_DELAY_MS = 500; // Minimum 500ms between requests (prevents duplicate clicks)
   
   // ✅ PERFORMANCE: Memoize currentUser to prevent re-creating object on every render
   const currentUser = useMemo(() => user || { tier: 'free' } as User, [user]);
@@ -1273,6 +1278,12 @@ const MainApp: React.FC<MainAppProps> = ({
         [conversationId]: newGameTab
       }));
 
+      // ✅ GAME HUB TRACKING: Mark tab as created in game_hub_interactions table
+      if (user.authUserId) {
+        aiService.markGameHubTabCreated(user.authUserId, gameInfo.gameTitle, conversationId)
+          .catch(error => console.warn('Failed to track Game Hub tab creation:', error));
+      }
+
       console.log('🎮 [MainApp] Game tab created successfully:', newGameTab.title);
       toastService.success(`Game tab "${gameInfo.gameTitle}" created!`);
       return newGameTab;
@@ -1285,6 +1296,20 @@ const MainApp: React.FC<MainAppProps> = ({
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleSendMessage = async (message: string, imageUrl?: string) => {
+    // ✅ RATE LIMITING: Prevent rapid-fire duplicate requests
+    const now = Date.now();
+    const timeSinceLastRequest = now - lastRequestTimeRef.current;
+    
+    if (timeSinceLastRequest < RATE_LIMIT_DELAY_MS) {
+      console.warn(`⏱️ [MainApp] Rate limit: ${timeSinceLastRequest}ms since last request (min ${RATE_LIMIT_DELAY_MS}ms)`);
+      return; // Silently ignore - no user-visible delay
+    }
+    
+    lastRequestTimeRef.current = now;
+    
+    // Track user activity
+    sessionService.trackActivity('send_message');
+    
     // Prevent duplicate/concurrent sends
     if (!activeConversation || isLoading) {
       if (isLoading) {
@@ -1374,6 +1399,20 @@ const MainApp: React.FC<MainAppProps> = ({
     // Determine query type: image+text or image-only = image query, text-only = text query
     const queryType = hasImage ? 'image' : 'text';
     
+    // ✅ SOFT WARNING: Show warning at 90% usage
+    if (user) {
+      const currentCount = queryType === 'text' ? user.textCount : user.imageCount;
+      const limit = queryType === 'text' ? user.textLimit : user.imageLimit;
+      const usagePercent = (currentCount / limit) * 100;
+      
+      if (usagePercent >= 90 && usagePercent < 100) {
+        const remaining = limit - currentCount;
+        toastService.warning(
+          `${remaining} ${queryType} ${remaining === 1 ? 'query' : 'queries'} remaining this month (${Math.floor(usagePercent)}% used)`
+        );
+      }
+    }
+    
     // Check if user can make the request
     if (!UserService.canMakeRequest(queryType)) {
       const errorMessage = {
@@ -1401,6 +1440,9 @@ const MainApp: React.FC<MainAppProps> = ({
       // Save error message (non-blocking)
       ConversationService.addMessage(activeConversation.id, errorMessage)
         .catch(error => console.error('Failed to save error message:', error));
+      
+      // ✅ HARD BLOCK: Show upgrade prompt
+      toastService.error('Monthly limit reached! Upgrade to Pro for unlimited queries.');
       return;
     }
 

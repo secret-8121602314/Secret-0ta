@@ -3,6 +3,7 @@ import { User, Conversation, Game, UserTier, TrialStatus } from '../types';
 import { USER_TIERS, TIER_LIMITS } from '../constants';
 import { jsonToRecord, safeParseDate, safeBoolean, safeNumber, toJson } from '../utils/typeHelpers';
 import { toastService } from './toastService';
+import { mapUserData } from '../utils/userMapping';
 
 export class SupabaseService {
   private static instance: SupabaseService;
@@ -27,60 +28,7 @@ export class SupabaseService {
       }
 
       if (data && data.length > 0) {
-        const userData = data[0];
-        return {
-          id: userData.id,
-          authUserId: userData.auth_user_id,
-          email: userData.email,
-          tier: userData.tier as UserTier,
-          hasProfileSetup: false,
-          hasSeenSplashScreens: false,
-          hasSeenHowToUse: false,
-          hasSeenFeaturesConnected: false,
-          hasSeenProFeatures: false,
-          pcConnected: false,
-          pcConnectionSkipped: false,
-          onboardingCompleted: false,
-          hasWelcomeMessage: false,
-          isNewUser: true,
-          hasUsedTrial: userData.has_used_trial,
-          lastActivity: Date.now(),
-          // ✅ Query-based usage limits (top-level)
-          textCount: userData.text_count || 0,
-          imageCount: userData.image_count || 0,
-          textLimit: userData.text_limit || 55,
-          imageLimit: userData.image_limit || 25,
-          totalRequests: userData.total_requests || 0,
-          lastReset: userData.last_reset ? new Date(userData.last_reset).getTime() : Date.now(),
-          // PC Connection fields
-          connectionCode: userData.connection_code ?? undefined,
-          connectionCodeCreatedAt: userData.connection_code_created_at ? new Date(userData.connection_code_created_at).getTime() : undefined,
-          connectionActive: userData.connection_active ?? undefined,
-          connectionDeviceInfo: jsonToRecord(userData.connection_device_info),
-          lastConnectionAt: userData.last_connection_at ? new Date(userData.last_connection_at).getTime() : undefined,
-          // Trial fields
-          trialStartedAt: userData.trial_started_at ? new Date(userData.trial_started_at).getTime() : undefined,
-          trialExpiresAt: userData.trial_expires_at ? new Date(userData.trial_expires_at).getTime() : undefined,
-          preferences: jsonToRecord(userData.preferences),
-          // Legacy nested usage object
-          usage: {
-            textCount: userData.text_count,
-            imageCount: userData.image_count,
-            textLimit: userData.text_limit,
-            imageLimit: userData.image_limit,
-            totalRequests: 0,
-            lastReset: Date.now(),
-            tier: userData.tier as UserTier,
-          },
-          appState: jsonToRecord(userData.app_state),
-          profileData: jsonToRecord(userData.profile_data),
-          onboardingData: {},
-          behaviorData: {},
-          feedbackData: {},
-          usageData: {},
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        };
+        return mapUserData(data[0] as Record<string, unknown>);
       }
 
       return null;

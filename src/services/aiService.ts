@@ -70,7 +70,7 @@ class AIService {
         model: "gemini-2.5-flash-preview-09-2025",
         safetySettings: SAFETY_SETTINGS,
         tools: [{
-          googleSearchRetrieval: {}
+          google_search: {}  // ✅ Gemini 2.5 syntax, works for both text and images
         }]
       });
     } else {
@@ -402,15 +402,16 @@ class AIService {
 
       } else {
         // Legacy: Direct API mode (only for development)
-        // Note: Grounding doesn't work with image inputs, so fallback to regular model
-        const modelToUse = needsWebSearch && !hasImages 
+        // ✅ Grounding now works with both text and images in Gemini 2.5
+        const modelToUse = needsWebSearch
           ? this.flashModelWithGrounding 
           : this.flashModel;
         
-        if (needsWebSearch && !hasImages) {
+        if (needsWebSearch) {
           console.log('🌐 [AIService] Using Google Search grounding for current information:', {
             gameTitle: conversation.gameTitle,
-            query: userMessage.substring(0, 50) + '...'
+            query: userMessage.substring(0, 50) + '...',
+            hasImages: hasImages
           });
         }
         
@@ -508,6 +509,26 @@ class AIService {
           ttlHours: ttl
         }).catch(error => console.warn('Failed to cache AI response in database:', error));
       }
+      
+      // ✅ GAME HUB INTERACTION LOGGING: Track Game Hub queries and responses
+      if (conversation.isGameHub) {
+        this.logGameHubInteraction({
+          user,
+          userMessage,
+          aiResponse,
+          otakonTags: tags
+        }).catch(error => console.warn('Failed to log Game Hub interaction:', error));
+      }
+      
+      // ✅ API USAGE TRACKING: Log all Gemini API calls for analytics and cost tracking
+      this.logApiUsage({
+        userId: user.id,
+        authUserId: user.auth_user_id,
+        requestType: conversation.isGameHub ? 'game_hub' : hasImages ? 'image_analysis' : 'chat',
+        tokensUsed: aiResponse.metadata.tokens || 0,
+        aiModel: 'gemini-2.5-flash-preview-09-2025',
+        endpoint: '/generateContent'
+      }).catch(error => console.warn('Failed to log API usage:', error));
       
       return aiResponse;
 
@@ -687,12 +708,11 @@ In addition to your regular response, provide structured data in the following o
 
         const modelName = 'gemini-2.5-flash-preview-09-2025';
         
-        // ✅ FIX: Don't use Google Search grounding for now - it's causing 500 errors
-        // We'll use the model's built-in knowledge which is sufficient for most queries
-        const tools = undefined; // Disabled temporarily until edge function is fixed
-        // const tools = needsWebSearch && !hasImages 
-        //   ? [{ googleSearchRetrieval: {} }]
-        //   : [];
+        // ✅ Enable Google Search grounding for current game information
+        // Works with both text and images in Gemini 2.5
+        const tools = needsWebSearch
+          ? [{ google_search: {} }]  // ✅ Gemini 2.5 syntax, works for images too
+          : [];
 
         const edgeResponse = await this.callEdgeFunction({
           prompt,
@@ -1280,6 +1300,137 @@ NOW generate COMPREHENSIVE valid JSON for ALL these tab IDs (MUST include every 
       
       toastService.warning('Failed to generate game insights. You can still continue chatting!');
       return {};
+    }
+  }
+
+  /**
+   * ✅ GAME HUB INTERACTION LOGGING: Track queries and responses in Game Hub
+   * Stores metadata about game detections, user actions, and AI responses
+   */
+  private async logGameHubInteraction(data: {
+    user: User;
+    userMessage: string;
+    aiResponse: AIResponse;
+    otakonTags: Map<string, string>;
+  }): Promise<void> {
+    try {
+      const { user, userMessage, aiResponse, otakonTags } = data;
+      
+      // Extract OTAKON tags for game detection
+      const detectedGame = otakonTags.get('GAME_ID') || otakonTags.get('GAME_TITLE') || null;
+      const detectedGenre = otakonTags.get('GENRE') || null;
+      const confidence = otakonTags.get('CONFIDENCE') || 'low';
+      const gameStatus = otakonTags.get('GAME_STATUS') || null;
+      
+      // Determine query type based on whether a game was detected
+      let queryType: 'general' | 'game_specific' | 'recommendation' = 'general';
+      if (detectedGame) {
+        queryType = 'game_specific';
+      } else if (userMessage.toLowerCase().includes('recommend') || userMessage.toLowerCase().includes('suggest')) {
+        queryType = 'recommendation';
+      }
+      
+      // Insert into game_hub_interactions table
+      const { error } = await supabase
+        .from('game_hub_interactions')
+        .insert({
+          user_id: user.id,
+          auth_user_id: user.authUserId,
+          query_text: userMessage,
+          query_timestamp: new Date(),
+          response_text: aiResponse.content,
+          response_timestamp: new Date(),
+          detected_game: detectedGame,
+          detection_confidence: confidence.toLowerCase() as 'high' | 'low',
+          detected_genre: detectedGenre,
+          game_status: gameStatus as 'released' | 'unreleased' | null,
+          ai_model: 'gemini-2.5-flash-preview-09-2025',
+          tokens_used: aiResponse.metadata.tokens || 0,
+          query_type: queryType
+        });
+      
+      if (error) {
+        console.error('Failed to log Game Hub interaction:', error);
+      } else {
+        console.log('✅ Game Hub interaction logged:', {
+          game: detectedGame,
+          genre: detectedGenre,
+          confidence,
+          queryType
+        });
+      }
+    } catch (error) {
+      console.error('Error logging Game Hub interaction:', error);
+    }
+  }
+
+  /**
+   * ✅ GAME HUB TAB CREATION TRACKING: Update interaction when tab is created
+   * Call this when user creates a game tab from Game Hub suggestion
+   */
+  public async markGameHubTabCreated(
+    authUserId: string,
+    gameTitle: string,
+    conversationId: string
+  ): Promise<void> {
+    try {
+      // Find the most recent Game Hub interaction for this game and user
+      const { error } = await supabase
+        .from('game_hub_interactions')
+        .update({
+          tab_created: true,
+          tab_created_at: new Date(),
+          created_conversation_id: conversationId
+        })
+        .eq('auth_user_id', authUserId)
+        .eq('detected_game', gameTitle)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (error) {
+        console.error('Failed to mark Game Hub tab created:', error);
+      } else {
+        console.log('✅ Game Hub tab creation tracked for:', gameTitle);
+      }
+    } catch (error) {
+      console.error('Error marking Game Hub tab created:', error);
+    }
+  }
+
+  /**
+   * ✅ API USAGE TRACKING: Log Gemini API calls to api_usage table
+   * Call this after every successful AI response to track costs and usage
+   */
+  private async logApiUsage(params: {
+    userId: string;
+    authUserId: string;
+    requestType: string; // 'chat', 'game_hub', 'image_analysis', etc.
+    tokensUsed: number;
+    aiModel: string;
+    endpoint?: string;
+  }): Promise<void> {
+    try {
+      // Calculate approximate cost in cents
+      // Gemini 2.5 Flash pricing: ~$0.10 per 1M tokens
+      const costCents = (params.tokensUsed / 1_000_000) * 10;
+
+      const { error } = await supabase
+        .from('api_usage')
+        .insert({
+          user_id: params.userId,
+          auth_user_id: params.authUserId,
+          request_type: params.requestType,
+          tokens_used: params.tokensUsed,
+          cost_cents: costCents,
+          ai_model: params.aiModel,
+          endpoint: params.endpoint
+        });
+      
+      if (error) {
+        console.error('Failed to log API usage:', error);
+      }
+    } catch (error) {
+      console.error('Error logging API usage:', error);
     }
   }
 }
