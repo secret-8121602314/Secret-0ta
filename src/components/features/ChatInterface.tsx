@@ -526,7 +526,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }
 
   return (
-    <div className="h-full bg-gradient-to-r from-surface/30 to-background/30 flex flex-col overflow-hidden">
+    <div className="h-full bg-background flex flex-col overflow-hidden">
       {/* Messages Area - Only this should scroll */}
       <div 
         ref={messagesContainerRef}

@@ -2110,7 +2110,7 @@ const MainApp: React.FC<MainAppProps> = ({
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="chat-header-fixed bg-gradient-to-r from-surface/50 to-background/50 backdrop-blur-sm border-b border-surface-light/20 px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-6 flex items-center justify-between">
+        <header className="chat-header-fixed bg-background backdrop-blur-sm border-b border-surface-light/20 px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-6 flex items-center justify-between">
           <div className="flex items-center space-x-1">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -2206,7 +2206,7 @@ const MainApp: React.FC<MainAppProps> = ({
           {/* Chat Thread Name - Show on mobile when sidebar is collapsed */}
           {activeConversation && (
             <div className="lg:hidden px-3 sm:px-4 mb-3 sm:mb-4 flex-shrink-0">
-              <div className="bg-gradient-to-r from-surface/30 to-background/30 backdrop-blur-sm border border-surface-light/20 rounded-lg px-4 py-3">
+              <div className="bg-background/80 backdrop-blur-sm border border-surface-light/20 rounded-lg px-4 py-3">
                 <h2 className="text-sm sm:text-base font-semibold bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent text-center">
                   {activeConversation.title}
                 </h2>
