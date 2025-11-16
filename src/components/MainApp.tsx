@@ -209,6 +209,15 @@ const MainApp: React.FC<MainAppProps> = ({
   const handleWebSocketMessage = useCallback((data: Record<string, unknown>) => {
     console.log('🔗 [MainApp] Received WebSocket message:', data);
     
+    // Check if this is a connection confirmation from PC client
+    if (data.type === 'partner_connected' || data.type === 'connection_alive' || data.type === 'connected' || data.status === 'connected') {
+      console.log('🔗 [MainApp] PC client confirmed connection');
+      // Update connection status in parent
+      if (propOnConnect && connectionCode) {
+        propOnConnect(connectionCode);
+      }
+    }
+    
     if (data.type === 'screenshot' && data.dataUrl) {
       // ✅ FIX: Validate screenshot data before processing
       const validation = validateScreenshotDataUrl(data.dataUrl);
@@ -247,7 +256,7 @@ const MainApp: React.FC<MainAppProps> = ({
         toastService.warning('No active conversation. Please select or create a conversation first.');
       }
     }
-  }, [isManualUploadMode, activeConversation]);
+  }, [isManualUploadMode, activeConversation, propOnConnect, connectionCode]);
 
   // Clear queued screenshot when it's been used
   const handleScreenshotQueued = () => {

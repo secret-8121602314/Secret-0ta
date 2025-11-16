@@ -249,7 +249,7 @@ export class SupabaseService {
       const insertData: Record<string, unknown> = {
         auth_user_id: userId, // ✅ Direct auth user ID
         title: conversation.title,
-        messages: conversation.messages,
+        // messages are stored in separate messages table, not in conversations table
         game_id: conversation.gameId,
         game_title: conversation.gameTitle,
         genre: conversation.genre,
@@ -341,7 +341,7 @@ export class SupabaseService {
         .from('conversations')
         .update({
           title: updates.title,
-          messages: updates.messages ? toJson(updates.messages) : undefined,
+          // messages are stored in separate messages table, not in conversations table
           game_id: updates.gameId,
           game_title: updates.gameTitle,
           genre: updates.genre,
