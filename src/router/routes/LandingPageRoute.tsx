@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLoaderData } from 'react-router-dom';
 import LandingPage from '../../components/LandingPageFresh';
 import AboutModal from '../../components/modals/AboutModal';
 import PrivacyModal from '../../components/modals/PrivacyModal';
 import TermsModal from '../../components/modals/TermsModal';
 import RefundPolicyModal from '../../components/modals/RefundPolicyModal';
 import ContactUsModal from '../../components/modals/ContactUsModal';
+import type { User, OnboardingStatus } from '../../types';
 
 /**
  * Route wrapper for LandingPage - converts React Router navigation to component props
@@ -15,9 +16,28 @@ const LandingPageRoute: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeModal, setActiveModal] = useState<string | null>(null);
+  const loaderData = useLoaderData() as { user: Partial<User> | null; onboardingStatus: OnboardingStatus };
 
   console.log('[LandingPageRoute] Component rendered, current URL:', window.location.href);
   console.log('[LandingPageRoute] Search params:', Object.fromEntries(searchParams.entries()));
+  console.log('[LandingPageRoute] Loader data:', loaderData);
+
+  // Redirect authenticated users to appropriate screen
+  useEffect(() => {
+    if (loaderData?.user && loaderData.onboardingStatus) {
+      const { onboardingStatus } = loaderData;
+      console.log('[LandingPageRoute] User is authenticated, onboarding status:', onboardingStatus);
+      
+      // Only redirect if onboarding status is valid
+      if (onboardingStatus === 'complete') {
+        console.log('[LandingPageRoute] Onboarding complete, redirecting to /app');
+        navigate('/app', { replace: true });
+      } else if (onboardingStatus !== 'login') {
+        console.log('[LandingPageRoute] Onboarding in progress, redirecting to /onboarding');
+        navigate('/onboarding', { replace: true });
+      }
+    }
+  }, [loaderData, navigate]);
 
   // Sync modal state with URL params
   useEffect(() => {

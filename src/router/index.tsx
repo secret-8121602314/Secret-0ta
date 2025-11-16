@@ -37,31 +37,43 @@ async function authLoader({ request }: LoaderFunctionArgs) {
 
   console.log('[Router authLoader] ✅ Session found for user:', session.user.email);
 
-  // Fetch user data from database
-  const { data: userData, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('auth_user_id', session.user.id)
-    .single();
+  // Use RPC function to get complete user data
+  const { data: rpcData, error: rpcError } = await supabase
+    .rpc('get_complete_user_data', { p_auth_user_id: session.user.id });
 
-  if (error || !userData) {
-    console.error('[Router authLoader] ❌ Failed to load user data:', error);
+  if (rpcError || !rpcData || rpcData.length === 0) {
+    console.error('[Router authLoader] ❌ Failed to load user data:', rpcError);
     
-    // If user has a session but no database record, treat as new user needing onboarding
-    // This can happen if the user record was deleted but session still exists
-    if (session && error?.code === 'PGRST116') {
-      console.log('[Router authLoader] 👤 Session exists but no user record - treating as new user');
+    // If user has a session but no database record, redirect to onboarding
+    if (session) {
+      console.log('[Router authLoader] 👤 Session exists but no user record - redirecting to onboarding');
+      if (pathname === '/' || pathname === '/login') {
+        return redirect('/onboarding');
+      }
       return { user: null, onboardingStatus: 'initial' as OnboardingStatus };
     }
     
     return { user: null, onboardingStatus: 'login' as OnboardingStatus };
   }
 
+  const userData = rpcData[0];
+
   // Parse app_state to get onboarding status
   const appState = (userData.app_state || {}) as import('../types/enhanced').UserAppState;
   const onboardingStatus: OnboardingStatus = (appState.onboardingStatus as OnboardingStatus) || 'initial';
 
   console.log('[Router authLoader] 👤 Loaded user:', userData.email, '| Onboarding status:', onboardingStatus);
+
+  // Redirect authenticated users away from landing/login pages
+  if (pathname === '/' || pathname === '/login') {
+    if (onboardingStatus === 'complete') {
+      console.log('[Router authLoader] 🚀 User authenticated with complete onboarding, redirecting to /app');
+      return redirect('/app');
+    } else if (onboardingStatus !== 'login') {
+      console.log('[Router authLoader] 🎓 User authenticated but onboarding incomplete, redirecting to /onboarding');
+      return redirect('/onboarding');
+    }
+  }
 
   // Map user data to User type
   const user: Partial<User> = {

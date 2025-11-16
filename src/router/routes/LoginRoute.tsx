@@ -1,6 +1,7 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useNavigate, useLoaderData } from 'react-router-dom';
 import LoginSplashScreen from '../../components/splash/LoginSplashScreen';
+import type { User, OnboardingStatus } from '../../types';
 
 /**
  * Route wrapper for LoginSplashScreen
@@ -9,6 +10,23 @@ import LoginSplashScreen from '../../components/splash/LoginSplashScreen';
  */
 const LoginRoute: React.FC = () => {
   const navigate = useNavigate();
+  const loaderData = useLoaderData() as { user: Partial<User> | null; onboardingStatus: OnboardingStatus };
+
+  // Redirect authenticated users to appropriate screen
+  useEffect(() => {
+    if (loaderData?.user) {
+      const { onboardingStatus } = loaderData;
+      console.log('[LoginRoute] User already authenticated, onboarding status:', onboardingStatus);
+      
+      if (onboardingStatus === 'complete') {
+        console.log('[LoginRoute] Redirecting to /app');
+        navigate('/app', { replace: true });
+      } else {
+        console.log('[LoginRoute] Redirecting to /onboarding');
+        navigate('/onboarding', { replace: true });
+      }
+    }
+  }, [loaderData, navigate]);
 
   const handleComplete = () => {
     // After login, navigate to onboarding (loader will determine correct step)
