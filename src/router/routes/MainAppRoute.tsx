@@ -20,6 +20,16 @@ const MainAppRoute: React.FC = () => {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.DISCONNECTED);
   const [connectionCode, setConnectionCode] = useState<string | null>(null);
 
+  // Initialize connection state from localStorage on mount
+  useEffect(() => {
+    const savedCode = localStorage.getItem('otakon_connection_code');
+    if (savedCode) {
+      console.log('🔌 [MainAppRoute] Restoring connection from localStorage:', savedCode);
+      setConnectionCode(savedCode);
+      setConnectionStatus(ConnectionStatus.CONNECTED);
+    }
+  }, []);
+
   // Sync modal state with URL params
   useEffect(() => {
     const modal = searchParams.get('modal');
