@@ -389,7 +389,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
         if (path !== '/' && path !== '') {
             onDirectNavigation(path);
         }
-    }, [onDirectNavigation]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Only run once on mount to check initial URL
 
     // Parallax scroll effect
     useEffect(() => {
