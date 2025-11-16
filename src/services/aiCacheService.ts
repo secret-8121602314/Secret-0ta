@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import type { AICacheContext, AICacheResponseData } from '../types/enhanced';
 
 /**
  * AI Response Cache Service
@@ -32,7 +33,7 @@ export class AICacheService {
   /**
    * Generate a deterministic cache key from prompt and context
    */
-  generateCacheKey(prompt: string, context: Record<string, any>): string {
+  generateCacheKey(prompt: string, context: AICacheContext): string {
     // Normalize the input to create a consistent hash
     const normalized = {
       prompt: prompt.trim().toLowerCase(),
@@ -56,7 +57,7 @@ export class AICacheService {
   /**
    * Check if a response exists in cache
    */
-  async getCachedResponse(cacheKey: string): Promise<any | null> {
+  async getCachedResponse(cacheKey: string): Promise<AICacheResponseData | null> {
     console.log(`🔍 [aiCacheService] getCachedResponse called with key: ${cacheKey}`);
     
     try {
@@ -87,7 +88,7 @@ export class AICacheService {
           tokens: data.tokens_used,
           type: data.cache_type
         });
-        return data.response_data;
+        return data.response_data as AICacheResponseData;
       }
 
       return null;
@@ -102,7 +103,7 @@ export class AICacheService {
    */
   async cacheResponse(
     cacheKey: string,
-    responseData: any,
+    responseData: AICacheResponseData,
     options: CacheOptions
   ): Promise<boolean> {
     try {
@@ -116,7 +117,7 @@ export class AICacheService {
         .from('ai_responses')
         .upsert({
           cache_key: cacheKey,
-          response_data: responseData,
+          response_data: JSON.parse(JSON.stringify(responseData)), // Convert to plain JSON
           game_title: options.gameTitle,
           cache_type: options.cacheType,
           conversation_id: options.conversationId,
@@ -151,7 +152,7 @@ export class AICacheService {
   /**
    * Determine cache type based on context
    */
-  determineCacheType(context: Record<string, any>): 'global' | 'user' | 'game_specific' {
+  determineCacheType(context: AICacheContext): 'global' | 'user' | 'game_specific' {
     // Game-specific queries
     if (context.gameTitle) {
       return 'game_specific';
@@ -169,7 +170,7 @@ export class AICacheService {
   /**
    * Determine TTL based on cache type and content
    */
-  determineTTL(cacheType: string, _context?: Record<string, any>): number {
+  determineTTL(cacheType: string, _context?: AICacheContext): number {
     switch (cacheType) {
       case 'global':
         // General knowledge - long TTL
@@ -191,7 +192,7 @@ export class AICacheService {
   /**
    * Check if a query should be cached
    */
-  shouldCache(prompt: string, context: Record<string, any>): boolean {
+  shouldCache(prompt: string, context: AICacheContext): boolean {
     console.log(`🔍 [aiCacheService] shouldCache called with prompt: "${prompt.substring(0, 50)}..."`, context);
     
     // Don't cache if explicitly disabled

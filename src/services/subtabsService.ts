@@ -204,7 +204,7 @@ export class SubtabsService {
         // Types not regenerated yet, but schema migration applied (game_id nullable)
         const { error: insertError } = await supabase
           .from('subtabs')
-          .insert(subtabsToInsert as any);
+          .insert(subtabsToInsert);
 
         if (insertError) {
           console.error('Error inserting subtabs:', insertError);

@@ -1,6 +1,7 @@
 ﻿import { GoogleGenerativeAI, GenerativeModel, SchemaType, HarmCategory, HarmBlockThreshold, SafetySetting } from "@google/generative-ai";
 import { parseOtakonTags } from './otakonTags';
 import { AIResponse, Conversation, User, insightTabsConfig, PlayerProfile } from '../types';
+import type { ViteImportMeta, UserProfileData } from '../types/enhanced';
 import { cacheService } from './cacheService';
 import { aiCacheService } from './aiCacheService';
 import { getPromptForPersona } from './promptSystem';
@@ -9,10 +10,11 @@ import { characterImmersionService } from './characterImmersionService';
 import { profileAwareTabService } from './profileAwareTabService';
 import { toastService } from './toastService';
 import { supabase } from '../lib/supabase';
+import { ConversationService } from './conversationService';
 
 // ✅ SECURITY FIX: Use Edge Function proxy instead of exposed API key
 const USE_EDGE_FUNCTION = true; // Set to true to use secure server-side proxy
-const API_KEY = (import.meta as any).env.VITE_GEMINI_API_KEY; // Only used if USE_EDGE_FUNCTION = false
+const API_KEY = (import.meta as ViteImportMeta).env.VITE_GEMINI_API_KEY; // Only used if USE_EDGE_FUNCTION = false
 
 // ✅ FIX 1: Gemini API Safety Settings
 const SAFETY_SETTINGS: SafetySetting[] = [
@@ -46,7 +48,7 @@ class AIService {
 
   constructor() {
     // ✅ SECURITY: Initialize Edge Function URL
-    const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL;
+    const supabaseUrl = (import.meta as ViteImportMeta).env.VITE_SUPABASE_URL;
     this.edgeFunctionUrl = `${supabaseUrl}/functions/v1/ai-proxy`;
 
     if (!USE_EDGE_FUNCTION) {
@@ -236,7 +238,6 @@ class AIService {
     abortSignal?: AbortSignal
   ): Promise<AIResponse> {
     // ✅ QUERY LIMIT: Check if user can send this query
-    const { ConversationService } = await import('./conversationService');
     const queryCheck = hasImages 
       ? await ConversationService.canSendImageQuery()
       : await ConversationService.canSendTextQuery();
@@ -321,7 +322,7 @@ class AIService {
     const sessionContext = '';
 
     // Get player profile from user preferences
-    const playerProfile = user.profileData as any; // PlayerProfile is stored in profileData
+    const playerProfile = user.profileData as UserProfileData;
     
     // Use the enhanced prompt system with session context and player profile
     const basePrompt = getPromptForPersona(
@@ -752,14 +753,16 @@ In addition to your regular response, provide structured data in the following o
       }
 
       // Legacy: Direct API mode
-      const modelToUse = needsWebSearch && !hasImages 
+      // ✅ ENHANCEMENT: Enable grounding for both text and images in Gemini 2.5
+      const modelToUse = needsWebSearch
         ? this.flashModelWithGrounding 
         : this.flashModel;
       
-      if (needsWebSearch && !hasImages) {
+      if (needsWebSearch) {
         console.log('🌐 [AIService] Using Google Search grounding for structured response:', {
           gameTitle: conversation.gameTitle,
-          query: userMessage.substring(0, 50) + '...'
+          query: userMessage.substring(0, 50) + '...',
+          hasImages: hasImages
         });
       }
       

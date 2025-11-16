@@ -177,8 +177,8 @@ export class SupabaseService {
     // 🔍 DEBUG: Log what we're getting from Supabase
     if (process.env.NODE_ENV === 'development' && data.length > 0) {
       const sample = data[0];
-      const messages = sample.messages as any;
-      const subtabs = sample.subtabs as any;
+      const messages = sample.messages as import('../types').ChatMessage[];
+      const subtabs = sample.subtabs as import('../types').SubTab[];
       console.error('🔍 [Supabase] Sample conversation from DB:', {
         id: sample.id,
         title: sample.title,
@@ -191,7 +191,7 @@ export class SupabaseService {
     }
 
     return data.map(conv => {
-      const messages = conv.messages as any;
+      const messages = conv.messages as import('../types').ChatMessage[];
       const processedMessages = Array.isArray(messages) ? messages as unknown[] : [];
       
       if (process.env.NODE_ENV === 'development') {

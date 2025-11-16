@@ -168,7 +168,7 @@ export class MessageService {
     updates: Partial<ChatMessage>
   ): Promise<boolean> {
     try {
-      const updateData: Record<string, any> = {};
+      const updateData: Record<string, unknown> = {};
       if (updates.content !== undefined) {
         updateData.content = updates.content;
       }

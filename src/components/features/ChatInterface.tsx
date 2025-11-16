@@ -374,7 +374,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     // Handle normal Enter key
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSubmit(e as any);
+      handleSubmit(e as React.FormEvent);
     }
   };
 
@@ -795,7 +795,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     isProcessing={isLoading}
                     isManualUploadMode={isManualUploadMode}
                     onRequestConnect={onRequestConnect}
-                    usage={{ tier: userTier as any }}
+                    usage={{ tier: userTier as import('../../types').UserTier }}
                   />
                 </>
               )}

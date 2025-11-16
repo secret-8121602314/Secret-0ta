@@ -1,6 +1,6 @@
 import { createBrowserRouter, RouteObject, redirect, LoaderFunctionArgs } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import type { User, OnboardingStatus } from '../types';
+import type { User, OnboardingStatus, UserTier } from '../types';
 
 // Import route wrapper components directly (not lazy - they're already wrapped in Suspense in App.tsx)
 import LandingPageRoute from './routes/LandingPageRoute';
@@ -58,8 +58,8 @@ async function authLoader({ request }: LoaderFunctionArgs) {
   }
 
   // Parse app_state to get onboarding status
-  const appState = userData.app_state as Record<string, any> || {};
-  const onboardingStatus: OnboardingStatus = appState.onboardingStatus || 'initial';
+  const appState = (userData.app_state || {}) as import('../types/enhanced').UserAppState;
+  const onboardingStatus: OnboardingStatus = (appState.onboardingStatus as OnboardingStatus) || 'initial';
 
   console.log('[Router authLoader] 👤 Loaded user:', userData.email, '| Onboarding status:', onboardingStatus);
 
@@ -68,7 +68,7 @@ async function authLoader({ request }: LoaderFunctionArgs) {
     id: userData.id,
     authUserId: userData.auth_user_id,
     email: userData.email,
-    tier: userData.tier as any,
+    tier: userData.tier as UserTier,
     hasProfileSetup: userData.has_profile_setup ?? undefined,
     hasSeenSplashScreens: userData.has_seen_splash_screens ?? undefined,
     hasSeenHowToUse: userData.has_seen_how_to_use ?? undefined,
@@ -97,7 +97,8 @@ async function authLoader({ request }: LoaderFunctionArgs) {
  * Onboarding guard: Redirect to appropriate onboarding step
  */
 async function onboardingLoader({ request }: LoaderFunctionArgs) {
-  const { user, onboardingStatus } = await authLoader({ request, params: {}, context: {} }) as any;
+  const result = await authLoader({ request, params: {}, context: {} });
+  const { user, onboardingStatus } = result as { user: Partial<User>; onboardingStatus: string };
   
   if (!user) {
     console.log('[Router onboardingLoader] ❌ No user, redirecting to landing');
@@ -143,7 +144,8 @@ async function onboardingLoader({ request }: LoaderFunctionArgs) {
  * App guard: Ensure onboarding is complete before accessing main app
  */
 async function appLoader({ request }: LoaderFunctionArgs) {
-  const { user, onboardingStatus } = await authLoader({ request, params: {}, context: {} }) as any;
+  const result = await authLoader({ request, params: {}, context: {} });
+  const { user, onboardingStatus } = result as { user: Partial<User>; onboardingStatus: string };
   
   if (!user) {
     console.log('[Router appLoader] ❌ No user, redirecting to landing');

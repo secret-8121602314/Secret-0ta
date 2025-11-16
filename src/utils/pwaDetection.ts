@@ -3,6 +3,8 @@
  * Provides consistent PWA mode detection across the application
  */
 
+import type { ExtendedNavigator } from '../types/enhanced';
+
 /**
  * Check if app is running in PWA (standalone) mode
  */
@@ -11,7 +13,7 @@ export const isPWAMode = (): boolean => {
   
   return (
     window.matchMedia('(display-mode: standalone)').matches ||
-    (window.navigator as any).standalone === true ||
+    (window.navigator as ExtendedNavigator).standalone === true ||
     document.referrer.includes('android-app://')
   );
 };
@@ -21,7 +23,7 @@ export const isPWAMode = (): boolean => {
  */
 export const isIOSPWA = (): boolean => {
   if (typeof window === 'undefined') return false;
-  return (window.navigator as any).standalone === true;
+  return (window.navigator as ExtendedNavigator).standalone === true;
 };
 
 /**

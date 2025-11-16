@@ -11,7 +11,7 @@ class CacheService {
   private readonly MAX_MEMORY_CACHE_SIZE = 100; // Prevent memory bloat
   
   // Request deduplication - prevent multiple simultaneous calls for the same key
-  private pendingRequests = new Map<string, Promise<any>>();
+  private pendingRequests = new Map<string, Promise<unknown>>();
 
   /**
    * Set a value in both memory and Supabase cache
@@ -256,7 +256,7 @@ class CacheService {
   /**
    * Get comprehensive cache statistics from Supabase
    */
-  async getSupabaseStats(): Promise<any> {
+  async getSupabaseStats(): Promise<unknown> {
     try {
       const { data, error } = await supabase.rpc('get_cache_stats');
       if (error) {
@@ -273,7 +273,7 @@ class CacheService {
   /**
    * Get cache performance metrics
    */
-  async getPerformanceMetrics(): Promise<any> {
+  async getPerformanceMetrics(): Promise<unknown> {
     try {
       const { data, error } = await supabase.rpc('get_cache_performance_metrics');
       if (error) {

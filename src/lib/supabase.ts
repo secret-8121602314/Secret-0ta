@@ -1,5 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '../types/database';
+import type {
+  UserPreferences,
+  UserProfileData,
+  UserAppState,
+  UserOnboardingData,
+  UserBehaviorData,
+  UserFeedbackData,
+  UserUsageData,
+  MessageObject,
+  SubtabMetadata,
+} from '../types/enhanced';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -81,14 +92,14 @@ export interface LegacyDatabase {
           trial_started_at: string | null;
           trial_expires_at: string | null;
           last_activity: string;
-          preferences: Record<string, any>;
-          usage: Record<string, any>;
-          app_state: Record<string, any>;
-          profile_data: Record<string, any>;
-          onboarding_data: Record<string, any>;
-          behavior_data: Record<string, any>;
-          feedback_data: Record<string, any>;
-          usage_data: Record<string, any>;
+          preferences: UserPreferences;
+          usage: Record<string, unknown>;
+          app_state: UserAppState;
+          profile_data: UserProfileData;
+          onboarding_data: UserOnboardingData;
+          behavior_data: UserBehaviorData;
+          feedback_data: UserFeedbackData;
+          usage_data: UserUsageData;
           created_at: string;
           updated_at: string;
           deleted_at: string | null;
@@ -108,14 +119,14 @@ export interface LegacyDatabase {
           trial_started_at?: string | null;
           trial_expires_at?: string | null;
           last_activity?: string;
-          preferences?: Record<string, any>;
-          usage?: Record<string, any>;
-          app_state?: Record<string, any>;
-          profile_data?: Record<string, any>;
-          onboarding_data?: Record<string, any>;
-          behavior_data?: Record<string, any>;
-          feedback_data?: Record<string, any>;
-          usage_data?: Record<string, any>;
+          preferences?: UserPreferences;
+          usage?: Record<string, unknown>;
+          app_state?: UserAppState;
+          profile_data?: UserProfileData;
+          onboarding_data?: UserOnboardingData;
+          behavior_data?: UserBehaviorData;
+          feedback_data?: UserFeedbackData;
+          usage_data?: UserUsageData;
           created_at?: string;
           updated_at?: string;
           deleted_at?: string | null;
@@ -135,14 +146,14 @@ export interface LegacyDatabase {
           trial_started_at?: string | null;
           trial_expires_at?: string | null;
           last_activity?: string;
-          preferences?: Record<string, any>;
-          usage?: Record<string, any>;
-          app_state?: Record<string, any>;
-          profile_data?: Record<string, any>;
-          onboarding_data?: Record<string, any>;
-          behavior_data?: Record<string, any>;
-          feedback_data?: Record<string, any>;
-          usage_data?: Record<string, any>;
+          preferences?: UserPreferences;
+          usage?: Record<string, unknown>;
+          app_state?: UserAppState;
+          profile_data?: UserProfileData;
+          onboarding_data?: UserOnboardingData;
+          behavior_data?: UserBehaviorData;
+          feedback_data?: UserFeedbackData;
+          usage_data?: UserUsageData;
           created_at?: string;
           updated_at?: string;
           deleted_at?: string | null;
@@ -154,7 +165,7 @@ export interface LegacyDatabase {
           user_id: string;
           game_id: string | null;
           title: string;
-          messages: Record<string, any>[];
+          messages: MessageObject[];
           is_active: boolean;
           created_at: string;
           updated_at: string;
@@ -164,7 +175,7 @@ export interface LegacyDatabase {
           user_id: string;
           game_id?: string | null;
           title: string;
-          messages?: Record<string, any>[];
+          messages?: MessageObject[];
           is_active?: boolean;
           created_at?: string;
           updated_at?: string;
@@ -174,7 +185,7 @@ export interface LegacyDatabase {
           user_id?: string;
           game_id?: string | null;
           title?: string;
-          messages?: Record<string, any>[];
+          messages?: MessageObject[];
           is_active?: boolean;
           created_at?: string;
           updated_at?: string;
@@ -190,7 +201,7 @@ export interface LegacyDatabase {
           release_date: string | null;
           rating: number | null;
           image_url: string | null;
-          metadata: Record<string, any>;
+          metadata: import('../types/enhanced').GameMetadata;
           created_at: string;
           updated_at: string;
         };
@@ -203,7 +214,7 @@ export interface LegacyDatabase {
           release_date?: string | null;
           rating?: number | null;
           image_url?: string | null;
-          metadata?: Record<string, any>;
+          metadata?: import('../types/enhanced').GameMetadata;
           created_at?: string;
           updated_at?: string;
         };
@@ -216,7 +227,7 @@ export interface LegacyDatabase {
           release_date?: string | null;
           rating?: number | null;
           image_url?: string | null;
-          metadata?: Record<string, any>;
+          metadata?: import('../types/enhanced').GameMetadata;
           created_at?: string;
           updated_at?: string;
         };
@@ -317,7 +328,7 @@ export interface LegacyDatabase {
           p_conversation_id: string;
           p_user_id: string;
           p_title: string;
-          p_messages: Record<string, any>;
+          p_messages: MessageObject;
           p_game_id?: string;
         };
         Returns: undefined;
@@ -329,7 +340,7 @@ export interface LegacyDatabase {
         Returns: {
           id: string;
           title: string;
-          messages: Record<string, any>;
+          messages: MessageObject;
           game_id: string | null;
           is_active: boolean;
           created_at: string;
@@ -350,9 +361,9 @@ export interface LegacyDatabase {
           image_count: number;
           text_limit: number;
           image_limit: number;
-          preferences: Record<string, any>;
-          app_state: Record<string, any>;
-          profile_data: Record<string, any>;
+          preferences: UserPreferences;
+          app_state: UserAppState;
+          profile_data: UserProfileData;
         }[];
       };
     };

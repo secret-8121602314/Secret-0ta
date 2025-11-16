@@ -88,7 +88,7 @@ export async function syncRouterStateToDatabase(
     }
     
     // Merge router state with existing app_state
-    const currentAppState = (userData?.app_state || {}) as Record<string, any>;
+    const currentAppState = (userData?.app_state || {}) as import('../types/enhanced').UserAppState;
     const updatedAppState = {
       ...currentAppState,
       view,
@@ -104,7 +104,7 @@ export async function syncRouterStateToDatabase(
     const { error: updateError } = await supabase
       .from('users')
       .update({ 
-        app_state: updatedAppState,
+        app_state: JSON.parse(JSON.stringify(updatedAppState)), // Ensure plain JSON
         updated_at: new Date().toISOString()
       })
       .eq('id', userId);

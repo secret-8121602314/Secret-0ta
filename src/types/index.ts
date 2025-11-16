@@ -1,3 +1,45 @@
+// Import enhanced types
+import type {
+  UserPreferences,
+  UserProfileData,
+  UserAppState,
+  UserOnboardingData,
+  UserBehaviorData,
+  UserFeedbackData,
+  UserUsageData,
+  ConnectionDeviceInfo,
+  SubtabMetadata,
+  GameMetadata,
+} from './enhanced';
+
+// Re-export enhanced types for convenience
+export type {
+  UserPreferences,
+  UserProfileData,
+  UserAppState,
+  UserOnboardingData,
+  UserBehaviorData,
+  UserFeedbackData,
+  UserUsageData,
+  ConnectionDeviceInfo,
+  MessageObject,
+  MessageMetadata,
+  SubtabMetadata,
+  GameMetadata,
+  AICacheContext,
+  AICacheResponseData,
+  ExtendedNavigator,
+  NetworkInformation,
+  WakeLockSentinel,
+  ExtendedPerformance,
+  ExtendedWindow,
+  ViteImportMeta,
+  UpdateData,
+  JsonValue,
+  JsonObject,
+  JsonArray,
+} from './enhanced';
+
 // User Types
 export type UserTier = 'free' | 'pro' | 'vanguard_pro';
 export type AuthMethod = 'google' | 'discord' | 'email';
@@ -38,20 +80,20 @@ export interface User {
   connectionCode?: string; // 6-digit pairing code for PC client
   connectionCodeCreatedAt?: number; // Unix timestamp (ms) when code was generated
   connectionActive?: boolean; // Whether PC connection is currently active
-  connectionDeviceInfo?: Record<string, any>; // Device information from PC client
+  connectionDeviceInfo?: ConnectionDeviceInfo; // Device information from PC client
   lastConnectionAt?: number; // Unix timestamp (ms) of last successful connection
   // Trial fields (from database)
   trialStartedAt?: number; // Unix timestamp (ms) - converted from DB timestamptz
   trialExpiresAt?: number; // Unix timestamp (ms) - converted from DB timestamptz
   // Legacy nested usage object (kept for backward compatibility)
-  preferences: Record<string, any>;
+  preferences: UserPreferences;
   usage: Usage;
-  appState: Record<string, any>;
-  profileData: Record<string, any>;
-  onboardingData: Record<string, any>;
-  behaviorData: Record<string, any>;
-  feedbackData: Record<string, any>;
-  usageData: Record<string, any>;
+  appState: UserAppState;
+  profileData: UserProfileData;
+  onboardingData: UserOnboardingData;
+  behaviorData: UserBehaviorData;
+  feedbackData: UserFeedbackData;
+  usageData: UserUsageData;
   createdAt: number;
   updatedAt: number;
 }
@@ -152,7 +194,7 @@ export interface Game {
   tags?: string[]; // Array stored as JSONB in DB
   rating?: number;
   imageUrl?: string; // Maps to DB 'cover_url' field
-  metadata: Record<string, any>;
+  metadata: GameMetadata;
   createdAt: number;
   updatedAt: number;
 }
@@ -211,7 +253,7 @@ export interface SubTab {
   content: string;
   type: 'chat' | 'walkthrough' | 'tips' | 'strategies' | 'story' | 'characters' | 'items';
   orderIndex?: number; // For sorting subtabs (from DB order_index)
-  metadata?: Record<string, any>; // Additional data stored as JSONB in DB
+  metadata?: SubtabMetadata; // Additional data stored as JSONB in DB
   createdAt?: number; // Unix timestamp (ms)
   updatedAt?: number; // Unix timestamp (ms)
   // Client-side only fields (not in DB)
@@ -235,7 +277,7 @@ export interface GameTab {
 export interface AIResponse {
   content: string; // The user-facing text
   suggestions: string[];
-  otakonTags: Map<string, any>; // Parsed OTAKON tags
+  otakonTags: Map<string, unknown>; // Parsed OTAKON tags
   rawContent: string; // Full response before stripping tags
   metadata: {
     model: string;

@@ -1,3 +1,5 @@
+import type { ExtendedNavigator, WakeLockSentinel, ExtendedWindow } from '../types/enhanced';
+
 let synth: SpeechSynthesis;
 let voices: SpeechSynthesisVoice[] = [];
 let isInitialized = false;
@@ -12,8 +14,9 @@ const SPEECH_RATE_KEY = 'otakonSpeechRate';
 // Request Wake Lock to keep screen awake during TTS
 const requestWakeLock = async () => {
     try {
-        if ('wakeLock' in navigator) {
-            wakeLock = await (navigator as any).wakeLock.request('screen');
+        const nav = navigator as ExtendedNavigator;
+        if (nav.wakeLock) {
+            wakeLock = await nav.wakeLock.request('screen');
             wakeLock.addEventListener('release', () => {
                 console.log('Wake Lock released - attempting to reacquire...');
                 // Automatically reacquire if TTS is still speaking
@@ -43,7 +46,8 @@ const releaseWakeLock = async () => {
 const initAudioContext = () => {
     try {
         if (!audioContext) {
-            audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const win = window as ExtendedWindow;
+            audioContext = new (win.AudioContext || win.webkitAudioContext)();
         }
         
         if (!silentAudio) {
