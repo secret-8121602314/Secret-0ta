@@ -233,7 +233,7 @@ const routes: RouteObject[] = [
  * Create router with base path support for GitHub Pages
  */
 export const router = createBrowserRouter(routes, {
-  basename: import.meta.env.MODE === 'development' ? '/' : '/Otagon',
+  basename: '/',
 });
 
 /**

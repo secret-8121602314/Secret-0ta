@@ -8,11 +8,11 @@ const AUTH_CACHE = 'otakon-auth-v1.3.3-custom-domain';
 const BASE_PATH = '';
 let ttsKeepAliveInterval = null;
 const urlsToCache = [
-  `${BASE_PATH}/`,
-  `${BASE_PATH}/index.html`,
-  `${BASE_PATH}/manifest.json`,
-  `${BASE_PATH}/icon-192.png`,
-  `${BASE_PATH}/icon-512.png`,
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/icon-192.png',
+  '/icon-512.png',
   // Add other assets as needed
 ];
 
