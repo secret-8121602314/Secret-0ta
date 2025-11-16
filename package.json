@@ -1,7 +1,26 @@
 {
-  "name": "otagon-new",
+  "name": "otagon",
   "private": true,
   "version": "1.0.0",
+  "description": "AI-powered gaming companion providing spoiler-free hints, walkthroughs, and progress tracking for all your favorite games",
+  "keywords": [
+    "gaming",
+    "ai",
+    "assistant",
+    "gaming-companion",
+    "game-guide",
+    "spoiler-free",
+    "hints",
+    "walkthrough",
+    "pwa"
+  ],
+  "author": "Otagon",
+  "license": "UNLICENSED",
+  "homepage": "https://otakon.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/readmet3xt/Otagon"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",

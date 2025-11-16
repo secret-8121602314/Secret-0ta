@@ -40,6 +40,34 @@ export type {
   JsonArray,
 } from './enhanced';
 
+// Re-export payment types (for future implementation)
+export type {
+  PaymentProvider,
+  PaymentStatus,
+  SubscriptionStatus,
+  BillingInterval,
+  PaymentMethod,
+  PricingPlan,
+  Subscription,
+  PaymentIntent,
+  Invoice,
+  PaymentConfig,
+  IPaymentService,
+} from './payment';
+
+// Re-export ad types (for future implementation)
+export type {
+  AdFormat,
+  AdSize,
+  AdPlacement,
+  AdSlot,
+  AdConfig,
+  AdImpression,
+  AdPerformance,
+  IAdService,
+  AdContainerProps,
+} from './ads';
+
 // User Types
 export type UserTier = 'free' | 'pro' | 'vanguard_pro';
 export type AuthMethod = 'google' | 'discord' | 'email';
