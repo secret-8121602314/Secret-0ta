@@ -1,11 +1,11 @@
 // Service Worker for Otagon PWA - Performance Optimized with Enhanced Background Sync
-// Version updated for auth fix and router dev - v1.3.2-dev
-const CACHE_NAME = 'otakon-v1.3.2-dev';
-const CHAT_CACHE_NAME = 'otakon-chat-v1.3.2-dev';
-const STATIC_CACHE = 'otakon-static-v1.3.2-dev';
-const API_CACHE = 'otakon-api-v1.3.2-dev';
-const AUTH_CACHE = 'otakon-auth-v1.3.2-dev';
-const BASE_PATH = '/Otagon';
+// Version updated for auth fix and router dev - v1.3.3-custom-domain
+const CACHE_NAME = 'otakon-v1.3.3-custom-domain';
+const CHAT_CACHE_NAME = 'otakon-chat-v1.3.3-custom-domain';
+const STATIC_CACHE = 'otakon-static-v1.3.3-custom-domain';
+const API_CACHE = 'otakon-api-v1.3.3-custom-domain';
+const AUTH_CACHE = 'otakon-auth-v1.3.3-custom-domain';
+const BASE_PATH = '';
 let ttsKeepAliveInterval = null;
 const urlsToCache = [
   `${BASE_PATH}/`,

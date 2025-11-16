@@ -2,7 +2,7 @@
   "name": "Otagon AI - Your Gaming Companion",
   "short_name": "Otagon",
   "description": "Get spoiler-free gaming hints and help with AI-powered assistance",
-  "start_url": "/Otagon/",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#111111",
   "theme_color": "#111111",
