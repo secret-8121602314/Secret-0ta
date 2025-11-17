@@ -25,7 +25,7 @@ async function authLoader({ request }: LoaderFunctionArgs) {
   
   if (!session) {
     // Not authenticated - allow access to landing and login pages
-        if (pathname !== '/' && pathname !== '/login') {
+        if (pathname !== '/' && pathname !== '/earlyaccess') {
             return redirect('/');
     }
     return { user: null, onboardingStatus: 'login' as OnboardingStatus };
@@ -54,7 +54,7 @@ async function authLoader({ request }: LoaderFunctionArgs) {
   const onboardingStatus: OnboardingStatus = (appState.onboardingStatus as OnboardingStatus) || 'initial';
 
     // Redirect authenticated users away from landing/login pages
-  if (pathname === '/' || pathname === '/login') {
+  if (pathname === '/' || pathname === '/earlyaccess') {
     if (onboardingStatus === 'complete') {
             return redirect('/app');
     } else if (onboardingStatus !== 'login') {
@@ -160,7 +160,7 @@ const routes: RouteObject[] = [
     element: <LandingPageRoute />,
   },
   {
-    path: '/login',
+    path: '/earlyaccess',
     loader: authLoader,
     element: <LoginRoute />,
   },

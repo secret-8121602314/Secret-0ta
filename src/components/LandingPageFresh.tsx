@@ -1319,15 +1319,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
             
                         {/* Logo and Branding - Centered on mobile, left side on desktop */}
                         <div className="flex flex-col items-center md:items-start text-center md:text-left order-2 md:order-1">
-                            <button 
-                                onClick={(e) => {
-                                                                    onGetStarted();
-                                }}
-                                className="flex items-center gap-2 cursor-pointer hover:scale-105 transition-transform duration-300"
-                            >
+                            <div className="flex items-center gap-2">
                                 <Logo className="h-8 w-8" bounce={false} />
                                 <span className="text-xl font-bold">Otagon</span>
-              </button>
+              </div>
                              <p className="text-neutral-400 mt-2 text-sm">&copy; {new Date().getFullYear()} Otagon. All rights reserved.</p>
             </div>
           </div>
