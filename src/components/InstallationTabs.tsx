@@ -90,7 +90,7 @@ const InstallationTabs: React.FC<InstallationTabsProps> = ({ pcAppImage }) => {
                       Otagon Connector for Windows
                     </h3>
                     <p className="text-lg text-neutral-300 leading-relaxed">
-                      Sync your PC to get hints directly in-game without alt-tabbing
+                      PC addon to capture screenshots and send them to your Otagon web or mobile app
                     </p>
                   </div>
 
@@ -119,10 +119,10 @@ const InstallationTabs: React.FC<InstallationTabsProps> = ({ pcAppImage }) => {
                       </div>
                       <div>
                         <h4 className="text-lg font-semibold text-white mb-1">
-                          Connect Your Devices
+                          Sync Your Devices
                         </h4>
                         <p className="text-neutral-400 leading-relaxed">
-                          Open Otagon Connector to reveal your 6-digit sync code, then input it in your Otagon web or mobile app
+                          Open Otagon Connector to reveal your 6-digit sync code, then enter it in the Otagon web app or PWA
                         </p>
                       </div>
                     </div>
@@ -162,7 +162,7 @@ const InstallationTabs: React.FC<InstallationTabsProps> = ({ pcAppImage }) => {
                   Install on iOS
                 </h3>
                 <p className="text-lg text-neutral-300 leading-relaxed">
-                  Add Otagon to your home screen for the full app experience
+                  Add the Otagon web app to your home screen as a PWA
                 </p>
               </div>
 
@@ -175,7 +175,7 @@ const InstallationTabs: React.FC<InstallationTabsProps> = ({ pcAppImage }) => {
                   </div>
                   <div className="flex-1">
                     <p className="text-neutral-200 leading-relaxed text-lg">
-                      Navigate to the <span className="font-semibold text-white">Otagon login page</span>
+                      Open the <span className="font-semibold text-white">Otagon web app</span> in <span className="font-semibold text-white">Safari</span>
                     </p>
                   </div>
                 </div>
@@ -188,7 +188,7 @@ const InstallationTabs: React.FC<InstallationTabsProps> = ({ pcAppImage }) => {
                   </div>
                   <div className="flex-1">
                     <p className="text-neutral-200 leading-relaxed text-lg">
-                      Open <span className="font-semibold text-white">Otagon</span> in <span className="font-semibold text-white">Safari</span>
+                      Navigate to the <span className="font-semibold text-white">login page</span>
                     </p>
                   </div>
                 </div>
@@ -237,7 +237,7 @@ const InstallationTabs: React.FC<InstallationTabsProps> = ({ pcAppImage }) => {
                   Install on Android
                 </h3>
                 <p className="text-lg text-neutral-300 leading-relaxed">
-                  Add Otagon to your home screen for the full app experience
+                  Add the Otagon web app to your home screen as a PWA
                 </p>
               </div>
 
@@ -250,7 +250,7 @@ const InstallationTabs: React.FC<InstallationTabsProps> = ({ pcAppImage }) => {
                   </div>
                   <div className="flex-1">
                     <p className="text-neutral-200 leading-relaxed text-lg">
-                      Navigate to the <span className="font-semibold text-white">Otagon login page</span>
+                      Open the <span className="font-semibold text-white">Otagon web app</span> in <span className="font-semibold text-white">Chrome</span>
                     </p>
                   </div>
                 </div>
@@ -263,7 +263,7 @@ const InstallationTabs: React.FC<InstallationTabsProps> = ({ pcAppImage }) => {
                   </div>
                   <div className="flex-1">
                     <p className="text-neutral-200 leading-relaxed text-lg">
-                      Open <span className="font-semibold text-white">Otagon</span> in <span className="font-semibold text-white">Chrome</span>
+                      Navigate to the <span className="font-semibold text-white">login page</span>
                     </p>
                   </div>
                 </div>
