@@ -90,7 +90,7 @@ const InstallationTabs: React.FC<InstallationTabsProps> = ({ pcAppImage }) => {
                       Otagon Connector for Windows
                     </h3>
                     <p className="text-lg text-neutral-300 leading-relaxed">
-                      PC addon to capture screenshots and send them to your Otagon web or mobile app
+                      Get help while gaming! This handy PC tool captures your game screen and sends it to Otagon so you can get hints without leaving your game.
                     </p>
                   </div>
 
@@ -106,7 +106,7 @@ const InstallationTabs: React.FC<InstallationTabsProps> = ({ pcAppImage }) => {
                           Download & Install
                         </h4>
                         <p className="text-neutral-400 leading-relaxed">
-                          Download the Otagon Connector for Windows and run the installer
+                          Download the Otagon Connector app and install it on your PC (just like any other program)
                         </p>
                       </div>
                     </div>
@@ -119,10 +119,10 @@ const InstallationTabs: React.FC<InstallationTabsProps> = ({ pcAppImage }) => {
                       </div>
                       <div>
                         <h4 className="text-lg font-semibold text-white mb-1">
-                          Sync Your Devices
+                          Connect to Otagon
                         </h4>
                         <p className="text-neutral-400 leading-relaxed">
-                          Open Otagon Connector to reveal your 6-digit sync code, then enter it in the Otagon web app or PWA
+                          Open the Connector app to see your 6-digit code, then type that code into Otagon (on your web browser or phone)
                         </p>
                       </div>
                     </div>
@@ -159,10 +159,10 @@ const InstallationTabs: React.FC<InstallationTabsProps> = ({ pcAppImage }) => {
                   </svg>
                 </div>
                 <h3 className="text-2xl md:text-3xl font-bold text-white mb-3">
-                  Install on iOS
+                  Get Otagon on iPhone/iPad
                 </h3>
                 <p className="text-lg text-neutral-300 leading-relaxed">
-                  Add the Otagon web app to your home screen as a PWA
+                  Save Otagon to your home screen for easy access anytime
                 </p>
               </div>
 
@@ -175,7 +175,7 @@ const InstallationTabs: React.FC<InstallationTabsProps> = ({ pcAppImage }) => {
                   </div>
                   <div className="flex-1">
                     <p className="text-neutral-200 leading-relaxed text-lg">
-                      Open the <span className="font-semibold text-white">Otagon web app</span> in <span className="font-semibold text-white">Safari</span>
+                      Open <span className="font-semibold text-white">Safari</span> on your iPhone or iPad and visit Otagon
                     </p>
                   </div>
                 </div>
@@ -188,7 +188,7 @@ const InstallationTabs: React.FC<InstallationTabsProps> = ({ pcAppImage }) => {
                   </div>
                   <div className="flex-1">
                     <p className="text-neutral-200 leading-relaxed text-lg">
-                      Navigate to the <span className="font-semibold text-white">login page</span>
+                      Go to the <span className="font-semibold text-white">login page</span>
                     </p>
                   </div>
                 </div>
@@ -201,7 +201,7 @@ const InstallationTabs: React.FC<InstallationTabsProps> = ({ pcAppImage }) => {
                   </div>
                   <div className="flex-1">
                     <p className="text-neutral-200 leading-relaxed text-lg">
-                      Tap the <span className="font-semibold text-white">Share button</span> (box with arrow pointing up)
+                      Tap the <span className="font-semibold text-white">Share button</span> at the bottom (the square with an arrow pointing up)
                     </p>
                   </div>
                 </div>
@@ -214,7 +214,7 @@ const InstallationTabs: React.FC<InstallationTabsProps> = ({ pcAppImage }) => {
                   </div>
                   <div className="flex-1">
                     <p className="text-neutral-200 leading-relaxed text-lg">
-                      Select <span className="font-semibold text-white">Add to Home Screen</span> and tap <span className="font-semibold text-white">Add</span>
+                      Choose <span className="font-semibold text-white">Add to Home Screen</span>, then tap <span className="font-semibold text-white">Add</span>. That's it!
                     </p>
                   </div>
                 </div>
@@ -234,10 +234,10 @@ const InstallationTabs: React.FC<InstallationTabsProps> = ({ pcAppImage }) => {
                   </svg>
                 </div>
                 <h3 className="text-2xl md:text-3xl font-bold text-white mb-3">
-                  Install on Android
+                  Get Otagon on Android
                 </h3>
                 <p className="text-lg text-neutral-300 leading-relaxed">
-                  Add the Otagon web app to your home screen as a PWA
+                  Save Otagon to your home screen for easy access anytime
                 </p>
               </div>
 
@@ -250,7 +250,7 @@ const InstallationTabs: React.FC<InstallationTabsProps> = ({ pcAppImage }) => {
                   </div>
                   <div className="flex-1">
                     <p className="text-neutral-200 leading-relaxed text-lg">
-                      Open the <span className="font-semibold text-white">Otagon web app</span> in <span className="font-semibold text-white">Chrome</span>
+                      Open <span className="font-semibold text-white">Chrome</span> on your Android phone or tablet and visit Otagon
                     </p>
                   </div>
                 </div>
@@ -263,7 +263,7 @@ const InstallationTabs: React.FC<InstallationTabsProps> = ({ pcAppImage }) => {
                   </div>
                   <div className="flex-1">
                     <p className="text-neutral-200 leading-relaxed text-lg">
-                      Navigate to the <span className="font-semibold text-white">login page</span>
+                      Go to the <span className="font-semibold text-white">login page</span>
                     </p>
                   </div>
                 </div>
@@ -276,7 +276,7 @@ const InstallationTabs: React.FC<InstallationTabsProps> = ({ pcAppImage }) => {
                   </div>
                   <div className="flex-1">
                     <p className="text-neutral-200 leading-relaxed text-lg">
-                      Tap the <span className="font-semibold text-white">menu (⋮)</span> in the top right corner
+                      Tap the <span className="font-semibold text-white">three dots menu (⋮)</span> in the top right corner
                     </p>
                   </div>
                 </div>
@@ -289,7 +289,7 @@ const InstallationTabs: React.FC<InstallationTabsProps> = ({ pcAppImage }) => {
                   </div>
                   <div className="flex-1">
                     <p className="text-neutral-200 leading-relaxed text-lg">
-                      Select <span className="font-semibold text-white">Add to Home screen</span> or <span className="font-semibold text-white">Install app</span>
+                      Choose <span className="font-semibold text-white">Add to Home screen</span> or <span className="font-semibold text-white">Install app</span>. Done!
                     </p>
                   </div>
                 </div>
