@@ -122,7 +122,7 @@ const InstallationTabs: React.FC<InstallationTabsProps> = ({ pcAppImage }) => {
                           Connect Your Devices
                         </h4>
                         <p className="text-neutral-400 leading-relaxed">
-                          Open the connector and enter the 6-digit code displayed in Otagon (web or mobile app) to sync
+                          Open Otagon Connector to reveal your 6-digit sync code, then input it in your Otagon web or mobile app
                         </p>
                       </div>
                     </div>
