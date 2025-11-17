@@ -3,6 +3,7 @@ import Logo from './ui/Logo';
 import CheckIcon from './ui/CheckIcon';
 import StarIcon from './ui/StarIcon';
 import FounderImage from './FounderImage';
+import InstallationTabs from './InstallationTabs';
 import { WaitlistService } from '../services/waitlistService';
 import { toastService } from '../services/toastService';
 import useEmblaCarousel from 'embla-carousel-react';
@@ -15,6 +16,7 @@ import feature3 from '../assets/images/feature-images/feature3.png';
 import feature4 from '../assets/images/feature-images/feature4.png';
 import feature5 from '../assets/images/feature-images/feature5.png';
 import feature6 from '../assets/images/feature-images/feature6.png';
+import pcAppImage from '../assets/images/landing/PC app.png';
 
 const GamepadIcon = ({ className }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -794,7 +796,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                             features={[
                                 {
                                     title: "From First Screenshot to Victory",
-                                    description: "Upload a screenshot. Otakon identifies your game and becomes your personal guide—no spoilers, full context.",
+                                    description: "Upload a screenshot. Otagon identifies your game and becomes your personal guide—no spoilers, full context.",
                                     image: feature1
                                 },
                                 {
@@ -819,11 +821,23 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                                 },
                                 {
                                     title: "Stay Focused, Stay Ahead",
-                                    description: "Skip the wiki-hunting. Otakon provides quest tips, secret locations, build optimization—all without spoiling your discovery.",
+                                    description: "Skip the wiki-hunting. Otagon provides quest tips, secret locations, build optimization—all without spoiling your discovery.",
                                     image: feature6
                                 }
                             ]}
                         />
+                    </div>
+                </section>
+
+                {/* Installation Section */}
+                <section id="installation" className="py-10 md:py-14 bg-transparent relative">
+                    <div className="container mx-auto px-8 max-w-6xl relative">
+                        <div className="text-center mb-8 md:mb-10 animate-fade-slide-up">
+                            <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-white mb-6">Install Otagon Everywhere</h2>
+                            <p className="text-xl text-neutral-300 mt-6 leading-relaxed">Access on mobile, sync with PC for seamless gaming</p>
+                        </div>
+                        
+                        <InstallationTabs pcAppImage={pcAppImage} />
                     </div>
                 </section>
 
