@@ -1,0 +1,56 @@
+# Otagon Robots.txt - SEO Optimized
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://otakon.app/sitemap.xml
+
+# Crawl-delay for respectful crawling
+Crawl-delay: 1
+
+# Disallow admin and private areas
+Disallow: /admin/
+Disallow: /private/
+Disallow: /api/
+Disallow: /_/
+Disallow: /auth/
+Disallow: /onboarding/
+
+# Allow important public pages
+Allow: /
+Allow: /app
+Allow: /features
+Allow: /pricing
+
+# Allow assets
+Allow: /images/
+Allow: /css/
+Allow: /js/
+Allow: /fonts/
+Allow: /manifest.json
+Allow: /sw.js
+
+# Block unnecessary files
+Disallow: /*.json$
+Disallow: /*.xml$
+Disallow: /*.txt$
+Disallow: /*.log$
+Disallow: /*.map$
+
+# Block search bot specific rules
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+# Allow Googlebot image crawler
+User-agent: Googlebot-Image
+Allow: /images/
+Allow: /screenshot*.png

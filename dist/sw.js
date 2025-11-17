@@ -1,0 +1,767 @@
+// Service Worker for Otagon PWA - Performance Optimized with Enhanced Background Sync
+// Version updated for auth fix and router dev - v1.3.3-custom-domain
+const CACHE_NAME = 'otakon-v1.3.3-custom-domain';
+const CHAT_CACHE_NAME = 'otakon-chat-v1.3.3-custom-domain';
+const STATIC_CACHE = 'otakon-static-v1.3.3-custom-domain';
+const API_CACHE = 'otakon-api-v1.3.3-custom-domain';
+const AUTH_CACHE = 'otakon-auth-v1.3.3-custom-domain';
+const BASE_PATH = '';
+let ttsKeepAliveInterval = null;
+const urlsToCache = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/icon-192.png',
+  '/icon-512.png',
+  // Add other assets as needed
+];
+
+// Enhanced background sync capabilities
+const BACKGROUND_SYNC_TAGS = {
+  CHAT_SYNC: 'chat-sync',
+  OFFLINE_DATA_SYNC: 'offline-data-sync',
+  HANDS_FREE_SYNC: 'hands-free-sync',
+  PERIODIC_SYNC: 'periodic-sync',
+  IMAGE_SYNC: 'image-sync'
+};
+
+// Install event - cache resources and skip waiting
+self.addEventListener('install', (event) => {
+  console.log('Service Worker installing...');
+  event.waitUntil(
+    Promise.all([
+      // Clear old caches
+      caches.keys().then(cacheNames => {
+        return Promise.all(
+          cacheNames.map(cacheName => {
+            if (cacheName !== CACHE_NAME && 
+                cacheName !== CHAT_CACHE_NAME && 
+                cacheName !== STATIC_CACHE && 
+                cacheName !== API_CACHE) {
+              console.log('Deleting old cache:', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      }),
+      // Open new cache
+      caches.open(CACHE_NAME)
+        .then((cache) => {
+          console.log('Opened new cache:', CACHE_NAME);
+          return cache.addAll(urlsToCache);
+        })
+    ]).then(() => {
+      // Skip waiting to activate immediately
+      return self.skipWaiting();
+    })
+  );
+});
+
+// Activate event - take control immediately
+self.addEventListener('activate', (event) => {
+  console.log('Service Worker activating...');
+  event.waitUntil(
+    Promise.all([
+      // Clear old caches
+      caches.keys().then(cacheNames => {
+        return Promise.all(
+          cacheNames.map(cacheName => {
+            if (cacheName !== CACHE_NAME && 
+                cacheName !== CHAT_CACHE_NAME && 
+                cacheName !== STATIC_CACHE && 
+                cacheName !== API_CACHE) {
+              console.log('Deleting old cache on activate:', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      })
+    ]).then(() => {
+      // Take control of all clients immediately
+      return self.clients.claim();
+    })
+  );
+});
+
+// Fetch event - network-first for HTML, cache-first for assets
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  
+  // CRITICAL: Never intercept Supabase auth requests - let them pass through directly
+  if (url.hostname.includes('supabase.co') || 
+      url.pathname.includes('/auth/') || 
+      url.pathname.includes('/rest/v1/') ||
+      url.pathname.includes('/storage/v1/') ||
+      url.hostname.includes('supabase.net')) {
+    // Let auth/database requests bypass the service worker completely
+    return;
+  }
+  
+  // CRITICAL: Don't intercept dev server requests - let HMR work
+  if (url.protocol === 'chrome-extension:' || 
+      url.hostname === 'localhost' ||
+      url.hostname === '127.0.0.1' ||
+      url.port === '5173' ||
+      url.port === '5174') {
+    // Never cache localhost during development
+    return;
+  }
+  
+  // Handle chat API requests for offline support (only internal APIs)
+  if (event.request.url.includes('/api/chat') || event.request.url.includes('/api/conversations')) {
+    event.respondWith(
+      handleChatRequest(event.request)
+    );
+    return;
+  } 
+  
+  if (event.request.url.includes('/api/insights') || event.request.url.includes('/api/analytics')) {
+    // Handle insights and analytics with enhanced caching
+    event.respondWith(
+      handleInsightsRequest(event.request)
+    );
+    return;
+  } 
+  
+  if (event.request.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname === '/' || url.pathname === `${BASE_PATH}/`) {
+    // Network-first strategy for HTML pages to always get the latest version
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          // Clone the response before caching
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+          return response;
+        })
+        .catch(() => {
+          // If network fails, try cache
+          return caches.match(event.request).then(cached => {
+            return cached || new Response('Offline - Please check your connection', {
+              status: 503,
+              statusText: 'Service Unavailable'
+            });
+          });
+        })
+    );
+    return;
+  }
+  
+  // Cache-first strategy for static assets only (CSS, JS, images from same origin)
+  if (event.request.method === 'GET' && url.origin === self.location.origin) {
+    event.respondWith(
+      caches.match(event.request)
+        .then((response) => {
+          if (response) {
+            return response;
+          }
+          
+          // Fetch from network and cache
+          return fetch(event.request).then((response) => {
+            // Only cache successful GET requests for static assets
+            if (response.status === 200) {
+              const responseToCache = response.clone();
+              caches.open(STATIC_CACHE).then((cache) => {
+                cache.put(event.request, responseToCache);
+              });
+            }
+            return response;
+          }).catch(error => {
+            console.log('Fetch failed for:', event.request.url, error);
+            // Return a proper error response instead of undefined
+            return new Response('Network error', {
+              status: 408,
+              statusText: 'Request Timeout'
+            });
+          });
+        })
+    );
+    return;
+  }
+  
+  // For all other requests (POST, PUT, DELETE, external origins), don't intercept
+  // Let them go through to the network directly
+});
+
+// Handle messages from the client
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+// Enhanced background sync for various data types
+self.addEventListener('sync', (event) => {
+  console.log('Background sync triggered:', event.tag);
+  
+  switch (event.tag) {
+    case BACKGROUND_SYNC_TAGS.CHAT_SYNC:
+      event.waitUntil(syncChatData());
+      break;
+    case BACKGROUND_SYNC_TAGS.OFFLINE_DATA_SYNC:
+      event.waitUntil(syncOfflineData());
+      break;
+    case BACKGROUND_SYNC_TAGS.HANDS_FREE_SYNC:
+      event.waitUntil(syncHandsFreeData());
+      break;
+    case BACKGROUND_SYNC_TAGS.IMAGE_SYNC:
+      event.waitUntil(syncImageData());
+      break;
+    case BACKGROUND_SYNC_TAGS.PERIODIC_SYNC:
+      event.waitUntil(performPeriodicSync());
+      break;
+    default:
+      console.log('Unknown sync tag:', event.tag);
+  }
+});
+
+// Periodic sync for background data updates
+self.addEventListener('periodicsync', (event) => {
+  if (event.tag === BACKGROUND_SYNC_TAGS.PERIODIC_SYNC) {
+    event.waitUntil(performPeriodicSync());
+  }
+});
+
+// Enhanced chat data sync
+async function syncChatData() {
+  try {
+    // Get offline data from IndexedDB
+    const offlineData = await getOfflineChatData();
+    
+    if (!offlineData.conversations || offlineData.conversations.length === 0) {
+      console.log('No offline chat data to sync');
+      return;
+    }
+    
+    // Sync with server
+    const response = await fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(offlineData)
+    });
+    
+    if (response.ok) {
+      console.log('Chat data synced successfully');
+      // Clear offline data after successful sync
+      await clearOfflineData();
+      
+      // Notify clients of successful sync
+      self.clients.matchAll().then(clients => {
+        clients.forEach(client => {
+          client.postMessage({
+            type: 'SYNC_SUCCESS',
+            data: { chatData: true }
+          });
+        });
+      });
+    } else {
+      throw new Error(`Sync failed with status: ${response.status}`);
+    }
+  } catch (error) {
+    console.error('Chat sync failed:', error);
+    
+    // Schedule retry with exponential backoff
+    await scheduleRetry(BACKGROUND_SYNC_TAGS.CHAT_SYNC, error);
+  }
+}
+
+// Sync hands-free data
+async function syncHandsFreeData() {
+  try {
+    // Sync voice commands and transcriptions
+    const voiceData = await getOfflineVoiceData();
+    
+    if (voiceData && voiceData.length > 0) {
+      const response = await fetch('/api/voice/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voiceData })
+      });
+      
+      if (response.ok) {
+        console.log('Voice data synced successfully');
+        await clearOfflineVoiceData();
+      }
+    }
+  } catch (error) {
+    console.error('Voice data sync failed:', error);
+  }
+}
+
+// Sync image data
+async function syncImageData() {
+  try {
+    // Sync cached images and analysis results
+    const imageData = await getOfflineImageData();
+    
+    if (imageData && imageData.length > 0) {
+      const response = await fetch('/api/images/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageData })
+      });
+      
+      if (response.ok) {
+        console.log('Image data synced successfully');
+        await clearOfflineImageData();
+      }
+    }
+  } catch (error) {
+    console.error('Image data sync failed:', error);
+  }
+}
+
+// Periodic sync for background updates
+async function performPeriodicSync() {
+  try {
+    console.log('Performing periodic sync');
+    
+    // Sync all types of offline data
+    await Promise.all([
+      syncChatData(),
+      syncHandsFreeData(),
+      syncImageData()
+    ]);
+    
+    // Update cached content
+    await updateCachedContent();
+    
+    console.log('Periodic sync completed successfully');
+  } catch (error) {
+    console.error('Periodic sync failed:', error);
+  }
+}
+
+// Schedule retry with exponential backoff
+async function scheduleRetry(syncTag, error) {
+  const retryCount = await getRetryCount(syncTag);
+  const backoffTime = Math.min(1000 * Math.pow(2, retryCount), 30000); // Max 30 seconds
+  
+  console.log(`Scheduling retry for ${syncTag} in ${backoffTime}ms (attempt ${retryCount + 1})`);
+  
+  setTimeout(() => {
+    self.registration.sync.register(syncTag);
+  }, backoffTime);
+  
+  await incrementRetryCount(syncTag);
+}
+
+// Get retry count for a sync tag
+async function getRetryCount(syncTag) {
+  try {
+    const cache = await caches.open('retry-counts');
+    const response = await cache.match(syncTag);
+    return response ? parseInt(await response.text()) : 0;
+  } catch (error) {
+    return 0;
+  }
+}
+
+// Increment retry count for a sync tag
+async function incrementRetryCount(syncTag) {
+  try {
+    const cache = await caches.open('retry-counts');
+    const currentCount = await getRetryCount(syncTag);
+    const newCount = currentCount + 1;
+    
+    await cache.put(syncTag, new Response(newCount.toString()));
+  } catch (error) {
+    console.error('Failed to increment retry count:', error);
+  }
+}
+
+// Update cached content
+async function updateCachedContent() {
+  try {
+    // Update static assets
+    const staticCache = await caches.open(STATIC_CACHE);
+    const requests = await staticCache.keys();
+    
+    for (const request of requests) {
+      try {
+        const response = await fetch(request);
+        if (response.ok) {
+          await staticCache.put(request, response);
+        }
+      } catch (error) {
+        console.log('Failed to update cached asset:', request.url);
+      }
+    }
+  } catch (error) {
+    console.error('Failed to update cached content:', error);
+  }
+}
+
+// Handle insights and analytics requests
+async function handleInsightsRequest(request) {
+  try {
+    // Try network first for fresh data
+    const networkResponse = await fetch(request);
+    
+    if (networkResponse.ok) {
+      // Cache successful responses
+      const cache = await caches.open(API_CACHE);
+      cache.put(request, networkResponse.clone());
+      return networkResponse;
+    }
+    
+    // Fallback to cache
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    
+    return networkResponse;
+  } catch (error) {
+    console.log('Insights request failed, trying cache:', error);
+    
+    // Try cache as fallback
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    
+    // Return offline fallback
+    return new Response(JSON.stringify({
+      error: 'offline',
+      message: 'You are offline. Showing cached insights.',
+      data: await getOfflineInsightsData()
+    }), {
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+// Get offline insights data
+async function getOfflineInsightsData() {
+  // This will be implemented with IndexedDB in the main app
+  return { insights: [], offline: true };
+}
+
+// Get offline voice data
+async function getOfflineVoiceData() {
+  // This will be implemented with IndexedDB in the main app
+  return [];
+}
+
+// Get offline image data
+async function getOfflineImageData() {
+  // This will be implemented with IndexedDB in the main app
+  return [];
+}
+
+// Clear offline voice data
+async function clearOfflineVoiceData() {
+  // This will be implemented with IndexedDB in the main app
+  console.log('Offline voice data cleared after sync');
+}
+
+// Clear offline image data
+async function clearOfflineImageData() {
+  // This will be implemented with IndexedDB in the main app
+  console.log('Offline image data cleared after sync');
+}
+
+// Handle chat requests with offline support
+async function handleChatRequest(request) {
+  try {
+    // Try network first
+    const networkResponse = await fetch(request);
+    
+    // Cache successful responses
+    if (networkResponse.ok) {
+      const cache = await caches.open(CHAT_CACHE_NAME);
+      cache.put(request, networkResponse.clone());
+    }
+    
+    return networkResponse;
+  } catch (error) {
+    console.log('Network failed, trying cache:', error);
+    
+    // Network failed, try cache
+    const cache = await caches.open(CHAT_CACHE_NAME);
+    const cachedResponse = await cache.match(request);
+    
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    
+    // Return offline fallback
+    return new Response(JSON.stringify({
+      error: 'offline',
+      message: 'You are offline. Showing cached conversations.',
+      data: await getOfflineChatData()
+    }), {
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+// Get offline chat data from IndexedDB
+async function getOfflineChatData() {
+  // This will be implemented with IndexedDB in the main app
+  return { conversations: [], offline: true };
+}
+
+// Sync all offline data
+async function syncOfflineData() {
+  try {
+    // Sync conversations, usage, settings, etc.
+    await syncChatData();
+    // Add other sync operations here
+    
+    console.log('All offline data synced');
+  } catch (error) {
+    console.error('Offline data sync failed:', error);
+  }
+}
+
+// Clear offline data after successful sync
+async function clearOfflineData() {
+  // This will be implemented with IndexedDB in the main app
+  console.log('Offline data cleared after sync');
+}
+
+// Push notification handling
+self.addEventListener('push', (event) => {
+  const options = {
+    body: event.data ? event.data.text() : 'New message from Otagon',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    vibrate: [100, 50, 100],
+    data: {
+      dateOfArrival: Date.now(),
+      primaryKey: 1
+    },
+    actions: [
+      {
+        action: 'open',
+        title: 'Open App',
+        icon: '/icon-192.png'
+      },
+      {
+        action: 'dismiss',
+        title: 'Dismiss'
+      }
+    ]
+  };
+
+  event.waitUntil(
+    self.registration.showNotification('Otagon', options)
+  );
+});
+
+// Notification click handling - Focus existing client instead of opening new window
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  
+  if (event.action === 'dismiss') {
+    // Just close the notification
+    return;
+  }
+  
+  // Try to focus an existing client first
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then(clientList => {
+        // Find an existing client that matches our app
+        for (let i = 0; i < clientList.length; i++) {
+          const client = clientList[i];
+          if (client.url.includes(BASE_PATH) && 'focus' in client) {
+            // Focus the existing window instead of opening a new one
+            return client.focus();
+          }
+        }
+        // If no existing client, then open a new window
+        if (clients.openWindow) {
+          return clients.openWindow(`${BASE_PATH}/`);
+        }
+      })
+  );
+});
+
+// Handle app updates and auth state caching
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+  
+  if (event.data && event.data.type === 'SYNC_OFFLINE_DATA') {
+    // Trigger background sync for offline data
+    self.registration.sync.register('offline-data-sync');
+  }
+  
+  // Cache auth state for PWA offline mode
+  if (event.data && event.data.type === 'CACHE_AUTH_STATE') {
+    const authState = event.data.payload;
+    console.log('[SW] Caching auth state for offline access');
+    
+    caches.open(AUTH_CACHE).then(cache => {
+      cache.put('/auth-state', new Response(JSON.stringify(authState), {
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'max-age=3600' // 1 hour
+        }
+      }));
+    });
+  } else if (event.data && event.data.type === 'CLEAR_AUTH_CACHE') {
+    console.log('[SW] Clearing auth cache');
+    caches.delete(AUTH_CACHE);
+  }
+});
+
+// Activate event - clean up old caches
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+          cacheNames.map((cacheName) => {
+            if (cacheName !== CACHE_NAME && cacheName !== CHAT_CACHE_NAME && 
+                cacheName !== STATIC_CACHE && cacheName !== API_CACHE && 
+                cacheName !== AUTH_CACHE) {
+              console.log('Deleting old cache:', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      })
+    );
+  });// Performance-optimized request handlers
+
+// Handle static assets with cache-first strategy
+async function handleStaticRequest(request) {
+  try {
+    // Check cache first
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    
+    // Fetch from network and cache
+    const networkResponse = await fetch(request);
+    if (networkResponse.ok) {
+      const cache = await caches.open(STATIC_CACHE);
+      cache.put(request, networkResponse.clone());
+    }
+    
+    return networkResponse;
+  } catch (error) {
+    console.log('Static request failed:', error);
+    // Return offline fallback for critical assets
+    if (request.url.includes('index.html')) {
+      return caches.match(`${BASE_PATH}/`);
+    }
+    throw error;
+  }
+}
+
+// Handle external API requests with network-first strategy
+async function handleExternalRequest(request) {
+  try {
+    // Try network first
+    const networkResponse = await fetch(request);
+    
+    // Cache successful responses
+    if (networkResponse.ok) {
+      const cache = await caches.open(API_CACHE);
+      cache.put(request, networkResponse.clone());
+    }
+    
+    return networkResponse;
+  } catch (error) {
+    console.log('External request failed, trying cache:', error);
+    
+    // Try cache as fallback
+    const cache = await caches.open(API_CACHE);
+    const cachedResponse = await cache.match(request);
+    
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    
+    throw error;
+  }
+}
+
+// Handle default requests with network-first strategy
+async function handleDefaultRequest(request) {
+  try {
+    // Try network first
+    const networkResponse = await fetch(request);
+    
+    // Cache successful responses
+    if (networkResponse.ok) {
+      const cache = await caches.open(CACHE_NAME);
+      cache.put(request, networkResponse.clone());
+    }
+    
+    return networkResponse;
+  } catch (error) {
+    console.log('Default request failed, trying cache:', error);
+    
+    // Try cache as fallback
+    const cache = await caches.open(CACHE_NAME);
+    const cachedResponse = await cache.match(request);
+    
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    
+    throw error;
+  }
+}
+
+// Keep service worker alive for background TTS
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'TTS_STARTED') {
+    console.log('TTS Started - keeping service worker alive');
+    startKeepAlive();
+  } else if (event.data && event.data.type === 'TTS_STOPPED') {
+    console.log('TTS Stopped - releasing keep alive');
+    stopKeepAlive();
+  } else if (event.data && event.data.type === 'KEEP_ALIVE') {
+    // Respond to keep-alive ping
+    event.ports[0].postMessage({ type: 'KEEP_ALIVE_ACK' });
+  }
+});
+
+// Start keep-alive interval to prevent service worker from sleeping
+function startKeepAlive() {
+  if (ttsKeepAliveInterval) return;
+  
+  ttsKeepAliveInterval = setInterval(() => {
+    // Send periodic message to all clients to maintain session
+    self.clients.matchAll({ includeUncontrolled: true, type: 'window' }).then(clients => {
+      clients.forEach(client => {
+        client.postMessage({ 
+          type: 'KEEP_ALIVE_PING',
+          timestamp: Date.now()
+        });
+      });
+    });
+  }, 15000); // Every 15 seconds
+}
+
+// Stop keep-alive interval
+function stopKeepAlive() {
+  if (ttsKeepAliveInterval) {
+    clearInterval(ttsKeepAliveInterval);
+    ttsKeepAliveInterval = null;
+  }
+}
+
+// Handle background sync for TTS completion
+self.addEventListener('sync', (event) => {
+  if (event.tag === BACKGROUND_SYNC_TAGS.HANDS_FREE_SYNC) {
+    event.waitUntil(
+      self.clients.matchAll({ includeUncontrolled: true, type: 'window' }).then(clients => {
+        clients.forEach(client => {
+          client.postMessage({ 
+            type: 'BACKGROUND_TTS_COMPLETE'
+          });
+        });
+      })
+    );
+  }
+});
