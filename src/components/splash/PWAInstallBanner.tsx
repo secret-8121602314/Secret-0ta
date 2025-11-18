@@ -4,6 +4,7 @@ import type { BeforeInstallPromptEvent } from '../../types/enhanced';
 
 interface PWAInstallBannerProps {
   className?: string;
+  alwaysShow?: boolean; // Keep banner visible on login screen even if installed
 }
 
 const BANNER_DISMISS_KEY = 'otakon_pwa_banner_dismissed';
@@ -14,7 +15,7 @@ interface WindowWithPrompt extends Window {
   [key: string]: BeforeInstallPromptEvent | null | unknown;
 }
 
-const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '' }) => {
+const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '', alwaysShow = false }) => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [hasPrompt, setHasPrompt] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -144,8 +145,8 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '' }) =
     setDeferredPrompt(null);
   };
   
-  // If already installed, don't show the banner at all
-  if (isInstalled) {
+  // If already installed, don't show the banner (unless alwaysShow is true for login screen)
+  if (isInstalled && !alwaysShow) {
     return null;
   }
 
@@ -160,14 +161,18 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '' }) =
           />
         </div>
         <div className="text-left flex-1">
-          <p className="text-sm md:text-base lg:text-lg font-medium text-white leading-tight">Install Otagon App</p>
-          <p className="text-xs md:text-sm text-neutral-400 leading-tight">Get the full app experience</p>
+          <p className="text-sm md:text-base lg:text-lg font-medium text-white leading-tight">
+            {isInstalled ? '✅ App Installed' : 'Install Otagon App'}
+          </p>
+          <p className="text-xs md:text-sm text-neutral-400 leading-tight">
+            {isInstalled ? 'Open from your home screen' : 'Get the full app experience'}
+          </p>
         </div>
       </div>
 
       {/* Install Instructions - Always Show */}
       <div className="mt-2 md:mt-3 space-y-2 md:space-y-2.5">
-        {hasPrompt && (
+        {hasPrompt && !isInstalled && (
           <button
             onClick={handleInstallClick}
             className="w-full py-2 md:py-2.5 bg-gradient-to-r from-[#E53A3A] to-[#FFAB40] md:hover:from-[#D42A2A] md:hover:to-[#C87A1A] text-white text-sm md:text-base font-semibold rounded-lg transition-all duration-200 active:scale-95"
