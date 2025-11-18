@@ -142,7 +142,6 @@ function generateManifest() {
     theme_color: '#111111',
     orientation: 'portrait-primary',
     lang: 'en',
-    id: 'otagon-ai-gaming-companion',
     display_override: ['standalone', 'minimal-ui'],
     categories: ['games', 'productivity', 'utilities'],
     icons: icons,

@@ -20,6 +20,11 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '' }) =
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
+    console.log('🔍 [PWA Install Banner] Component mounted, checking installation status...');
+    console.log('📍 Current URL:', window.location.href);
+    console.log('🔐 Is HTTPS?', window.location.protocol === 'https:');
+    console.log('💻 Is localhost?', window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    
     // Check if app is already installed
     const checkIfInstalled = () => {
       // Check if running in standalone mode (PWA)
@@ -75,13 +80,37 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '' }) =
     // Log installability status after 2 seconds
     setTimeout(() => {
       if (!hasPrompt && !isInstalled) {
-        console.log('ℹ️  [PWA Install Banner] beforeinstallprompt event has not fired yet');
+        console.log('❌ [PWA Install Banner] beforeinstallprompt event has NOT fired');
+        console.log('🔍 Checking PWA installation criteria:');
+        console.log('   1. HTTPS: ' + (window.location.protocol === 'https:' ? '✅' : '❌ REQUIRED'));
+        console.log('   2. Localhost: ' + ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? '✅' : '❌'));
+        console.log('   3. Service Worker: ' + (navigator.serviceWorker.controller ? '✅ Active' : '⚠️  Not active'));
+        console.log('   4. Manifest Link: ' + (document.querySelector('link[rel="manifest"]') ? '✅' : '❌'));
+        
+        // Check manifest fetch
+        fetch('/manifest.json')
+          .then(res => {
+            console.log('   5. Manifest Response: ' + (res.ok ? '✅ 200 OK' : '❌ ' + res.status));
+            return res.json();
+          })
+          .then(manifest => {
+            console.log('   6. Manifest Content:', manifest);
+            console.log('      - Name: ' + (manifest.name ? '✅' : '❌'));
+            console.log('      - Start URL: ' + (manifest.start_url ? '✅' : '❌'));
+            console.log('      - Icons: ' + (manifest.icons?.length || 0) + ' icons');
+            console.log('      - Display: ' + (manifest.display || 'none'));
+          })
+          .catch(err => {
+            console.log('   5. Manifest Fetch: ❌ Failed - ' + err.message);
+          });
+        
         console.log('   Possible reasons:');
         console.log('   - App is not served over HTTPS (required in production)');
         console.log('   - manifest.json is invalid or missing required fields');
         console.log('   - Service worker is not registered properly');
         console.log('   - Browser does not support PWA installation (Safari iOS)');
         console.log('   - App is already installed');
+        console.log('   - Chrome may have already shown prompt and user dismissed it');
       }
     }, 2000);
 
