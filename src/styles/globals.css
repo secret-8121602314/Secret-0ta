@@ -64,6 +64,12 @@ html, body {
     flex-direction: column;
     overflow: hidden;
   }
+  
+  /* Ensure sidebar conversation list scrolls properly */
+  .custom-scrollbar {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 /* Mobile-specific improvements */

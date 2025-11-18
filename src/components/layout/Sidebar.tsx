@@ -180,7 +180,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           )}
 
           {/* Conversation List */}
-          <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-4 sm:pb-6 custom-scrollbar" style={{ minHeight: 0 }}>
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-4 sm:pb-6 custom-scrollbar" style={{ minHeight: 0, maxHeight: '100%' }}>
             <div className="space-y-2 sm:space-y-3 pt-2">
               {conversationList.map((conversation) => {
                 const isGameHub = conversation.isGameHub || conversation.id === 'game-hub' || conversation.title === 'Game Hub';
