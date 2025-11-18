@@ -37,7 +37,7 @@ export class SessionService {
   /**
    * Start a new user session
    */
-  async startSession(userId: string, authUserId: string, initialRoute?: string): Promise<string | null> {
+  async startSession(userId: string, initialRoute?: string): Promise<string | null> {
     try {
       // End any existing session first
       if (this.currentSessionId) {
@@ -54,7 +54,7 @@ export class SessionService {
         .from('user_sessions')
         .insert({
           user_id: userId,
-          auth_user_id: authUserId,
+          // Note: user_sessions table uses internal user_id (not auth_user_id)
           started_at: new Date().toISOString(),
           session_data: sessionData as Json,
         })

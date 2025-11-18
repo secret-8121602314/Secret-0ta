@@ -760,7 +760,6 @@ export class AuthService {
       if (this.authState.user && !sessionService.getCurrentSessionId()) {
         await sessionService.startSession(
           this.authState.user.id,
-          this.authState.user.authUserId,
           window.location.pathname
         );
       }
