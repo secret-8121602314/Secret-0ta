@@ -179,7 +179,7 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '' }) =
         {hasPrompt && (
           <button
             onClick={handleInstallClick}
-            className="w-full py-2 md:py-2.5 bg-gradient-to-r from-[#E53A3A] to-[#FFAB40] hover:from-[#D42A2A] hover:to-[#C87A1A] text-white text-sm md:text-base font-semibold rounded-lg transition-all duration-200 active:scale-95"
+            className="w-full py-2 md:py-2.5 bg-gradient-to-r from-[#E53A3A] to-[#FFAB40] md:hover:from-[#D42A2A] md:hover:to-[#C87A1A] text-white text-sm md:text-base font-semibold rounded-lg transition-all duration-200 active:scale-95"
           >
             Install Now
           </button>

@@ -385,6 +385,15 @@ html, body {
   @apply bg-gradient-to-r from-[#2E2E2E] to-[#1C1C1C] text-white font-semibold px-6 py-3 rounded-xl border-2 border-[#424242]/60 transition-all duration-300 hover:from-[#424242] hover:to-[#2E2E2E] hover:scale-105 hover:shadow-lg active:scale-95;
 }
 
+/* Touch-safe button states (no hover persistence on mobile) */
+.btn-primary-touch-safe {
+  @apply bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-semibold px-6 py-3 rounded-xl transition-all duration-300 md:hover:scale-105 md:hover:shadow-xl md:hover:shadow-[#E53A3A]/25 active:scale-95;
+}
+
+.btn-secondary-touch-safe {
+  @apply bg-gradient-to-r from-[#2E2E2E] to-[#1C1C1C] text-white font-semibold px-6 py-3 rounded-xl border-2 border-[#424242]/60 transition-all duration-300 md:hover:from-[#424242] md:hover:to-[#2E2E2E] md:hover:scale-105 md:hover:shadow-lg active:scale-95;
+}
+
 /* Enhanced card styles */
 .card {
   @apply bg-gradient-to-r from-[#2E2E2E]/80 to-[#1C1C1C]/80 border-2 border-[#424242]/40 rounded-2xl backdrop-blur-sm transition-all duration-300 hover:border-[#E53A3A]/40 hover:shadow-xl hover:shadow-[#E53A3A]/10;

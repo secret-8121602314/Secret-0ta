@@ -823,7 +823,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               className={`flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-xl transition-all duration-300 disabled:cursor-not-allowed ${
                 (!message.trim() && !imageFile) || isLoading
                   ? 'bg-[#2E2E2E]/15 text-[#A3A3A3]/25 scale-100'
-                  : 'bg-gradient-to-r from-[#FFAB40] to-[#FF8C00] text-[#181818] scale-100 hover:scale-105 hover:shadow-lg hover:shadow-[#FFAB40]/25 active:scale-95 font-semibold'
+                  : 'bg-gradient-to-r from-[#FFAB40] to-[#FF8C00] text-[#181818] scale-100 md:hover:scale-105 md:hover:shadow-lg md:hover:shadow-[#FFAB40]/25 active:scale-95 font-semibold'
               }`}
             >
               {isLoading ? (

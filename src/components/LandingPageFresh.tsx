@@ -298,7 +298,7 @@ const FeaturesCarousel = ({ features }: { features: Array<{ title: string; descr
             {/* Navigation Arrows */}
             <button
                 onClick={scrollPrev}
-                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 md:-translate-x-16 lg:-translate-x-20 bg-transparent border-2 border-[#E53A3A] text-[#E53A3A] p-2 md:p-3 rounded-lg hover:bg-gradient-to-r hover:from-[#E53A3A] hover:to-[#D98C1F] hover:text-white hover:border-transparent hover:shadow-2xl hover:shadow-[#E53A3A]/50 hover:scale-110 active:scale-95 focus:bg-transparent focus:outline-none transition-[background,transform,shadow,opacity] duration-300 z-10 disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-sm opacity-40 hover:opacity-100"
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 md:-translate-x-16 lg:-translate-x-20 bg-transparent border-2 border-[#E53A3A] text-[#E53A3A] p-2 md:p-3 rounded-lg md:hover:bg-gradient-to-r md:hover:from-[#E53A3A] md:hover:to-[#D98C1F] md:hover:text-white md:hover:border-transparent md:hover:shadow-2xl md:hover:shadow-[#E53A3A]/50 md:hover:scale-110 active:scale-95 focus:bg-transparent focus:outline-none transition-[background,transform,shadow,opacity] duration-300 z-10 disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-sm opacity-40 md:hover:opacity-100"
                 aria-label="Previous slide"
             >
                 <svg className="w-5 h-5 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
@@ -307,7 +307,7 @@ const FeaturesCarousel = ({ features }: { features: Array<{ title: string; descr
             </button>
             <button
                 onClick={scrollNext}
-                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 md:translate-x-16 lg:translate-x-20 bg-transparent border-2 border-[#E53A3A] text-[#E53A3A] p-2 md:p-3 rounded-lg hover:bg-gradient-to-r hover:from-[#E53A3A] hover:to-[#D98C1F] hover:text-white hover:border-transparent hover:shadow-2xl hover:shadow-[#E53A3A]/50 hover:scale-110 active:scale-95 focus:bg-transparent focus:outline-none transition-[background,transform,shadow,opacity] duration-300 z-10 disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-sm opacity-40 hover:opacity-100"
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 md:translate-x-16 lg:translate-x-20 bg-transparent border-2 border-[#E53A3A] text-[#E53A3A] p-2 md:p-3 rounded-lg md:hover:bg-gradient-to-r md:hover:from-[#E53A3A] md:hover:to-[#D98C1F] md:hover:text-white md:hover:border-transparent md:hover:shadow-2xl md:hover:shadow-[#E53A3A]/50 md:hover:scale-110 active:scale-95 focus:bg-transparent focus:outline-none transition-[background,transform,shadow,opacity] duration-300 z-10 disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-sm opacity-40 md:hover:opacity-100"
                 aria-label="Next slide"
             >
                 <svg className="w-5 h-5 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
@@ -364,23 +364,144 @@ const QuoteIcon = () => (
 
 const Testimonial = React.memo(({ quote, author, title, index, isVisible }: { quote: string, author: string, title: string, index: number, isVisible: boolean }) => (
     <div 
-        className={`bg-gradient-to-r from-[#1C1C1C]/60 to-[#0A0A0A]/60 backdrop-blur-xl border-2 rounded-3xl p-10 flex flex-col justify-between h-full animate-fade-slide-up transition-all duration-500 ${
+        className={`bg-gradient-to-r from-[#1C1C1C]/60 to-[#0A0A0A]/60 backdrop-blur-xl border-0 md:border-2 rounded-3xl p-6 md:p-8 flex flex-col justify-between h-full animate-fade-slide-up transition-all duration-500 ${
             isVisible 
-                ? 'from-[#1C1C1C]/80 to-[#0A0A0A]/80 border-neutral-700/80 scale-105 shadow-2xl shadow-[#E53A3A]/10' 
-                : 'border-neutral-800/60'
+                ? 'from-[#1C1C1C]/80 to-[#0A0A0A]/80 md:border-neutral-700/80 scale-105 shadow-2xl shadow-[#E53A3A]/10' 
+                : 'md:border-neutral-800/60'
         } md:hover:bg-gradient-to-r md:hover:from-[#1C1C1C]/80 md:hover:to-[#0A0A0A]/80 md:hover:border-neutral-700/80 md:hover:scale-105 md:hover:shadow-2xl md:hover:shadow-[#E53A3A]/10`}
         style={{ transitionDelay: isVisible ? `${index * 150}ms` : '0ms' }}
     >
-        <div className="mb-8">
+        <div className="mb-6">
             <QuoteIcon />
-            <p className="text-xl text-neutral-200 leading-relaxed">"{quote}"</p>
+            <p className="text-lg md:text-xl text-neutral-200 leading-relaxed">"{quote}"</p>
         </div>
         <div>
-            <p className="font-bold text-white text-lg">{author}</p>
-            <p className="text-base text-neutral-400">{title}</p>
+            <p className="font-bold text-white text-base md:text-lg">{author}</p>
+            <p className="text-sm md:text-base text-neutral-400">{title}</p>
         </div>
     </div>
 ));
+
+const TestimonialsCarousel = ({ testimonials }: { testimonials: Array<{ quote: string; author: string; title: string }> }) => {
+    const autoplayOptions = {
+        delay: 5000,
+        stopOnInteraction: true,
+        stopOnMouseEnter: true,
+        playOnInit: true
+    };
+
+    const [emblaRef, emblaApi] = useEmblaCarousel(
+        { 
+            loop: true,
+            align: 'center',
+            slidesToScroll: 1,
+            skipSnaps: false,
+            dragFree: false,
+            containScroll: 'trimSnaps',
+            duration: 25
+        },
+        [Autoplay(autoplayOptions)]
+    );
+    
+    const [selectedIndex, setSelectedIndex] = useState(0);
+    const [scrollSnaps, setScrollSnaps] = useState<number[]>([]);
+
+    const scrollPrev = useCallback(() => {
+        if (emblaApi) emblaApi.scrollPrev();
+    }, [emblaApi]);
+    
+    const scrollNext = useCallback(() => {
+        if (emblaApi) emblaApi.scrollNext();
+    }, [emblaApi]);
+    
+    const scrollTo = useCallback((index: number) => {
+        if (emblaApi) emblaApi.scrollTo(index);
+    }, [emblaApi]);
+
+    const onSelect = useCallback(() => {
+        if (!emblaApi) return;
+        setSelectedIndex(emblaApi.selectedScrollSnap());
+    }, [emblaApi]);
+
+    useEffect(() => {
+        if (!emblaApi) return;
+        onSelect();
+        setScrollSnaps(emblaApi.scrollSnapList());
+        emblaApi.on('select', onSelect);
+        emblaApi.on('reInit', onSelect);
+        
+        return () => {
+            emblaApi.off('select', onSelect);
+            emblaApi.off('reInit', onSelect);
+        };
+    }, [emblaApi, onSelect]);
+
+    return (
+        <div className="relative">
+            {/* Carousel Container */}
+            <div className="overflow-hidden" ref={emblaRef}>
+                <div className="flex touch-pan-y touch-pinch-zoom">
+                    {testimonials.map((testimonial, index) => (
+                        <div 
+                            key={index}
+                            className="flex-[0_0_100%] min-w-0 px-4"
+                        >
+                            <Testimonial
+                                quote={testimonial.quote}
+                                author={testimonial.author}
+                                title={testimonial.title}
+                                index={index}
+                                isVisible={true}
+                            />
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Navigation Arrows - Below on mobile, overlaid on desktop */}
+            <div className="flex justify-center gap-4 mt-6 md:hidden">
+                <button
+                    onClick={scrollPrev}
+                    className="bg-transparent border-2 border-[#E53A3A] text-[#E53A3A] p-3 rounded-lg active:bg-gradient-to-r active:from-[#E53A3A] active:to-[#D98C1F] active:text-white active:border-transparent md:hover:bg-gradient-to-r md:hover:from-[#E53A3A] md:hover:to-[#D98C1F] md:hover:text-white md:hover:border-transparent md:hover:shadow-2xl md:hover:shadow-[#E53A3A]/50 md:hover:scale-110 active:scale-95 focus:outline-none transition-[background,transform,shadow,opacity,border,color] duration-300 disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-sm"
+                    aria-label="Previous testimonial"
+                >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </button>
+                <button
+                    onClick={scrollNext}
+                    className="bg-transparent border-2 border-[#E53A3A] text-[#E53A3A] p-3 rounded-lg active:bg-gradient-to-r active:from-[#E53A3A] active:to-[#D98C1F] active:text-white active:border-transparent md:hover:bg-gradient-to-r md:hover:from-[#E53A3A] md:hover:to-[#D98C1F] md:hover:text-white md:hover:border-transparent md:hover:shadow-2xl md:hover:shadow-[#E53A3A]/50 md:hover:scale-110 active:scale-95 focus:outline-none transition-[background,transform,shadow,opacity,border,color] duration-300 disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-sm"
+                    aria-label="Next testimonial"
+                >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                </button>
+            </div>
+
+            {/* Desktop overlaid buttons */}
+            <button
+                onClick={scrollPrev}
+                className="hidden md:block absolute left-2 top-1/2 -translate-y-1/2 bg-transparent border-2 border-[#E53A3A] text-[#E53A3A] p-2 rounded-lg md:hover:bg-gradient-to-r md:hover:from-[#E53A3A] md:hover:to-[#D98C1F] md:hover:text-white md:hover:border-transparent md:hover:shadow-2xl md:hover:shadow-[#E53A3A]/50 md:hover:scale-110 active:scale-95 focus:outline-none transition-[background,transform,shadow,opacity,border,color] duration-300 z-10 disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-sm opacity-60 md:hover:opacity-100"
+                aria-label="Previous testimonial"
+            >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+            </button>
+            <button
+                onClick={scrollNext}
+                className="hidden md:block absolute right-2 top-1/2 -translate-y-1/2 bg-transparent border-2 border-[#E53A3A] text-[#E53A3A] p-2 rounded-lg md:hover:bg-gradient-to-r md:hover:from-[#E53A3A] md:hover:to-[#D98C1F] md:hover:text-white md:hover:border-transparent md:hover:shadow-2xl md:hover:shadow-[#E53A3A]/50 md:hover:scale-110 active:scale-95 focus:outline-none transition-[background,transform,shadow,opacity,border,color] duration-300 z-10 disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-sm opacity-60 md:hover:opacity-100"
+                aria-label="Next testimonial"
+            >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+            </button>
+        </div>
+    );
+};
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -698,7 +819,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                                 <button
               type="submit"
               disabled={isSubmitting}
-                                    className="bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-bold py-4 sm:py-5 px-8 sm:px-12 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-[#E53A3A]/30 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100 text-base sm:text-lg relative overflow-hidden group min-h-[56px]"
+                                    className="bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-bold py-4 sm:py-5 px-8 sm:px-12 rounded-xl transition-all duration-300 transform md:hover:scale-105 md:hover:shadow-2xl md:hover:shadow-[#E53A3A]/30 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100 text-base sm:text-lg relative overflow-hidden group min-h-[56px]"
                                 >
                                     <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                                     <span className="relative z-10">
@@ -1179,7 +1300,31 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                             <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-white mb-6 leading-tight" style={{ lineHeight: '1.3', minHeight: '1.3em', height: 'auto', paddingTop: '0.5rem', paddingBottom: '0.5rem' }}>What Gamers Are Saying</h2>
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {/* Mobile Carousel (< 768px) */}
+                        <div className="block md:hidden">
+                            <TestimonialsCarousel 
+                                testimonials={[
+                                    {
+                                        quote: "Finally, a gaming assistant that doesn't spoil the story! I was stuck on a puzzle in Elden Ring for hours, and Otagon gave me just the right hint to figure it out myself.",
+                                        author: "Sarah Chen",
+                                        title: "Souls-like Enthusiast"
+                                    },
+                                    {
+                                        quote: "The PC-to-mobile sync is a game-changer. I can get help without alt-tabbing and losing my immersion. It's like having a gaming buddy who knows exactly when to chime in.",
+                                        author: "Marcus Rodriguez",
+                                        title: "RPG Completionist"
+                                    },
+                                    {
+                                        quote: "Just press F1 during intense boss fights and get spoken hints without pausing the game. The hands-free mode is a lifesaver - it's like having an expert coach right beside me.",
+                                        author: "Safi Rahman",
+                                        title: "Souls-like Speedrunner"
+                                    }
+                                ]}
+                            />
+                        </div>
+
+                        {/* Desktop Grid (>= 768px) */}
+                        <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-8">
                             <div ref={(el) => (testimonialRefs.current[0] = el)}>
                                 <Testimonial
                                     quote="Finally, a gaming assistant that doesn't spoil the story! I was stuck on a puzzle in Elden Ring for hours, and Otagon gave me just the right hint to figure it out myself."
@@ -1305,7 +1450,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                                     href="https://www.linkedin.com/in/readmetxt/"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center justify-center gap-3 bg-gradient-to-r from-[#0077B5] to-[#005885] hover:from-[#005885] hover:to-[#004066] text-white font-semibold py-4 px-8 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl hover:shadow-[#0077B5]/25"
+                                    className="inline-flex items-center justify-center gap-3 bg-gradient-to-r from-[#0077B5] to-[#005885] md:hover:from-[#005885] md:hover:to-[#004066] text-white font-semibold py-4 px-8 rounded-xl transition-all duration-300 md:hover:scale-105 active:scale-95 shadow-lg md:hover:shadow-xl md:hover:shadow-[#0077B5]/25"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
                                         <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
@@ -1318,7 +1463,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
 
                                 <a
                                     href="mailto:support@otagon.app"
-                                    className="inline-flex items-center justify-center gap-3 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] hover:from-[#D42A2A] hover:to-[#C87A1A] text-white font-semibold py-4 px-8 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl hover:shadow-[#E53A3A]/25"
+                                    className="inline-flex items-center justify-center gap-3 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] md:hover:from-[#D42A2A] md:hover:to-[#C87A1A] text-white font-semibold py-4 px-8 rounded-xl transition-all duration-300 md:hover:scale-105 active:scale-95 shadow-lg md:hover:shadow-xl md:hover:shadow-[#E53A3A]/25"
                                 >
                                     <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>

@@ -226,7 +226,7 @@ const ContactUsModal: React.FC<ContactUsModalProps> = ({ isOpen, onClose }) => {
                 <button
                   type="submit"
                   disabled={!isFormValid || isSubmitting}
-                  className="px-6 py-3 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-medium rounded-lg hover:from-[#D42A2A] hover:to-[#C87A1A] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 hover:shadow-lg active:scale-95 disabled:active:scale-100"
+                  className="px-6 py-3 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-medium rounded-lg md:hover:from-[#D42A2A] md:hover:to-[#C87A1A] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed md:hover:scale-105 md:hover:shadow-lg active:scale-95 disabled:active:scale-100"
                 >
                   {isSubmitting ? (
                     <div className="flex items-center space-x-2">

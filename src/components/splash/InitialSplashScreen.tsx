@@ -91,7 +91,7 @@ const InitialSplashScreen: React.FC<InitialSplashScreenProps> = ({ onComplete, u
           <button
             onClick={handleStartAdventure}
             disabled={isProcessing}
-            className={`w-full bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] hover:from-[#D42A2A] hover:to-[#C87A1A] text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#E53A3A]/25 active:scale-95 text-base flex items-center justify-center relative z-10 ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            className={`w-full bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] md:hover:from-[#D42A2A] md:hover:to-[#C87A1A] text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 md:hover:scale-105 md:hover:shadow-xl md:hover:shadow-[#E53A3A]/25 active:scale-95 text-base flex items-center justify-center relative z-10 ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
             style={{ pointerEvents: 'auto' }}
           >
             {isProcessing ? 'Starting...' : 'Start the Adventure'}
@@ -99,7 +99,7 @@ const InitialSplashScreen: React.FC<InitialSplashScreenProps> = ({ onComplete, u
           
           <button
             onClick={handleDownloadPCClient}
-            className="w-full bg-gradient-to-r from-neutral-700 to-neutral-600 hover:from-neutral-600 hover:to-neutral-500 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95 text-base flex items-center justify-center relative z-10 cursor-pointer"
+            className="w-full bg-gradient-to-r from-neutral-700 to-neutral-600 md:hover:from-neutral-600 md:hover:to-neutral-500 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 md:hover:scale-105 md:hover:shadow-lg active:scale-95 text-base flex items-center justify-center relative z-10 cursor-pointer"
             style={{ pointerEvents: 'auto' }}
           >
             Download PC Client

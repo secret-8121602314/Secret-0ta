@@ -65,8 +65,8 @@ const ProFeaturesSplashScreen: React.FC<ProFeaturesSplashScreenProps> = ({ onCom
           <p className="text-sm sm:text-base md:text-lg text-neutral-300 leading-relaxed px-2">Unlock exclusive features for the ultimate gaming companion.</p>
 
           <div className="w-full max-w-sm mx-auto p-1 bg-gradient-to-r from-[#2E2E2E]/60 to-[#1A1A1A]/60 backdrop-blur-sm rounded-2xl flex items-center gap-1 mt-4 sm:mt-6">
-            <button onClick={() => setActiveTab('pro')} className={`w-1/2 py-2 sm:py-3 text-xs sm:text-sm font-bold rounded-xl transition-all duration-300 active:scale-95 ${activeTab === 'pro' ? 'bg-gradient-to-r from-[#424242] to-[#2A2A2A] text-white shadow-lg' : 'text-neutral-300 hover:bg-neutral-700/50'}`}>Pro</button>
-            <button onClick={() => setActiveTab('vanguard')} className={`w-1/2 py-2 sm:py-3 text-xs sm:text-sm font-bold rounded-xl transition-all duration-300 active:scale-95 ${activeTab === 'vanguard' ? 'bg-gradient-to-r from-[#424242] to-[#2A2A2A] text-white shadow-lg' : 'text-neutral-300 hover:bg-neutral-700/50'}`}>Pro Vanguard</button>
+            <button onClick={() => setActiveTab('pro')} className={`w-1/2 py-2 sm:py-3 text-xs sm:text-sm font-bold rounded-xl transition-all duration-300 active:scale-95 ${activeTab === 'pro' ? 'bg-gradient-to-r from-[#424242] to-[#2A2A2A] text-white shadow-lg' : 'text-neutral-300 md:hover:bg-neutral-700/50'}`}>Pro</button>
+            <button onClick={() => setActiveTab('vanguard')} className={`w-1/2 py-2 sm:py-3 text-xs sm:text-sm font-bold rounded-xl transition-all duration-300 active:scale-95 ${activeTab === 'vanguard' ? 'bg-gradient-to-r from-[#424242] to-[#2A2A2A] text-white shadow-lg' : 'text-neutral-300 md:hover:bg-neutral-700/50'}`}>Pro Vanguard</button>
           </div>
         </div>
       </header>

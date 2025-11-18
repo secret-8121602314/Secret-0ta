@@ -643,7 +643,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
               <button
                 onClick={() => setEmailMode('signin')}
                 disabled={isLoading}
-                className="w-full hover:scale-105 active:scale-95 transition-all duration-300 py-1.5 md:py-2 lg:py-2.5 px-4 md:px-5 lg:px-6 font-bold rounded-xl bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white hover:shadow-xl hover:shadow-[#E53A3A]/25 focus:outline-none focus:ring-2 focus:ring-[#E53A3A] focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100 text-sm md:text-base"
+                className="w-full md:hover:scale-105 active:scale-95 transition-all duration-300 py-1.5 md:py-2 lg:py-2.5 px-4 md:px-5 lg:px-6 font-bold rounded-xl bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white md:hover:shadow-xl md:hover:shadow-[#E53A3A]/25 focus:outline-none focus:ring-2 focus:ring-[#E53A3A] focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100 text-sm md:text-base"
               >
                 Sign In with Email
               </button>

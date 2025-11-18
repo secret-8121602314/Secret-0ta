@@ -139,7 +139,7 @@ export const ProfileSetupBanner: React.FC<ProfileSetupBannerProps> = ({
           <div className="flex items-center space-x-2 ml-3">
             <button
               onClick={() => setIsExpanded(true)}
-              className="px-4 py-2 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] hover:from-[#D42A2A] hover:to-[#C87A1A] text-white text-sm font-bold rounded-lg transition-all hover:scale-105 active:scale-95 whitespace-nowrap shadow-lg"
+              className="px-4 py-2 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] md:hover:from-[#D42A2A] md:hover:to-[#C87A1A] text-white text-sm font-bold rounded-lg transition-all md:hover:scale-105 active:scale-95 whitespace-nowrap shadow-lg"
             >
               Set Up
             </button>
@@ -238,7 +238,7 @@ export const ProfileSetupBanner: React.FC<ProfileSetupBannerProps> = ({
 
           <button
             onClick={handleNext}
-            className="px-6 py-2 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] hover:from-[#D42A2A] hover:to-[#C87A1A] text-white font-bold rounded-lg transition-all hover:scale-105 active:scale-95 text-sm shadow-lg"
+            className="px-6 py-2 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] md:hover:from-[#D42A2A] md:hover:to-[#C87A1A] text-white font-bold rounded-lg transition-all md:hover:scale-105 active:scale-95 text-sm shadow-lg"
           >
             {currentStep === steps.length - 1 ? '✓ Complete' : 'Next →'}
           </button>

@@ -155,7 +155,7 @@ export const PlayerProfileSetupModal: React.FC<PlayerProfileSetupModalProps> = (
             
             <button
               onClick={handleNext}
-              className="px-6 py-2 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] hover:from-[#D42A2A] hover:to-[#C87A1A] text-white font-semibold rounded-lg transition-all duration-200 hover:scale-105 active:scale-95"
+              className="px-6 py-2 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] md:hover:from-[#D42A2A] md:hover:to-[#C87A1A] text-white font-semibold rounded-lg transition-all duration-200 md:hover:scale-105 active:scale-95"
             >
               {currentStep === steps.length - 1 ? 'Complete Setup' : 'Next'}
             </button>
