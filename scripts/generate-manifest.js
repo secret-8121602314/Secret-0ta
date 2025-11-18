@@ -68,7 +68,8 @@ function findScreenshots() {
 function generateIconEntries() {
   const icons = [];
   
-  // Add standard icons with "any" purpose
+  // Add icons with both "any" and "maskable" purpose (single entry per size)
+  // This reuses the same icon file with proper masking for all purposes
   for (const size of ICON_SIZES) {
     const iconPath = join(PUBLIC_DIR, `icon-${size}.png`);
     if (existsSync(iconPath)) {
@@ -76,20 +77,7 @@ function generateIconEntries() {
         src: `/icon-${size}.png`,
         sizes: `${size}x${size}`,
         type: 'image/png',
-        purpose: 'any'
-      });
-    }
-  }
-  
-  // Add maskable icons
-  for (const size of ICON_SIZES) {
-    const maskablePath = join(PUBLIC_DIR, `icon-${size}-maskable.png`);
-    if (existsSync(maskablePath)) {
-      icons.push({
-        src: `/icon-${size}-maskable.png`,
-        sizes: `${size}x${size}`,
-        type: 'image/png',
-        purpose: 'maskable'
+        purpose: 'any maskable'
       });
     }
   }
@@ -102,13 +90,13 @@ function generateIconEntries() {
         src: '/icon-192.png',
         sizes: '192x192',
         type: 'image/png',
-        purpose: 'any'
+        purpose: 'any maskable'
       },
       {
         src: '/icon-512.png',
         sizes: '512x512',
         type: 'image/png',
-        purpose: 'any'
+        purpose: 'any maskable'
       }
     );
   }
@@ -151,21 +139,21 @@ function generateManifest() {
         short_name: 'Chat',
         description: 'Start a new conversation',
         url: '/?shortcut=new-chat',
-        icons: icons.filter(i => i.sizes === '192x192' && i.purpose === 'any').slice(0, 1)
+        icons: icons.filter(i => i.sizes === '192x192').slice(0, 1)
       },
       {
         name: 'Voice Commands',
         short_name: 'Voice',
         description: 'Use hands-free voice commands',
         url: '/?shortcut=voice',
-        icons: icons.filter(i => i.sizes === '192x192' && i.purpose === 'any').slice(0, 1)
+        icons: icons.filter(i => i.sizes === '192x192').slice(0, 1)
       },
       {
         name: 'Settings',
         short_name: 'Settings',
         description: 'Manage your preferences',
         url: '/?shortcut=settings',
-        icons: icons.filter(i => i.sizes === '192x192' && i.purpose === 'any').slice(0, 1)
+        icons: icons.filter(i => i.sizes === '192x192').slice(0, 1)
       }
     ],
     permissions: ['audioCapture', 'notifications'],
