@@ -1934,7 +1934,7 @@ const MainApp: React.FC<MainAppProps> = ({
   }
 
   return (
-    <div className="h-screen bg-background flex overflow-hidden">
+    <div className="app-container h-screen bg-background flex overflow-hidden">
       {/* Sidebar */}
       <ErrorBoundary fallback={
         <div className="w-64 bg-[#1C1C1C] p-4 border-r border-[#424242] flex items-center justify-center">

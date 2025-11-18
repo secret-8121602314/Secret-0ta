@@ -28,8 +28,8 @@ async function zoomOutLogo() {
     
     console.log(`📏 Original size: ${metadata.width}x${metadata.height}`);
     
-    // Calculate new size (logo at 33% = zoomed out 3x)
-    const logoSize = Math.round(metadata.width * 0.33);
+    // Calculate new size (logo at 66% = zoomed out 1.5x instead of 3x for larger logo)
+    const logoSize = Math.round(metadata.width * 0.66);
     const canvasSize = metadata.width; // Keep same canvas size
     const padding = Math.round((canvasSize - logoSize) / 2);
     
@@ -37,8 +37,9 @@ async function zoomOutLogo() {
     console.log(`📦 Canvas size: ${canvasSize}x${canvasSize}`);
     console.log(`📏 Padding: ${padding}px on each side`);
     
-    // Create zoomed out version
+    // Create zoomed out version with #111111 background (no white)
     const zoomedOutBuffer = await sharp(logoBuffer)
+      .flatten({ background: { r: 17, g: 17, b: 17 } }) // Remove any transparency, replace with #111111
       .resize(logoSize, logoSize, {
         fit: 'contain',
         background: { r: 17, g: 17, b: 17, alpha: 1 } // #111111
@@ -48,7 +49,7 @@ async function zoomOutLogo() {
         bottom: padding,
         left: padding,
         right: padding,
-        background: { r: 17, g: 17, b: 17, alpha: 1 }
+        background: { r: 17, g: 17, b: 17, alpha: 1 } // #111111
       })
       .png()
       .toBuffer();
@@ -59,7 +60,7 @@ async function zoomOutLogo() {
     
     console.log('✅ PWA icon created at:', PWA_ICON_PATH);
     console.log('✅ Original logo unchanged at:', SOURCE_LOGO_PATH);
-    console.log('🎉 Done! PWA icon has 3x zoom out with #111111 background');
+    console.log('🎉 Done! PWA icon has 1.5x zoom out (66% size) with #111111 background');
     
   } catch (error) {
     console.error('❌ Error:', error);
