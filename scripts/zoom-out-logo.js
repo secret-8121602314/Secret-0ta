@@ -14,15 +14,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const PUBLIC_DIR = join(__dirname, '../public');
-const LOGO_PATH = join(PUBLIC_DIR, 'images/otagon-logo.png');
-const BACKGROUND_COLOR = '#111111';
+const SOURCE_LOGO_PATH = join(PUBLIC_DIR, 'images/otagon-logo.png');
+const PWA_ICON_PATH = join(PUBLIC_DIR, 'images/pwa-icon.png');
 
 async function zoomOutLogo() {
   try {
-    console.log('🔍 Reading logo from:', LOGO_PATH);
+    console.log('🔍 Reading logo from:', SOURCE_LOGO_PATH);
+    console.log('📝 Creating PWA icon at:', PWA_ICON_PATH);
     
     // Read the original logo
-    const logoBuffer = readFileSync(LOGO_PATH);
+    const logoBuffer = readFileSync(SOURCE_LOGO_PATH);
     const metadata = await sharp(logoBuffer).metadata();
     
     console.log(`📏 Original size: ${metadata.width}x${metadata.height}`);
@@ -52,12 +53,13 @@ async function zoomOutLogo() {
       .png()
       .toBuffer();
     
-    // Save back to the same file
+    // Save to PWA icon file (not the original)
     await sharp(zoomedOutBuffer)
-      .toFile(LOGO_PATH);
+      .toFile(PWA_ICON_PATH);
     
-    console.log('✅ Logo zoomed out 3x and saved to:', LOGO_PATH);
-    console.log('🎉 Done! The logo now has 3x zoom out with #111111 background');
+    console.log('✅ PWA icon created at:', PWA_ICON_PATH);
+    console.log('✅ Original logo unchanged at:', SOURCE_LOGO_PATH);
+    console.log('🎉 Done! PWA icon has 3x zoom out with #111111 background');
     
   } catch (error) {
     console.error('❌ Error:', error);

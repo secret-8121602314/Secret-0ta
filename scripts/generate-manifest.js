@@ -62,12 +62,12 @@ function findScreenshots() {
 }
 
 /**
- * Generate icon entries using the logo directly
+ * Generate icon entries using the PWA icon
  */
 function generateIconEntries() {
-  // Use the otagon-logo.png directly for all icon sizes
-  // The logo already has proper spacing and background
-  const logoPath = '/images/otagon-logo.png';
+  // Use the pwa-icon.png (zoomed out version with padding)
+  // This is separate from the main logo used in the UI
+  const logoPath = '/images/pwa-icon.png';
   
   const icons = [
     {
