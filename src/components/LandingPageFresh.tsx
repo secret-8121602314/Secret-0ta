@@ -827,6 +827,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                                     image: feature1
                                 },
                                 {
+                                    title: "Powered by Google Gemini",
+                                    description: "Experience cutting-edge AI assistance powered by Google's advanced Gemini technology for accurate, context-aware gaming help.",
+                                    image: geminiLogo,
+                                    isGemini: true,
+                                },
+                                {
                                     title: "Play Your Way",
                                     description: "Story-driven explorer? Completionist? Speedrunner? Tell us once, and every hint, strategy, and insight matches your playstyle.",
                                     image: feature2
@@ -851,12 +857,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                                     description: "Skip the wiki-hunting. Otagon provides quest tips, secret locations, build optimization—all without spoiling your discovery.",
                                     image: feature6
                                 },
-                                {
-                                    title: "Powered by Google Gemini",
-                                    description: "Experience cutting-edge AI assistance powered by Google's advanced Gemini technology for accurate, context-aware gaming help.",
-                                    image: geminiLogo,
-                                    isGemini: true,
-                                }
                             ]}
                         />
                     </div>
