@@ -116,10 +116,10 @@ const FeatureIcon = ({ icon }: { icon: 'eye' | 'bookmark' | 'network' | 'mic' | 
 const Feature = React.memo(({ title, description, icon, image, isGemini }: { title: React.ReactNode, description: string, icon?: 'eye' | 'bookmark' | 'network' | 'mic' | 'insights' | 'cpu', image?: string, isGemini?: boolean }) => {
         return (
         <div className="flex flex-col items-center text-center group p-6 rounded-2xl md:hover:bg-gradient-to-br md:hover:from-neutral-800/20 md:hover:to-neutral-900/20 transition-all duration-500">
-            <div className={`w-full max-w-4xl aspect-video mb-6 animate-fade-slide-up md:group-hover:scale-105 transition-transform duration-500 ${isGemini ? 'bg-transparent flex items-center justify-center' : ''}`}>
+            <div className={`w-full max-w-4xl aspect-video min-h-[300px] md:min-h-[400px] mb-6 animate-fade-slide-up md:group-hover:scale-105 transition-transform duration-500 ${isGemini ? 'bg-transparent flex items-center justify-center' : ''}`}>
                 {image ? (
                     isGemini ? (
-                        <div className="w-[505px] h-[600px] flex items-center justify-center bg-transparent">
+                        <div className="w-full max-w-md aspect-[5/6] flex items-center justify-center bg-transparent">
                             <img 
                                 src={image} 
                                 alt={typeof title === 'string' ? title : ''} 
@@ -298,7 +298,7 @@ const FeaturesCarousel = ({ features }: { features: Array<{ title: string; descr
             {/* Navigation Arrows */}
             <button
                 onClick={scrollPrev}
-                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 md:-translate-x-16 lg:-translate-x-20 border-2 border-[#E53A3A] text-[#E53A3A] p-2 md:p-3 rounded-lg hover:bg-gradient-to-r hover:from-[#E53A3A] hover:to-[#D98C1F] hover:text-white hover:border-transparent hover:shadow-2xl hover:shadow-[#E53A3A]/50 hover:scale-110 active:scale-95 transition-all duration-300 z-10 disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-sm opacity-40 hover:opacity-100"
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 md:-translate-x-16 lg:-translate-x-20 bg-transparent border-2 border-[#E53A3A] text-[#E53A3A] p-2 md:p-3 rounded-lg hover:bg-gradient-to-r hover:from-[#E53A3A] hover:to-[#D98C1F] hover:text-white hover:border-transparent hover:shadow-2xl hover:shadow-[#E53A3A]/50 hover:scale-110 active:scale-95 focus:bg-transparent focus:outline-none transition-[background,transform,shadow,opacity] duration-300 z-10 disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-sm opacity-40 hover:opacity-100"
                 aria-label="Previous slide"
             >
                 <svg className="w-5 h-5 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
@@ -307,7 +307,7 @@ const FeaturesCarousel = ({ features }: { features: Array<{ title: string; descr
             </button>
             <button
                 onClick={scrollNext}
-                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 md:translate-x-16 lg:translate-x-20 border-2 border-[#E53A3A] text-[#E53A3A] p-2 md:p-3 rounded-lg hover:bg-gradient-to-r hover:from-[#E53A3A] hover:to-[#D98C1F] hover:text-white hover:border-transparent hover:shadow-2xl hover:shadow-[#E53A3A]/50 hover:scale-110 active:scale-95 transition-all duration-300 z-10 disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-sm opacity-40 hover:opacity-100"
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 md:translate-x-16 lg:translate-x-20 bg-transparent border-2 border-[#E53A3A] text-[#E53A3A] p-2 md:p-3 rounded-lg hover:bg-gradient-to-r hover:from-[#E53A3A] hover:to-[#D98C1F] hover:text-white hover:border-transparent hover:shadow-2xl hover:shadow-[#E53A3A]/50 hover:scale-110 active:scale-95 focus:bg-transparent focus:outline-none transition-[background,transform,shadow,opacity] duration-300 z-10 disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-sm opacity-40 hover:opacity-100"
                 aria-label="Next slide"
             >
                 <svg className="w-5 h-5 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
