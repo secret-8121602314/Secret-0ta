@@ -219,8 +219,10 @@ export class SupabaseService {
     try {
       // ✅ Verify session is active
       const { data: { session } } = await supabase.auth.getSession();
-            if (!session || session.user.id !== userId) {
+      if (!session || session.user.id !== userId) {
         console.error('❌ [Supabase] Session mismatch! RLS will block reads. Session:', session?.user?.id, 'vs userId:', userId);
+        console.error('❌ [Supabase] Cannot create conversation without valid session - aborting to prevent RLS violation');
+        return null;
       }
       
       // ✅ FIX: Use auth_user_id directly instead of RPC function

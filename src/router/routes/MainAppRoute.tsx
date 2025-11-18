@@ -95,21 +95,26 @@ const MainAppRoute: React.FC = () => {
         hasPendingRequests={false}
         showProfileSetupBanner={!user?.hasProfileSetup}
         onProfileSetupComplete={async (profileData) => {
-                    // Save profile data and mark setup as complete
+          // Save profile data and mark setup as complete
+          const { onboardingService } = await import('../../services/onboardingService');
           const { authService } = await import('../../services/authService');
-          await authService.updateUser({ 
-            has_profile_setup: true,
-            profile_data: profileData
-          });
-          // Refresh to show updated state
-          window.location.reload();
+          
+          if (user?.authUserId) {
+            await onboardingService.markProfileSetupComplete(user.authUserId, profileData);
+            // Refresh user data without full page reload
+            await authService.refreshUser();
+          }
         }}
         onProfileSetupDismiss={async () => {
-                    // Mark as dismissed in database (without saving profile data)
+          // Mark as dismissed in database (without saving profile data)
+          const { onboardingService } = await import('../../services/onboardingService');
           const { authService } = await import('../../services/authService');
-          await authService.updateUser({ has_profile_setup: true });
-          // Force re-render without full page reload
-          window.location.reload();
+          
+          if (user?.authUserId) {
+            await onboardingService.markProfileSetupComplete(user.authUserId, {});
+            // Refresh user data without full page reload
+            await authService.refreshUser();
+          }
         }}
       />
       {/* Footer modals controlled by URL params */}
