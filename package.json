@@ -24,6 +24,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "generate-icons": "node scripts/generate-icons.js",
+    "generate-manifest": "node scripts/generate-manifest.js",
+    "prebuild": "npm run generate-manifest",
     "build": "vite build && node scripts/fix-base-paths.js && node scripts/copy-public-assets.js",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
@@ -63,6 +66,7 @@
     "firebase-tools": "^13.0.0",
     "gh-pages": "^6.3.0",
     "postcss": "^8.5.6",
+    "sharp": "^0.34.5",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.6.2",
     "vite": "^6.0.1"
