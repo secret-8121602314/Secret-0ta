@@ -112,8 +112,7 @@
     }
     </script>
     
-    <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/manifest.json" />
+    <!-- PWA Meta Tags - Manifest loaded dynamically on /earlyaccess or when authenticated -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -143,6 +142,23 @@
   <body>
     <div id="root"></div>
     <script>
+      // Conditionally load PWA manifest - only on /earlyaccess or when authenticated
+      (function() {
+        const currentPath = window.location.pathname;
+        const isLoginPage = currentPath === '/earlyaccess' || currentPath.includes('/earlyaccess');
+        const hasAuthToken = localStorage.getItem('supabase.auth.token');
+        
+        if (isLoginPage || hasAuthToken) {
+          console.log('✅ [PWA] Loading manifest - login page or authenticated');
+          const manifestLink = document.createElement('link');
+          manifestLink.rel = 'manifest';
+          manifestLink.href = '/manifest.json';
+          document.head.appendChild(manifestLink);
+        } else {
+          console.log('🚫 [PWA] Skipping manifest - landing page without auth');
+        }
+      })();
+      
       // GitHub Pages OAuth callback handler
       (function() {
         // Check if this is an OAuth callback redirect from 404.html
