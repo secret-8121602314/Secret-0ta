@@ -158,9 +158,28 @@
     <script type="module" src="/src/main.tsx?v=20251116024900"></script>
     <script>
       // Service Worker Registration for both Dev and Production
-      // VERSION: 1.3.3 - Custom Domain Fix
+      // VERSION: 1.3.4 - Conditional PWA Registration (only on login/app, not landing)
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', async () => {
+          // Check if user should see PWA install option
+          const isLandingPage = !localStorage.getItem('supabase.auth.token') && 
+                                window.location.pathname === '/';
+          
+          if (isLandingPage) {
+            console.log('🚫 [SW] Skipping service worker registration on landing page');
+            // Unregister any existing service workers on landing page
+            try {
+              const registrations = await navigator.serviceWorker.getRegistrations();
+              for (const registration of registrations) {
+                await registration.unregister();
+                console.log('Unregistered SW on landing page');
+              }
+            } catch (error) {
+              console.log('Error unregistering SW:', error);
+            }
+            return;
+          }
+          
           const isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
           const swPath = '/sw.js'; // Always use root path for custom domain
           
@@ -189,6 +208,7 @@
             console.log('Error cleaning up old SW:', error);
           }
           
+          console.log('✅ [SW] Registering service worker (login/app page)');
           // Register new service worker
           navigator.serviceWorker.register(swPath)
             .then((registration) => {

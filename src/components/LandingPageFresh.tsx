@@ -538,6 +538,20 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Only run once on mount to check initial URL
 
+    // Prevent PWA install prompt on landing page
+    useEffect(() => {
+        const preventInstallPrompt = (e: Event) => {
+            e.preventDefault();
+            console.log('🚫 [Landing Page] Prevented PWA install prompt - only show on login/app');
+        };
+        
+        window.addEventListener('beforeinstallprompt', preventInstallPrompt);
+        
+        return () => {
+            window.removeEventListener('beforeinstallprompt', preventInstallPrompt);
+        };
+    }, []);
+
     // Parallax scroll effect
     useEffect(() => {
         const handleScroll = () => {
