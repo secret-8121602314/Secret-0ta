@@ -16,6 +16,7 @@ import feature3 from '../assets/images/feature-images/feature3.png';
 import feature4 from '../assets/images/feature-images/feature4.png';
 import feature5 from '../assets/images/feature-images/feature5.png';
 import feature6 from '../assets/images/feature-images/feature6.png';
+import geminiLogo from '../assets/images/landing/google.png';
 import pcAppImage from '../assets/images/landing/PC app.png';
 
 const GamepadIcon = ({ className }: { className?: string }) => (
@@ -112,30 +113,54 @@ const FeatureIcon = ({ icon }: { icon: 'eye' | 'bookmark' | 'network' | 'mic' | 
     );
 };
 
-const Feature = React.memo(({ title, description, icon, image }: { title: React.ReactNode, description: string, icon?: 'eye' | 'bookmark' | 'network' | 'mic' | 'insights' | 'cpu', image?: string }) => {
+const Feature = React.memo(({ title, description, icon, image, isGemini }: { title: React.ReactNode, description: string, icon?: 'eye' | 'bookmark' | 'network' | 'mic' | 'insights' | 'cpu', image?: string, isGemini?: boolean }) => {
         return (
         <div className="flex flex-col items-center text-center group p-6 rounded-2xl md:hover:bg-gradient-to-br md:hover:from-neutral-800/20 md:hover:to-neutral-900/20 transition-all duration-500">
-            <div className="w-full max-w-4xl aspect-video mb-6 animate-fade-slide-up md:group-hover:scale-105 transition-transform duration-500">
+            <div className={`w-full max-w-4xl aspect-video mb-6 animate-fade-slide-up md:group-hover:scale-105 transition-transform duration-500 ${isGemini ? 'bg-transparent flex items-center justify-center' : ''}`}>
                 {image ? (
-                    <img 
-                        src={image} 
-                        alt={typeof title === 'string' ? title : ''} 
-                        className="w-full h-full object-contain"
-                        loading="lazy"
-                        decoding="async"
-                        onError={(e) => {
-                            console.error('❌ Image failed to load:', image, e);
-                            console.error('❌ Image element:', e.target);
-                        }}
-                        onLoad={() => console.log('✅ Image loaded successfully:', image)}
-                        style={{ 
-                            display: 'block',
-                            imageRendering: 'crisp-edges',
-                            WebkitFontSmoothing: 'antialiased',
-                            backfaceVisibility: 'hidden',
-                            transform: 'translateZ(0)'
-                        }}
-                    />
+                    isGemini ? (
+                        <div className="w-[505px] h-[600px] flex items-center justify-center bg-transparent">
+                            <img 
+                                src={image} 
+                                alt={typeof title === 'string' ? title : ''} 
+                                className="w-1/2 h-1/2 object-contain"
+                                loading="lazy"
+                                decoding="async"
+                                onError={(e) => {
+                                    console.error('❌ Image failed to load:', image, e);
+                                    console.error('❌ Image element:', e.target);
+                                }}
+                                onLoad={() => console.log('✅ Image loaded successfully:', image)}
+                                style={{ 
+                                    display: 'block',
+                                    imageRendering: 'crisp-edges',
+                                    WebkitFontSmoothing: 'antialiased',
+                                    backfaceVisibility: 'hidden',
+                                    transform: 'translateZ(0)'
+                                }}
+                            />
+                        </div>
+                    ) : (
+                        <img 
+                            src={image} 
+                            alt={typeof title === 'string' ? title : ''} 
+                            className="w-full h-full object-contain"
+                            loading="lazy"
+                            decoding="async"
+                            onError={(e) => {
+                                console.error('❌ Image failed to load:', image, e);
+                                console.error('❌ Image element:', e.target);
+                            }}
+                            onLoad={() => console.log('✅ Image loaded successfully:', image)}
+                            style={{ 
+                                display: 'block',
+                                imageRendering: 'crisp-edges',
+                                WebkitFontSmoothing: 'antialiased',
+                                backfaceVisibility: 'hidden',
+                                transform: 'translateZ(0)'
+                            }}
+                        />
+                    )
                 ) : icon ? (
                     <FeatureIcon icon={icon} />
                 ) : null}
@@ -148,7 +173,7 @@ const Feature = React.memo(({ title, description, icon, image }: { title: React.
     );
 });
 
-const FeaturesCarousel = ({ features }: { features: Array<{ title: string; description: string; image: string }> }) => {
+const FeaturesCarousel = ({ features }: { features: Array<{ title: string; description: string; image: string; isGemini?: boolean }> }) => {
     const autoplayOptions = {
         delay: 5000,
         stopOnInteraction: true,
@@ -242,6 +267,7 @@ const FeaturesCarousel = ({ features }: { features: Array<{ title: string; descr
                                     title={feature.title}
                                     description={feature.description}
                                     image={feature.image}
+                                    isGemini={feature.isGemini}
                                 />
                             </div>
                         ))
@@ -259,6 +285,7 @@ const FeaturesCarousel = ({ features }: { features: Array<{ title: string; descr
                                             title={feature.title}
                                             description={feature.description}
                                             image={feature.image}
+                                            isGemini={feature.isGemini}
                                         />
                                     ))}
                                 </div>
@@ -823,6 +850,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                                     title: "Stay Focused, Stay Ahead",
                                     description: "Skip the wiki-hunting. Otagon provides quest tips, secret locations, build optimization—all without spoiling your discovery.",
                                     image: feature6
+                                },
+                                {
+                                    title: "Powered by Google Gemini",
+                                    description: "Experience cutting-edge AI assistance powered by Google's advanced Gemini technology for accurate, context-aware gaming help.",
+                                    image: geminiLogo,
+                                    isGemini: true,
                                 }
                             ]}
                         />
