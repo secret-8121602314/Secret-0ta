@@ -144,18 +144,9 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '' }) =
     setDeferredPrompt(null);
   };
   
-  // If already installed, show a simple "Already Installed" message
+  // If already installed, don't show the banner at all
   if (isInstalled) {
-    return (
-      <div className={`bg-gradient-to-r from-green-900/30 to-green-800/30 backdrop-blur-xl border border-green-700/60 rounded-lg md:rounded-xl p-2.5 md:p-3 text-center ${className}`}>
-        <div className="flex items-center justify-center gap-2">
-          <svg className="w-4 h-4 md:w-5 md:h-5 text-green-400" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
-          </svg>
-          <p className="text-xs md:text-sm font-medium text-green-300">App Installed</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (

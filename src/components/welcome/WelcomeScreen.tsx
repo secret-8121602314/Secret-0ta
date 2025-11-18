@@ -18,28 +18,28 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStartChat, onAddGame: _
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4">
       {/* Modal Container */}
-      <div className="relative w-full max-w-5xl max-h-[90vh] bg-background rounded-2xl shadow-2xl border border-transparent bg-clip-padding flex flex-col overflow-hidden" style={{ backgroundImage: 'linear-gradient(#1a1a1a, #1a1a1a), linear-gradient(135deg, #FF4D4D, #FFAB40)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box' }}>
+      <div className="relative w-full max-w-5xl h-[95vh] sm:max-h-[90vh] bg-background rounded-xl sm:rounded-2xl shadow-2xl border border-transparent bg-clip-padding flex flex-col overflow-hidden" style={{ backgroundImage: 'linear-gradient(#1a1a1a, #1a1a1a), linear-gradient(135deg, #FF4D4D, #FFAB40)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box' }}>
         {/* Close Button */}
         <button
           onClick={onStartChat}
-          className="absolute top-4 right-4 z-10 p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+          className="absolute top-2 right-2 sm:top-4 sm:right-4 z-10 p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
           aria-label="Close guide"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
 
         {/* Tabs */}
-        <div className="flex-shrink-0 border-b border-gray-700 px-3 sm:px-6 pt-6">
-          <div className="flex justify-center gap-2 sm:gap-3 overflow-x-auto pr-12">
+        <div className="flex-shrink-0 border-b border-gray-700 px-2 sm:px-3 md:px-6 pt-3 sm:pt-6">
+          <div className="flex justify-start sm:justify-center gap-1 sm:gap-2 md:gap-3 overflow-x-auto pr-8 sm:pr-12 pb-0 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center justify-center px-4 sm:px-6 py-3 min-h-[48px] text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-200 border-b-2 flex-shrink-0 ${
+                className={`flex items-center justify-center px-2.5 sm:px-4 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-[10px] sm:text-xs md:text-sm font-medium whitespace-nowrap transition-all duration-200 border-b-2 flex-shrink-0 ${
                   activeTab === tab.id
                     ? 'border-[#FF4D4D] text-white bg-gradient-to-b from-[#FF4D4D]/10 to-transparent'
                     : 'border-transparent text-gray-400 hover:text-white hover:bg-gray-700/50'
@@ -52,7 +52,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStartChat, onAddGame: _
         </div>
 
         {/* Content Area - Scrollable */}
-        <div className="flex-1 overflow-y-auto px-6 py-6 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 md:py-6 custom-scrollbar">
           <div className="max-w-4xl mx-auto">
             {activeTab === 'overview' && <OverviewTab />}
             {activeTab === 'features' && <FeaturesTab />}
@@ -62,16 +62,16 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStartChat, onAddGame: _
         </div>
 
         {/* CTA Buttons - Fixed at bottom */}
-        <div className="flex-shrink-0 py-3 sm:py-4 px-3 sm:px-6 border-t border-gray-700 bg-background">
+        <div className="flex-shrink-0 py-2 sm:py-3 md:py-4 px-3 sm:px-4 md:px-6 border-t border-gray-700 bg-background">
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center justify-center">
             {/* Close Guide Button */}
             <button
               onClick={onStartChat}
-              className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] md:hover:from-[#D42A2A] md:hover:to-[#C87A1A] rounded-lg shadow-lg md:hover:shadow-xl transition-all duration-200 md:hover:scale-105 active:scale-95"
+              className="inline-flex items-center justify-center gap-2 px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] md:hover:from-[#D42A2A] md:hover:to-[#C87A1A] rounded-lg shadow-lg md:hover:shadow-xl transition-all duration-200 md:hover:scale-105 active:scale-95 min-h-[44px]"
             >
               <span>Got It!</span>
               <svg 
-                className="w-5 h-5 flex-shrink-0" 
+                className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" 
                 fill="none" 
                 stroke="currentColor" 
                 viewBox="0 0 24 24"

@@ -15,7 +15,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose, 
   user
 }) => {
-  const [activeTab, setActiveTab] = useState<'account' | 'tier' | 'preferences' | 'profile'>('account');
+  const [activeTab, setActiveTab] = useState<'account' | 'tier' | 'profile'>('account');
   
   // Profile preferences state (from ProfileSetupBanner)
   const [hintStyle, setHintStyle] = useState(user?.profileData?.hintStyle || 'Balanced');
@@ -102,16 +102,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             <span className="sm:hidden">Tier</span>
           </button>
           <button
-            onClick={() => setActiveTab('preferences')}
-            className={`flex-shrink-0 py-2.5 px-3 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-colors active:scale-95 whitespace-nowrap min-w-[80px] sm:min-w-0 sm:flex-1 ${
-              activeTab === 'preferences'
-                ? 'bg-primary text-white'
-                : 'text-text-muted hover:text-text-primary'
-            }`}
-          >
-            Preferences
-          </button>
-          <button
             onClick={() => setActiveTab('profile')}
             className={`flex-shrink-0 py-2.5 px-3 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-colors active:scale-95 whitespace-nowrap min-w-[80px] sm:min-w-0 sm:flex-1 ${
               activeTab === 'profile'
@@ -150,6 +140,36 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
             </div>
 
+            {/* Notifications Section */}
+            <div className="bg-surface/50 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-text-primary mb-4">Notifications</h3>
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="text-text-primary font-medium">Push Notifications</div>
+                    <div className="text-sm text-text-secondary">Receive app notifications</div>
+                  </div>
+                  <button 
+                    onClick={async () => {
+                      if ('Notification' in window) {
+                        const permission = await Notification.requestPermission();
+                        if (permission === 'granted') {
+                          new Notification('Otagon', {
+                            body: 'Notifications enabled!',
+                            icon: '/images/pwa-icon.png'
+                          });
+                        }
+                      }
+                    }}
+                    className="px-4 py-2 bg-primary hover:bg-primary-light text-white rounded-lg text-sm transition-colors"
+                  >
+                    {typeof Notification !== 'undefined' && Notification.permission === 'granted' ? 'Enabled' : 'Enable'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
           </div>
         )}
 
@@ -157,18 +177,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         {activeTab === 'tier' && (
           <div className="space-y-4">
             {/* Trial Banner */}
-            <TrialBanner
-              userTier={user.tier}
-              onTrialStart={handleTrialStart}
-            />
+            <div className="overflow-x-auto">
+              <TrialBanner
+                userTier={user.tier}
+                onTrialStart={handleTrialStart}
+              />
+            </div>
             
-            <div className="bg-surface/50 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-text-primary mb-4">Monthly Query Usage</h3>
+            <div className="bg-surface/50 rounded-lg p-3 sm:p-4">
+              <h3 className="text-base sm:text-lg font-semibold text-text-primary mb-3 sm:mb-4">Monthly Query Usage</h3>
               
-              <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
                 <div>
-                  <div className="text-sm text-text-secondary mb-2">Text Queries</div>
-                  <div className="text-2xl font-bold text-text-primary">
+                  <div className="text-xs sm:text-sm text-text-secondary mb-2">Text Queries</div>
+                  <div className="text-xl sm:text-2xl font-bold text-text-primary">
                     {user.usage.textCount} / {user.usage.textLimit}
                   </div>
                   <div className="w-full bg-surface-light/20 rounded-full h-2 mt-2">
@@ -182,8 +204,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
                 
                 <div>
-                  <div className="text-sm text-text-secondary mb-2">Image Queries</div>
-                  <div className="text-2xl font-bold text-text-primary">
+                  <div className="text-xs sm:text-sm text-text-secondary mb-2">Image Queries</div>
+                  <div className="text-xl sm:text-2xl font-bold text-text-primary">
                     {user.usage.imageCount} / {user.usage.imageLimit}
                   </div>
                   <div className="w-full bg-surface-light/20 rounded-full h-2 mt-2">
@@ -198,10 +220,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
               
               {/* Reset Date Info */}
-              <div className="text-sm text-text-secondary text-center pt-3 border-t border-surface-light/20">
+              <div className="text-xs sm:text-sm text-text-secondary text-center pt-3 border-t border-surface-light/20">
                 Usage resets on the 1st of each month
                 {user.tier === 'free' && (
-                  <div className="mt-2 text-primary font-medium">
+                  <div className="mt-2 text-primary font-medium text-xs sm:text-sm">
                     ⭐ Upgrade to Pro for 1,583 text + 328 image queries!
                   </div>
                 )}
@@ -211,66 +233,25 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
         )}
 
-        {/* Preferences Tab */}
-        {activeTab === 'preferences' && (
-          <div className="space-y-4">
-            <div className="bg-surface/50 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-text-primary mb-4">App Preferences</h3>
-              
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-text-primary font-medium">Dark Mode</div>
-                    <div className="text-sm text-text-secondary">Use dark theme</div>
-                  </div>
-                  <div className="w-12 h-6 bg-primary rounded-full relative">
-                    <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5" />
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-text-primary font-medium">Notifications</div>
-                    <div className="text-sm text-text-secondary">Receive app notifications</div>
-                  </div>
-                  <div className="w-12 h-6 bg-surface-light/30 rounded-full relative">
-                    <div className="w-5 h-5 bg-white rounded-full absolute left-0.5 top-0.5" />
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-text-primary font-medium">Auto-save Conversations</div>
-                    <div className="text-sm text-text-secondary">Automatically save chat history</div>
-                  </div>
-                  <div className="w-12 h-6 bg-primary rounded-full relative">
-                    <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Profile Tab */}
         {activeTab === 'profile' && (
           <div className="space-y-4">
-            <div className="bg-surface/50 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-text-primary mb-4">Player Profile</h3>
-              <p className="text-sm text-text-secondary mb-6">
+            <div className="bg-surface/50 rounded-lg p-3 sm:p-4">
+              <h3 className="text-base sm:text-lg font-semibold text-text-primary mb-3 sm:mb-4">Player Profile</h3>
+              <p className="text-xs sm:text-sm text-text-secondary mb-4 sm:mb-6">
                 Customize how Otagon responds to you. These preferences will affect AI responses across all your game tabs.
               </p>
               
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* Hint Style */}
                 <div>
-                  <label className="text-sm font-medium text-text-primary mb-2 block">
+                  <label className="text-xs sm:text-sm font-medium text-text-primary mb-2 block">
                     How do you like your hints?
                   </label>
-                  <p className="text-xs text-text-secondary mb-3">
+                  <p className="text-xs text-text-secondary mb-2 sm:mb-3">
                     Choose how direct or subtle you want guidance to be
                   </p>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                     {[
                       { value: 'Cryptic', label: '🔮 Cryptic' },
                       { value: 'Balanced', label: '⚖️ Balanced' },
@@ -279,7 +260,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                       <button
                         key={option.value}
                         onClick={() => setHintStyle(option.value as typeof hintStyle)}
-                        className={`py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                        className={`py-2 px-2 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                           hintStyle === option.value
                             ? 'bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white'
                             : 'bg-surface/50 text-text-secondary hover:bg-surface hover:text-text-primary'
@@ -293,13 +274,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
                 {/* Player Focus (from banner) */}
                 <div>
-                  <label className="text-sm font-medium text-text-primary mb-2 block">
+                  <label className="text-xs sm:text-sm font-medium text-text-primary mb-2 block">
                     What's your gaming focus?
                   </label>
-                  <p className="text-xs text-text-secondary mb-3">
+                  <p className="text-xs text-text-secondary mb-2 sm:mb-3">
                     What type of gamer are you?
                   </p>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                     {[
                       { value: 'Story-Driven', label: '📖 Story' },
                       { value: 'Completionist', label: '💯 Complete' },
@@ -308,7 +289,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                       <button
                         key={option.value}
                         onClick={() => setPlayerFocus(option.value as typeof playerFocus)}
-                        className={`py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                        className={`py-2 px-2 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                           playerFocus === option.value
                             ? 'bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white'
                             : 'bg-surface/50 text-text-secondary hover:bg-surface hover:text-text-primary'
@@ -322,13 +303,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
                 {/* Preferred Tone */}
                 <div>
-                  <label className="text-sm font-medium text-text-primary mb-2 block">
+                  <label className="text-xs sm:text-sm font-medium text-text-primary mb-2 block">
                     Preferred tone?
                   </label>
-                  <p className="text-xs text-text-secondary mb-3">
+                  <p className="text-xs text-text-secondary mb-2 sm:mb-3">
                     How should Otagon communicate with you?
                   </p>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                     {[
                       { value: 'Encouraging', label: '💪 Encouraging' },
                       { value: 'Professional', label: '💼 Professional' },
@@ -337,7 +318,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                       <button
                         key={option.value}
                         onClick={() => setPreferredTone(option.value as typeof preferredTone)}
-                        className={`py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                        className={`py-2 px-2 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                           preferredTone === option.value
                             ? 'bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white'
                             : 'bg-surface/50 text-text-secondary hover:bg-surface hover:text-text-primary'
@@ -351,13 +332,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
                 {/* Spoiler Tolerance */}
                 <div>
-                  <label className="text-sm font-medium text-text-primary mb-2 block">
+                  <label className="text-xs sm:text-sm font-medium text-text-primary mb-2 block">
                     Spoiler protection?
                   </label>
-                  <p className="text-xs text-text-secondary mb-3">
+                  <p className="text-xs text-text-secondary mb-2 sm:mb-3">
                     How careful should Otagon be about revealing story details?
                   </p>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                     {[
                       { value: 'Strict', label: '🔒 Strict' },
                       { value: 'Moderate', label: '🔓 Moderate' },
@@ -366,7 +347,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                       <button
                         key={option.value}
                         onClick={() => setSpoilerTolerance(option.value as typeof spoilerTolerance)}
-                        className={`py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                        className={`py-2 px-2 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                           spoilerTolerance === option.value
                             ? 'bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white'
                             : 'bg-surface/50 text-text-secondary hover:bg-surface hover:text-text-primary'
@@ -378,24 +359,24 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
                 </div>
 
-                <div className="border-t border-surface-light/20 pt-6">
-                  <h4 className="text-base font-semibold text-text-primary mb-4">Additional Preferences</h4>
+                <div className="border-t border-surface-light/20 pt-4 sm:pt-6">
+                  <h4 className="text-sm sm:text-base font-semibold text-text-primary mb-3 sm:mb-4">Additional Preferences</h4>
                 </div>
 
                 {/* Gaming Style */}
                 <div>
-                  <label className="text-sm font-medium text-text-primary mb-2 block">
+                  <label className="text-xs sm:text-sm font-medium text-text-primary mb-2 block">
                     Gaming Style
                   </label>
-                  <p className="text-xs text-text-secondary mb-3">
+                  <p className="text-xs text-text-secondary mb-2 sm:mb-3">
                     What aspect of gaming do you focus on most?
                   </p>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
                     {['story', 'combat', 'exploration', 'completion', 'balanced'].map((focus) => (
                       <button
                         key={focus}
                         onClick={() => setGamingStyle(focus)}
-                        className={`py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                        className={`py-2 px-2 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                           gamingStyle === focus
                             ? 'bg-primary text-white'
                             : 'bg-surface/50 text-text-secondary hover:bg-surface hover:text-text-primary'
@@ -409,18 +390,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
                 {/* Experience Level */}
                 <div>
-                  <label className="text-sm font-medium text-text-primary mb-2 block">
+                  <label className="text-xs sm:text-sm font-medium text-text-primary mb-2 block">
                     Experience Level
                   </label>
-                  <p className="text-xs text-text-secondary mb-3">
+                  <p className="text-xs text-text-secondary mb-2 sm:mb-3">
                     How experienced are you with games?
                   </p>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                     {['beginner', 'intermediate', 'veteran'].map((level) => (
                       <button
                         key={level}
                         onClick={() => setExperienceLevel(level)}
-                        className={`py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                        className={`py-2 px-2 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                           experienceLevel === level
                             ? 'bg-primary text-white'
                             : 'bg-surface/50 text-text-secondary hover:bg-surface hover:text-text-primary'
@@ -434,18 +415,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
                 {/* Content Style */}
                 <div>
-                  <label className="text-sm font-medium text-text-primary mb-2 block">
+                  <label className="text-xs sm:text-sm font-medium text-text-primary mb-2 block">
                     Preferred Content Style
                   </label>
-                  <p className="text-xs text-text-secondary mb-3">
+                  <p className="text-xs text-text-secondary mb-2 sm:mb-3">
                     How detailed do you want responses to be?
                   </p>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                     {['concise', 'detailed', 'comprehensive'].map((style) => (
                       <button
                         key={style}
                         onClick={() => setPreferredContentStyle(style)}
-                        className={`py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                        className={`py-2 px-2 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                           preferredContentStyle === style
                             ? 'bg-primary text-white'
                             : 'bg-surface/50 text-text-secondary hover:bg-surface hover:text-text-primary'
@@ -481,7 +462,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     // Show success message (you can add a toast notification here)
                                         onClose();
                   }}
-                  className="w-full py-3 px-4 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] md:hover:from-[#D42A2A] md:hover:to-[#C87A1A] text-white rounded-lg font-medium transition-all md:hover:scale-105 active:scale-95"
+                  className="w-full py-2.5 sm:py-3 px-4 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] md:hover:from-[#D42A2A] md:hover:to-[#C87A1A] text-white rounded-lg font-medium transition-all md:hover:scale-105 active:scale-95 text-sm sm:text-base"
                 >
                   Save Profile Preferences
                 </button>

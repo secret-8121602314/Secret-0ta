@@ -335,7 +335,7 @@ function App() {
     
     setAppState((prev: AppState) => ({
       ...prev,
-      view: 'app', // Set to app view so landing page check doesn't trigger
+      view: 'landing', // Navigate to landing page after logout
       onboardingStatus: 'login' // This will show login screen
     }));
     setAuthState({ user: null, isLoading: false, error: null });

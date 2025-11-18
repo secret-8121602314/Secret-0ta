@@ -7,6 +7,50 @@ import { ChatMessage, Conversations } from '../types';
  * Handles atomic message migration between tabs to prevent race conditions
  */
 export class MessageRoutingService {
+  // Active migration locks to prevent concurrent migrations
+  private static activeMigrations = new Set<string>();
+  private static readonly LOCK_TIMEOUT = 10000; // 10 seconds
+  /**
+   * Acquire a migration lock to prevent concurrent operations
+   * Returns true if lock was acquired, false if already locked
+   */
+  private static async acquireMigrationLock(fromId: string, toId: string): Promise<boolean> {
+    // Sort IDs to prevent deadlocks (AB vs BA)
+    const lockKey = [fromId, toId].sort().join('|');
+    
+    if (this.activeMigrations.has(lockKey)) {
+      console.warn('🔒 [MessageRouting] Migration already in progress:', lockKey);
+      return false;
+    }
+    
+    this.activeMigrations.add(lockKey);
+    
+    // Auto-release after timeout to prevent permanent locks
+    setTimeout(() => {
+      this.activeMigrations.delete(lockKey);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔓 [MessageRouting] Lock auto-released after timeout:', lockKey);
+      }
+    }, this.LOCK_TIMEOUT);
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔒 [MessageRouting] Lock acquired:', lockKey);
+    }
+    
+    return true;
+  }
+
+  /**
+   * Release a migration lock
+   */
+  private static releaseMigrationLock(fromId: string, toId: string): void {
+    const lockKey = [fromId, toId].sort().join('|');
+    this.activeMigrations.delete(lockKey);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔓 [MessageRouting] Lock released:', lockKey);
+    }
+  }
+
   /**
    * Atomically migrate messages from one conversation to another
    * This prevents race conditions by doing all operations in a single transaction
@@ -16,6 +60,14 @@ export class MessageRoutingService {
     fromConversationId: string,
     toConversationId: string
   ): Promise<void> {
+    // Acquire lock to prevent concurrent migrations
+    const lockAcquired = await this.acquireMigrationLock(fromConversationId, toConversationId);
+    if (!lockAcquired) {
+      console.warn('⚠️ [MessageRouting] Skipping migration - another migration in progress');
+      return;
+    }
+
+    try {
     if (process.env.NODE_ENV === 'development') {
           }
 
@@ -74,6 +126,10 @@ export class MessageRoutingService {
     
     if (process.env.NODE_ENV === 'development') {
           }
+    } finally {
+      // Always release lock, even if migration fails
+      this.releaseMigrationLock(fromConversationId, toConversationId);
+    }
   }
 
   /**
