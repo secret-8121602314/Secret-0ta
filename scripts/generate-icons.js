@@ -4,6 +4,9 @@
  * Run: node scripts/generate-icons.js
  */
 
+/* eslint-disable no-console */
+/* eslint-disable no-undef */
+
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -26,7 +29,7 @@ async function resizeImage(inputPath, outputPath, size, isMaskable = false) {
     let sharp;
     try {
       sharp = (await import('sharp')).default;
-    } catch (e) {
+    } catch {
       console.warn('⚠️  Sharp not installed. Install with: npm install sharp --save-dev');
       console.log('   Using fallback method (copy only)...');
       
@@ -59,11 +62,21 @@ async function resizeImage(inputPath, outputPath, size, isMaskable = false) {
         .png()
         .toFile(outputPath);
     } else {
-      // Standard icon - simple resize
+      // Standard icon - zoom out 3x (logo at 33% size) with background
+      const iconSize = Math.round(size / 3); // Logo at 1/3 size (zoomed out 3x)
+      const padding = Math.round((size - iconSize) / 2);
+      
       await sharp(inputPath)
-        .resize(size, size, {
+        .resize(iconSize, iconSize, {
           fit: 'contain',
-          background: { r: 17, g: 17, b: 17, alpha: 1 }
+          background: { r: 17, g: 17, b: 17, alpha: 1 } // #111111 background
+        })
+        .extend({
+          top: padding,
+          bottom: padding,
+          left: padding,
+          right: padding,
+          background: { r: 17, g: 17, b: 17, alpha: 1 } // #111111 background
         })
         .png()
         .toFile(outputPath);
