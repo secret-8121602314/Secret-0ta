@@ -340,12 +340,12 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
       
       <div className={`w-full max-w-md lg:max-w-lg xl:max-w-xl relative z-10 transition-all duration-500 ${isAnimating ? 'scale-105' : 'scale-100'} mx-auto`}>
         {/* Logo and Title */}
-        <div className="text-center mb-2.5 md:mb-4 lg:mb-6">
-          <Logo size="md" className="mx-auto mb-2 md:mb-3 lg:mb-4 w-12 h-12 md:w-16 md:h-16 lg:w-20 lg:h-20" spinOnce={true} />
-          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-1">
+        <div className="text-center mb-4 md:mb-5 lg:mb-6">
+          <Logo size="lg" className="mx-auto mb-3 md:mb-3 lg:mb-4 w-16 h-16 md:w-16 md:h-16 lg:w-20 lg:h-20" spinOnce={true} />
+          <h1 className="text-2xl md:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">
             Welcome to Otagon
           </h1>
-          <p className="text-xs md:text-sm lg:text-base text-text-secondary px-4">
+          <p className="text-sm md:text-sm lg:text-base text-text-secondary px-4">
             {emailMode === 'options' 
               ? 'Sign in to start your gaming adventure' 
               : emailMode === 'signin' 

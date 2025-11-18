@@ -33,6 +33,7 @@ import ProfileSetupBanner from './ui/ProfileSetupBanner';
 import GameProgressBar from './features/GameProgressBar';
 import ErrorBoundary from './ErrorBoundary';
 import WelcomeScreen from './welcome/WelcomeScreen';
+import PWAInstallBanner from './splash/PWAInstallBanner';
 import { connect, disconnect } from '../services/websocketService';
 import { validateScreenshotDataUrl, getDataUrlSizeMB } from '../utils/imageValidation';
 
@@ -2023,6 +2024,11 @@ const MainApp: React.FC<MainAppProps> = ({
 
         {/* Chat Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
+          {/* PWA Install Banner - Show if not installed */}
+          <div className="flex-shrink-0">
+            <PWAInstallBanner />
+          </div>
+
           {/* Profile Setup Banner - Show if user hasn't set up profile */}
           {showProfileSetupBanner && onProfileSetupComplete && onProfileSetupDismiss && (
             <div className="flex-shrink-0 pt-3 sm:pt-4 lg:pt-6">
