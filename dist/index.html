@@ -125,7 +125,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/icon-192.png" />
     <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png" />
     <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png" />
-    <script type="module" crossorigin src="/assets/index-BgDESiM8.js"></script>
+    <script type="module" crossorigin src="/assets/index-CcMJ0aLP.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/vendor-D9yvASRR.js">
     <link rel="modulepreload" crossorigin href="/assets/markdown-vendor-BLIOVSB8.js">
     <link rel="modulepreload" crossorigin href="/assets/react-vendor-ytDMyTZl.js">
@@ -148,14 +148,33 @@
         const isLoginPage = currentPath === '/earlyaccess' || currentPath.includes('/earlyaccess');
         const hasAuthToken = localStorage.getItem('supabase.auth.token');
         
-        if (isLoginPage || hasAuthToken) {
-          console.log('✅ [PWA] Loading manifest - login page or authenticated');
+        // Also check if we're showing login based on app state
+        const shouldShowPWA = isLoginPage || hasAuthToken;
+        
+        console.log('[PWA] Current path:', currentPath);
+        console.log('[PWA] Has auth token:', !!hasAuthToken);
+        console.log('[PWA] Should show PWA:', shouldShowPWA);
+        
+        if (shouldShowPWA) {
+          console.log('✅ [PWA] Loading manifest');
           const manifestLink = document.createElement('link');
           manifestLink.rel = 'manifest';
           manifestLink.href = '/manifest.json';
           document.head.appendChild(manifestLink);
         } else {
           console.log('🚫 [PWA] Skipping manifest - landing page without auth');
+          
+          // Check again after 1 second in case React router changes state
+          setTimeout(function() {
+            const updatedAuthToken = localStorage.getItem('supabase.auth.token');
+            if (updatedAuthToken && !document.querySelector('link[rel="manifest"]')) {
+              console.log('✅ [PWA] Loading manifest after state update');
+              const manifestLink = document.createElement('link');
+              manifestLink.rel = 'manifest';
+              manifestLink.href = '/manifest.json';
+              document.head.appendChild(manifestLink);
+            }
+          }, 1000);
         }
       })();
       

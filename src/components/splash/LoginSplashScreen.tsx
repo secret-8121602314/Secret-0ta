@@ -36,6 +36,17 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
   const [signupModalType, setSignupModalType] = useState<'success' | 'email-exists' | 'invalid-email'>('success');
   const [signupModalMessage, setSignupModalMessage] = useState('');
 
+  // Load PWA manifest when login screen mounts
+  useEffect(() => {
+    if (!document.querySelector('link[rel="manifest"]')) {
+      console.log('✅ [LoginScreen] Loading PWA manifest');
+      const manifestLink = document.createElement('link');
+      manifestLink.rel = 'manifest';
+      manifestLink.href = '/manifest.json';
+      document.head.appendChild(manifestLink);
+    }
+  }, []);
+
   // Validate password meets Supabase requirements
   const validatePassword = (password: string): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
