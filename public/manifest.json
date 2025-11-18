@@ -2,7 +2,7 @@
   "name": "Otagon AI - Your Gaming Companion",
   "short_name": "Otagon",
   "description": "Get spoiler-free gaming hints and help with AI-powered assistance",
-  "start_url": "/",
+  "start_url": "/earlyaccess",
   "scope": "/",
   "display": "standalone",
   "background_color": "#111111",
@@ -20,43 +20,43 @@
   ],
   "icons": [
     {
-      "src": "/icon-96.png",
+      "src": "/images/otagon-logo.png",
       "sizes": "96x96",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-128.png",
+      "src": "/images/otagon-logo.png",
       "sizes": "128x128",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-144.png",
+      "src": "/images/otagon-logo.png",
       "sizes": "144x144",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-192.png",
+      "src": "/images/otagon-logo.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-256.png",
+      "src": "/images/otagon-logo.png",
       "sizes": "256x256",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-384.png",
+      "src": "/images/otagon-logo.png",
       "sizes": "384x384",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/images/otagon-logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
@@ -70,7 +70,7 @@
       "url": "/?shortcut=new-chat",
       "icons": [
         {
-          "src": "/icon-192.png",
+          "src": "/images/otagon-logo.png",
           "sizes": "192x192",
           "type": "image/png",
           "purpose": "any maskable"
@@ -84,7 +84,7 @@
       "url": "/?shortcut=voice",
       "icons": [
         {
-          "src": "/icon-192.png",
+          "src": "/images/otagon-logo.png",
           "sizes": "192x192",
           "type": "image/png",
           "purpose": "any maskable"
@@ -98,7 +98,7 @@
       "url": "/?shortcut=settings",
       "icons": [
         {
-          "src": "/icon-192.png",
+          "src": "/images/otagon-logo.png",
           "sizes": "192x192",
           "type": "image/png",
           "purpose": "any maskable"

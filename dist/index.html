@@ -170,21 +170,22 @@
     </script>
     <script>
       // Service Worker Registration for both Dev and Production
-      // VERSION: 1.3.4 - Conditional PWA Registration (only on login/app, not landing)
+      // VERSION: 1.3.5 - PWA only on /earlyaccess and authenticated pages
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', async () => {
-          // Check if user should see PWA install option
-          const isLandingPage = !localStorage.getItem('supabase.auth.token') && 
-                                window.location.pathname === '/';
+          // Only register service worker on login page or when authenticated
+          const currentPath = window.location.pathname;
+          const isLoginPage = currentPath === '/earlyaccess' || currentPath.includes('/earlyaccess');
+          const hasAuthToken = localStorage.getItem('supabase.auth.token');
           
-          if (isLandingPage) {
-            console.log('🚫 [SW] Skipping service worker registration on landing page');
-            // Unregister any existing service workers on landing page
+          if (!isLoginPage && !hasAuthToken) {
+            console.log('🚫 [SW] Skipping service worker - not on login page or authenticated');
+            // Unregister any existing service workers
             try {
               const registrations = await navigator.serviceWorker.getRegistrations();
               for (const registration of registrations) {
                 await registration.unregister();
-                console.log('Unregistered SW on landing page');
+                console.log('Unregistered SW');
               }
             } catch (error) {
               console.log('Error unregistering SW:', error);

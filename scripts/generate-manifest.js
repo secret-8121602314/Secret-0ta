@@ -4,7 +4,9 @@
  * Run: node scripts/generate-manifest.js
  */
 
-import { readFileSync, writeFileSync, existsSync, readdirSync } from 'fs';
+/* eslint-disable no-console, no-undef */
+
+import { writeFileSync, existsSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -14,9 +16,6 @@ const __dirname = dirname(__filename);
 const PUBLIC_DIR = join(__dirname, '../public');
 const MANIFEST_PATH = join(PUBLIC_DIR, 'manifest.json');
 const IMAGES_DIR = join(PUBLIC_DIR, 'images');
-
-// Icon sizes available
-const ICON_SIZES = [96, 128, 144, 192, 256, 384, 512];
 
 /**
  * Find screenshot files in public/images directory
@@ -63,43 +62,57 @@ function findScreenshots() {
 }
 
 /**
- * Generate icon entries for manifest
+ * Generate icon entries using the logo directly
  */
 function generateIconEntries() {
-  const icons = [];
+  // Use the otagon-logo.png directly for all icon sizes
+  // The logo already has proper spacing and background
+  const logoPath = '/images/otagon-logo.png';
   
-  // Add icons with both "any" and "maskable" purpose (single entry per size)
-  // This reuses the same icon file with proper masking for all purposes
-  for (const size of ICON_SIZES) {
-    const iconPath = join(PUBLIC_DIR, `icon-${size}.png`);
-    if (existsSync(iconPath)) {
-      icons.push({
-        src: `/icon-${size}.png`,
-        sizes: `${size}x${size}`,
-        type: 'image/png',
-        purpose: 'any maskable'
-      });
+  const icons = [
+    {
+      src: logoPath,
+      sizes: '96x96',
+      type: 'image/png',
+      purpose: 'any maskable'
+    },
+    {
+      src: logoPath,
+      sizes: '128x128',
+      type: 'image/png',
+      purpose: 'any maskable'
+    },
+    {
+      src: logoPath,
+      sizes: '144x144',
+      type: 'image/png',
+      purpose: 'any maskable'
+    },
+    {
+      src: logoPath,
+      sizes: '192x192',
+      type: 'image/png',
+      purpose: 'any maskable'
+    },
+    {
+      src: logoPath,
+      sizes: '256x256',
+      type: 'image/png',
+      purpose: 'any maskable'
+    },
+    {
+      src: logoPath,
+      sizes: '384x384',
+      type: 'image/png',
+      purpose: 'any maskable'
+    },
+    {
+      src: logoPath,
+      sizes: '512x512',
+      type: 'image/png',
+      purpose: 'any maskable'
     }
-  }
-  
-  // Ensure we have at least the basic icons
-  if (icons.length === 0) {
-    console.warn('⚠️  No generated icons found. Using default 192 and 512.');
-    icons.push(
-      {
-        src: '/icon-192.png',
-        sizes: '192x192',
-        type: 'image/png',
-        purpose: 'any maskable'
-      },
-      {
-        src: '/icon-512.png',
-        sizes: '512x512',
-        type: 'image/png',
-        purpose: 'any maskable'
-      }
-    );
-  }
+  ];
   
   return icons;
 }
@@ -123,7 +136,7 @@ function generateManifest() {
     name: 'Otagon AI - Your Gaming Companion',
     short_name: 'Otagon',
     description: 'Get spoiler-free gaming hints and help with AI-powered assistance',
-    start_url: '/',
+    start_url: '/earlyaccess',
     scope: '/',
     display: 'standalone',
     background_color: '#111111',
