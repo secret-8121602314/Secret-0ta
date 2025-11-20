@@ -26,11 +26,8 @@ export class SubtabsService {
    * Get all subtabs for a conversation
    */
   async getSubtabs(conversationId: string): Promise<SubTab[]> {
-    if (FEATURE_FLAGS.USE_NORMALIZED_SUBTABS) {
-      return this.getSubtabsFromTable(conversationId);
-    } else {
-      return this.getSubtabsFromJsonb(conversationId);
-    }
+    // ✅ Production uses normalized subtabs table only
+    return this.getSubtabsFromTable(conversationId);
   }
 
   /**
@@ -40,21 +37,13 @@ export class SubtabsService {
    * to ensure backwards compatibility while normalized table is being adopted
    */
   async setSubtabs(conversationId: string, subtabs: SubTab[]): Promise<boolean> {
-    if (FEATURE_FLAGS.USE_NORMALIZED_SUBTABS) {
-      console.error(`🔄 [SubtabsService] Writing ${subtabs.length} subtabs to BOTH table AND JSONB for conversation:`, conversationId);
-      
-      // Write to normalized table
-      const tableSuccess = await this.setSubtabsInTable(conversationId, subtabs);
-      console.error(`  ✅ Table write:`, tableSuccess ? 'SUCCESS' : 'FAILED');
-      
-      // ALSO write to JSONB for backwards compatibility (UI still reads from here)
-      const jsonbSuccess = await this.setSubtabsInJsonb(conversationId, subtabs);
-      console.error(`  ✅ JSONB write:`, jsonbSuccess ? 'SUCCESS' : 'FAILED');
-      
-      return tableSuccess && jsonbSuccess;
-    } else {
-      return this.setSubtabsInJsonb(conversationId, subtabs);
-    }
+    // ✅ Production uses normalized subtabs table only (no JSONB column in conversations)
+    console.error(`🔄 [SubtabsService] Writing ${subtabs.length} subtabs to normalized table for conversation:`, conversationId);
+    
+    const tableSuccess = await this.setSubtabsInTable(conversationId, subtabs);
+    console.error(`  ✅ Table write:`, tableSuccess ? 'SUCCESS' : 'FAILED');
+    
+    return tableSuccess;
   }
 
   /**
@@ -79,17 +68,9 @@ export class SubtabsService {
             throw new Error('Subtabs cannot be created for unreleased games. This feature will be available once the game is released.');
     }
     
-    if (FEATURE_FLAGS.USE_NORMALIZED_SUBTABS) {
-      // Add to normalized table
-      const tableResult = await this.addSubtabToTable(conversationId, subtab);
-      
-      // ALSO add to JSONB for backwards compatibility
-      await this.addSubtabToJsonb(conversationId, subtab);
-      
-      return tableResult;
-    } else {
-      return this.addSubtabToJsonb(conversationId, subtab);
-    }
+    // ✅ Production uses normalized subtabs table only
+    const tableResult = await this.addSubtabToTable(conversationId, subtab);
+    return tableResult;
   }
 
   /**
@@ -102,28 +83,17 @@ export class SubtabsService {
     subtabId: string,
     updates: Partial<SubTab>
   ): Promise<boolean> {
-    if (FEATURE_FLAGS.USE_NORMALIZED_SUBTABS) {
-      // Update in normalized table
-      const tableSuccess = await this.updateSubtabInTable(subtabId, updates);
-      
-      // ALSO update in JSONB for backwards compatibility
-      const jsonbSuccess = await this.updateSubtabInJsonb(conversationId, subtabId, updates);
-      
-      return tableSuccess && jsonbSuccess;
-    } else {
-      return this.updateSubtabInJsonb(conversationId, subtabId, updates);
-    }
+    // ✅ Production uses normalized subtabs table only
+    const tableSuccess = await this.updateSubtabInTable(subtabId, updates);
+    return tableSuccess;
   }
 
   /**
    * Delete a subtab from a conversation
    */
   async deleteSubtab(conversationId: string, subtabId: string): Promise<boolean> {
-    if (FEATURE_FLAGS.USE_NORMALIZED_SUBTABS) {
-      return this.deleteSubtabFromTable(subtabId);
-    } else {
-      return this.deleteSubtabFromJsonb(conversationId, subtabId);
-    }
+    // ✅ Production uses normalized subtabs table only
+    return this.deleteSubtabFromTable(subtabId);
   }
 
   // ============================================================================
