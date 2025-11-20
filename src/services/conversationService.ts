@@ -458,21 +458,43 @@ export class ConversationService {
     // ✅ QUERY-BASED LIMITS: Message limits removed - unlimited messages per conversation
     // Query limits (text/image) are checked in aiService before sending to AI
     
+    console.error('📝 [ConversationService] addMessage called:', {
+      conversationId,
+      messageId: message.id,
+      role: message.role,
+      hasImage: !!message.imageUrl,
+      contentLength: message.content?.length
+    });
+    
     const conversations = await this.getConversations();
+    console.error('📝 [ConversationService] Current conversations:', Object.keys(conversations));
+    
     if (conversations[conversationId]) {
       const conversation = conversations[conversationId];
+      
+      console.error('📝 [ConversationService] Found conversation:', {
+        id: conversation.id,
+        currentMessageCount: conversation.messages?.length || 0,
+        existingMessages: conversation.messages?.map(m => ({ id: m.id, role: m.role }))
+      });
       
       // ✅ Check for duplicates to prevent race condition issues
       const exists = conversation.messages.some(m => m.id === message.id);
       if (exists) {
-                return { success: true, reason: 'Message already exists' };
+        console.error('⚠️ [ConversationService] Message already exists:', message.id);
+        return { success: true, reason: 'Message already exists' };
       }
       
       // Simply add the message - no limits
       conversation.messages.push(message);
       conversation.updatedAt = Date.now();
       
+      console.error('✅ [ConversationService] Message added to conversation, new count:', conversation.messages.length);
+      console.error('✅ [ConversationService] Updated messages:', conversation.messages.map(m => ({ id: m.id, role: m.role })));
+      
       await this.setConversations(conversations);
+      
+      console.error('✅ [ConversationService] Conversations saved to storage');
       
       // ✅ SCALABILITY: Save individual conversation to cache (non-blocking)
       chatMemoryService.saveConversation(conversation)
@@ -495,6 +517,7 @@ export class ConversationService {
       return { success: true };
     }
     
+    console.error('❌ [ConversationService] Conversation not found:', conversationId);
     return { success: false, reason: 'Conversation not found' };
   }
 

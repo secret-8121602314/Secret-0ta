@@ -60,6 +60,12 @@ export class MessageRoutingService {
     fromConversationId: string,
     toConversationId: string
   ): Promise<void> {
+    console.error('📦 [MessageRouting] Migration requested:', {
+      messageIds,
+      from: fromConversationId,
+      to: toConversationId
+    });
+    
     // Acquire lock to prevent concurrent migrations
     const lockAcquired = await this.acquireMigrationLock(fromConversationId, toConversationId);
     if (!lockAcquired) {
@@ -68,13 +74,14 @@ export class MessageRoutingService {
     }
 
     try {
-    if (process.env.NODE_ENV === 'development') {
-          }
+    console.error('📦 [MessageRouting] Lock acquired, starting migration');
 
     // ✅ FIX: Use cached data (in-memory) which has the most recent state
     // Including the newly created game tab AND the game-hub with its messages
     // skipCache=true was causing issues because game-hub might not be synced to Supabase yet
     const conversations = await ConversationService.getConversations(false); // Use cache
+    
+    console.error('📦 [MessageRouting] Loaded conversations:', Object.keys(conversations));
     
     const fromConv = conversations[fromConversationId];
     const toConv = conversations[toConversationId];
@@ -91,11 +98,17 @@ export class MessageRoutingService {
       throw new Error(`Destination conversation ${toConversationId} not found`);
     }
     
+    console.error('📦 [MessageRouting] Source messages:', fromConv.messages?.map(m => ({ id: m.id, role: m.role })));
+    console.error('📦 [MessageRouting] Destination messages before:', toConv.messages?.map(m => ({ id: m.id, role: m.role })));
+    
     // Get messages to move
     const messagesToMove = fromConv.messages.filter(m => messageIds.includes(m.id));
     
+    console.error('📦 [MessageRouting] Messages to move:', messagesToMove.map(m => ({ id: m.id, role: m.role })));
+    
     if (messagesToMove.length === 0) {
-            return;
+      console.error('📦 [MessageRouting] No messages found to migrate');
+      return;
     }
     
     // Check for duplicates in destination (prevent duplicate messages)
@@ -103,8 +116,7 @@ export class MessageRoutingService {
       !toConv.messages.some(existing => existing.id === msg.id)
     );
     
-    if (process.env.NODE_ENV === 'development') {
-          }
+    console.error('📦 [MessageRouting] Messages to add (after duplicate check):', messagesToAdd.map(m => ({ id: m.id, role: m.role })));
     
     // ATOMIC UPDATE: Modify both conversations in a single object
     const updatedConversations: Conversations = {
@@ -121,11 +133,13 @@ export class MessageRoutingService {
       }
     };
     
+    console.error('📦 [MessageRouting] Updated source messages:', updatedConversations[fromConversationId].messages?.map(m => ({ id: m.id, role: m.role })));
+    console.error('📦 [MessageRouting] Updated destination messages:', updatedConversations[toConversationId].messages?.map(m => ({ id: m.id, role: m.role })));
+    
     // Single write operation
     await ConversationService.setConversations(updatedConversations);
     
-    if (process.env.NODE_ENV === 'development') {
-          }
+    console.error('✅ [MessageRouting] Migration complete, conversations saved');
     } finally {
       // Always release lock, even if migration fails
       this.releaseMigrationLock(fromConversationId, toConversationId);

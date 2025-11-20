@@ -207,7 +207,9 @@ export class SupabaseService {
   
   private mapConversations(data: Array<Record<string, unknown>>): Conversation[] {
     // 🔍 DEBUG: Log what we're getting from Supabase
-    if (process.env.NODE_ENV === 'development' && data.length > 0) {
+    console.error('🔍 [Supabase] mapConversations called with', data.length, 'conversations');
+    
+    if (data.length > 0) {
       const sample = data[0];
       const messages = sample.messages as import('../types').ChatMessage[];
       const subtabs = sample.subtabs as import('../types').SubTab[];
@@ -217,39 +219,50 @@ export class SupabaseService {
         messageCount: Array.isArray(messages) ? messages.length : 0,
         hasMessagesField: 'messages' in sample,
         messagesType: typeof messages,
+        messagesIsNull: messages === null,
+        messagesIsUndefined: messages === undefined,
         subtabCount: Array.isArray(subtabs) ? subtabs.length : 0,
-        messagesRaw: messages // 🔍 Let's see the actual data
+        messagesRaw: messages, // 🔍 Let's see the actual data
+        firstMessage: Array.isArray(messages) && messages.length > 0 ? messages[0] : null
       });
     }
 
     return data.map(conv => {
       // Handle messages from the join
       const messages = conv.messages;
+      
+      console.error('🔍 [Supabase] Processing conversation:', {
+        id: conv.id,
+        title: conv.title,
+        rawMessages: messages,
+        hasMessages: !!messages,
+        isArray: Array.isArray(messages),
+        isNull: messages === null,
+        isUndefined: messages === undefined,
+        messagesType: typeof messages,
+        messagesLength: Array.isArray(messages) ? messages.length : 'N/A'
+      });
+      
       const processedMessages = Array.isArray(messages) 
-        ? messages.map((msg: any) => ({
-            id: msg.id,
-            role: msg.role as 'user' | 'assistant' | 'system',
-            content: msg.content,
-            timestamp: safeParseDate(msg.created_at),
-            imageUrl: safeString(msg.image_url, undefined),
-            metadata: typeof msg.metadata === 'object' && msg.metadata !== null ? msg.metadata as Record<string, unknown> : undefined,
-          }))
+        ? messages.map((msg: any) => {
+            const processed = {
+              id: msg.id,
+              role: msg.role as 'user' | 'assistant' | 'system',
+              content: msg.content,
+              timestamp: safeParseDate(msg.created_at),
+              imageUrl: safeString(msg.image_url, undefined),
+              metadata: typeof msg.metadata === 'object' && msg.metadata !== null ? msg.metadata as Record<string, unknown> : undefined,
+            };
+            console.error('🔍 [Supabase] Processed message:', { id: processed.id, role: processed.role, contentLength: processed.content?.length });
+            return processed;
+          })
         : [];
+      
+      console.error('🔍 [Supabase] Final processed messages for', conv.id, ':', processedMessages.length);
       
       // Handle subtabs from the join
       const subtabs = conv.subtabs;
       const processedSubtabs = Array.isArray(subtabs) ? subtabs as unknown[] : [];
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.error('🔍 [Supabase] Processing conversation:', {
-          id: conv.id,
-          hasMessages: !!messages,
-          isArray: Array.isArray(messages),
-          messagesType: typeof messages,
-          messageCount: processedMessages.length,
-          subtabCount: processedSubtabs.length
-        });
-      }
       
       return {
         id: conv.id,
