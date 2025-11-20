@@ -98,43 +98,6 @@ ALTER FUNCTION "public"."add_message"("p_conversation_id" "text", "p_role" "text
 COMMENT ON FUNCTION "public"."add_message"("p_conversation_id" "text", "p_role" "text", "p_content" "text", "p_image_url" "text", "p_metadata" "jsonb") IS 'Adds a message to a conversation with validation. Validates conversation exists, has auth_user_id, and prevents orphan messages. Accepts TEXT conversation_id to support custom IDs like game-hub and game-* IDs.';
 
 
-
-CREATE OR REPLACE FUNCTION "public"."add_message"("p_conversation_id" "uuid", "p_role" "text", "p_content" "text", "p_image_url" "text" DEFAULT NULL::"text", "p_metadata" "jsonb" DEFAULT '{}'::"jsonb") RETURNS "uuid"
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public', 'extensions'
-    AS $$
-DECLARE
-  v_message_id uuid;
-BEGIN
-  -- Insert message
-  INSERT INTO messages (
-    conversation_id,
-    role,
-    content,
-    image_url,
-    metadata
-  ) VALUES (
-    p_conversation_id,
-    p_role,
-    p_content,
-    p_image_url,
-    p_metadata
-  )
-  RETURNING id INTO v_message_id;
-  
-  -- Update conversation updated_at timestamp
-  UPDATE conversations
-  SET updated_at = now()
-  WHERE id = p_conversation_id;
-  
-  RETURN v_message_id;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."add_message"("p_conversation_id" "uuid", "p_role" "text", "p_content" "text", "p_image_url" "text", "p_metadata" "jsonb") OWNER TO "postgres";
-
-
 CREATE OR REPLACE FUNCTION "public"."cleanup_expired_cache"() RETURNS integer
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public', 'pg_temp'
@@ -403,24 +366,6 @@ ALTER FUNCTION "public"."get_conversation_messages"("p_conversation_id" "text") 
 COMMENT ON FUNCTION "public"."get_conversation_messages"("p_conversation_id" "text") IS 'Gets all messages for a conversation. Accepts TEXT conversation_id to support custom IDs like game-hub and game-* IDs.';
 
 
-
-CREATE OR REPLACE FUNCTION "public"."get_conversation_messages"("p_conversation_id" "uuid") RETURNS TABLE("id" "uuid", "conversation_id" "uuid", "role" "text", "content" "text", "created_at" timestamp with time zone, "updated_at" timestamp with time zone)
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public', 'extensions'
-    AS $$
-BEGIN
-  RETURN QUERY
-  SELECT m.id, m.conversation_id, m.role, m.content, m.created_at, m.updated_at
-  FROM messages m
-  WHERE m.conversation_id = p_conversation_id
-  ORDER BY m.created_at ASC;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."get_conversation_messages"("p_conversation_id" "uuid") OWNER TO "postgres";
-
-
 CREATE OR REPLACE FUNCTION "public"."get_or_create_game_hub"("p_user_id" "uuid") RETURNS "uuid"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public', 'pg_temp'
@@ -586,31 +531,6 @@ ALTER FUNCTION "public"."migrate_messages_to_conversation"("p_message_ids" "uuid
 
 
 COMMENT ON FUNCTION "public"."migrate_messages_to_conversation"("p_message_ids" "uuid"[], "p_target_conversation_id" "text") IS 'Migrates messages to a different conversation. Accepts TEXT conversation_id to support custom IDs like game-hub and game-* IDs.';
-
-
-
-CREATE OR REPLACE FUNCTION "public"."migrate_messages_to_conversation"("p_message_ids" "uuid"[], "p_target_conversation_id" "uuid") RETURNS integer
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public', 'pg_temp'
-    AS $$
-DECLARE
-  v_migrated_count INTEGER := 0;
-BEGIN
-  UPDATE messages
-  SET conversation_id = p_target_conversation_id
-  WHERE id = ANY(p_message_ids);
-  
-  GET DIAGNOSTICS v_migrated_count = ROW_COUNT;
-  
-  RETURN v_migrated_count;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."migrate_messages_to_conversation"("p_message_ids" "uuid"[], "p_target_conversation_id" "uuid") OWNER TO "postgres";
-
-
-COMMENT ON FUNCTION "public"."migrate_messages_to_conversation"("p_message_ids" "uuid"[], "p_target_conversation_id" "uuid") IS 'Migrates messages to a different conversation. SECURITY DEFINER with search_path protection.';
 
 
 

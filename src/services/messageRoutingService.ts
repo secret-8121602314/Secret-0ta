@@ -118,6 +118,27 @@ export class MessageRoutingService {
     
     console.error('📦 [MessageRouting] Messages to add (after duplicate check):', messagesToAdd.map(m => ({ id: m.id, role: m.role })));
     
+    // ✅ CRITICAL FIX: Persist migration to database
+    // We must update the conversation_id in the messages table
+    console.error('💾 [MessageRouting] Persisting migration to database...');
+    try {
+      const { supabase } = await import('../lib/supabase');
+      const { error } = await supabase.rpc('migrate_messages_to_conversation', {
+        p_message_ids: messageIds,
+        p_target_conversation_id: toConversationId
+      });
+      
+      if (error) {
+        console.error('❌ [MessageRouting] Database migration failed:', error);
+        // We continue with in-memory update but log the error
+        // In a perfect world we might want to throw, but let's try to keep the UI responsive
+      } else {
+        console.error('✅ [MessageRouting] Database migration successful');
+      }
+    } catch (dbError) {
+      console.error('❌ [MessageRouting] Database migration exception:', dbError);
+    }
+
     // ATOMIC UPDATE: Modify both conversations in a single object
     const updatedConversations: Conversations = {
       ...conversations,
