@@ -225,9 +225,9 @@
             const registrations = await navigator.serviceWorker.getRegistrations();
             const cacheNames = await caches.keys();
             
-            // Delete old caches from v1.3.0 that had the auth bug
+            // Delete old caches from v1.3.0 that had the auth bug and old otakon-prefixed caches
             const deleteCachePromises = cacheNames
-              .filter(name => name.includes('v1.3.0') || name.includes('pwa-fixes'))
+              .filter(name => name.includes('v1.3.0') || name.includes('pwa-fixes') || name.includes('otakon'))
               .map(name => {
                 console.log('Deleting old cache:', name);
                 return caches.delete(name);
@@ -248,7 +248,7 @@
           // Register new service worker
           navigator.serviceWorker.register(swPath)
             .then((registration) => {
-              console.log('✅ SW v1.3.2-dev registered:', registration);
+              console.log('✅ SW v1.3.4 registered:', registration);
               
               // Check for updates
               registration.addEventListener('updatefound', () => {
