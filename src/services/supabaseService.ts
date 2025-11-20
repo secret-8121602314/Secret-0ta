@@ -249,8 +249,8 @@ export class SupabaseService {
               id: msg.id,
               role: msg.role as 'user' | 'assistant' | 'system',
               content: msg.content,
-              timestamp: safeParseDate(msg.created_at),
-              imageUrl: safeString(msg.image_url, undefined),
+              timestamp: msg.created_at ? new Date(msg.created_at).getTime() : Date.now(),
+              imageUrl: msg.image_url || undefined,
               metadata: typeof msg.metadata === 'object' && msg.metadata !== null ? msg.metadata as Record<string, unknown> : undefined,
             };
             console.error('🔍 [Supabase] Processed message:', { id: processed.id, role: processed.role, contentLength: processed.content?.length });
@@ -278,8 +278,8 @@ export class SupabaseService {
         isActiveSession: conv.is_active_session,
         activeObjective: conv.active_objective ?? undefined,
         gameProgress: conv.game_progress ?? undefined,
-        createdAt: safeParseDate(conv.created_at),
-        updatedAt: safeParseDate(conv.updated_at),
+        createdAt: conv.created_at ? new Date(conv.created_at).getTime() : Date.now(),
+        updatedAt: conv.updated_at ? new Date(conv.updated_at).getTime() : Date.now(),
         isActive: conv.is_active,
         isPinned: conv.is_pinned ?? undefined,
         pinnedAt: conv.pinned_at ? new Date(conv.pinned_at).getTime() : undefined,
