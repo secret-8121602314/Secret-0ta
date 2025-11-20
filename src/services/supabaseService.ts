@@ -125,9 +125,11 @@ export class SupabaseService {
             id,
             conversation_id,
             game_id,
-            name,
+            title,
             content,
+            tab_type,
             order_index,
+            metadata,
             created_at,
             updated_at
           )
@@ -147,9 +149,11 @@ export class SupabaseService {
             id,
             conversation_id,
             game_id,
-            name,
+            title,
             content,
+            tab_type,
             order_index,
+            metadata,
             created_at,
             updated_at
           )
