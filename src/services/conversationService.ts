@@ -651,6 +651,25 @@ export class ConversationService {
         : tab
     );
 
+    // ✅ CRITICAL FIX: Save subtab to database using SubtabsService
+    console.error('💾 [ConversationService] Saving subtab to database...');
+    const { SubtabsService } = await import('./subtabsService');
+    const subtabsService = SubtabsService.getInstance();
+    
+    // Update the specific subtab in the database
+    const success = await subtabsService.updateSubtab(conversationId, subTabId, {
+      content,
+      status: 'loaded'
+    });
+    
+    if (!success) {
+      console.error('❌ [ConversationService] Failed to update subtab in database');
+      throw new Error('Failed to update subtab content');
+    }
+    
+    console.error('✅ [ConversationService] Subtab saved to database:', subTabId);
+
+    // Update in-memory for immediate UI response
     await this.updateConversation(conversationId, {
       subtabs: updatedSubTabs,
       updatedAt: Date.now()
