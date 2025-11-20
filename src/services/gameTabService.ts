@@ -426,7 +426,8 @@ class GameTabService {
           ...subTab,
           content,
           isNew: false,
-          status: 'loaded' as const
+          status: 'loaded' as const,
+          type: subTab.type
         };
       }) || [];
 
