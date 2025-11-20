@@ -19,14 +19,95 @@ CREATE SCHEMA IF NOT EXISTS "public";
 ALTER SCHEMA "public" OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."add_message"("p_conversation_id" "uuid", "p_role" "text", "p_content" "text", "p_image_url" "text" DEFAULT NULL::"text", "p_metadata" "jsonb" DEFAULT '{}'::"jsonb") RETURNS "uuid"
+CREATE OR REPLACE FUNCTION "public"."add_message"("p_conversation_id" "text", "p_role" "text", "p_content" "text", "p_image_url" "text" DEFAULT NULL::"text", "p_metadata" "jsonb" DEFAULT '{}'::"jsonb") RETURNS "uuid"
     LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'extensions'
     AS $$
 DECLARE
-  v_message_id UUID;
+  v_message_id uuid;
+  v_conversation_exists boolean;
+  v_auth_user_id uuid;
+BEGIN
+  -- ✅ VALIDATION 1: Check if conversation exists
+  SELECT EXISTS(
+    SELECT 1 FROM conversations WHERE id = p_conversation_id
+  ) INTO v_conversation_exists;
+  
+  IF NOT v_conversation_exists THEN
+    RAISE EXCEPTION 'Conversation % does not exist', p_conversation_id
+      USING HINT = 'Create conversation before adding messages';
+  END IF;
+  
+  -- ✅ VALIDATION 2: Get auth_user_id from conversation
+  SELECT auth_user_id INTO v_auth_user_id
+  FROM conversations 
+  WHERE id = p_conversation_id;
+  
+  IF v_auth_user_id IS NULL THEN
+    RAISE EXCEPTION 'Conversation % has NULL auth_user_id', p_conversation_id
+      USING HINT = 'Conversation must have valid auth_user_id';
+  END IF;
+  
+  -- ✅ VALIDATION 3: Validate role
+  IF p_role NOT IN ('user', 'assistant', 'system') THEN
+    RAISE EXCEPTION 'Invalid role: %. Must be user, assistant, or system', p_role;
+  END IF;
+  
+  -- ✅ VALIDATION 4: Validate content not empty
+  IF p_content IS NULL OR trim(p_content) = '' THEN
+    RAISE EXCEPTION 'Message content cannot be empty';
+  END IF;
+  
+  -- ✅ INSERT: Add message with explicit auth_user_id
+  INSERT INTO messages (
+    conversation_id,
+    role,
+    content,
+    image_url,
+    metadata,
+    auth_user_id  -- ✅ Explicitly set from conversation
+  ) VALUES (
+    p_conversation_id,
+    p_role,
+    p_content,
+    p_image_url,
+    p_metadata,
+    v_auth_user_id  -- ✅ No more orphan messages
+  )
+  RETURNING id INTO v_message_id;
+  
+  -- ✅ UPDATE: Update conversation timestamp
+  UPDATE conversations
+  SET updated_at = now()
+  WHERE id = p_conversation_id;
+  
+  RETURN v_message_id;
+  
+EXCEPTION
+  WHEN OTHERS THEN
+    -- Log error and re-raise with context
+    RAISE EXCEPTION 'add_message failed for conversation %: %', 
+      p_conversation_id, SQLERRM;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."add_message"("p_conversation_id" "text", "p_role" "text", "p_content" "text", "p_image_url" "text", "p_metadata" "jsonb") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."add_message"("p_conversation_id" "text", "p_role" "text", "p_content" "text", "p_image_url" "text", "p_metadata" "jsonb") IS 'Adds a message to a conversation with validation. Validates conversation exists, has auth_user_id, and prevents orphan messages. Accepts TEXT conversation_id to support custom IDs like game-hub and game-* IDs.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."add_message"("p_conversation_id" "uuid", "p_role" "text", "p_content" "text", "p_image_url" "text" DEFAULT NULL::"text", "p_metadata" "jsonb" DEFAULT '{}'::"jsonb") RETURNS "uuid"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'extensions'
+    AS $$
+DECLARE
+  v_message_id uuid;
 BEGIN
   -- Insert message
-  INSERT INTO public.messages (
+  INSERT INTO messages (
     conversation_id,
     role,
     content,
@@ -42,8 +123,8 @@ BEGIN
   RETURNING id INTO v_message_id;
   
   -- Update conversation updated_at timestamp
-  UPDATE public.conversations
-  SET updated_at = NOW()
+  UPDATE conversations
+  SET updated_at = now()
   WHERE id = p_conversation_id;
   
   RETURN v_message_id;
@@ -52,11 +133,6 @@ $$;
 
 
 ALTER FUNCTION "public"."add_message"("p_conversation_id" "uuid", "p_role" "text", "p_content" "text", "p_image_url" "text", "p_metadata" "jsonb") OWNER TO "postgres";
-
-
-COMMENT ON FUNCTION "public"."add_message"("p_conversation_id" "uuid", "p_role" "text", "p_content" "text", "p_image_url" "text", "p_metadata" "jsonb") IS 'Add a new message to a conversation. Automatically updates conversation timestamp.
-Returns the new message ID.';
-
 
 
 CREATE OR REPLACE FUNCTION "public"."cleanup_expired_cache"() RETURNS integer
@@ -153,6 +229,45 @@ $$;
 
 
 ALTER FUNCTION "public"."create_user_record"("p_auth_user_id" "uuid", "p_email" "text", "p_full_name" "text", "p_avatar_url" "text", "p_is_developer" boolean, "p_tier" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."expire_trials"() RETURNS TABLE("expired_count" integer)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  affected_rows INTEGER;
+BEGIN
+  -- Update users whose trial has expired
+  UPDATE users
+  SET 
+    tier = 'free',
+    text_limit = 55,
+    image_limit = 25,
+    updated_at = NOW()
+  WHERE 
+    trial_expires_at < NOW()
+    AND tier = 'pro'
+    AND has_used_trial = true
+    AND trial_started_at IS NOT NULL;
+  
+  -- Get count of affected rows
+  GET DIAGNOSTICS affected_rows = ROW_COUNT;
+  
+  -- Log the expiration
+  RAISE NOTICE 'Expired % trial(s) at %', affected_rows, NOW();
+  
+  -- Return the count
+  RETURN QUERY SELECT affected_rows;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."expire_trials"() OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."expire_trials"() IS 'Automatically expires 14-day free trials and reverts users to free tier. Runs daily via pg_cron.';
+
 
 
 CREATE OR REPLACE FUNCTION "public"."get_cache_performance_metrics"() RETURNS TABLE("metric_name" "text", "metric_value" numeric)
@@ -264,22 +379,46 @@ $$;
 ALTER FUNCTION "public"."get_complete_user_data"("p_auth_user_id" "uuid") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_conversation_messages"("p_conversation_id" "uuid") RETURNS TABLE("id" "uuid", "role" "text", "content" "text", "image_url" "text", "metadata" "jsonb", "created_at" timestamp with time zone)
-    LANGUAGE "sql" STABLE SECURITY DEFINER
+COMMENT ON FUNCTION "public"."get_complete_user_data"("p_auth_user_id" "uuid") IS 'Returns complete user data for a given auth user ID';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."get_conversation_messages"("p_conversation_id" "text") RETURNS TABLE("id" "uuid", "conversation_id" "text", "role" "text", "content" "text", "created_at" timestamp with time zone, "updated_at" timestamp with time zone)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'extensions'
     AS $$
-  SELECT id, role, content, image_url, metadata, created_at
-  FROM public.messages
-  WHERE conversation_id = p_conversation_id
-  ORDER BY created_at ASC;
+BEGIN
+  RETURN QUERY
+  SELECT m.id, m.conversation_id, m.role, m.content, m.created_at, m.created_at as updated_at
+  FROM messages m
+  WHERE m.conversation_id = p_conversation_id
+  ORDER BY m.created_at ASC;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."get_conversation_messages"("p_conversation_id" "text") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."get_conversation_messages"("p_conversation_id" "text") IS 'Gets all messages for a conversation. Accepts TEXT conversation_id to support custom IDs like game-hub and game-* IDs.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."get_conversation_messages"("p_conversation_id" "uuid") RETURNS TABLE("id" "uuid", "conversation_id" "uuid", "role" "text", "content" "text", "created_at" timestamp with time zone, "updated_at" timestamp with time zone)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'extensions'
+    AS $$
+BEGIN
+  RETURN QUERY
+  SELECT m.id, m.conversation_id, m.role, m.content, m.created_at, m.updated_at
+  FROM messages m
+  WHERE m.conversation_id = p_conversation_id
+  ORDER BY m.created_at ASC;
+END;
 $$;
 
 
 ALTER FUNCTION "public"."get_conversation_messages"("p_conversation_id" "uuid") OWNER TO "postgres";
-
-
-COMMENT ON FUNCTION "public"."get_conversation_messages"("p_conversation_id" "uuid") IS 'Get all messages for a conversation in chronological order.
-Replaces direct access to conversations.messages JSONB.';
-
 
 
 CREATE OR REPLACE FUNCTION "public"."get_or_create_game_hub"("p_user_id" "uuid") RETURNS "uuid"
@@ -335,29 +474,16 @@ ALTER FUNCTION "public"."get_user_cache_entries"("p_user_id" "uuid") OWNER TO "p
 
 
 CREATE OR REPLACE FUNCTION "public"."get_user_id_from_auth_id"("p_auth_user_id" "uuid") RETURNS "uuid"
-    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
     AS $$
-DECLARE
-  v_user_id UUID;
 BEGIN
-  SELECT id INTO v_user_id
-  FROM public.users
-  WHERE auth_user_id = p_auth_user_id
-  LIMIT 1;
-  
-  RETURN v_user_id;
+  RETURN (SELECT id FROM public.users WHERE auth_user_id = p_auth_user_id);
 END;
 $$;
 
 
 ALTER FUNCTION "public"."get_user_id_from_auth_id"("p_auth_user_id" "uuid") OWNER TO "postgres";
-
-
-COMMENT ON FUNCTION "public"."get_user_id_from_auth_id"("p_auth_user_id" "uuid") IS 'Helper function to resolve auth_user_id (UUID from auth.users) to internal user.id. 
-Eliminates N+1 query pattern in createConversation().
-Security: DEFINER allows function to bypass RLS for lookup.
-Performance: STABLE hint tells query planner result will not change within transaction.';
-
 
 
 CREATE OR REPLACE FUNCTION "public"."get_user_onboarding_status"("p_user_id" "uuid") RETURNS TABLE("is_new_user" boolean, "has_seen_splash_screens" boolean, "has_profile_setup" boolean, "has_welcome_message" boolean, "has_seen_how_to_use" boolean, "has_seen_features_connected" boolean, "has_seen_pro_features" boolean, "pc_connected" boolean, "pc_connection_skipped" boolean, "onboarding_completed" boolean, "tier" "text")
@@ -420,6 +546,49 @@ $$;
 ALTER FUNCTION "public"."increment_user_usage"("p_auth_user_id" "uuid", "p_query_type" "text", "p_increment" integer) OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."messages_set_auth_user_id"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+  -- Get auth_user_id from the conversation
+  SELECT auth_user_id INTO NEW.auth_user_id
+  FROM conversations
+  WHERE id = NEW.conversation_id;
+  
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."messages_set_auth_user_id"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."migrate_messages_to_conversation"("p_message_ids" "uuid"[], "p_target_conversation_id" "text") RETURNS integer
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+  v_migrated_count INTEGER := 0;
+BEGIN
+  UPDATE messages
+  SET conversation_id = p_target_conversation_id
+  WHERE id = ANY(p_message_ids);
+  
+  GET DIAGNOSTICS v_migrated_count = ROW_COUNT;
+  
+  RETURN v_migrated_count;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."migrate_messages_to_conversation"("p_message_ids" "uuid"[], "p_target_conversation_id" "text") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."migrate_messages_to_conversation"("p_message_ids" "uuid"[], "p_target_conversation_id" "text") IS 'Migrates messages to a different conversation. Accepts TEXT conversation_id to support custom IDs like game-hub and game-* IDs.';
+
+
+
 CREATE OR REPLACE FUNCTION "public"."migrate_messages_to_conversation"("p_message_ids" "uuid"[], "p_target_conversation_id" "uuid") RETURNS integer
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public', 'pg_temp'
@@ -445,75 +614,39 @@ COMMENT ON FUNCTION "public"."migrate_messages_to_conversation"("p_message_ids" 
 
 
 
-CREATE OR REPLACE FUNCTION "public"."migrate_messages_to_table"() RETURNS TABLE("conversations_processed" integer, "messages_created" integer, "errors" integer)
-    LANGUAGE "plpgsql"
+CREATE OR REPLACE FUNCTION "public"."migrate_messages_to_table"() RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'extensions'
     AS $$
 DECLARE
-  v_conversation RECORD;
-  v_message JSONB;
-  v_conversations_processed INTEGER := 0;
-  v_messages_created INTEGER := 0;
-  v_errors INTEGER := 0;
+  conv_record RECORD;
+  msg_record jsonb;
 BEGIN
-  -- Loop through all conversations with messages
-  FOR v_conversation IN 
+  FOR conv_record IN 
     SELECT id, messages 
-    FROM public.conversations 
+    FROM conversations 
     WHERE messages IS NOT NULL 
       AND jsonb_array_length(messages) > 0
+      AND NOT EXISTS (
+        SELECT 1 FROM messages m WHERE m.conversation_id = conversations.id
+      )
   LOOP
-    BEGIN
-      v_conversations_processed := v_conversations_processed + 1;
-      
-      -- Loop through each message in the JSONB array
-      FOR v_message IN 
-        SELECT * FROM jsonb_array_elements(v_conversation.messages)
-      LOOP
-        -- Insert message into messages table
-        -- Skip if already exists (idempotent migration)
-        INSERT INTO public.messages (
-          conversation_id,
-          role,
-          content,
-          image_url,
-          metadata,
-          created_at
+    FOR msg_record IN 
+      SELECT * FROM jsonb_array_elements(conv_record.messages)
+    LOOP
+      INSERT INTO messages (conversation_id, role, content, created_at)
+      VALUES (
+        conv_record.id,
+        msg_record->>'role',
+        msg_record->>'content',
+        COALESCE(
+          (msg_record->>'timestamp')::timestamptz,
+          (msg_record->>'created_at')::timestamptz,
+          now()
         )
-        SELECT
-          v_conversation.id,
-          v_message->>'role',
-          v_message->>'content',
-          v_message->>'imageUrl',  -- Note: camelCase in JSONB
-          COALESCE(
-            (v_message->'metadata')::jsonb,
-            '{}'::jsonb
-          ),
-          COALESCE(
-            (v_message->>'timestamp')::bigint,
-            extract(epoch from now())::bigint * 1000
-          )::timestamp with time zone
-        WHERE NOT EXISTS (
-          -- Prevent duplicates if migration runs twice
-          SELECT 1 FROM public.messages m
-          WHERE m.conversation_id = v_conversation.id
-            AND m.content = (v_message->>'content')
-            AND m.role = (v_message->>'role')
-            AND m.created_at = COALESCE(
-              (v_message->>'timestamp')::bigint,
-              extract(epoch from now())::bigint * 1000
-            )::timestamp with time zone
-        );
-        
-        v_messages_created := v_messages_created + 1;
-      END LOOP;
-      
-    EXCEPTION WHEN OTHERS THEN
-      v_errors := v_errors + 1;
-      RAISE WARNING 'Error migrating conversation %: %', v_conversation.id, SQLERRM;
-    END;
+      );
+    END LOOP;
   END LOOP;
-  
-  RETURN QUERY SELECT v_conversations_processed, v_messages_created, v_errors;
 END;
 $$;
 
@@ -521,8 +654,103 @@ $$;
 ALTER FUNCTION "public"."migrate_messages_to_table"() OWNER TO "postgres";
 
 
-COMMENT ON FUNCTION "public"."migrate_messages_to_table"() IS 'One-time migration: Copies messages from conversations.messages JSONB 
-to normalized messages table. Safe to run multiple times (idempotent).';
+CREATE OR REPLACE FUNCTION "public"."register_and_activate_connection"("p_code" "text", "p_user_id" "uuid", "p_device_info" "jsonb" DEFAULT '{}'::"jsonb") RETURNS TABLE("success" boolean, "message" "text", "user_email" "text", "user_name" "text")
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$
+DECLARE
+  v_owner_user_id UUID;
+  v_is_active BOOLEAN;
+  v_user_email TEXT;
+  v_user_name TEXT;
+BEGIN
+  -- Validate code format
+  IF p_code !~ '^\d{6}$' THEN
+    RETURN QUERY SELECT 
+      false, 
+      'Invalid code format. Please enter exactly 6 digits.',
+      NULL::TEXT,
+      NULL::TEXT;
+    RETURN;
+  END IF;
+
+  -- Check if this code is owned by anyone
+  SELECT 
+    id,
+    connection_active,
+    email,
+    full_name
+  INTO 
+    v_owner_user_id, 
+    v_is_active,
+    v_user_email,
+    v_user_name
+  FROM public.users
+  WHERE connection_code = p_code;
+
+  -- Case 1: Code is completely new and unused
+  IF v_owner_user_id IS NULL THEN
+    -- First, clear any old code this user might have had to ensure they only own one at a time.
+    UPDATE public.users
+    SET connection_code = NULL, connection_active = false
+    WHERE id = p_user_id;
+
+    -- Now, claim the new code for the current user and activate it
+    UPDATE public.users
+    SET
+      connection_code = p_code,
+      connection_code_created_at = NOW(),
+      connection_active = true,
+      pc_connected = true,
+      connection_device_info = p_device_info,
+      last_connection_at = NOW(),
+      updated_at = NOW()
+    WHERE id = p_user_id;
+
+    -- Return success
+    RETURN QUERY SELECT true, 'Connection successful!', (SELECT u.email FROM public.users u WHERE u.id = p_user_id), (SELECT u.full_name FROM public.users u WHERE u.id = p_user_id);
+    RETURN;
+  END IF;
+
+  -- Case 2: Code already exists. Check who owns it.
+  IF v_owner_user_id = p_user_id THEN
+    -- It's the user's own code. They are likely reconnecting.
+    -- Check if it's already active on another device.
+    IF v_is_active THEN
+      -- Reject the connection because a device is already active with this code.
+      RETURN QUERY SELECT false, 'A device is already connected with this code. Please disconnect the other device first or generate a new code in the PC app.', v_user_email, v_user_name;
+      RETURN;
+    ELSE
+      -- It's their code, but it's inactive. This is a simple reconnection. Reactivate it.
+      UPDATE public.users
+      SET 
+        connection_active = true, 
+        pc_connected = true, 
+        last_connection_at = NOW(), 
+        connection_device_info = p_device_info, 
+        updated_at = NOW()
+      WHERE id = p_user_id;
+      
+      RETURN QUERY SELECT true, 'Connection re-established successfully!', v_user_email, v_user_name;
+      RETURN;
+    END IF;
+  ELSE
+    -- Case 3: The code belongs to a DIFFERENT user. This is a critical security check.
+    RETURN QUERY SELECT 
+      false, 
+      'This code is already in use by another account. Please generate a new code in your connector app.', 
+      NULL::TEXT, 
+      NULL::TEXT;
+    RETURN;
+  END IF;
+END;
+$_$;
+
+
+ALTER FUNCTION "public"."register_and_activate_connection"("p_code" "text", "p_user_id" "uuid", "p_device_info" "jsonb") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."register_and_activate_connection"("p_code" "text", "p_user_id" "uuid", "p_device_info" "jsonb") IS 'Validates a PC-generated code and activates the connection, enforcing single-device policy.';
 
 
 
@@ -565,46 +793,27 @@ COMMENT ON FUNCTION "public"."reset_monthly_usage"() IS 'Resets text_count, imag
 
 
 
-CREATE OR REPLACE FUNCTION "public"."rollback_messages_to_jsonb"() RETURNS TABLE("conversations_updated" integer, "errors" integer)
-    LANGUAGE "plpgsql"
+CREATE OR REPLACE FUNCTION "public"."rollback_messages_to_jsonb"() RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'extensions'
     AS $$
-DECLARE
-  v_conversation RECORD;
-  v_messages_jsonb JSONB;
-  v_conversations_updated INTEGER := 0;
-  v_errors INTEGER := 0;
 BEGIN
-  FOR v_conversation IN 
-    SELECT id FROM public.conversations
-  LOOP
-    BEGIN
-      -- Rebuild JSONB array from messages table
-      SELECT jsonb_agg(
-        jsonb_build_object(
-          'role', role,
-          'content', content,
-          'imageUrl', image_url,
-          'timestamp', extract(epoch from created_at)::bigint * 1000,
-          'metadata', metadata
-        ) ORDER BY created_at
-      ) INTO v_messages_jsonb
-      FROM public.messages
-      WHERE conversation_id = v_conversation.id;
-      
-      -- Update conversation with rebuilt JSONB
-      UPDATE public.conversations
-      SET messages = COALESCE(v_messages_jsonb, '[]'::jsonb)
-      WHERE id = v_conversation.id;
-      
-      v_conversations_updated := v_conversations_updated + 1;
-      
-    EXCEPTION WHEN OTHERS THEN
-      v_errors := v_errors + 1;
-      RAISE WARNING 'Error rolling back conversation %: %', v_conversation.id, SQLERRM;
-    END;
-  END LOOP;
-  
-  RETURN QUERY SELECT v_conversations_updated, v_errors;
+  UPDATE conversations c
+  SET messages = (
+    SELECT jsonb_agg(
+      jsonb_build_object(
+        'role', m.role,
+        'content', m.content,
+        'timestamp', m.created_at
+      )
+      ORDER BY m.created_at
+    )
+    FROM messages m
+    WHERE m.conversation_id = c.id
+  )
+  WHERE EXISTS (
+    SELECT 1 FROM messages m WHERE m.conversation_id = c.id
+  );
 END;
 $$;
 
@@ -612,9 +821,147 @@ $$;
 ALTER FUNCTION "public"."rollback_messages_to_jsonb"() OWNER TO "postgres";
 
 
-COMMENT ON FUNCTION "public"."rollback_messages_to_jsonb"() IS 'Emergency rollback: Rebuilds conversations.messages JSONB from messages table.
-Only use if migration causes issues in production.';
+CREATE OR REPLACE FUNCTION "public"."save_message_transaction"("p_conversation_id" "text", "p_role" "text", "p_content" "text", "p_image_url" "text" DEFAULT NULL::"text", "p_metadata" "jsonb" DEFAULT '{}'::"jsonb") RETURNS TABLE("message_id" "uuid", "message_created_at" timestamp with time zone, "message_content" "text", "message_role" "text", "message_image_url" "text", "message_metadata" "jsonb", "conversation_updated_at" timestamp with time zone)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'extensions'
+    AS $$
+DECLARE
+  v_message_id UUID;
+  v_auth_user_id UUID;
+  v_created_at TIMESTAMPTZ;
+  v_conversation_updated_at TIMESTAMPTZ;
+BEGIN
+  -- ✅ VALIDATION 1: Check conversation exists
+  SELECT auth_user_id INTO v_auth_user_id
+  FROM conversations
+  WHERE id = p_conversation_id;
+  
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Conversation % does not exist', p_conversation_id
+      USING HINT = 'Create conversation before adding messages';
+  END IF;
+  
+  -- ✅ VALIDATION 2: Verify auth_user_id is not NULL
+  IF v_auth_user_id IS NULL THEN
+    RAISE EXCEPTION 'Conversation % has NULL auth_user_id', p_conversation_id
+      USING HINT = 'Conversation must have valid auth_user_id';
+  END IF;
+  
+  -- ✅ VALIDATION 3: Validate role
+  IF p_role NOT IN ('user', 'assistant', 'system') THEN
+    RAISE EXCEPTION 'Invalid role: %. Must be user, assistant, or system', p_role;
+  END IF;
+  
+  -- ✅ VALIDATION 4: Validate content not empty
+  IF p_content IS NULL OR trim(p_content) = '' THEN
+    RAISE EXCEPTION 'Message content cannot be empty';
+  END IF;
+  
+  -- ✅ Get current timestamp for consistency
+  v_created_at := NOW();
+  
+  -- ✅ TRANSACTION START: Insert message with explicit auth_user_id
+  INSERT INTO messages (
+    conversation_id,
+    role,
+    content,
+    image_url,
+    metadata,
+    auth_user_id,
+    created_at
+  ) VALUES (
+    p_conversation_id,
+    p_role,
+    p_content,
+    p_image_url,
+    p_metadata,
+    v_auth_user_id,
+    v_created_at
+  )
+  RETURNING id INTO v_message_id;
+  
+  -- ✅ TRANSACTION: Update conversation timestamp atomically
+  UPDATE conversations
+  SET updated_at = v_created_at
+  WHERE id = p_conversation_id
+  RETURNING updated_at INTO v_conversation_updated_at;
+  
+  -- ✅ Return complete message data (eliminates second SELECT)
+  RETURN QUERY
+  SELECT
+    v_message_id,
+    v_created_at,
+    p_content,
+    p_role,
+    p_image_url,
+    p_metadata,
+    v_conversation_updated_at;
+  
+EXCEPTION
+  WHEN OTHERS THEN
+    -- Log error context for debugging
+    RAISE WARNING 'save_message_transaction failed for conversation %: %', 
+      p_conversation_id, SQLERRM;
+    -- Re-raise with context
+    RAISE EXCEPTION 'Failed to save message: %', SQLERRM;
+END;
+$$;
 
+
+ALTER FUNCTION "public"."save_message_transaction"("p_conversation_id" "text", "p_role" "text", "p_content" "text", "p_image_url" "text", "p_metadata" "jsonb") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."save_message_transaction"("p_conversation_id" "text", "p_role" "text", "p_content" "text", "p_image_url" "text", "p_metadata" "jsonb") IS 'Atomically saves a message and updates conversation timestamp. Returns complete message data to eliminate second SELECT. Validates conversation exists and has auth_user_id. Accepts TEXT conversation_id for custom IDs (game-hub, game-*).';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."save_onboarding_step"("p_user_id" "uuid", "p_step" "text", "p_data" "jsonb" DEFAULT NULL::"jsonb") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_catalog'
+    AS $$
+DECLARE
+  v_auth_user_id uuid;
+BEGIN
+  -- Get auth_user_id from users table
+  SELECT auth_user_id INTO v_auth_user_id
+  FROM public.users
+  WHERE id = p_user_id;
+
+  -- If not found, use p_user_id directly (assuming it's auth_user_id)
+  IF v_auth_user_id IS NULL THEN
+    v_auth_user_id := p_user_id;
+  END IF;
+
+  -- Insert or update onboarding progress using auth_user_id
+  INSERT INTO public.onboarding_progress (user_id, auth_user_id, step, data, completed, created_at, updated_at)
+  VALUES (p_user_id, v_auth_user_id, p_step, p_data, false, NOW(), NOW())
+  ON CONFLICT (user_id, step) 
+  DO UPDATE SET 
+    data = EXCLUDED.data,
+    updated_at = NOW();
+END;
+$$;
+
+
+ALTER FUNCTION "public"."save_onboarding_step"("p_user_id" "uuid", "p_step" "text", "p_data" "jsonb") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."subtabs_set_auth_user_id"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+  -- Get auth_user_id from the conversation
+  SELECT auth_user_id INTO NEW.auth_user_id
+  FROM conversations
+  WHERE id = NEW.conversation_id;
+  
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."subtabs_set_auth_user_id"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."update_last_login"() RETURNS "trigger"
@@ -632,7 +979,8 @@ ALTER FUNCTION "public"."update_last_login"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."update_subtabs_updated_at"() RETURNS "trigger"
-    LANGUAGE "plpgsql"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'extensions'
     AS $$
 BEGIN
   NEW.updated_at = now();
@@ -645,11 +993,11 @@ ALTER FUNCTION "public"."update_subtabs_updated_at"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."update_updated_at_column"() RETURNS "trigger"
-    LANGUAGE "plpgsql" SECURITY DEFINER
+    LANGUAGE "plpgsql"
     SET "search_path" TO 'public', 'pg_temp'
     AS $$
 BEGIN
-  NEW.updated_at = NOW();
+  NEW.updated_at = now();
   RETURN NEW;
 END;
 $$;
@@ -737,6 +1085,56 @@ ALTER FUNCTION "public"."update_user_onboarding_status"("p_user_id" "uuid", "p_s
 COMMENT ON FUNCTION "public"."update_user_onboarding_status"("p_user_id" "uuid", "p_step" "text", "p_data" "jsonb") IS 'Updates user onboarding progress. SECURITY DEFINER with search_path protection.';
 
 
+
+CREATE OR REPLACE FUNCTION "public"."update_waitlist_email_status"("waitlist_email" "text", "new_status" "text") RETURNS boolean
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+  -- Update the waitlist entry
+  UPDATE public.waitlist
+  SET 
+    email_status = new_status,
+    email_sent_at = CASE WHEN new_status = 'sent' THEN NOW() ELSE email_sent_at END,
+    updated_at = NOW()
+  WHERE email = waitlist_email;
+  
+  RETURN FOUND;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."update_waitlist_email_status"("waitlist_email" "text", "new_status" "text") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."update_waitlist_email_status"("waitlist_email" "text", "new_status" "text") IS 'Updates the email delivery status for a waitlist entry. Uses fixed search_path for security.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."validate_subtab_for_unreleased"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+  is_unreleased_game boolean;
+BEGIN
+  -- Check if conversation is for unreleased game
+  SELECT is_unreleased INTO is_unreleased_game
+  FROM conversations
+  WHERE id = NEW.conversation_id;
+  
+  IF is_unreleased_game = true THEN
+    RAISE EXCEPTION 'Subtabs cannot be created for unreleased games'
+      USING HINT = 'Unreleased games do not support subtabs feature';
+  END IF;
+  
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."validate_subtab_for_unreleased"() OWNER TO "postgres";
+
 SET default_tablespace = '';
 
 SET default_table_access_method = "heap";
@@ -770,7 +1168,10 @@ CREATE TABLE IF NOT EXISTS "public"."api_usage" (
     "request_type" "text" NOT NULL,
     "tokens_used" integer DEFAULT 0,
     "cost_cents" real DEFAULT 0,
-    "created_at" timestamp with time zone DEFAULT "now"()
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "auth_user_id" "uuid",
+    "ai_model" "text",
+    "endpoint" "text"
 );
 
 
@@ -801,16 +1202,13 @@ COMMENT ON COLUMN "public"."app_cache"."user_id" IS 'Stores auth.uid() for track
 
 
 CREATE TABLE IF NOT EXISTS "public"."conversations" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "user_id" "uuid" NOT NULL,
+    "id" "text" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid",
     "slug" "text",
     "title" "text" NOT NULL,
-    "messages" "jsonb" DEFAULT '[]'::"jsonb",
     "game_id" "text",
     "game_title" "text",
     "genre" "text",
-    "subtabs" "jsonb" DEFAULT '[]'::"jsonb",
-    "subtabs_order" "jsonb" DEFAULT '[]'::"jsonb",
     "is_active_session" boolean DEFAULT false,
     "active_objective" "text",
     "game_progress" integer DEFAULT 0,
@@ -822,11 +1220,16 @@ CREATE TABLE IF NOT EXISTS "public"."conversations" (
     "is_game_hub" boolean DEFAULT false,
     "context_summary" "text",
     "last_summarized_at" bigint,
-    "is_unreleased" boolean DEFAULT false
+    "is_unreleased" boolean DEFAULT false,
+    "auth_user_id" "uuid"
 );
 
 
 ALTER TABLE "public"."conversations" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."conversations"."id" IS 'Primary key - TEXT type to support custom IDs like game-hub';
+
 
 
 COMMENT ON COLUMN "public"."conversations"."user_id" IS 'References users.id (internal UUID, not auth_user_id)';
@@ -853,26 +1256,38 @@ COMMENT ON COLUMN "public"."conversations"."is_unreleased" IS 'Indicates if this
 
 
 
-CREATE TABLE IF NOT EXISTS "public"."game_insights" (
+CREATE TABLE IF NOT EXISTS "public"."game_hub_interactions" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "game_title" "text" NOT NULL,
-    "genre" "text",
-    "insights_data" "jsonb" NOT NULL,
-    "created_at" timestamp with time zone DEFAULT "now"(),
-    "updated_at" timestamp with time zone DEFAULT "now"(),
-    "expires_at" timestamp with time zone NOT NULL,
-    "user_id" "uuid"
+    "user_id" "uuid" NOT NULL,
+    "auth_user_id" "uuid" NOT NULL,
+    "query_text" "text" NOT NULL,
+    "query_timestamp" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "message_id" "uuid",
+    "response_text" "text",
+    "response_timestamp" timestamp with time zone,
+    "response_message_id" "uuid",
+    "detected_game" "text",
+    "detection_confidence" "text",
+    "detected_genre" "text",
+    "game_status" "text",
+    "tab_created" boolean DEFAULT false,
+    "tab_created_at" timestamp with time zone,
+    "created_conversation_id" "text",
+    "ai_model" "text" DEFAULT 'gemini-2.5-flash-preview-09-2025'::"text",
+    "tokens_used" integer,
+    "query_type" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "game_hub_interactions_detection_confidence_check" CHECK (("detection_confidence" = ANY (ARRAY['high'::"text", 'low'::"text"]))),
+    CONSTRAINT "game_hub_interactions_game_status_check" CHECK (("game_status" = ANY (ARRAY['released'::"text", 'unreleased'::"text"]))),
+    CONSTRAINT "game_hub_interactions_query_type_check" CHECK (("query_type" = ANY (ARRAY['general'::"text", 'game_specific'::"text", 'recommendation'::"text"])))
 );
 
 
-ALTER TABLE "public"."game_insights" OWNER TO "postgres";
+ALTER TABLE "public"."game_hub_interactions" OWNER TO "postgres";
 
 
-COMMENT ON COLUMN "public"."game_insights"."game_title" IS 'UNIQUE constraint allows for ON CONFLICT upserts';
-
-
-
-COMMENT ON COLUMN "public"."game_insights"."user_id" IS 'Stores auth.uid() for tracking who contributed - NOT a foreign key';
+COMMENT ON TABLE "public"."game_hub_interactions" IS 'Tracks all Game Hub queries and responses with game detection metadata';
 
 
 
@@ -911,17 +1326,26 @@ COMMENT ON COLUMN "public"."games"."auth_user_id" IS 'References auth.users(id) 
 
 CREATE TABLE IF NOT EXISTS "public"."messages" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
-    "conversation_id" "uuid" NOT NULL,
+    "conversation_id" "text" NOT NULL,
     "role" "text" NOT NULL,
     "content" "text" NOT NULL,
     "image_url" "text",
     "metadata" "jsonb" DEFAULT '{}'::"jsonb",
     "created_at" timestamp with time zone DEFAULT "now"(),
+    "auth_user_id" "uuid",
     CONSTRAINT "messages_role_check" CHECK (("role" = ANY (ARRAY['user'::"text", 'assistant'::"text", 'system'::"text"])))
 );
 
 
 ALTER TABLE "public"."messages" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."messages"."conversation_id" IS 'Foreign key to conversations.id (TEXT type to support custom IDs)';
+
+
+
+COMMENT ON COLUMN "public"."messages"."auth_user_id" IS 'Denormalized auth.users.id for RLS performance optimization';
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."onboarding_progress" (
@@ -931,7 +1355,8 @@ CREATE TABLE IF NOT EXISTS "public"."onboarding_progress" (
     "completed" boolean DEFAULT false,
     "data" "jsonb" DEFAULT '{}'::"jsonb",
     "created_at" timestamp with time zone DEFAULT "now"(),
-    "updated_at" timestamp with time zone DEFAULT "now"()
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    "auth_user_id" "uuid"
 );
 
 
@@ -944,7 +1369,7 @@ COMMENT ON COLUMN "public"."onboarding_progress"."user_id" IS 'References users.
 
 CREATE TABLE IF NOT EXISTS "public"."subtabs" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
-    "game_id" "uuid" NOT NULL,
+    "game_id" "uuid",
     "title" "text" NOT NULL,
     "content" "text" DEFAULT ''::"text",
     "tab_type" "text" NOT NULL,
@@ -952,11 +1377,24 @@ CREATE TABLE IF NOT EXISTS "public"."subtabs" (
     "metadata" "jsonb" DEFAULT '{}'::"jsonb",
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
-    "conversation_id" "uuid"
+    "conversation_id" "text",
+    "auth_user_id" "uuid"
 );
 
 
 ALTER TABLE "public"."subtabs" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."subtabs"."game_id" IS 'Deprecated: Use conversation_id instead. Kept for backward compatibility but now nullable.';
+
+
+
+COMMENT ON COLUMN "public"."subtabs"."conversation_id" IS 'References conversations.id - the conversation this subtab belongs to.';
+
+
+
+COMMENT ON COLUMN "public"."subtabs"."auth_user_id" IS 'Denormalized auth.users.id for RLS performance optimization';
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."user_analytics" (
@@ -964,7 +1402,8 @@ CREATE TABLE IF NOT EXISTS "public"."user_analytics" (
     "user_id" "uuid" NOT NULL,
     "event_type" "text" NOT NULL,
     "event_data" "jsonb" DEFAULT '{}'::"jsonb",
-    "created_at" timestamp with time zone DEFAULT "now"()
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "auth_user_id" "uuid"
 );
 
 
@@ -981,7 +1420,8 @@ CREATE TABLE IF NOT EXISTS "public"."user_sessions" (
     "session_data" "jsonb" DEFAULT '{}'::"jsonb",
     "started_at" timestamp with time zone DEFAULT "now"(),
     "ended_at" timestamp with time zone,
-    "duration_seconds" integer
+    "duration_seconds" integer,
+    "auth_user_id" "uuid"
 );
 
 
@@ -1059,6 +1499,10 @@ CREATE TABLE IF NOT EXISTS "public"."waitlist" (
     "status" "text" DEFAULT 'pending'::"text",
     "created_at" timestamp with time zone DEFAULT "now"(),
     "invited_at" timestamp with time zone,
+    "email_sent_at" timestamp with time zone,
+    "email_status" "text" DEFAULT 'pending'::"text",
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    CONSTRAINT "waitlist_email_status_check" CHECK (("email_status" = ANY (ARRAY['pending'::"text", 'sent'::"text", 'failed'::"text"]))),
     CONSTRAINT "waitlist_status_check" CHECK (("status" = ANY (ARRAY['pending'::"text", 'approved'::"text", 'rejected'::"text"])))
 );
 
@@ -1067,6 +1511,24 @@ ALTER TABLE "public"."waitlist" OWNER TO "postgres";
 
 
 COMMENT ON TABLE "public"."waitlist" IS 'Pre-launch waitlist for user signups';
+
+
+
+CREATE OR REPLACE VIEW "public"."waitlist_pending_emails" WITH ("security_invoker"='true') AS
+ SELECT "id",
+    "email",
+    "source",
+    "created_at",
+    "email_status"
+   FROM "public"."waitlist"
+  WHERE (("email_status" = 'pending'::"text") AND ("email_sent_at" IS NULL))
+  ORDER BY "created_at";
+
+
+ALTER VIEW "public"."waitlist_pending_emails" OWNER TO "postgres";
+
+
+COMMENT ON VIEW "public"."waitlist_pending_emails" IS 'Shows waitlist entries pending email delivery. Uses SECURITY INVOKER (caller permissions).';
 
 
 
@@ -1095,13 +1557,8 @@ ALTER TABLE ONLY "public"."conversations"
 
 
 
-ALTER TABLE ONLY "public"."game_insights"
-    ADD CONSTRAINT "game_insights_game_title_key" UNIQUE ("game_title");
-
-
-
-ALTER TABLE ONLY "public"."game_insights"
-    ADD CONSTRAINT "game_insights_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."game_hub_interactions"
+    ADD CONSTRAINT "game_hub_interactions_pkey" PRIMARY KEY ("id");
 
 
 
@@ -1179,11 +1636,32 @@ CREATE INDEX "idx_analytics_user_id" ON "public"."user_analytics" USING "btree" 
 
 
 
+CREATE INDEX "idx_api_usage_auth_user_id" ON "public"."api_usage" USING "btree" ("auth_user_id");
+
+
+
 CREATE INDEX "idx_api_usage_created_at" ON "public"."api_usage" USING "btree" ("created_at");
 
 
 
 CREATE INDEX "idx_api_usage_user_id" ON "public"."api_usage" USING "btree" ("user_id");
+
+
+
+CREATE INDEX "idx_app_cache_key" ON "public"."app_cache" USING "btree" ("key");
+
+
+
+CREATE INDEX "idx_app_cache_user_id" ON "public"."app_cache" USING "btree" ("user_id") WHERE ("user_id" IS NOT NULL);
+
+
+
+CREATE UNIQUE INDEX "idx_auth_user_game_hub" ON "public"."conversations" USING "btree" ("auth_user_id") WHERE ("is_game_hub" = true);
+
+
+
+COMMENT ON INDEX "public"."idx_auth_user_game_hub" IS 'Enforces one Game Hub conversation per authenticated user (auth_user_id). 
+Prevents duplicate Game Hubs from being created after login/logout cycles.';
 
 
 
@@ -1227,11 +1705,19 @@ CREATE INDEX "idx_conversations_user_slug" ON "public"."conversations" USING "bt
 
 
 
-CREATE INDEX "idx_game_insights_game_title" ON "public"."game_insights" USING "btree" ("game_title");
+CREATE INDEX "idx_game_hub_interactions_auth_user_id" ON "public"."game_hub_interactions" USING "btree" ("auth_user_id");
 
 
 
-CREATE INDEX "idx_game_insights_genre" ON "public"."game_insights" USING "btree" ("genre");
+CREATE INDEX "idx_game_hub_interactions_created_at" ON "public"."game_hub_interactions" USING "btree" ("created_at" DESC);
+
+
+
+CREATE INDEX "idx_game_hub_interactions_detected_game" ON "public"."game_hub_interactions" USING "btree" ("detected_game");
+
+
+
+CREATE INDEX "idx_game_hub_interactions_query_type" ON "public"."game_hub_interactions" USING "btree" ("query_type");
 
 
 
@@ -1252,6 +1738,10 @@ CREATE INDEX "idx_games_title" ON "public"."games" USING "btree" ("title");
 
 
 CREATE INDEX "idx_games_user_id" ON "public"."games" USING "btree" ("user_id");
+
+
+
+CREATE INDEX "idx_messages_auth_user_id" ON "public"."messages" USING "btree" ("auth_user_id");
 
 
 
@@ -1281,6 +1771,10 @@ CREATE INDEX "idx_messages_role" ON "public"."messages" USING "btree" ("role");
 
 
 
+CREATE INDEX "idx_onboarding_progress_auth_user_id" ON "public"."onboarding_progress" USING "btree" ("auth_user_id");
+
+
+
 CREATE INDEX "idx_onboarding_step" ON "public"."onboarding_progress" USING "btree" ("step");
 
 
@@ -1301,6 +1795,10 @@ CREATE INDEX "idx_sessions_user_id" ON "public"."user_sessions" USING "btree" ("
 
 
 
+CREATE INDEX "idx_subtabs_auth_user_id" ON "public"."subtabs" USING "btree" ("auth_user_id");
+
+
+
 CREATE INDEX "idx_subtabs_conversation_id" ON "public"."subtabs" USING "btree" ("conversation_id");
 
 
@@ -1317,7 +1815,11 @@ CREATE INDEX "idx_subtabs_type" ON "public"."subtabs" USING "btree" ("tab_type")
 
 
 
-CREATE UNIQUE INDEX "idx_user_game_hub" ON "public"."conversations" USING "btree" ("user_id") WHERE ("is_game_hub" = true);
+CREATE INDEX "idx_user_analytics_auth_user_id" ON "public"."user_analytics" USING "btree" ("auth_user_id");
+
+
+
+CREATE INDEX "idx_user_sessions_auth_user_id" ON "public"."user_sessions" USING "btree" ("auth_user_id");
 
 
 
@@ -1346,7 +1848,23 @@ CREATE INDEX "idx_waitlist_email" ON "public"."waitlist" USING "btree" ("email")
 
 
 
+CREATE INDEX "idx_waitlist_email_sent" ON "public"."waitlist" USING "btree" ("email_sent_at");
+
+
+
+CREATE INDEX "idx_waitlist_email_status" ON "public"."waitlist" USING "btree" ("email_status");
+
+
+
 CREATE INDEX "idx_waitlist_status" ON "public"."waitlist" USING "btree" ("status");
+
+
+
+CREATE OR REPLACE TRIGGER "messages_set_auth_user_id_trigger" BEFORE INSERT ON "public"."messages" FOR EACH ROW WHEN (("new"."auth_user_id" IS NULL)) EXECUTE FUNCTION "public"."messages_set_auth_user_id"();
+
+
+
+CREATE OR REPLACE TRIGGER "subtabs_set_auth_user_id_trigger" BEFORE INSERT ON "public"."subtabs" FOR EACH ROW WHEN (("new"."auth_user_id" IS NULL)) EXECUTE FUNCTION "public"."subtabs_set_auth_user_id"();
 
 
 
@@ -1358,7 +1876,7 @@ CREATE OR REPLACE TRIGGER "update_conversations_updated_at" BEFORE UPDATE ON "pu
 
 
 
-CREATE OR REPLACE TRIGGER "update_game_insights_updated_at" BEFORE UPDATE ON "public"."game_insights" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+CREATE OR REPLACE TRIGGER "update_game_hub_interactions_updated_at" BEFORE UPDATE ON "public"."game_hub_interactions" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 
 
@@ -1375,6 +1893,20 @@ CREATE OR REPLACE TRIGGER "update_users_last_login" BEFORE UPDATE ON "public"."u
 
 
 CREATE OR REPLACE TRIGGER "update_users_updated_at" BEFORE UPDATE ON "public"."users" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "validate_subtab_unreleased_trigger" BEFORE INSERT OR UPDATE ON "public"."subtabs" FOR EACH ROW EXECUTE FUNCTION "public"."validate_subtab_for_unreleased"();
+
+
+
+ALTER TABLE ONLY "public"."api_usage"
+    ADD CONSTRAINT "api_usage_auth_user_id_fkey" FOREIGN KEY ("auth_user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."conversations"
+    ADD CONSTRAINT "conversations_auth_user_id_fkey" FOREIGN KEY ("auth_user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
 
 
@@ -1408,6 +1940,31 @@ ALTER TABLE ONLY "public"."user_sessions"
 
 
 
+ALTER TABLE ONLY "public"."game_hub_interactions"
+    ADD CONSTRAINT "game_hub_interactions_auth_user_id_fkey" FOREIGN KEY ("auth_user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."game_hub_interactions"
+    ADD CONSTRAINT "game_hub_interactions_created_conversation_id_fkey" FOREIGN KEY ("created_conversation_id") REFERENCES "public"."conversations"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."game_hub_interactions"
+    ADD CONSTRAINT "game_hub_interactions_message_id_fkey" FOREIGN KEY ("message_id") REFERENCES "public"."messages"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."game_hub_interactions"
+    ADD CONSTRAINT "game_hub_interactions_response_message_id_fkey" FOREIGN KEY ("response_message_id") REFERENCES "public"."messages"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."game_hub_interactions"
+    ADD CONSTRAINT "game_hub_interactions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."games"
     ADD CONSTRAINT "games_auth_user_id_fkey" FOREIGN KEY ("auth_user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
@@ -1418,7 +1975,22 @@ COMMENT ON CONSTRAINT "games_auth_user_id_fkey" ON "public"."games" IS 'Ensures 
 
 
 ALTER TABLE ONLY "public"."messages"
+    ADD CONSTRAINT "messages_auth_user_id_fkey" FOREIGN KEY ("auth_user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."messages"
     ADD CONSTRAINT "messages_conversation_id_fkey" FOREIGN KEY ("conversation_id") REFERENCES "public"."conversations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."onboarding_progress"
+    ADD CONSTRAINT "onboarding_progress_auth_user_id_fkey" FOREIGN KEY ("auth_user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."subtabs"
+    ADD CONSTRAINT "subtabs_auth_user_id_fkey" FOREIGN KEY ("auth_user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
 
 
@@ -1432,8 +2004,22 @@ ALTER TABLE ONLY "public"."subtabs"
 
 
 
+ALTER TABLE ONLY "public"."user_analytics"
+    ADD CONSTRAINT "user_analytics_auth_user_id_fkey" FOREIGN KEY ("auth_user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."user_sessions"
+    ADD CONSTRAINT "user_sessions_auth_user_id_fkey" FOREIGN KEY ("auth_user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."users"
     ADD CONSTRAINT "users_auth_user_id_fkey" FOREIGN KEY ("auth_user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+CREATE POLICY "Anonymous users can store rate limits" ON "public"."app_cache" TO "anon" USING ((("cache_type" = 'rate_limit'::"text") AND ("user_id" IS NULL))) WITH CHECK ((("cache_type" = 'rate_limit'::"text") AND ("user_id" IS NULL)));
 
 
 
@@ -1449,7 +2035,7 @@ CREATE POLICY "Authenticated users can access ai_responses" ON "public"."ai_resp
 
 
 
-CREATE POLICY "Authenticated users can access game_insights" ON "public"."game_insights" TO "authenticated" USING (true) WITH CHECK (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
+CREATE POLICY "Authenticated users can access own cache" ON "public"."app_cache" TO "authenticated" USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid")) OR ("user_id" IS NULL))) WITH CHECK ((("user_id" = ( SELECT "auth"."uid"() AS "uid")) OR ("user_id" IS NULL)));
 
 
 
@@ -1465,76 +2051,61 @@ CREATE POLICY "Service role can manage waitlist" ON "public"."waitlist" TO "serv
 
 
 
-CREATE POLICY "Users can access own cache" ON "public"."app_cache" TO "authenticated" USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid")) OR ("user_id" IS NULL))) WITH CHECK ((("user_id" = ( SELECT "auth"."uid"() AS "uid")) OR ("user_id" IS NULL)));
+CREATE POLICY "Users can create own conversations" ON "public"."conversations" FOR INSERT WITH CHECK (("auth_user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "Users can create own conversations" ON "public"."conversations" FOR INSERT TO "authenticated" WITH CHECK (("user_id" IN ( SELECT "users"."id"
-   FROM "public"."users"
-  WHERE ("users"."auth_user_id" = "auth"."uid"()))));
+CREATE POLICY "Users can delete own conversations" ON "public"."conversations" FOR DELETE USING (("auth_user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "Users can delete messages from their conversations" ON "public"."messages" FOR DELETE USING (("conversation_id" IN ( SELECT "c"."id"
-   FROM ("public"."conversations" "c"
-     JOIN "public"."users" "u" ON (("c"."user_id" = "u"."id")))
-  WHERE ("u"."auth_user_id" = ( SELECT "auth"."uid"() AS "uid")))));
+CREATE POLICY "Users can delete own messages" ON "public"."messages" FOR DELETE USING (("auth_user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "Users can delete own conversations" ON "public"."conversations" FOR DELETE TO "authenticated" USING (("user_id" IN ( SELECT "users"."id"
-   FROM "public"."users"
-  WHERE ("users"."auth_user_id" = "auth"."uid"()))));
+CREATE POLICY "Users can delete own subtabs" ON "public"."subtabs" FOR DELETE USING (("auth_user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "Users can delete subtabs from their games" ON "public"."subtabs" FOR DELETE USING (("game_id" IN ( SELECT "g"."id"
-   FROM ("public"."games" "g"
-     JOIN "public"."users" "u" ON (("g"."user_id" = "u"."id")))
-  WHERE ("u"."auth_user_id" = ( SELECT "auth"."uid"() AS "uid")))));
+CREATE POLICY "Users can insert own analytics" ON "public"."user_analytics" FOR INSERT WITH CHECK (("auth_user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "Users can insert messages to their conversations" ON "public"."messages" FOR INSERT WITH CHECK (("conversation_id" IN ( SELECT "c"."id"
-   FROM ("public"."conversations" "c"
-     JOIN "public"."users" "u" ON (("c"."user_id" = "u"."id")))
-  WHERE ("u"."auth_user_id" = ( SELECT "auth"."uid"() AS "uid")))));
+CREATE POLICY "Users can insert own game hub interactions" ON "public"."game_hub_interactions" FOR INSERT WITH CHECK (("auth_user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "Users can insert subtabs to their games" ON "public"."subtabs" FOR INSERT WITH CHECK (("game_id" IN ( SELECT "g"."id"
-   FROM ("public"."games" "g"
-     JOIN "public"."users" "u" ON (("g"."user_id" = "u"."id")))
-  WHERE ("u"."auth_user_id" = ( SELECT "auth"."uid"() AS "uid")))));
+CREATE POLICY "Users can insert own messages" ON "public"."messages" FOR INSERT WITH CHECK (("auth_user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "Users can manage own onboarding" ON "public"."onboarding_progress" TO "authenticated" USING (("user_id" IN ( SELECT "users"."id"
-   FROM "public"."users"
-  WHERE ("users"."auth_user_id" = ( SELECT "auth"."uid"() AS "uid"))))) WITH CHECK (("user_id" IN ( SELECT "users"."id"
+CREATE POLICY "Users can insert own onboarding progress" ON "public"."onboarding_progress" FOR INSERT WITH CHECK (("auth_user_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "Users can insert own sessions" ON "public"."user_sessions" FOR INSERT TO "authenticated" WITH CHECK (("user_id" IN ( SELECT "users"."id"
    FROM "public"."users"
   WHERE ("users"."auth_user_id" = ( SELECT "auth"."uid"() AS "uid")))));
 
 
 
-CREATE POLICY "Users can manage own sessions" ON "public"."user_sessions" TO "authenticated" USING (("user_id" IN ( SELECT "users"."id"
-   FROM "public"."users"
-  WHERE ("users"."auth_user_id" = ( SELECT "auth"."uid"() AS "uid"))))) WITH CHECK (("user_id" IN ( SELECT "users"."id"
-   FROM "public"."users"
-  WHERE ("users"."auth_user_id" = ( SELECT "auth"."uid"() AS "uid")))));
+CREATE POLICY "Users can insert own subtabs" ON "public"."subtabs" FOR INSERT WITH CHECK (("auth_user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "Users can update messages in their conversations" ON "public"."messages" FOR UPDATE USING (("conversation_id" IN ( SELECT "c"."id"
-   FROM ("public"."conversations" "c"
-     JOIN "public"."users" "u" ON (("c"."user_id" = "u"."id")))
-  WHERE ("u"."auth_user_id" = ( SELECT "auth"."uid"() AS "uid")))));
+CREATE POLICY "Users can update own conversations" ON "public"."conversations" FOR UPDATE USING (("auth_user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "Users can update own conversations" ON "public"."conversations" FOR UPDATE TO "authenticated" USING (("user_id" IN ( SELECT "users"."id"
-   FROM "public"."users"
-  WHERE ("users"."auth_user_id" = "auth"."uid"()))));
+CREATE POLICY "Users can update own game hub interactions" ON "public"."game_hub_interactions" FOR UPDATE USING (("auth_user_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "Users can update own messages" ON "public"."messages" FOR UPDATE USING (("auth_user_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "Users can update own onboarding progress" ON "public"."onboarding_progress" FOR UPDATE USING (("auth_user_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("auth_user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
@@ -1542,27 +2113,19 @@ CREATE POLICY "Users can update own profile" ON "public"."users" FOR UPDATE TO "
 
 
 
-CREATE POLICY "Users can update subtabs in their games" ON "public"."subtabs" FOR UPDATE USING (("game_id" IN ( SELECT "g"."id"
-   FROM ("public"."games" "g"
-     JOIN "public"."users" "u" ON (("g"."user_id" = "u"."id")))
-  WHERE ("u"."auth_user_id" = ( SELECT "auth"."uid"() AS "uid")))));
-
-
-
-CREATE POLICY "Users can view messages from their conversations" ON "public"."messages" FOR SELECT USING (("conversation_id" IN ( SELECT "c"."id"
-   FROM ("public"."conversations" "c"
-     JOIN "public"."users" "u" ON (("c"."user_id" = "u"."id")))
-  WHERE ("u"."auth_user_id" = ( SELECT "auth"."uid"() AS "uid")))));
-
-
-
-COMMENT ON POLICY "Users can view messages from their conversations" ON "public"."messages" IS 'Optimized RLS policy using (select auth.uid()) to prevent per-row re-evaluation';
-
-
-
-CREATE POLICY "Users can view own analytics" ON "public"."user_analytics" FOR SELECT TO "authenticated" USING (("user_id" IN ( SELECT "users"."id"
+CREATE POLICY "Users can update own sessions" ON "public"."user_sessions" FOR UPDATE TO "authenticated" USING (("user_id" IN ( SELECT "users"."id"
+   FROM "public"."users"
+  WHERE ("users"."auth_user_id" = ( SELECT "auth"."uid"() AS "uid"))))) WITH CHECK (("user_id" IN ( SELECT "users"."id"
    FROM "public"."users"
   WHERE ("users"."auth_user_id" = ( SELECT "auth"."uid"() AS "uid")))));
+
+
+
+CREATE POLICY "Users can update own subtabs" ON "public"."subtabs" FOR UPDATE USING (("auth_user_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "Users can view own analytics" ON "public"."user_analytics" FOR SELECT USING (("auth_user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
@@ -1572,9 +2135,19 @@ CREATE POLICY "Users can view own api_usage" ON "public"."api_usage" FOR SELECT 
 
 
 
-CREATE POLICY "Users can view own conversations" ON "public"."conversations" FOR SELECT TO "authenticated" USING (("user_id" IN ( SELECT "users"."id"
-   FROM "public"."users"
-  WHERE ("users"."auth_user_id" = "auth"."uid"()))));
+CREATE POLICY "Users can view own conversations" ON "public"."conversations" FOR SELECT USING (("auth_user_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "Users can view own game hub interactions" ON "public"."game_hub_interactions" FOR SELECT USING (("auth_user_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "Users can view own messages" ON "public"."messages" FOR SELECT USING (("auth_user_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "Users can view own onboarding progress" ON "public"."onboarding_progress" FOR SELECT USING (("auth_user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
@@ -1582,14 +2155,13 @@ CREATE POLICY "Users can view own profile" ON "public"."users" FOR SELECT TO "au
 
 
 
-CREATE POLICY "Users can view subtabs from their games" ON "public"."subtabs" FOR SELECT USING (("game_id" IN ( SELECT "g"."id"
-   FROM ("public"."games" "g"
-     JOIN "public"."users" "u" ON (("g"."user_id" = "u"."id")))
-  WHERE ("u"."auth_user_id" = ( SELECT "auth"."uid"() AS "uid")))));
+CREATE POLICY "Users can view own sessions" ON "public"."user_sessions" FOR SELECT TO "authenticated" USING (("user_id" IN ( SELECT "users"."id"
+   FROM "public"."users"
+  WHERE ("users"."auth_user_id" = ( SELECT "auth"."uid"() AS "uid")))));
 
 
 
-COMMENT ON POLICY "Users can view subtabs from their games" ON "public"."subtabs" IS 'Optimized RLS policy using (select auth.uid()) to prevent per-row re-evaluation';
+CREATE POLICY "Users can view own subtabs" ON "public"."subtabs" FOR SELECT USING (("auth_user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
@@ -1605,29 +2177,25 @@ ALTER TABLE "public"."app_cache" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."conversations" ENABLE ROW LEVEL SECURITY;
 
 
-ALTER TABLE "public"."game_insights" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."game_hub_interactions" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."games" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "games_delete_own" ON "public"."games" FOR DELETE TO "authenticated" USING (("auth_user_id" = "auth"."uid"()));
+CREATE POLICY "games_delete_own" ON "public"."games" FOR DELETE USING (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "games_insert_own" ON "public"."games" FOR INSERT TO "authenticated" WITH CHECK (("auth_user_id" = "auth"."uid"()));
+CREATE POLICY "games_insert_own" ON "public"."games" FOR INSERT WITH CHECK (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "games_select_own" ON "public"."games" FOR SELECT TO "authenticated" USING (("auth_user_id" = "auth"."uid"()));
+CREATE POLICY "games_select_own" ON "public"."games" FOR SELECT USING (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-COMMENT ON POLICY "games_select_own" ON "public"."games" IS 'Optimized RLS: Direct auth_user_id comparison eliminates JOIN with users table. ~10x faster than previous policy.';
-
-
-
-CREATE POLICY "games_update_own" ON "public"."games" FOR UPDATE TO "authenticated" USING (("auth_user_id" = "auth"."uid"())) WITH CHECK (("auth_user_id" = "auth"."uid"()));
+CREATE POLICY "games_update_own" ON "public"."games" FOR UPDATE USING (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
@@ -1660,6 +2228,12 @@ GRANT ALL ON SCHEMA "public" TO PUBLIC;
 
 
 
+GRANT ALL ON FUNCTION "public"."add_message"("p_conversation_id" "text", "p_role" "text", "p_content" "text", "p_image_url" "text", "p_metadata" "jsonb") TO "anon";
+GRANT ALL ON FUNCTION "public"."add_message"("p_conversation_id" "text", "p_role" "text", "p_content" "text", "p_image_url" "text", "p_metadata" "jsonb") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."add_message"("p_conversation_id" "text", "p_role" "text", "p_content" "text", "p_image_url" "text", "p_metadata" "jsonb") TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."add_message"("p_conversation_id" "uuid", "p_role" "text", "p_content" "text", "p_image_url" "text", "p_metadata" "jsonb") TO "anon";
 GRANT ALL ON FUNCTION "public"."add_message"("p_conversation_id" "uuid", "p_role" "text", "p_content" "text", "p_image_url" "text", "p_metadata" "jsonb") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."add_message"("p_conversation_id" "uuid", "p_role" "text", "p_content" "text", "p_image_url" "text", "p_metadata" "jsonb") TO "service_role";
@@ -1684,6 +2258,12 @@ GRANT ALL ON FUNCTION "public"."create_user_record"("p_auth_user_id" "uuid", "p_
 
 
 
+GRANT ALL ON FUNCTION "public"."expire_trials"() TO "anon";
+GRANT ALL ON FUNCTION "public"."expire_trials"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."expire_trials"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."get_cache_performance_metrics"() TO "anon";
 GRANT ALL ON FUNCTION "public"."get_cache_performance_metrics"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_cache_performance_metrics"() TO "service_role";
@@ -1699,6 +2279,12 @@ GRANT ALL ON FUNCTION "public"."get_cache_stats"() TO "service_role";
 GRANT ALL ON FUNCTION "public"."get_complete_user_data"("p_auth_user_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_complete_user_data"("p_auth_user_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_complete_user_data"("p_auth_user_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_conversation_messages"("p_conversation_id" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_conversation_messages"("p_conversation_id" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_conversation_messages"("p_conversation_id" "text") TO "service_role";
 
 
 
@@ -1738,6 +2324,18 @@ GRANT ALL ON FUNCTION "public"."increment_user_usage"("p_auth_user_id" "uuid", "
 
 
 
+GRANT ALL ON FUNCTION "public"."messages_set_auth_user_id"() TO "anon";
+GRANT ALL ON FUNCTION "public"."messages_set_auth_user_id"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."messages_set_auth_user_id"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."migrate_messages_to_conversation"("p_message_ids" "uuid"[], "p_target_conversation_id" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."migrate_messages_to_conversation"("p_message_ids" "uuid"[], "p_target_conversation_id" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."migrate_messages_to_conversation"("p_message_ids" "uuid"[], "p_target_conversation_id" "text") TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."migrate_messages_to_conversation"("p_message_ids" "uuid"[], "p_target_conversation_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."migrate_messages_to_conversation"("p_message_ids" "uuid"[], "p_target_conversation_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."migrate_messages_to_conversation"("p_message_ids" "uuid"[], "p_target_conversation_id" "uuid") TO "service_role";
@@ -1750,6 +2348,12 @@ GRANT ALL ON FUNCTION "public"."migrate_messages_to_table"() TO "service_role";
 
 
 
+GRANT ALL ON FUNCTION "public"."register_and_activate_connection"("p_code" "text", "p_user_id" "uuid", "p_device_info" "jsonb") TO "anon";
+GRANT ALL ON FUNCTION "public"."register_and_activate_connection"("p_code" "text", "p_user_id" "uuid", "p_device_info" "jsonb") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."register_and_activate_connection"("p_code" "text", "p_user_id" "uuid", "p_device_info" "jsonb") TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."reset_monthly_usage"() TO "anon";
 GRANT ALL ON FUNCTION "public"."reset_monthly_usage"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."reset_monthly_usage"() TO "service_role";
@@ -1759,6 +2363,24 @@ GRANT ALL ON FUNCTION "public"."reset_monthly_usage"() TO "service_role";
 GRANT ALL ON FUNCTION "public"."rollback_messages_to_jsonb"() TO "anon";
 GRANT ALL ON FUNCTION "public"."rollback_messages_to_jsonb"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."rollback_messages_to_jsonb"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."save_message_transaction"("p_conversation_id" "text", "p_role" "text", "p_content" "text", "p_image_url" "text", "p_metadata" "jsonb") TO "anon";
+GRANT ALL ON FUNCTION "public"."save_message_transaction"("p_conversation_id" "text", "p_role" "text", "p_content" "text", "p_image_url" "text", "p_metadata" "jsonb") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."save_message_transaction"("p_conversation_id" "text", "p_role" "text", "p_content" "text", "p_image_url" "text", "p_metadata" "jsonb") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."save_onboarding_step"("p_user_id" "uuid", "p_step" "text", "p_data" "jsonb") TO "anon";
+GRANT ALL ON FUNCTION "public"."save_onboarding_step"("p_user_id" "uuid", "p_step" "text", "p_data" "jsonb") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."save_onboarding_step"("p_user_id" "uuid", "p_step" "text", "p_data" "jsonb") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."subtabs_set_auth_user_id"() TO "anon";
+GRANT ALL ON FUNCTION "public"."subtabs_set_auth_user_id"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."subtabs_set_auth_user_id"() TO "service_role";
 
 
 
@@ -1792,6 +2414,18 @@ GRANT ALL ON FUNCTION "public"."update_user_onboarding_status"("p_user_id" "uuid
 
 
 
+GRANT ALL ON FUNCTION "public"."update_waitlist_email_status"("waitlist_email" "text", "new_status" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."update_waitlist_email_status"("waitlist_email" "text", "new_status" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."update_waitlist_email_status"("waitlist_email" "text", "new_status" "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."validate_subtab_for_unreleased"() TO "anon";
+GRANT ALL ON FUNCTION "public"."validate_subtab_for_unreleased"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."validate_subtab_for_unreleased"() TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."ai_responses" TO "anon";
 GRANT ALL ON TABLE "public"."ai_responses" TO "authenticated";
 GRANT ALL ON TABLE "public"."ai_responses" TO "service_role";
@@ -1816,9 +2450,9 @@ GRANT ALL ON TABLE "public"."conversations" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."game_insights" TO "anon";
-GRANT ALL ON TABLE "public"."game_insights" TO "authenticated";
-GRANT ALL ON TABLE "public"."game_insights" TO "service_role";
+GRANT ALL ON TABLE "public"."game_hub_interactions" TO "anon";
+GRANT ALL ON TABLE "public"."game_hub_interactions" TO "authenticated";
+GRANT ALL ON TABLE "public"."game_hub_interactions" TO "service_role";
 
 
 
@@ -1867,6 +2501,12 @@ GRANT ALL ON TABLE "public"."users" TO "service_role";
 GRANT ALL ON TABLE "public"."waitlist" TO "anon";
 GRANT ALL ON TABLE "public"."waitlist" TO "authenticated";
 GRANT ALL ON TABLE "public"."waitlist" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."waitlist_pending_emails" TO "anon";
+GRANT ALL ON TABLE "public"."waitlist_pending_emails" TO "authenticated";
+GRANT ALL ON TABLE "public"."waitlist_pending_emails" TO "service_role";
 
 
 
