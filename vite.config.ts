@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: false, // Disable source maps in production to reduce console noise
     chunkSizeWarningLimit: 300, // Lower threshold for warnings
     rollupOptions: {
       output: {
