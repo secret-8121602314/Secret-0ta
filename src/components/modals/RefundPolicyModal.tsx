@@ -44,7 +44,7 @@ const RefundPolicyModal: React.FC<RefundPolicyModalProps> = ({ isOpen, onClose }
 
         <h2 className="text-2xl font-bold text-white mt-8 mb-4">Contact Us</h2>
         <p className="text-neutral-300 mb-4">
-          If you have any questions about this policy, please contact us at <a href="mailto:support@otakon.app" className="text-[#FFAB40] hover:underline">support@otakon.app</a>.
+          If you have any questions about this policy, please contact us at <a href="mailto:support@otagon.app" className="text-[#FFAB40] hover:underline">support@otagon.app</a>.
         </p>
       </div>
     </Modal>
