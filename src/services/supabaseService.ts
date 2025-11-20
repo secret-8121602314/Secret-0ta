@@ -143,7 +143,8 @@ export class SupabaseService {
             updated_at
           )
         `)
-        .order('updated_at', { ascending: false});
+        .order('updated_at', { ascending: false})
+        .order('created_at', { foreignTable: 'messages', ascending: true });
       
             if (!errorNoFilter && dataNoFilter && dataNoFilter.length > 0) {
                 return this.mapConversations(dataNoFilter);
@@ -177,7 +178,8 @@ export class SupabaseService {
           )
         `)
         .eq('auth_user_id', userId)
-        .order('updated_at', { ascending: false});
+        .order('updated_at', { ascending: false})
+        .order('created_at', { foreignTable: 'messages', ascending: true });
 
       if (error) {
         console.error('❌ [Supabase] Error getting conversations:', error);
