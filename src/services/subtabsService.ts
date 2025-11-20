@@ -142,6 +142,22 @@ export class SubtabsService {
     subtabs: SubTab[]
   ): Promise<boolean> {
     try {
+      // ✅ CRITICAL: Get auth_user_id from conversation FIRST to avoid trigger issues
+      const { data: conversation, error: convError } = await supabase
+        .from('conversations')
+        .select('auth_user_id')
+        .eq('id', conversationId)
+        .single();
+
+      if (convError || !conversation?.auth_user_id) {
+        console.error('❌ [SubtabsService] Error getting conversation auth_user_id:', convError);
+        console.error('❌ [SubtabsService] Conversation may not exist yet. ConversationId:', conversationId);
+        return false;
+      }
+
+      const authUserId = conversation.auth_user_id;
+      console.error(`🔄 [SubtabsService] Using auth_user_id: ${authUserId} for ${subtabs.length} subtabs`);
+
       // Delete existing subtabs for this conversation
       const { error: deleteError } = await supabase
         .from('subtabs')
@@ -155,20 +171,30 @@ export class SubtabsService {
 
       // Insert new subtabs
       if (subtabs.length > 0) {
-        const subtabsToInsert = subtabs.map((subtab, index) => ({
-          id: subtab.id,
-          conversation_id: conversationId,
-          game_id: null, // Made nullable in schema migration
-          title: subtab.title,
-          content: subtab.content,
-          tab_type: subtab.type,
-          order_index: index,
-          metadata: {
-            isNew: subtab.isNew,
-            status: subtab.status,
-            instruction: subtab.instruction,
-          },
-        }));
+        const subtabsToInsert = subtabs.map((subtab, index) => {
+          // ✅ Validate that type exists before mapping
+          if (!subtab.type) {
+            console.error(`⚠️ [SubtabsService] Subtab "${subtab.title}" has NULL type! Using fallback.`);
+          }
+
+          return {
+            id: subtab.id,
+            conversation_id: conversationId,
+            game_id: null, // Made nullable in schema migration
+            title: subtab.title || 'Untitled',
+            content: subtab.content || '',
+            tab_type: subtab.type || 'chat', // ✅ Fallback to 'chat' if type is missing
+            order_index: index,
+            auth_user_id: authUserId, // ✅ Explicitly set to avoid trigger race conditions
+            metadata: {
+              isNew: subtab.isNew,
+              status: subtab.status,
+              instruction: subtab.instruction,
+            },
+          };
+        });
+
+        console.error('🔄 [SubtabsService] Inserting subtabs:', subtabsToInsert.map(s => ({ title: s.title, tab_type: s.tab_type, has_auth_user_id: !!s.auth_user_id })));
 
         // Types not regenerated yet, but schema migration applied (game_id nullable)
         const { error: insertError } = await supabase
@@ -176,14 +202,17 @@ export class SubtabsService {
           .insert(subtabsToInsert);
 
         if (insertError) {
-          console.error('Error inserting subtabs:', insertError);
+          console.error('❌ [SubtabsService] Error inserting subtabs:', insertError);
+          console.error('❌ [SubtabsService] Failed subtabs data:', JSON.stringify(subtabsToInsert, null, 2));
           return false;
         }
+
+        console.error('✅ [SubtabsService] Successfully inserted', subtabs.length, 'subtabs');
       }
 
       return true;
     } catch (error) {
-      console.error('Error setting subtabs in table:', error);
+      console.error('❌ [SubtabsService] Error setting subtabs in table:', error);
       return false;
     }
   }

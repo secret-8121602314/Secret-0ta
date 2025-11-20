@@ -139,8 +139,17 @@ class GameTabService {
     // Save subtabs using the subtabsService (handles both JSONB and normalized approaches)
     if (subTabs.length > 0) {
       console.error('🎮 [GameTabService] Saving', subTabs.length, 'subtabs for conversation:', conversation.id);
-      console.error('🎮 [GameTabService] Subtabs:', JSON.stringify(subTabs, null, 2));
-      await subtabsService.setSubtabs(conversation.id, subTabs);
+      console.error('🎮 [GameTabService] Subtabs:', JSON.stringify(subTabs.map(s => ({ id: s.id, title: s.title, type: s.type, hasType: !!s.type })), null, 2));
+      
+      // ✅ CRITICAL: Wait for conversation to be fully persisted before saving subtabs
+      // This ensures the conversation exists with auth_user_id set
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      const success = await subtabsService.setSubtabs(conversation.id, subTabs);
+      if (!success) {
+        console.error('❌ [GameTabService] Failed to save subtabs - conversation may not exist yet');
+        // Don't throw - let background insights retry
+      }
     } else {
       console.error('🎮 [GameTabService] No subtabs to save for conversation:', conversation.id);
     }
@@ -437,18 +446,24 @@ class GameTabService {
       const subtabsDebug = updatedSubTabs.map(s => ({
         id: s.id,
         title: s.title,
+        type: s.type,
         status: s.status,
         contentLength: s.content?.length || 0,
-        isNew: s.isNew
+        isNew: s.isNew,
+        hasType: !!s.type
       }));
       console.error('🤖 [GameTabService] Subtabs to save:', subtabsDebug);
       console.error('🤖 [GameTabService] ALL statuses:', updatedSubTabs.map(s => s.status));
+      console.error('🤖 [GameTabService] ALL types:', updatedSubTabs.map(s => s.type || 'MISSING_TYPE'));
       
       // ✅ FIX: Clear cache BEFORE write to prevent stale reads during write
       console.error('🤖 [GameTabService] 🗑️ Clearing cache BEFORE subtabs write...');
       ConversationService.clearCache();
       
-      await subtabsService.setSubtabs(conversation.id, updatedSubTabs);
+      const success = await subtabsService.setSubtabs(conversation.id, updatedSubTabs);
+      if (!success) {
+        throw new Error('Failed to update subtabs in database');
+      }
       console.error('🤖 [GameTabService] ✅ Subtabs dual-write complete (table + JSONB)');
       
       // ✅ FIX: Clear cache AGAIN after write

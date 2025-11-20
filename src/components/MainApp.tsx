@@ -1789,7 +1789,11 @@ const MainApp: React.FC<MainAppProps> = ({
           // Allow migration from Game Hub OR from a different game tab
           const shouldMigrateMessages = targetConversationId && targetConversationId !== activeConversation.id;
                               if (shouldMigrateMessages) {
-                                                // ✅ Use atomic migration service to prevent race conditions
+                        // ✅ CRITICAL: Wait for conversation to fully persist before migrating
+            // This ensures auth_user_id is set on the destination conversation
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // ✅ Use atomic migration service to prevent race conditions
             await MessageRoutingService.migrateMessagesAtomic(
               [newMessage.id, aiMessage.id],
               activeConversation.id,
