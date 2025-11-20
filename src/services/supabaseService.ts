@@ -119,7 +119,19 @@ export class SupabaseService {
       // This bypasses potential issues with the auth_user_id column
       const { data: dataNoFilter, error: errorNoFilter } = await supabase
         .from('conversations')
-        .select('*')
+        .select(`
+          *,
+          subtabs (
+            id,
+            conversation_id,
+            game_id,
+            name,
+            content,
+            order_index,
+            created_at,
+            updated_at
+          )
+        `)
         .order('updated_at', { ascending: false});
       
             if (!errorNoFilter && dataNoFilter && dataNoFilter.length > 0) {
@@ -129,7 +141,19 @@ export class SupabaseService {
       // If unfiltered fails, try with explicit filter
             const { data, error } = await supabase
         .from('conversations')
-        .select('*')
+        .select(`
+          *,
+          subtabs (
+            id,
+            conversation_id,
+            game_id,
+            name,
+            content,
+            order_index,
+            created_at,
+            updated_at
+          )
+        `)
         .eq('auth_user_id', userId)
         .order('updated_at', { ascending: false});
 
@@ -178,13 +202,18 @@ export class SupabaseService {
       const messages = conv.messages as import('../types').ChatMessage[];
       const processedMessages = Array.isArray(messages) ? messages as unknown[] : [];
       
+      // Handle subtabs from the join
+      const subtabs = conv.subtabs;
+      const processedSubtabs = Array.isArray(subtabs) ? subtabs as unknown[] : [];
+      
       if (process.env.NODE_ENV === 'development') {
         console.error('🔍 [Supabase] Processing conversation:', {
           id: conv.id,
           hasMessages: !!messages,
           isArray: Array.isArray(messages),
           messagesType: typeof messages,
-          messageCount: processedMessages.length
+          messageCount: processedMessages.length,
+          subtabCount: processedSubtabs.length
         });
       }
       
@@ -197,7 +226,7 @@ export class SupabaseService {
         gameId: conv.game_id ?? undefined,
         gameTitle: conv.game_title ?? undefined,
         genre: conv.genre ?? undefined,
-        subtabs: Array.isArray(conv.subtabs) ? conv.subtabs as unknown[] : [],
+        subtabs: processedSubtabs,
         subtabsOrder: conv.subtabs_order || [],
         isActiveSession: conv.is_active_session,
         activeObjective: conv.active_objective ?? undefined,
