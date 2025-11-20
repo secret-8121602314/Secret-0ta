@@ -485,8 +485,32 @@ export class ConversationService {
         return { success: true, reason: 'Message already exists' };
       }
       
-      // Simply add the message - no limits
-      conversation.messages.push(message);
+      // ✅ CRITICAL FIX: Save message to database first before adding to memory
+      console.error('💾 [ConversationService] Saving message to database...');
+      const { MessageService } = await import('./messageService');
+      const messageService = MessageService.getInstance();
+      const savedMessage = await messageService.addMessage(conversationId, {
+        role: message.role,
+        content: message.content,
+        imageUrl: message.imageUrl,
+        metadata: message.metadata
+      });
+      
+      if (!savedMessage) {
+        console.error('❌ [ConversationService] Failed to save message to database');
+        return { success: false, reason: 'Failed to save message to database' };
+      }
+      
+      console.error('✅ [ConversationService] Message saved to database:', savedMessage.id);
+      
+      // Add the message to memory (using the database-generated ID and timestamp)
+      const messageWithDbFields: ChatMessage = {
+        ...message,
+        id: savedMessage.id,
+        timestamp: savedMessage.timestamp
+      };
+      
+      conversation.messages.push(messageWithDbFields);
       conversation.updatedAt = Date.now();
       
       console.error('✅ [ConversationService] Message added to conversation, new count:', conversation.messages.length);
