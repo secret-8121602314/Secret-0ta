@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { User, Conversation, Game, UserTier, TrialStatus } from '../types';
 import { USER_TIERS, TIER_LIMITS } from '../constants';
-import { jsonToRecord, safeParseDate, safeBoolean, safeNumber, toJson } from '../utils/typeHelpers';
+import { jsonToRecord, safeParseDate, safeBoolean, safeNumber, toJson, safeString } from '../utils/typeHelpers';
 import { toastService } from './toastService';
 import { mapUserData } from '../utils/userMapping';
 
