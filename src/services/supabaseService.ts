@@ -121,6 +121,15 @@ export class SupabaseService {
         .from('conversations')
         .select(`
           *,
+          messages (
+            id,
+            conversation_id,
+            role,
+            content,
+            image_url,
+            metadata,
+            created_at
+          ),
           subtabs (
             id,
             conversation_id,
@@ -145,6 +154,15 @@ export class SupabaseService {
         .from('conversations')
         .select(`
           *,
+          messages (
+            id,
+            conversation_id,
+            role,
+            content,
+            image_url,
+            metadata,
+            created_at
+          ),
           subtabs (
             id,
             conversation_id,
@@ -203,8 +221,18 @@ export class SupabaseService {
     }
 
     return data.map(conv => {
-      const messages = conv.messages as import('../types').ChatMessage[];
-      const processedMessages = Array.isArray(messages) ? messages as unknown[] : [];
+      // Handle messages from the join
+      const messages = conv.messages;
+      const processedMessages = Array.isArray(messages) 
+        ? messages.map((msg: any) => ({
+            id: msg.id,
+            role: msg.role as 'user' | 'assistant' | 'system',
+            content: msg.content,
+            timestamp: safeParseDate(msg.created_at),
+            imageUrl: safeString(msg.image_url, undefined),
+            metadata: typeof msg.metadata === 'object' && msg.metadata !== null ? msg.metadata as Record<string, unknown> : undefined,
+          }))
+        : [];
       
       // Handle subtabs from the join
       const subtabs = conv.subtabs;
