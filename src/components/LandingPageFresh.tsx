@@ -115,8 +115,8 @@ const FeatureIcon = ({ icon }: { icon: 'eye' | 'bookmark' | 'network' | 'mic' | 
 
 const Feature = React.memo(({ title, description, icon, image, isGemini }: { title: React.ReactNode, description: string, icon?: 'eye' | 'bookmark' | 'network' | 'mic' | 'insights' | 'cpu', image?: string, isGemini?: boolean }) => {
         return (
-        <div className="flex flex-col items-center text-center group p-6 rounded-2xl md:hover:bg-gradient-to-br md:hover:from-neutral-800/20 md:hover:to-neutral-900/20 transition-all duration-500">
-            <div className={`w-full max-w-4xl aspect-video min-h-[300px] md:min-h-[400px] mb-6 animate-fade-slide-up md:group-hover:scale-105 transition-transform duration-500 ${isGemini ? 'bg-transparent flex items-center justify-center' : ''}`}>
+        <div className="flex flex-col items-center text-center group p-6 md:p-8 rounded-2xl md:hover:bg-gradient-to-br md:hover:from-neutral-800/20 md:hover:to-neutral-900/20 transition-all duration-500">
+            <div className={`w-full max-w-4xl aspect-video min-h-[350px] md:min-h-[500px] mb-6 animate-fade-slide-up md:group-hover:scale-105 transition-transform duration-500 ${isGemini ? 'bg-transparent flex items-center justify-center' : ''}`}>
                 {image ? (
                     isGemini ? (
                         <div className="w-full max-w-md aspect-[5/6] flex items-center justify-center bg-transparent">
@@ -295,42 +295,47 @@ const FeaturesCarousel = ({ features }: { features: Array<{ title: React.ReactNo
                 </div>
             </div>
 
-            {/* Navigation Arrows */}
+            {/* Navigation Arrows - Below on mobile, overlaid on desktop */}
+            <div className="flex justify-center gap-4 mt-6 md:hidden">
+                <button
+                    onClick={scrollPrev}
+                    className="bg-transparent border-2 border-[#E53A3A] text-[#E53A3A] p-3 rounded-lg active:bg-gradient-to-r active:from-[#E53A3A] active:to-[#D98C1F] active:text-white active:border-transparent md:hover:bg-gradient-to-r md:hover:from-[#E53A3A] md:hover:to-[#D98C1F] md:hover:text-white md:hover:border-transparent md:hover:shadow-2xl md:hover:shadow-[#E53A3A]/50 md:hover:scale-110 active:scale-95 focus:outline-none transition-[background,transform,shadow,opacity,border,color] duration-300 disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-sm"
+                    aria-label="Previous feature"
+                >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </button>
+                <button
+                    onClick={scrollNext}
+                    className="bg-transparent border-2 border-[#E53A3A] text-[#E53A3A] p-3 rounded-lg active:bg-gradient-to-r active:from-[#E53A3A] active:to-[#D98C1F] active:text-white active:border-transparent md:hover:bg-gradient-to-r md:hover:from-[#E53A3A] md:hover:to-[#D98C1F] md:hover:text-white md:hover:border-transparent md:hover:shadow-2xl md:hover:shadow-[#E53A3A]/50 md:hover:scale-110 active:scale-95 focus:outline-none transition-[background,transform,shadow,opacity,border,color] duration-300 disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-sm"
+                    aria-label="Next feature"
+                >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                </button>
+            </div>
+
+            {/* Desktop overlaid buttons */}
             <button
                 onClick={scrollPrev}
-                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 md:-translate-x-16 lg:-translate-x-20 bg-transparent border-2 border-[#E53A3A] text-[#E53A3A] p-2 md:p-3 rounded-lg md:hover:bg-gradient-to-r md:hover:from-[#E53A3A] md:hover:to-[#D98C1F] md:hover:text-white md:hover:border-transparent md:hover:shadow-2xl md:hover:shadow-[#E53A3A]/50 md:hover:scale-110 active:scale-95 focus:bg-transparent focus:outline-none transition-[background,transform,shadow,opacity] duration-300 z-10 disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-sm opacity-40 md:hover:opacity-100"
-                aria-label="Previous slide"
+                className="hidden md:block absolute -left-16 lg:-left-24 top-1/2 -translate-y-1/2 bg-transparent border-2 border-[#E53A3A] text-[#E53A3A] p-2 rounded-lg md:hover:bg-gradient-to-r md:hover:from-[#E53A3A] md:hover:to-[#D98C1F] md:hover:text-white md:hover:border-transparent md:hover:shadow-2xl md:hover:shadow-[#E53A3A]/50 md:hover:scale-110 active:scale-95 focus:outline-none transition-[background,transform,shadow,opacity,border,color] duration-300 z-10 disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-sm opacity-60 md:hover:opacity-100"
+                aria-label="Previous feature"
             >
-                <svg className="w-5 h-5 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
             </button>
             <button
                 onClick={scrollNext}
-                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 md:translate-x-16 lg:translate-x-20 bg-transparent border-2 border-[#E53A3A] text-[#E53A3A] p-2 md:p-3 rounded-lg md:hover:bg-gradient-to-r md:hover:from-[#E53A3A] md:hover:to-[#D98C1F] md:hover:text-white md:hover:border-transparent md:hover:shadow-2xl md:hover:shadow-[#E53A3A]/50 md:hover:scale-110 active:scale-95 focus:bg-transparent focus:outline-none transition-[background,transform,shadow,opacity] duration-300 z-10 disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-sm opacity-40 md:hover:opacity-100"
-                aria-label="Next slide"
+                className="hidden md:block absolute -right-16 lg:-right-24 top-1/2 -translate-y-1/2 bg-transparent border-2 border-[#E53A3A] text-[#E53A3A] p-2 rounded-lg md:hover:bg-gradient-to-r md:hover:from-[#E53A3A] md:hover:to-[#D98C1F] md:hover:text-white md:hover:border-transparent md:hover:shadow-2xl md:hover:shadow-[#E53A3A]/50 md:hover:scale-110 active:scale-95 focus:outline-none transition-[background,transform,shadow,opacity,border,color] duration-300 z-10 disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-sm opacity-60 md:hover:opacity-100"
+                aria-label="Next feature"
             >
-                <svg className="w-5 h-5 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                 </svg>
             </button>
-
-            {/* Pagination Dots */}
-            <div className="hidden md:flex justify-center gap-3 mt-8">
-                {scrollSnaps.map((_, idx) => (
-                    <button
-                        key={idx}
-                        onClick={() => scrollTo(idx)}
-                        className={`transition-all duration-300 rounded-full ${
-                            idx === selectedIndex
-                                ? 'w-12 h-3 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F]'
-                                : 'w-3 h-3 bg-neutral-600 hover:bg-neutral-500'
-                        }`}
-                        aria-label={`Go to slide ${idx + 1}`}
-                        aria-current={idx === selectedIndex ? 'true' : 'false'}
-                    />
-                ))}
-            </div>
         </div>
     );
 };
@@ -812,7 +817,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
         </div>
                         
                         <p className="text-xl md:text-2xl text-neutral-300 max-w-4xl mx-auto mb-8 leading-relaxed">
-              Otagon sees your screen and gives you the perfect nudge to keep you playing—without ruining the surprise. Stop searching, start playing.
+              Otagon sees your screen and gives you the perfect nudge to keep you playing—without ruining the surprise. The fastest way to snap a screenshot, share with friends, and get gaming hints in seconds. Stop searching, start playing.
             </p>
 
                         {/* Enhanced Waitlist Form */}
@@ -826,7 +831,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
               placeholder="Enter your email address"
               required
               disabled={isSubmitting}
-                                        className="w-full bg-gradient-to-r from-[#1C1C1C] to-[#0A0A0A] border-2 border-neutral-800/60 rounded-xl py-4 sm:py-5 px-4 sm:px-6 text-white placeholder-neutral-400 focus:outline-none focus:ring-4 focus:ring-[#FFAB40]/30 focus:border-[#FFAB40] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-base sm:text-lg backdrop-blur-sm hover:border-neutral-700/80"
+                                        className="w-full bg-gradient-to-r from-[#1C1C1C] to-[#0A0A0A] border-2 border-neutral-800/60 rounded-xl py-4 sm:py-5 px-4 sm:px-6 text-white placeholder-neutral-400 focus:outline-none focus:ring-4 focus:ring-[#FFAB40]/30 focus:border-[#FFAB40] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-base sm:text-lg backdrop-blur-sm hover:border-neutral-700/80 text-center sm:text-left"
               aria-label="Email for waitlist"
             />
                                 </div>
@@ -919,7 +924,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                                         <path d="M2 8.994A5.99 5.99 0 0 1 8 3h8c3.313 0 6 2.695 6 5.994V21H8c-3.313 0-6-2.695-6-5.994V8.994zM14 11v2h2v-2h-2zm-6 0v2h2v-2H8z"/>
                                     </svg>
                                 </div>
-                                <h3 className="text-2xl font-bold text-white mb-4">Get an Instant Hint on Your Phone</h3>
+                                <h3 className="text-2xl font-bold text-white mb-4">Get an Instant Hint and Gameplay Screenshot on Your Phone</h3>
                                 <p className="text-lg text-neutral-300 leading-relaxed">
                                     AI analyzes your situation and delivers spoiler-free hints to your mobile or second monitor
                                 </p>
@@ -973,6 +978,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                                     image: feature2
                                 },
                                 {
+                                    title: <><span>Stay Focused, Stay Ahead</span><ProBadge /></>,
+                                    description: "Skip the wiki-hunting. Otagon provides quest tips, secret locations, build optimization—all without spoiling your discovery.",
+                                    image: feature6
+                                },
+                                {
+                                    title: "Play From Anywhere",
+                                    description: "Gaming on console? Manually upload screenshots from your phone. Help arrives instantly in the same conversation.",
+                                    image: feature5
+                                },
+                                {
                                     title: <><span>Hands-Free & AI Mode Toggle</span><ProBadge /></>,
                                     description: "Pro users can enable hands-free mode to get hints read aloud, and toggle AI analysis on/off to save screenshots for social sharing without using credits.",
                                     image: feature3
@@ -981,16 +996,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                                     title: "Build Your Game Library",
                                     description: "Track multiple games at once. Each has its own conversation, progress bar, and AI-generated insight tabs tailored to that game's genre.",
                                     image: feature4
-                                },
-                                {
-                                    title: "Play From Anywhere",
-                                    description: "Gaming on console? Manually upload screenshots from your phone. Help arrives instantly in the same conversation.",
-                                    image: feature5
-                                },
-                                {
-                                    title: <><span>Stay Focused, Stay Ahead</span><ProBadge /></>,
-                                    description: "Skip the wiki-hunting. Otagon provides quest tips, secret locations, build optimization—all without spoiling your discovery.",
-                                    image: feature6
                                 },
                             ]}
                         />
