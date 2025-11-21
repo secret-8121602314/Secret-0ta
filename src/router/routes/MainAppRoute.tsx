@@ -102,18 +102,16 @@ const MainAppRoute: React.FC = () => {
             
             if (user?.authUserId) {
               await onboardingService.markProfileSetupComplete(user.authUserId, profileData);
-              // Try to refresh user data, but don't block if it fails
-              try {
-                await authService.refreshUser();
-              } catch (refreshError) {
-                console.warn('Failed to refresh user after profile setup:', refreshError);
-                // Force page reload as fallback
-                window.location.reload();
-              }
+              
+              // Refresh user data to get updated hasProfileSetup flag
+              await authService.refreshUser();
+              
+              // Force re-render by navigating to same route
+              navigate('/app', { replace: true });
             }
           } catch (error) {
             console.error('Error completing profile setup:', error);
-            // Still allow dismissal by reloading
+            // Reload as fallback
             window.location.reload();
           }
         }}
@@ -125,18 +123,16 @@ const MainAppRoute: React.FC = () => {
             
             if (user?.authUserId) {
               await onboardingService.markProfileSetupComplete(user.authUserId, {});
-              // Try to refresh user data, but don't block if it fails
-              try {
-                await authService.refreshUser();
-              } catch (refreshError) {
-                console.warn('Failed to refresh user after profile dismiss:', refreshError);
-                // Force page reload as fallback
-                window.location.reload();
-              }
+              
+              // Refresh user data to get updated hasProfileSetup flag
+              await authService.refreshUser();
+              
+              // Force re-render by navigating to same route
+              navigate('/app', { replace: true });
             }
           } catch (error) {
             console.error('Error dismissing profile setup:', error);
-            // Still allow dismissal by reloading
+            // Reload as fallback
             window.location.reload();
           }
         }}

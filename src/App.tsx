@@ -3,13 +3,15 @@ import { AuthState, ConnectionStatus, AppState, ActiveModal } from './types';
 import type { OnboardingStep } from './services/onboardingService';
 import { authService } from './services/authService';
 import { onboardingService } from './services/onboardingService';
-import { connect, disconnect } from './services/websocketService';
+import { connect, disconnect, setHandlers } from './services/websocketService';
 import { toastService } from './services/toastService';
 import { validateScreenshotDataUrl, normalizeDataUrl } from './utils/imageValidation';
 import { supabase } from './lib/supabase';
 import AppRouter from './components/AppRouter';
 import { ToastContainer } from './components/ui/ToastContainer';
 import { isPWAMode } from './utils/pwaDetection';
+
+console.log('🚀🚀🚀 APP.TSX LOADED - NEW CODE VERSION 9:24 PM 🚀🚀🚀');
 
 function App() {
   const [authState, setAuthState] = useState<AuthState>({
@@ -374,7 +376,6 @@ function App() {
 
   const handleConnect = async (code: string) => {
     console.log('🔗 [App] Connecting with code:', code);
-12345
     
     // Disconnect any existing connection first
     if (connectionStatus === ConnectionStatus.CONNECTED || connectionStatus === ConnectionStatus.CONNECTING) {
@@ -403,8 +404,18 @@ function App() {
       }
     }, 5000);
     
+    // Call connect with minimal handlers, then immediately override with setHandlers to prevent stale closures
     connect(
       code,
+      () => {}, // Placeholder
+      () => {}, // Placeholder
+      () => {}, // Placeholder
+      () => {}  // Placeholder
+    );
+    
+    // ✅ CRITICAL: Immediately set handlers AFTER connect() to override and prevent stale closures
+    console.log('🔗 [App] Setting WebSocket handlers after connect()');
+    setHandlers(
       () => {
         // WebSocket opened - but DON'T set as connected yet
         // Wait for actual message from PC client
@@ -413,7 +424,8 @@ function App() {
         console.log('🔗 [App] Timeout will fire in 5 seconds if no message received');
       },
       (data) => {
-        console.log('🔗 [App] Message received:', data);
+        console.log('🔗 [App] onMessage handler called with type:', data.type);
+        console.log('🔗 [App] Full data:', data);
         console.log('🔗 [App] hasReceivedPCMessage before:', hasReceivedPCMessage.current);
         
         // First message from PC client confirms the connection is real
@@ -429,7 +441,13 @@ function App() {
           console.log('🔗 [App] ✅ PC client confirmed - connection established');
         }
         
-        handleWebSocketMessage(data);
+        console.log('🔗 [App] Calling handleWebSocketMessage...');
+        try {
+          handleWebSocketMessage(data);
+          console.log('🔗 [App] handleWebSocketMessage completed');
+        } catch (err) {
+          console.error('🔗 [App] handleWebSocketMessage threw error:', err);
+        }
       },
       (error) => {
         console.error('🔗 [App] Connection error:', error);
@@ -498,12 +516,121 @@ function App() {
   };
 
   const handleWebSocketMessage = (data: Record<string, unknown>) => {
-    console.log('🔗 [App] Processing WebSocket message:', data);
+    try {
+      console.log('🔗 [App] Processing WebSocket message:', data);
+      console.log('🔗 [App] Message type:', data.type);
+      console.log('🔗 [App] All keys:', Object.keys(data));
+    } catch (err) {
+      console.error('🔗 [App] Error in initial logging:', err);
+    }
+    
+    // ✅ FIX: Handle screenshot-single message from PC client F1 hotkey
+    if (data.type === 'screenshot-single') {
+      console.log("📸 [App] screenshot-single message received - processing single fresh screenshot");
+      
+      const payload = data.payload as Record<string, unknown> | undefined;
+      const images = payload?.images as string[] | undefined;
+      
+      if (images && Array.isArray(images) && images.length > 0) {
+        console.log("📸 [App] Processing single screenshot from F1 hotkey");
+        const dataUrl = images[0];
+        
+        // Validate and normalize screenshot data
+        const validation = validateScreenshotDataUrl(dataUrl);
+        if (!validation.valid) {
+          console.error("📸 [App] Screenshot validation failed:", validation.error);
+          toastService.error(`Screenshot validation failed: ${validation.error}`);
+          return;
+        }
+        
+        const normalizedUrl = normalizeDataUrl(dataUrl);
+        if (!normalizedUrl) {
+          console.error("📸 [App] Failed to normalize screenshot data");
+          toastService.error('Screenshot validation failed. Please try again.');
+          return;
+        }
+        
+        if (mainAppMessageHandlerRef.current) {
+          console.log("📸 [App] Forwarding single screenshot to MainApp");
+          mainAppMessageHandlerRef.current({
+            type: 'screenshot',
+            dataUrl: normalizedUrl
+          });
+        } else {
+          console.warn("📸 [App] mainAppMessageHandlerRef.current is null!");
+        }
+      } else {
+        console.warn("📸 [App] screenshot-single received but no images in payload");
+      }
+      return;
+    }
+    
+    // ✅ FIX: Handle screenshot-multi message from PC client F2 hotkey
+    if (data.type === 'screenshot-multi') {
+      console.log("📸 [App] screenshot-multi message received - processing buffered screenshots");
+      
+      // Check tier - batch screenshots are Pro/Vanguard only
+      const userTier = authState.user?.tier || 'free';
+      if (userTier !== 'pro' && userTier !== 'vanguard_pro') {
+        console.warn("📸 [App] screenshot-multi blocked - Free tier users can only use F1 (single screenshot)");
+        toastService.warning('Batch screenshots (F2) are a Pro feature. Upgrade to unlock!');
+        return;
+      }
+      
+      const payload = data.payload as Record<string, unknown> | undefined;
+      const images = payload?.images as string[] | undefined;
+      
+      if (images && Array.isArray(images) && images.length > 0) {
+        console.log("📸 [App] Processing", images.length, "buffered screenshots from F2 hotkey");
+        images.forEach((dataUrl: string, index: number) => {
+          console.log("📸 [App] Processing buffered screenshot", index + 1, "of", images.length);
+          
+          // Validate and normalize screenshot data
+          const normalizedUrl = normalizeDataUrl(dataUrl);
+          if (!normalizedUrl) {
+            console.error("📸 [App] Invalid screenshot data, skipping image", index);
+            toastService.error('Screenshot validation failed. Please try again.');
+            return;
+          }
+          
+          console.log("📸 [App] Screenshot", index + 1, "validated and normalized");
+          if (mainAppMessageHandlerRef.current) {
+            console.log("📸 [App] Forwarding screenshot", index + 1, "to MainApp");
+            mainAppMessageHandlerRef.current({
+              type: 'screenshot',
+              dataUrl: normalizedUrl,
+              index: index
+            });
+          }
+        });
+      } else {
+        console.warn("📸 [App] screenshot-multi received but no images in payload");
+      }
+      return;
+    }
+    
     if (data.type === 'screenshot_batch') {
-      console.log("📸 Processing screenshot batch:", data);
+      console.log("📸 [App] screenshot_batch received");
+      
+      // ✅ FIX: Batch screenshots (F2) are Pro/Vanguard only
+      const userTier = authState.user?.tier || 'free';
+      if (userTier !== 'pro' && userTier !== 'vanguard_pro') {
+        console.warn("📸 [App] screenshot_batch blocked - Free tier users can only use F1 (single screenshot)");
+        toastService.warning('Batch screenshots (F2) are a Pro feature. Upgrade to unlock!');
+        return;
+      }
+      
+      console.log("📸 [App] Full message data:", JSON.stringify(data).substring(0, 200));
       const batchData = (data.payload || data) as Record<string, unknown>;
+      console.log("📸 [App] batchData keys:", Object.keys(batchData));
+      console.log("📸 [App] Has images?", !!batchData.images);
+      console.log("📸 [App] Is array?", Array.isArray(batchData.images));
+      console.log("📸 [App] Length:", batchData.images ? (batchData.images as unknown[]).length : 0);
+      
       if (batchData.images && Array.isArray(batchData.images) && batchData.images.length > 0) {
+        console.log("📸 [App] Processing", batchData.images.length, "images from batch");
         batchData.images.forEach((imgSrc: string, index: number) => {
+          console.log("📸 [App] Processing image", index + 1, "of", batchData.images.length);
           // ✅ FIX: Validate and normalize screenshot data before processing
           const normalizedUrl = normalizeDataUrl(imgSrc);
           if (!normalizedUrl) {
@@ -512,7 +639,9 @@ function App() {
             return;
           }
           
+          console.log("📸 [App] Screenshot", index + 1, "validated and normalized");
           if (mainAppMessageHandlerRef.current) {
+            console.log("📸 [App] Forwarding screenshot", index + 1, "to MainApp");
             mainAppMessageHandlerRef.current({
               type: 'screenshot',
               dataUrl: normalizedUrl,
@@ -579,6 +708,35 @@ function App() {
       } else {
         console.warn("📸 [App] screenshot_success received but no dataUrl found and not buffered");
       }
+    } else if (data.type === 'screenshot' && data.dataUrl) {
+      // Handle single screenshot from PC client hotkey (F1)
+      console.log("📸 [App] Single screenshot received from PC client");
+      const validation = validateScreenshotDataUrl(data.dataUrl);
+      if (!validation.valid) {
+        console.error("📸 [App] Screenshot validation failed:", validation.error);
+        toastService.error(`Screenshot validation failed: ${validation.error}`);
+        return;
+      }
+      
+      const normalizedUrl = normalizeDataUrl(data.dataUrl);
+      if (!normalizedUrl) {
+        console.error("📸 [App] Failed to normalize screenshot data");
+        toastService.error('Screenshot validation failed. Please try again.');
+        return;
+      }
+      
+      if (mainAppMessageHandlerRef.current) {
+        console.log("📸 [App] Forwarding screenshot to MainApp");
+        mainAppMessageHandlerRef.current({
+          type: 'screenshot',
+          dataUrl: normalizedUrl
+        });
+      } else {
+        console.warn("📸 [App] mainAppMessageHandlerRef.current is null!");
+        toastService.error('Screenshot handler not ready. Please wait and try again.');
+      }
+    } else {
+      console.log("📸 [App] Unrecognized message type:", data.type, "Keys:", Object.keys(data));
     }
   };
 
@@ -614,7 +772,6 @@ function App() {
   };
 
   const handleProfileSetupComplete = async (profileData: Record<string, unknown>) => {
-    console.log('🎯 [App] Profile setup completed');
     if (authState.user) {
       try {
         // Immediately update local user state to hide banner
@@ -627,23 +784,20 @@ function App() {
         
         // Use markProfileSetupComplete to properly set has_profile_setup flag
         await onboardingService.markProfileSetupComplete(authState.user.authUserId, profileData);
-        console.log('🎯 [App] Profile setup data saved');
         
         // Set flag to prevent auth subscription from overriding navigation
         isManualNavigationRef.current = true;
         
         // Refresh user data to update hasProfileSetup flag
         await authService.refreshUser();
-        console.log('🎯 [App] User data refreshed after profile setup');
       } catch (error) {
-        console.error('🎯 [App] Failed to save profile setup:', error);
+        console.error('Failed to save profile setup:', error);
         isManualNavigationRef.current = false;
       }
     }
   };
 
   const handleProfileSetupSkip = async () => {
-    console.log('🎯 [App] Profile setup skipped');
     if (authState.user) {
       try {
         // Immediately update local user state to hide banner
@@ -657,16 +811,14 @@ function App() {
         await onboardingService.updateOnboardingStatus(authState.user.authUserId, 'profile-setup', {
           profile_setup_skipped: true
         });
-        console.log('🎯 [App] Profile setup skipped, flag saved');
         
         // Set flag to prevent auth subscription from overriding
         isManualNavigationRef.current = true;
         
         // Refresh user data to update hasProfileSetup flag
         await authService.refreshUser();
-        console.log('🎯 [App] User data refreshed after skipping profile setup');
       } catch (error) {
-        console.error('🎯 [App] Failed to skip profile setup:', error);
+        console.error('Failed to skip profile setup:', error);
         isManualNavigationRef.current = false;
       }
     }

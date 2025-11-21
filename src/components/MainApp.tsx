@@ -27,13 +27,14 @@ import AddGameModal from './modals/AddGameModal';
 import Logo from './ui/Logo';
 import CreditIndicator from './ui/CreditIndicator';
 import HandsFreeToggle from './ui/HandsFreeToggle';
+import AIToggleButton from './ui/AIToggleButton';
 import { LoadingSpinner } from './ui/LoadingSpinner';
 import SettingsContextMenu from './ui/SettingsContextMenu';
 import ProfileSetupBanner from './ui/ProfileSetupBanner';
 import GameProgressBar from './features/GameProgressBar';
 import ErrorBoundary from './ErrorBoundary';
 import WelcomeScreen from './welcome/WelcomeScreen';
-import { connect, disconnect } from '../services/websocketService';
+import { connect, disconnect, setHandlers } from '../services/websocketService';
 import { validateScreenshotDataUrl, getDataUrlSizeMB } from '../utils/imageValidation';
 
 // ============================================================================
@@ -128,6 +129,12 @@ const MainApp: React.FC<MainAppProps> = ({
   });
   const [handsFreeModalOpen, setHandsFreeModalOpen] = useState(false);
   
+  // AI mode state (Pro/Vanguard only - persisted to localStorage)
+  const [aiModeEnabled, setAiModeEnabled] = useState(() => {
+    const saved = localStorage.getItem('otakonAiMode');
+    return saved !== 'false'; // Default to true (AI ON)
+  });
+  
   // Input preservation for tab switching
   const [currentInputMessage, setCurrentInputMessage] = useState<string>('');
   
@@ -206,18 +213,115 @@ const MainApp: React.FC<MainAppProps> = ({
 
   // Handle WebSocket messages for screenshot processing
   const handleWebSocketMessage = useCallback((data: Record<string, unknown>) => {
-        // Check if this is a connection confirmation from PC client
+    console.log('📸 [MainApp] handleWebSocketMessage called with type:', data.type);
+    
+    // Check if this is a connection confirmation from PC client
     if (data.type === 'partner_connected' || data.type === 'connection_alive' || data.type === 'connected' || data.status === 'connected') {
-            // Get connection code from state or localStorage
+      // Get connection code from state or localStorage
       const codeToUse = connectionCode || localStorage.getItem('otakon_connection_code');
-            // Update connection status in parent
+      // Update connection status in parent
       if (propOnConnect && codeToUse) {
-                propOnConnect(codeToUse);
+        propOnConnect(codeToUse);
       } else if (!propOnConnect) {
-              } else if (!codeToUse) {
-              }
+      } else if (!codeToUse) {
+      }
     }
     
+    // ✅ FIX: Handle screenshot-single from PC client F1 hotkey
+    if (data.type === 'screenshot-single') {
+      console.log('📸 [MainApp] screenshot-single received from PC client');
+      const payload = data.payload as Record<string, unknown> | undefined;
+      const images = payload?.images as string[] | undefined;
+      
+      if (images && Array.isArray(images) && images.length > 0) {
+        console.log('📸 [MainApp] Processing single screenshot from F1');
+        const dataUrl = images[0];
+        
+        // Validate screenshot data
+        const validation = validateScreenshotDataUrl(dataUrl);
+        if (!validation.valid) {
+          console.error('📸 [MainApp] Screenshot validation failed:', validation.error);
+          toastService.error(`Screenshot validation failed: ${validation.error}`);
+          return;
+        }
+        
+        const sizeMB = getDataUrlSizeMB(dataUrl);
+        console.log('📸 [MainApp] Screenshot validated:', { sizeMB, length: dataUrl.length });
+        
+        // Process screenshot same way as legacy 'screenshot' type
+        if (isManualUploadMode) {
+          setQueuedScreenshot(dataUrl);
+          toastService.info('Screenshot queued. Review and send when ready.');
+          return;
+        }
+        
+        // Auto mode: Send immediately
+        if (activeConversation && handleSendMessageRef.current) {
+          handleSendMessageRef.current("", dataUrl);
+          setQueuedScreenshot(null);
+        } else {
+          toastService.warning('No active conversation. Please select or create a conversation first.');
+        }
+      } else {
+        console.warn('📸 [MainApp] screenshot-single received but no images in payload');
+      }
+      return;
+    }
+    
+    // ✅ FIX: Handle screenshot-multi from PC client F2 hotkey (Pro/Vanguard only)
+    if (data.type === 'screenshot-multi') {
+      console.log('📸 [MainApp] screenshot-multi received from PC client');
+      
+      // Get user directly from authService to ensure we have the latest tier info
+      const currentUser = authService.getCurrentUser();
+      const userTier = currentUser?.tier || 'free';
+      console.log('📸 [MainApp] Checking tier access - userTier:', userTier, 'user:', currentUser?.email);
+      
+      if (userTier !== 'pro' && userTier !== 'vanguard_pro') {
+        console.warn('📸 [MainApp] screenshot-multi blocked - Free tier users can only use F1 (single screenshot)');
+        console.log('📸 [MainApp] Showing upgrade toast for free user');
+        toastService.warning('Batch screenshots (F2) are a Pro feature. Upgrade to unlock!');
+        return;
+      }
+      
+      const payload = data.payload as Record<string, unknown> | undefined;
+      const images = payload?.images as string[] | undefined;
+      
+      if (images && Array.isArray(images) && images.length > 0) {
+        console.log('📸 [MainApp] Processing', images.length, 'buffered screenshots from F2');
+        
+        images.forEach((dataUrl: string, index: number) => {
+          console.log('📸 [MainApp] Processing screenshot', index + 1, 'of', images.length);
+          
+          const validation = validateScreenshotDataUrl(dataUrl);
+          if (!validation.valid) {
+            console.error('📸 [MainApp] Screenshot', index + 1, 'validation failed:', validation.error);
+            return;
+          }
+          
+          // Process each screenshot
+          if (isManualUploadMode) {
+            // In manual mode, only queue the first screenshot (to avoid overwhelming UI)
+            if (index === 0) {
+              setQueuedScreenshot(dataUrl);
+              toastService.info(`${images.length} screenshots received. First one queued.`);
+            }
+          } else {
+            // Auto mode: Send each screenshot
+            if (activeConversation && handleSendMessageRef.current) {
+              setTimeout(() => {
+                handleSendMessageRef.current("", dataUrl);
+              }, index * 500); // Stagger by 500ms to avoid overwhelming AI
+            }
+          }
+        });
+      } else {
+        console.warn('📸 [MainApp] screenshot-multi received but no images in payload');
+      }
+      return;
+    }
+    
+    // Legacy screenshot format (keep for backward compatibility)
     if (data.type === 'screenshot' && data.dataUrl) {
       // ✅ FIX: Validate screenshot data before processing
       const validation = validateScreenshotDataUrl(data.dataUrl);
@@ -575,8 +679,20 @@ const MainApp: React.FC<MainAppProps> = ({
     // Check if we have a stored connection code and try to reconnect
     const storedCode = localStorage.getItem('otakon_connection_code');
     if (storedCode) {
-            setConnectionCode(storedCode);
-      connect(storedCode, handleWebSocketOpen, handleWebSocketMessage, handleWebSocketError, handleWebSocketClose);
+      console.log('🔗 [MainApp] Auto-reconnecting with stored code:', storedCode);
+      setConnectionCode(storedCode);
+      
+      // Call connect with placeholder handlers
+      connect(storedCode, () => {}, () => {}, () => {}, () => {});
+      
+      // ✅ CRITICAL: Immediately set handlers AFTER connect() to override and prevent stale closures
+      console.log('🔗 [MainApp] Setting WebSocket handlers after auto-reconnect');
+      setHandlers(
+        handleWebSocketOpen,
+        handleWebSocketMessage,
+        handleWebSocketError,
+        handleWebSocketClose
+      );
     }
 
     // Note: Removed automatic disconnect on unmount to maintain persistent connection
@@ -914,6 +1030,25 @@ const MainApp: React.FC<MainAppProps> = ({
     if (!newMode) {
       ttsService.cancel();
     }
+  };
+
+  // AI mode toggle handler (Pro/Vanguard only)
+  const handleAiModeToggle = () => {
+    // Check if user has Pro or Vanguard tier
+    const isPro = user?.tier === 'pro' || user?.tier === 'vanguard_pro';
+    if (!isPro) {
+      toastService.show('AI mode toggle is a Pro feature', 'info');
+      return;
+    }
+    
+    const newMode = !aiModeEnabled;
+    setAiModeEnabled(newMode);
+    localStorage.setItem('otakonAiMode', String(newMode));
+    
+    toastService.show(
+      newMode ? 'AI mode enabled - Screenshots will be analyzed' : 'AI mode disabled - Screenshots will be stored only',
+      'success'
+    );
   };
 
   // Settings context menu handlers
@@ -1426,6 +1561,63 @@ const MainApp: React.FC<MainAppProps> = ({
         throw new Error('User not authenticated');
       }
 
+      // ✅ AI MODE TOGGLE: If AI mode is OFF and we have a screenshot, upload to storage instead of processing
+      let finalImageUrl = imageUrl;
+      const isPro = user.tier === 'pro' || user.tier === 'vanguard_pro';
+      
+      if (imageUrl && isPro && !aiModeEnabled) {
+        console.log('🔄 [MainApp] AI mode OFF - uploading screenshot to storage...');
+        
+        // Import storage service dynamically
+        const { uploadScreenshot } = await import('../services/screenshotStorageService');
+        
+        // Upload to Supabase Storage
+        const uploadResult = await uploadScreenshot(imageUrl, user.authUserId);
+        
+        if (uploadResult.success && uploadResult.publicUrl) {
+          console.log('✅ [MainApp] Screenshot uploaded to storage:', {
+            url: uploadResult.publicUrl,
+            size: uploadResult.fileSize
+          });
+          
+          finalImageUrl = uploadResult.publicUrl;
+          
+          // Add a simple acknowledgment message (no AI processing)
+          const storageMessage = {
+            id: `msg_${Date.now() + 1}`,
+            content: `Screenshot saved to your gallery. AI analysis is currently disabled. Enable AI mode to get insights about your gameplay.`,
+            role: 'assistant' as const,
+            timestamp: Date.now(),
+          };
+          
+          // Update state with storage acknowledgment
+          setConversations(prev => {
+            const updated = { ...prev };
+            if (updated[activeConversation.id]) {
+              updated[activeConversation.id] = {
+                ...updated[activeConversation.id],
+                messages: [...updated[activeConversation.id].messages, storageMessage],
+                updatedAt: Date.now()
+              };
+              setActiveConversation(updated[activeConversation.id]);
+            }
+            return updated;
+          });
+          
+          // Save message
+          await ConversationService.addMessage(activeConversation.id, storageMessage);
+          
+          // Clear loading state and exit early (skip AI processing)
+          setIsLoading(false);
+          setAbortController(null);
+          return;
+        } else {
+          console.error('❌ [MainApp] Failed to upload screenshot:', uploadResult.error);
+          toastService.error(`Failed to save screenshot: ${uploadResult.error}`);
+          // Continue with original data URL if upload fails
+        }
+      }
+
       // Apply context summarization before sending to AI (keeps context manageable)
       let conversationWithOptimizedContext = activeConversation;
       if (activeConversation.messages.length > 10) {
@@ -1453,8 +1645,8 @@ const MainApp: React.FC<MainAppProps> = ({
         user,
         message,
         session.isActive && session.currentGameId === activeConversation.id,
-        !!imageUrl,
-        imageUrl,
+        !!finalImageUrl,
+        finalImageUrl,
         controller.signal
       );
 
@@ -1491,7 +1683,7 @@ const MainApp: React.FC<MainAppProps> = ({
       // ✅ CRITICAL: Get the database UUID for migration
       const aiMessageDbId = aiMessageResult.message?.id || aiMessage.id;
 
-      // 🎤 Hands-Free Mode: Read AI response aloud if enabled
+      //  Hands-Free Mode: Read AI response aloud if enabled
       if (isHandsFreeMode && response.content) {
         try {
           // Extract only the Hint section for TTS - more precise matching
@@ -2007,10 +2199,22 @@ const MainApp: React.FC<MainAppProps> = ({
               />
             </div>
 
-            <HandsFreeToggle
-              isHandsFree={isHandsFreeMode}
-              onToggle={handleHandsFreeToggle}
-            />
+            {/* AI Mode Toggle - Pro/Vanguard only */}
+            {(currentUser.tier === 'pro' || currentUser.tier === 'vanguard_pro') && (
+              <AIToggleButton
+                isEnabled={aiModeEnabled}
+                onToggle={handleAiModeToggle}
+                isPro={true}
+              />
+            )}
+
+            {/* Hands-Free Toggle - Pro/Vanguard only */}
+            {(currentUser.tier === 'pro' || currentUser.tier === 'vanguard_pro') && (
+              <HandsFreeToggle
+                isHandsFree={isHandsFreeMode}
+                onToggle={handleHandsFreeToggle}
+              />
+            )}
             
             <button
               onClick={handleConnectionModalOpen}

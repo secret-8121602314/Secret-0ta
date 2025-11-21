@@ -988,8 +988,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                                     image: feature6
                                 },
                                 {
-                                    title: "Never Pause for Help Again",
-                                    description: "Hands-Free mode reads AI insights aloud. Get strategy tips, lore context, or build advice without leaving the game.",
+                                    title: "Smart Screenshot Analysis",
+                                    description: "Take a screenshot and get instant AI-powered insights. Stuck on a puzzle? Need build advice? Just snap and ask.",
                                     image: feature3
                                 },
                             ]}
@@ -1288,6 +1288,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                                     <FeatureListItem>Up-to-date knowledge using web search</FeatureListItem>
                                     <FeatureListItem>Advanced AI Model</FeatureListItem>
                                     <FeatureListItem>In-Depth Insight Tabs</FeatureListItem>
+                                    <FeatureListItem>AI Mode Toggle (Analyze or Store Screenshots)</FeatureListItem>
                                     <FeatureListItem>Hands-Free Voice Response</FeatureListItem>
                                     <FeatureListItem>Batch Screenshot Capture</FeatureListItem>
                                     <FeatureListItem>Priority Support & No Ads</FeatureListItem>
@@ -1329,9 +1330,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                                         title: "RPG Completionist"
                                     },
                                     {
-                                        quote: "Just press F1 during intense boss fights and get spoken hints without pausing the game. The hands-free mode is a lifesaver - it's like having an expert coach right beside me.",
+                                        quote: "Pro's hands-free mode is incredible! During intense boss fights, I get AI hints spoken aloud without pausing. The AI toggle lets me save screenshots for later too.",
                                         author: "Safi Rahman",
-                                        title: "Souls-like Speedrunner"
+                                        title: "Pro Subscriber"
                                     }
                                 ]}
                             />
@@ -1359,9 +1360,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                             </div>
                             <div ref={(el) => (testimonialRefs.current[2] = el)}>
                                 <Testimonial
-                                    quote="Just press F1 during intense boss fights and get spoken hints without pausing the game. The hands-free mode is a lifesaver - it's like having an expert coach right beside me."
+                                    quote="Pro's hands-free mode is incredible! During intense boss fights, I get AI hints spoken aloud without pausing. The AI toggle lets me save screenshots for later too."
                                     author="Safi Rahman"
-                                    title="Souls-like Speedrunner"
+                                    title="Pro Subscriber"
                                     index={2}
                                     isVisible={testimonialsVisible[2] || false}
                                 />

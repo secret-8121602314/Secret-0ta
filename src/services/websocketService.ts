@@ -50,15 +50,17 @@ const connect = (
   }
 
   ws.onopen = () => {
-    // Connection established - no need to log every connection
+    // Connection established
+    console.log('🔗 [WebSocket] Connection opened successfully to', fullUrl);
     reconnectAttempts = 0;
     onOpen();
     
     // Immediately send connection request to speed up handshake
     try {
       ws.send(JSON.stringify({ type: 'connection_request', code: code, ts: Date.now() }));
-    } catch {
-      // Ignore send errors
+      console.log('🔗 [WebSocket] Sent connection_request with code:', code);
+    } catch (error) {
+      console.error('🔗 [WebSocket] Failed to send connection_request:', error);
     }
     
     // Flush queued messages
@@ -66,8 +68,9 @@ const connect = (
       const payload = sendQueue.shift();
       try { 
         ws.send(JSON.stringify(payload)); 
-      } catch {
-        // Ignore send errors during queue processing
+        console.log('🔗 [WebSocket] Sent queued message:', payload.type);
+      } catch (error) {
+        console.error('🔗 [WebSocket] Failed to send queued message:', error);
       }
     }
 
@@ -90,13 +93,32 @@ const connect = (
   ws.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data);
-      // Only log errors in development, not every message
-      onMessage(data);
-    } catch (e) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error("Failed to parse WebSocket message:", event.data, e);
+      console.log('🔗 [WebSocket] Message received:', {
+        type: data.type || 'unknown',
+        hasDataUrl: !!data.dataUrl,
+        dataUrlLength: data.dataUrl?.length,
+        keys: Object.keys(data)
+      });
+      
+      // Log full message for screenshot types to debug
+      if (data.type === 'screenshot_success' || data.type === 'screenshot_batch' || data.type === 'screenshot') {
+        console.log('🔗 [WebSocket] Full screenshot message:', JSON.stringify(data).substring(0, 500));
       }
-      // Ignore non-JSON
+      
+      // ✅ FIX: Call from handlers object instead of closure to get fresh handler
+      if (handlers && typeof handlers.onMessage === 'function') {
+        console.log('🔗 [WebSocket] Invoking onMessage handler with data:', data.type);
+        try {
+          handlers.onMessage(data);
+          console.log('🔗 [WebSocket] Handler completed successfully');
+        } catch (err) {
+          console.error('🔗 [WebSocket] Handler threw error:', err);
+        }
+      } else {
+        console.error('🔗 [WebSocket] No valid onMessage handler!', handlers);
+      }
+    } catch (e) {
+      console.error("🔗 [WebSocket] Failed to parse message:", event.data, e);
     }
   };
 
@@ -105,9 +127,11 @@ const connect = (
   };
 
   ws.onclose = (event: CloseEvent) => {
-    // Only log unexpected closures
-    if (!event.wasClean && process.env.NODE_ENV === 'development') {
-          }
+    console.log('🔗 [WebSocket] Connection closed:', {
+      wasClean: event.wasClean,
+      code: event.code,
+      reason: event.reason
+    });
 
     if (!event.wasClean) {
       let errorMessage = "Connection closed unexpectedly.";
@@ -181,4 +205,15 @@ const disconnect = () => {
       }
 };
 
-export { connect, disconnect, send };
+// ✅ FIX: Allow updating handlers without reconnecting to prevent stale closures
+const setHandlers = (
+  onOpen: () => void,
+  onMessage: (data: Record<string, unknown>) => void,
+  onError: (error: string) => void,
+  onClose: () => void
+) => {
+  handlers = { onOpen, onMessage, onError, onClose };
+  console.log('🔗 [WebSocket] Handlers updated');
+};
+
+export { connect, disconnect, send, setHandlers };

@@ -141,14 +141,20 @@ export const ProfileSetupBanner: React.FC<ProfileSetupBannerProps> = ({
           </div>
           <div className="flex items-center space-x-2 ml-3">
             <button
-              onClick={() => setIsExpanded(true)}
-              className="px-4 py-2 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] md:hover:from-[#D42A2A] md:hover:to-[#C87A1A] text-white text-sm font-bold rounded-lg transition-all md:hover:scale-105 active:scale-95 whitespace-nowrap shadow-lg"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsExpanded(true);
+              }}
+              className="px-4 py-2 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] md:hover:from-[#D42A2A] md:hover:to-[#C87A1A] text-white text-sm font-bold rounded-lg transition-all md:hover:scale-105 active:scale-95 whitespace-nowrap shadow-lg flex-shrink-0"
             >
               Set Up
             </button>
             <button
-              onClick={onDismiss}
-              className="p-2 text-text-muted hover:text-text-primary transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDismiss();
+              }}
+              className="p-2 text-text-muted hover:text-text-primary transition-colors flex-shrink-0"
               aria-label="Dismiss banner"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -180,8 +186,11 @@ export const ProfileSetupBanner: React.FC<ProfileSetupBannerProps> = ({
             <p className="text-white/90 text-sm mt-1">Step {currentStep + 1} of {steps.length}</p>
           </div>
           <button
-            onClick={onDismiss}
-            className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDismiss();
+            }}
+            className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
             aria-label="Close"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -207,7 +216,10 @@ export const ProfileSetupBanner: React.FC<ProfileSetupBannerProps> = ({
           {currentStepData.options.map((option) => (
             <button
               key={option.value}
-              onClick={() => handleOptionSelect(currentStepData.field, option.value)}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOptionSelect(currentStepData.field, option.value);
+              }}
               className={`p-4 text-center rounded-lg border-2 transition-all duration-200 hover:scale-105 active:scale-95 ${
                 profile[currentStepData.field] === option.value
                   ? 'border-[#FF4D4D] bg-gradient-to-br from-[#FF4D4D]/20 to-[#FFAB40]/20 text-text-primary ring-2 ring-[#FF4D4D]/50 shadow-lg'
@@ -225,14 +237,21 @@ export const ProfileSetupBanner: React.FC<ProfileSetupBannerProps> = ({
           <div className="flex space-x-2">
             {currentStep > 0 && (
               <button
-                onClick={handleBack}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  console.log('🎯 [ProfileBanner] Back button clicked');
+                  handleBack();
+                }}
                 className="px-4 py-2 bg-surface hover:bg-surface-light text-text-primary rounded-lg transition-colors text-sm font-medium"
               >
                 ← Back
               </button>
             )}
             <button
-              onClick={onDismiss}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDismiss();
+              }}
               className="px-4 py-2 text-text-muted hover:text-text-primary transition-colors text-sm"
             >
               Skip for now
@@ -240,7 +259,10 @@ export const ProfileSetupBanner: React.FC<ProfileSetupBannerProps> = ({
           </div>
 
           <button
-            onClick={handleNext}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleNext();
+            }}
             className="px-6 py-2 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] md:hover:from-[#D42A2A] md:hover:to-[#C87A1A] text-white font-bold rounded-lg transition-all md:hover:scale-105 active:scale-95 text-sm shadow-lg"
           >
             {currentStep === steps.length - 1 ? '✓ Complete' : 'Next →'}

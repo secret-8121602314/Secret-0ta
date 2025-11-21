@@ -33,6 +33,7 @@ const proFeatures = [
   'Up-to-date knowledge using web search',
   'Advanced AI Model',
   'Batch Screenshot Capture',
+  'AI Mode Toggle (Analyze or Store)',
   'Hands-Free Voice Response',
   'In-depth Insight Tabs',
   'Priority Support',
