@@ -173,7 +173,7 @@ const Feature = React.memo(({ title, description, icon, image, isGemini }: { tit
     );
 });
 
-const FeaturesCarousel = ({ features }: { features: Array<{ title: string; description: string; image: string; isGemini?: boolean }> }) => {
+const FeaturesCarousel = ({ features }: { features: Array<{ title: React.ReactNode; description: string; image: string; isGemini?: boolean }> }) => {
     const autoplayOptions = {
         delay: 5000,
         stopOnInteraction: true,
@@ -973,7 +973,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                                     image: feature2
                                 },
                                 {
-                                    title: "Your Gaming Dashboard",
+                                    title: <><span>AI Mode Toggle</span><ProBadge /></>,
+                                    description: "Pro users can toggle AI analysis on/off. Save screenshots for social sharing without using credits—perfect for epic moments and achievements.",
+                                    image: feature3
+                                },
+                                {
+                                    title: <><span>In-Depth Insight Tabs</span><ProBadge /></>,
                                     description: "Track multiple games at once. Each has its own conversation, progress bar, and AI-generated insight tabs tailored to that game's genre.",
                                     image: feature4
                                 },
@@ -986,11 +991,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                                     title: "Stay Focused, Stay Ahead",
                                     description: "Skip the wiki-hunting. Otagon provides quest tips, secret locations, build optimization—all without spoiling your discovery.",
                                     image: feature6
-                                },
-                                {
-                                    title: "Smart Screenshot Analysis",
-                                    description: "Take a screenshot and get instant AI-powered insights. Stuck on a puzzle? Need build advice? Just snap and ask.",
-                                    image: feature3
                                 },
                             ]}
                         />
@@ -1287,9 +1287,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                                     <FeatureListItem>1,583 Text | 328 Image Queries/month</FeatureListItem>
                                     <FeatureListItem>Up-to-date knowledge using web search</FeatureListItem>
                                     <FeatureListItem>Advanced AI Model</FeatureListItem>
-                                    <FeatureListItem>In-Depth Insight Tabs</FeatureListItem>
-                                    <FeatureListItem>AI Mode Toggle (Analyze or Store Screenshots)</FeatureListItem>
-                                    <FeatureListItem>Hands-Free Voice Response</FeatureListItem>
+                                    <FeatureListItem>In-Depth Insight Tabs <ProBadge /></FeatureListItem>
+                                    <FeatureListItem>AI Mode Toggle (Save Screenshots) <ProBadge /></FeatureListItem>
+                                    <FeatureListItem>Hands-Free Voice Response <ProBadge /></FeatureListItem>
                                     <FeatureListItem>Batch Screenshot Capture</FeatureListItem>
                                     <FeatureListItem>Priority Support & No Ads</FeatureListItem>
                                 </ul>

@@ -1034,8 +1034,10 @@ const MainApp: React.FC<MainAppProps> = ({
 
   // AI mode toggle handler (Pro/Vanguard only)
   const handleAiModeToggle = () => {
-    // Check if user has Pro or Vanguard tier
-    const isPro = user?.tier === 'pro' || user?.tier === 'vanguard_pro';
+    // Get user directly from authService to ensure we have the latest tier info
+    const currentUser = authService.getCurrentUser();
+    const isPro = currentUser?.tier === 'pro' || currentUser?.tier === 'vanguard_pro';
+    
     if (!isPro) {
       toastService.show('AI mode toggle is a Pro feature', 'info');
       return;
