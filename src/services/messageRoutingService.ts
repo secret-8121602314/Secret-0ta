@@ -142,6 +142,35 @@ export class MessageRoutingService {
     console.error('📦 [MessageRouting] Updated source messages:', updatedConversations[fromConversationId].messages?.map(m => ({ id: m.id, role: m.role })));
     console.error('📦 [MessageRouting] Updated destination messages:', updatedConversations[toConversationId].messages?.map(m => ({ id: m.id, role: m.role })));
     
+    // ✅ CRITICAL: Update message records in the messages table with new conversation_id
+    // This ensures the database knows about the migration, not just the in-memory state
+    console.error('📦 [MessageRouting] Updating message records in database...');
+    try {
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(
+        process.env.REACT_APP_SUPABASE_URL || '',
+        process.env.REACT_APP_SUPABASE_ANON_KEY || ''
+      );
+      
+      // Update each message's conversation_id in the messages table
+      for (const message of messagesToAdd) {
+        const { error: updateError } = await supabase
+          .from('messages')
+          .update({ conversation_id: toConversationId })
+          .eq('id', message.id);
+        
+        if (updateError) {
+          console.error('❌ [MessageRouting] Failed to update message in database:', message.id, updateError);
+        } else {
+          console.error('📦 [MessageRouting] Updated message in DB:', message.id, '->', toConversationId);
+        }
+      }
+      console.error('✅ [MessageRouting] All messages updated in database');
+    } catch (error) {
+      console.error('❌ [MessageRouting] Error updating messages in database:', error);
+      // Continue anyway - in-memory state is already updated
+    }
+    
     // Single write operation
     await ConversationService.setConversations(updatedConversations);
     
