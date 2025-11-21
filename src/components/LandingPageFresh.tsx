@@ -1016,7 +1016,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                             <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-white mb-6">For Every Challenge, In Every World</h2>
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12 lg:gap-16 py-6 md:py-10 lg:py-14">
                             {/* Souls-likes & Action RPGs */}
                             <div className="text-center animate-fade-slide-up">
                                 <div className="flex items-center justify-center mx-auto mb-4">
@@ -1284,14 +1284,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                                 </div>
                                 <ul className="space-y-3 mb-8">
                                     <FeatureListItem>Everything in Free, plus:</FeatureListItem>
-                                    <FeatureListItem>1,583 Text | 328 Image Queries/month</FeatureListItem>
-                                    <FeatureListItem>Up-to-date knowledge using web search</FeatureListItem>
-                                    <FeatureListItem>Advanced AI Model</FeatureListItem>
-                                    <FeatureListItem>In-Depth Insight Tabs <ProBadge /></FeatureListItem>
-                                    <FeatureListItem>AI Mode Toggle (Save Screenshots) <ProBadge /></FeatureListItem>
-                                    <FeatureListItem>Hands-Free Voice Response <ProBadge /></FeatureListItem>
-                                    <FeatureListItem>Batch Screenshot Capture</FeatureListItem>
-                                    <FeatureListItem>Priority Support & No Ads</FeatureListItem>
+                                    <FeatureListItem>1,583 Text + 328 Image Queries per month</FeatureListItem>
+                                    <FeatureListItem>Real-time web search for latest info</FeatureListItem>
+                                    <FeatureListItem>Advanced AI model for deeper insights</FeatureListItem>
+                                    <FeatureListItem>Build Your Game Library with insight tabs</FeatureListItem>
+                                    <FeatureListItem>Hands-Free mode & AI toggle for screenshots</FeatureListItem>
+                                    <FeatureListItem>Batch screenshot capture (F2 hotkey)</FeatureListItem>
+                                    <FeatureListItem>Priority support & ad-free experience</FeatureListItem>
                                 </ul>
                                 <div className="mt-auto">
                                     <button 
