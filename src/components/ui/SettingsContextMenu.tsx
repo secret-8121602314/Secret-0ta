@@ -160,7 +160,7 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
-          <span>{isStartingTrial ? 'Starting...' : 'Start 14-Day Pro Trial'}</span>
+          <span>{isStartingTrial ? 'Starting...' : 'Start 7-Day Pro Trial'}</span>
         </button>
       )}
 

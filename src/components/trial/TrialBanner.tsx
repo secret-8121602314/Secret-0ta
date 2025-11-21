@@ -74,7 +74,7 @@ const TrialBanner: React.FC<TrialBannerProps> = ({ userTier, onTrialStart }) => 
             <div>
               <h3 className="text-lg font-semibold text-text-primary">Start Your Free Pro Trial</h3>
               <p className="text-text-secondary">
-                Get 14 days of Pro features absolutely free. No credit card required.
+                Get 7 days of Pro features absolutely free. No credit card required.
               </p>
             </div>
           </div>

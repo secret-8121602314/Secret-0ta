@@ -1226,7 +1226,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                                     <FeatureListItem>Standard AI Model</FeatureListItem>
                                     <FeatureListItem>PC-to-Mobile Sync</FeatureListItem>
                                     <FeatureListItem>Progress Tracking</FeatureListItem>
-                                    <FeatureListItem>14 day free trial for Pro</FeatureListItem>
+                                    <FeatureListItem>7 day free trial for Pro</FeatureListItem>
                                 </ul>
                                 <div className="mt-auto">
                                     <button

@@ -580,7 +580,7 @@ export class SupabaseService {
   async startTrial(userId: string): Promise<boolean> {
     try {
       const trialExpiresAt = new Date();
-      trialExpiresAt.setDate(trialExpiresAt.getDate() + 14);
+      trialExpiresAt.setDate(trialExpiresAt.getDate() + 7);
 
       const { error } = await supabase
         .from('users')
