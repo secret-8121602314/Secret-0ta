@@ -143,7 +143,8 @@ class GameTabService {
       
       // ✅ CRITICAL: Wait for conversation to be fully persisted before saving subtabs
       // This ensures the conversation exists with auth_user_id set
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Increased from 300ms to 1000ms to handle database propagation delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       const success = await subtabsService.setSubtabs(conversation.id, subTabs);
       if (!success) {

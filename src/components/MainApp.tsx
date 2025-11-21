@@ -1098,8 +1098,8 @@ const MainApp: React.FC<MainAppProps> = ({
   };
 
   // Poll for subtab updates when background insights are being generated
-  const pollForSubtabUpdates = async (conversationId: string, attempts = 0, maxAttempts = 30) => {
-    // Stop after 30 attempts (30 seconds)
+  const pollForSubtabUpdates = async (conversationId: string, attempts = 0, maxAttempts = 60) => {
+    // Stop after 60 attempts (60 seconds) - increased from 30s to allow for AI generation
     if (attempts >= maxAttempts) {
       console.error('🎮 [MainApp] ⏱️ Stopped polling for subtab updates after', attempts, 'attempts');
       return;
@@ -1127,8 +1127,15 @@ const MainApp: React.FC<MainAppProps> = ({
         return;
       }
 
-      const loadingSubtabs = targetConv.subtabs.filter(tab => tab.status === 'loading');
-      const loadedSubtabs = targetConv.subtabs.filter(tab => tab.status === 'loaded');
+      // ✅ DEFENSIVE: Handle both correct shape and potential edge cases
+      const loadingSubtabs = targetConv.subtabs.filter(tab => {
+        const status = tab.status || (tab.metadata?.status as string);
+        return status === 'loading';
+      });
+      const loadedSubtabs = targetConv.subtabs.filter(tab => {
+        const status = tab.status || (tab.metadata?.status as string);
+        return status === 'loaded';
+      });
       const stillLoading = loadingSubtabs.length > 0;
       
       if (attempts === 0) {

@@ -261,8 +261,46 @@ export class SupabaseService {
       console.error('🔍 [Supabase] Final processed messages for', conv.id, ':', processedMessages.length);
       
       // Handle subtabs from the join
-      const subtabs = conv.subtabs;
-      const processedSubtabs = Array.isArray(subtabs) ? subtabs as unknown[] : [];
+      const rawSubtabs = conv.subtabs;
+      const processedSubtabs = Array.isArray(rawSubtabs) 
+        ? rawSubtabs.map((subtab: any) => {
+            const metadata = typeof subtab.metadata === 'object' && subtab.metadata !== null 
+              ? subtab.metadata as Record<string, unknown> 
+              : {};
+            
+            return {
+              id: subtab.id,
+              conversationId: subtab.conversation_id,
+              gameId: subtab.game_id,
+              title: subtab.title,
+              content: subtab.content || '',
+              type: subtab.tab_type as SubTab['type'],  // ✅ Map tab_type → type
+              orderIndex: subtab.order_index,
+              metadata: metadata,
+              createdAt: safeParseDate(subtab.created_at),
+              updatedAt: safeParseDate(subtab.updated_at),
+              // Client-side fields
+              isNew: (metadata.isNew as boolean) || false,
+              status: (metadata.status as SubTab['status']) || 'loaded',  // ✅ Map metadata.status → status
+              instruction: metadata.instruction as string | undefined,
+            };
+          })
+        : [];
+      
+      // 🔍 DEBUG: Log subtab mapping to verify correct shape
+      if (processedSubtabs.length > 0 && conv.id !== 'game-hub') {
+        const sample = processedSubtabs[0];
+        console.error('🔍 [Supabase] Subtab mapping verification:', {
+          conversationId: conv.id,
+          sampleSubtab: {
+            hasType: 'type' in sample,
+            hasStatus: 'status' in sample,
+            type: sample.type,
+            status: sample.status,
+            title: sample.title
+          }
+        });
+      }
       
       return {
         id: conv.id,
