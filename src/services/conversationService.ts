@@ -4,7 +4,7 @@ import { chatMemoryService } from './chatMemoryService';
 import { SupabaseService } from './supabaseService';
 import { toastService } from './toastService';
 import { Conversations, Conversation, ChatMessage, UserTier } from '../types';
-import { STORAGE_KEYS, DEFAULT_CONVERSATION_TITLE, GAME_HUB_ID, USER_TIERS } from '../constants';
+import { STORAGE_KEYS, DEFAULT_CONVERSATION_TITLE, GAME_HUB_ID, USER_TIERS, FEATURE_FLAGS } from '../constants';
 
 // Lazy-load Supabase service instance to avoid circular dependency
 let supabaseService: SupabaseService;
@@ -454,7 +454,7 @@ export class ConversationService {
     await this.setConversations(conversations);
   }
 
-  static async addMessage(conversationId: string, message: ChatMessage): Promise<{ success: boolean; reason?: string; savedMessageId?: string }> {
+  static async addMessage(conversationId: string, message: ChatMessage): Promise<{ success: boolean; reason?: string; message?: ChatMessage }> {
     // ✅ QUERY-BASED LIMITS: Message limits removed - unlimited messages per conversation
     // Query limits (text/image) are checked in aiService before sending to AI
     
@@ -482,10 +482,11 @@ export class ConversationService {
       const exists = conversation.messages.some(m => m.id === message.id);
       if (exists) {
         console.error('⚠️ [ConversationService] Message already exists:', message.id);
-        return { success: true, reason: 'Message already exists', savedMessageId: message.id };
+        return { success: true, reason: 'Message already exists' };
       }
       
       // ✅ CRITICAL FIX: Save message to database first before adding to memory
+      let messageWithDbFields: ChatMessage;
       try {
         console.error('💾 [ConversationService] Saving message to database...');
         const { MessageService } = await import('./messageService');
@@ -504,7 +505,7 @@ export class ConversationService {
         console.error('✅ [ConversationService] Message saved to database:', savedMessage.id);
         
         // Add the message to memory (using the database-generated ID and timestamp)
-        const messageWithDbFields: ChatMessage = {
+        messageWithDbFields = {
           ...message,
           id: savedMessage.id,
           timestamp: savedMessage.timestamp
@@ -519,8 +520,6 @@ export class ConversationService {
         await this.setConversations(conversations);
         
         console.error('✅ [ConversationService] Conversations saved to storage');
-        
-        return { success: true, savedMessageId: savedMessage.id };
       } catch (error) {
         console.error('❌ [ConversationService] Failed to save message:', error);
         
@@ -555,7 +554,8 @@ export class ConversationService {
         }
       }).catch(error => console.warn('Failed to import authService:', error));
       
-      return { success: true };
+      // ✅ CRITICAL: Return the message with database UUID for migration
+      return { success: true, message: messageWithDbFields };
     }
     
     console.error('❌ [ConversationService] Conversation not found:', conversationId);
@@ -640,34 +640,29 @@ export class ConversationService {
             return;
     }
     
-    // ✅ CRITICAL: Delete all messages from database before clearing in memory
-    // Get the message service to delete messages from the database
-    try {
-      const { MessageService } = await import('./messageService');
-      const messageService = MessageService.getInstance();
-      
-      // Delete all messages for this conversation from the database
-      const messagesToDelete = conversation.messages || [];
-      console.error('🗑️ [ConversationService] Deleting', messagesToDelete.length, 'messages from database');
-      
-      for (const message of messagesToDelete) {
-        try {
-          await messageService.deleteMessage(conversationId, message.id);
-          console.error('🗑️ [ConversationService] Deleted message:', message.id);
-        } catch (error) {
-          console.error('❌ [ConversationService] Failed to delete message:', message.id, error);
-          // Continue deleting other messages even if one fails
+    // ✅ CRITICAL: Delete messages from database when using normalized messages
+    if (FEATURE_FLAGS.USE_NORMALIZED_MESSAGES && conversation.messages.length > 0) {
+      try {
+        const messageIds = conversation.messages.map(m => m.id);
+        console.error('🗑️ [ConversationService] Deleting', messageIds.length, 'messages from database for conversation:', conversationId);
+        
+        const { MessageService } = await import('./messageService');
+        const messageService = MessageService.getInstance();
+        
+        // Delete messages one by one (MessageService only has deleteMessage, not deleteMessages)
+        for (const messageId of messageIds) {
+          await messageService.deleteMessage(conversationId, messageId);
         }
+        
+        console.error('✅ [ConversationService] Messages deleted from database');
+      } catch (error) {
+        console.error('❌ [ConversationService] Failed to delete messages from database:', error);
+        // Continue anyway to clear in-memory messages
       }
-      
-      console.error('✅ [ConversationService] All messages deleted from database');
-    } catch (error) {
-      console.error('❌ [ConversationService] Failed to delete messages:', error);
-      // Still clear the messages in memory even if database deletion fails
     }
     
-    // Clear messages in memory
-    conversations[conversationId] = {
+    // Clear messages but keep the conversation (including Game Hub)
+        conversations[conversationId] = {
       ...conversations[conversationId],
       messages: [],
       updatedAt: Date.now(),
@@ -675,8 +670,6 @@ export class ConversationService {
     
     await this.setConversations(conversations);
     await chatMemoryService.saveConversation(conversations[conversationId]);
-    
-    console.error('✅ [ConversationService] Conversation cleared:', conversationId);
   }
 
   /**

@@ -1322,7 +1322,9 @@ const MainApp: React.FC<MainAppProps> = ({
 
     // Add message to service - MUST await to ensure it's saved before potential migration
     const userMessageResult = await ConversationService.addMessage(activeConversation.id, newMessage);
-    const savedUserMessageId = userMessageResult.savedMessageId || newMessage.id;
+    
+    // ✅ CRITICAL: Get the database UUID for migration
+    const userMessageDbId = userMessageResult.message?.id || newMessage.id;
 
     // Clear the input message after sending
     setCurrentInputMessage('');
@@ -1477,7 +1479,9 @@ const MainApp: React.FC<MainAppProps> = ({
 
       // Add message to service - MUST await to ensure it's saved before potential migration
       const aiMessageResult = await ConversationService.addMessage(activeConversation.id, aiMessage);
-      const savedAiMessageId = aiMessageResult.savedMessageId || aiMessage.id;
+      
+      // ✅ CRITICAL: Get the database UUID for migration
+      const aiMessageDbId = aiMessageResult.message?.id || aiMessage.id;
 
       // 🎤 Hands-Free Mode: Read AI response aloud if enabled
       if (isHandsFreeMode && response.content) {
@@ -1796,9 +1800,9 @@ const MainApp: React.FC<MainAppProps> = ({
             await new Promise(resolve => setTimeout(resolve, 500));
 
             // ✅ Use atomic migration service to prevent race conditions
-            // CRITICAL: Use the database-generated message IDs, not the client-side IDs
+            // ✅ CRITICAL: Use database UUIDs instead of temporary client IDs
             await MessageRoutingService.migrateMessagesAtomic(
-              [savedUserMessageId, savedAiMessageId],
+              [userMessageDbId, aiMessageDbId],
               activeConversation.id,
               targetConversationId
             );
