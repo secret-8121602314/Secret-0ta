@@ -100,6 +100,12 @@ export class MessageRoutingService {
     
     console.error('📦 [MessageRouting] Source messages:', fromConv.messages?.map(m => ({ id: m.id, role: m.role })));
     console.error('📦 [MessageRouting] Destination messages before:', toConv.messages?.map(m => ({ id: m.id, role: m.role })));
+    console.error('📦 [MessageRouting] Message IDs to find:', messageIds);
+    console.error('📦 [MessageRouting] Source message IDs:', fromConv.messages?.map(m => m.id));
+    console.error('📦 [MessageRouting] ID match check:', messageIds.map(id => ({
+      id,
+      found: fromConv.messages?.some(m => m.id === id)
+    })));
     
     // Get messages to move
     const messagesToMove = fromConv.messages.filter(m => messageIds.includes(m.id));
