@@ -82,6 +82,7 @@ export const ProfileSetupBanner: React.FC<ProfileSetupBannerProps> = ({
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
+      // Complete setup and close banner
       onComplete(profile as PlayerProfile);
     }
   };
@@ -93,13 +94,15 @@ export const ProfileSetupBanner: React.FC<ProfileSetupBannerProps> = ({
   };
 
   const handleOptionSelect = (field: keyof PlayerProfile, value: string) => {
-    setProfile(prev => ({ ...prev, [field]: value }));
+    const updatedProfile = { ...profile, [field]: value };
+    setProfile(updatedProfile);
     // Auto-advance after selection
     setTimeout(() => {
       if (currentStep < steps.length - 1) {
         setCurrentStep(currentStep + 1);
       } else {
-        onComplete({ ...profile, [field]: value } as PlayerProfile);
+        // Complete setup with the updated profile
+        onComplete(updatedProfile as PlayerProfile);
       }
     }, 300);
   };

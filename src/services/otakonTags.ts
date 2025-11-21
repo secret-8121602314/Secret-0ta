@@ -32,10 +32,14 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
   cleanContent = cleanContent
     .replace(/^Hint:\s*\n\s*Hint:\s*/gm, 'Hint: ') // Fix duplicate Hint headers
     .replace(/^Hint:\s*\n\s*Hint:\s*/gm, 'Hint: ') // Fix multiple duplicate Hint headers
-    .replace(/\s*\]\s*$/, '') // Remove trailing ] characters with surrounding whitespace
-    .replace(/\s*\[\s*$/, '') // Remove trailing [ characters with surrounding whitespace
-    .replace(/^\s*\]\s*/, '') // Remove leading ] characters with surrounding whitespace
-    .replace(/^\s*\[\s*/, '') // Remove leading [ characters with surrounding whitespace
+    // Remove ALL stray brackets (global replacement)
+    .replace(/\]\s*$/gm, '') // Remove trailing ] at end of any line
+    .replace(/^\s*\]/gm, '') // Remove ] at start of any line
+    .replace(/\[\s*$/gm, '') // Remove trailing [ at end of any line  
+    .replace(/^\s*\[/gm, '') // Remove [ at start of any line
+    // Remove isolated brackets with whitespace around them
+    .replace(/\s+\]\s+/g, ' ') // Replace ] surrounded by spaces with single space
+    .replace(/\s+\[\s+/g, ' ') // Replace [ surrounded by spaces with single space
     // ✅ Fix malformed bold markers (spaces between ** and text)
     .replace(/\*\*\s+([^*]+?)\s+\*\*/g, '**$1**') // Fix ** text ** → **text**
     .replace(/\*\*\s+([^*]+?):/g, '**$1:**') // Fix ** Header: → **Header:**

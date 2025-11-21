@@ -617,6 +617,14 @@ function App() {
     console.log('🎯 [App] Profile setup completed');
     if (authState.user) {
       try {
+        // Immediately update local user state to hide banner
+        const updatedUser = {
+          ...authState.user,
+          hasProfileSetup: true,
+          profileData: profileData
+        };
+        setAuthState(prev => ({ ...prev, user: updatedUser }));
+        
         // Use markProfileSetupComplete to properly set has_profile_setup flag
         await onboardingService.markProfileSetupComplete(authState.user.authUserId, profileData);
         console.log('🎯 [App] Profile setup data saved');
@@ -638,6 +646,13 @@ function App() {
     console.log('🎯 [App] Profile setup skipped');
     if (authState.user) {
       try {
+        // Immediately update local user state to hide banner
+        const updatedUser = {
+          ...authState.user,
+          hasProfileSetup: true
+        };
+        setAuthState(prev => ({ ...prev, user: updatedUser }));
+        
         // Use 'profile-setup' step to properly set has_profile_setup flag
         await onboardingService.updateOnboardingStatus(authState.user.authUserId, 'profile-setup', {
           profile_setup_skipped: true
