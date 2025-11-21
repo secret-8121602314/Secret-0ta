@@ -389,24 +389,27 @@ class GameTabService {
         'Story So Far': 'story_so_far',
         'Relevant Lore': 'game_lore',
         'Lore Exploration': 'lore_exploration',
+        'Environmental Storytelling': 'environmental_storytelling',
         
         // Quest/Progression tabs
         'Active Quests': 'quest_log',
         'Story Progression': 'story_progression',
         'Quest Guide': 'quest_guide',
         
-        // Strategy tabs
+        // Strategy tabs (Action RPG, RPG)
         'Build Optimization': 'build_optimization',
         'Build Guide': 'build_guide',
         'Character Building': 'character_building',
         'Combat Strategies': 'combat_strategies',
         'Boss Strategy': 'boss_strategy',
         'Upcoming Boss Strategy': 'boss_strategy',
+        'Consumable Strategy': 'consumable_strategy',
         
         // Tips/Secrets tabs
         'Hidden Paths & Secrets': 'hidden_paths',
         'Pro Tips': 'pro_tips',
         'Exploration Tips': 'exploration_tips',
+        'Hidden Secrets': 'hidden_secrets',
         
         // Items/Collectibles tabs
         'Items You May Have Missed': 'missed_items',
@@ -426,7 +429,33 @@ class GameTabService {
         
         // Optimization/Efficiency
         'Fast Travel Optimization': 'pro_tips',
-        'Progression Balance': 'next_session_plan'
+        'Progression Balance': 'next_session_plan',
+        
+        // RPG-specific tabs
+        'Companion Management': 'companion_management',
+        'Side Activity Guide': 'side_activity_guide',
+        'NPC Interactions': 'npc_interactions',
+        
+        // FPS-specific tabs
+        'Loadout Analysis': 'loadout_analysis',
+        'Map Strategies': 'map_strategies',
+        'Enemy Intel': 'enemy_intel',
+        'Weapon Mastery': 'weapon_mastery',
+        'Audio Cues Guide': 'audio_cues',
+        'Progression Tracker': 'progression_tracker',
+        
+        // Strategy game tabs
+        'Current State Analysis': 'current_board_state',
+        'Opening Builds': 'opening_moves',
+        'Unit Counters': 'unit_counters',
+        'Economy Management': 'economy_guide',
+        'Tech Tree Priority': 'tech_tree_priority',
+        'Map Control Points': 'map_control_points',
+        'Opponent Analysis': 'opponent_analysis',
+        
+        // Adventure game tabs
+        'Puzzle Solving': 'puzzle_solving',
+        'Inventory Optimization': 'inventory_optimization'
       };
       
       console.error('🤖 [GameTabService] Building content mapping for subtabs...');
