@@ -2260,16 +2260,19 @@ const MainApp: React.FC<MainAppProps> = ({
             </div>
           )}
 
-          {/* AdSense Placeholder Banner - Always show for free users */}
+          {/* Google AdSense Banner - Always show for free users */}
           {currentUser.tier === 'free' && (
             <div className="px-3 sm:px-4 lg:px-6 pt-0 sm:pt-1 flex-shrink-0">
               <div className="bg-gradient-to-r from-gray-100/10 to-gray-200/10 border border-gray-300/20 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6">
-                <div className="flex items-center justify-center h-16 sm:h-20 lg:h-24 bg-gray-100/20 rounded-lg border-2 border-dashed border-gray-300/40">
-                  <div className="text-center">
-                    <div className="text-gray-400 text-xs sm:text-sm font-medium mb-1">Advertisement</div>
-                    <div className="text-gray-300 text-xs">AdSense Placeholder</div>
-                  </div>
-                </div>
+                <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4482938310886744"
+                  crossOrigin="anonymous"></script>
+                <ins className="adsbygoogle"
+                  style={{ display: 'block' }}
+                  data-ad-client="ca-pub-4482938310886744"
+                  data-ad-slot="6150844525"
+                  data-ad-format="auto"
+                  data-full-width-responsive="true"></ins>
+                <script dangerouslySetInnerHTML={{ __html: '(adsbygoogle = window.adsbygoogle || []).push({});' }} />
               </div>
             </div>
           )}
