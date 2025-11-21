@@ -29,11 +29,11 @@ Allow: /js/
 Allow: /fonts/
 Allow: /manifest.json
 Allow: /sw.js
+Allow: /sitemap.xml
+Allow: /robots.txt
 
 # Block unnecessary files
 Disallow: /*.json$
-Disallow: /*.xml$
-Disallow: /*.txt$
 Disallow: /*.log$
 Disallow: /*.map$
 
