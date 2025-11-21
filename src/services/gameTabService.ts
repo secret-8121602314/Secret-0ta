@@ -372,6 +372,14 @@ class GameTabService {
         return;
       }
 
+      // ✅ CRITICAL: Read subtabs from database (not from cached conversation object)
+      // The conversation object has the old "loading" subtabs, we need the actual database subtabs with types
+      const dbSubtabs = await subtabsService.getSubtabs(conversationId);
+      console.error(`🤖 [GameTabService] [${conversationId}] 📖 Read ${dbSubtabs.length} subtabs from database`);
+      
+      // Replace freshConversation.subtabs with actual database subtabs
+      freshConversation.subtabs = dbSubtabs;
+
       // 🔥 MAP insight keys to subtab IDs
       // AI returns keys like "story_so_far" but subtabs have UUID ids
       // ✅ FIX: Map by TITLE instead of type (all tab_type = 'chat')
