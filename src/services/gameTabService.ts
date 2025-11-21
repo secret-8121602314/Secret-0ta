@@ -374,12 +374,50 @@ class GameTabService {
 
       // 🔥 MAP insight keys to subtab IDs
       // AI returns keys like "story_so_far" but subtabs have UUID ids
-      // We need to map based on subtab type
-      const typeToKeyMap: Record<string, string> = {
-        'story': 'story_so_far',
-        'walkthrough': 'quest_log',
-        'strategies': 'build_optimization', // First strategies tab
-        'tips': 'hidden_paths'
+      // ✅ FIX: Map by TITLE instead of type (all tab_type = 'chat')
+      const titleToKeyMap: Record<string, string> = {
+        // Story/Lore tabs
+        'Story So Far': 'story_so_far',
+        'Relevant Lore': 'game_lore',
+        'Lore Exploration': 'lore_exploration',
+        
+        // Quest/Progression tabs
+        'Active Quests': 'quest_log',
+        'Story Progression': 'story_progression',
+        'Quest Guide': 'quest_guide',
+        
+        // Strategy tabs
+        'Build Optimization': 'build_optimization',
+        'Build Guide': 'build_guide',
+        'Character Building': 'character_building',
+        'Combat Strategies': 'combat_strategies',
+        'Boss Strategy': 'boss_strategy',
+        'Upcoming Boss Strategy': 'boss_strategy',
+        
+        // Tips/Secrets tabs
+        'Hidden Paths & Secrets': 'hidden_paths',
+        'Pro Tips': 'pro_tips',
+        'Exploration Tips': 'exploration_tips',
+        
+        // Items/Collectibles tabs
+        'Items You May Have Missed': 'missed_items',
+        'Collectible Hunting': 'missed_items',
+        
+        // Points of Interest
+        'Points of Interest': 'points_of_interest',
+        'Region Guide': 'points_of_interest',
+        
+        // Planning/Objectives
+        'Plan Your Next Session': 'next_session_plan',
+        'Activity Checklist': 'next_session_plan',
+        
+        // World/Exploration
+        'Dynamic World Events': 'points_of_interest',
+        'Exploration Route': 'exploration_tips',
+        
+        // Optimization/Efficiency
+        'Fast Travel Optimization': 'pro_tips',
+        'Progression Balance': 'next_session_plan'
       };
       
       console.error('🤖 [GameTabService] Building content mapping for subtabs...');
@@ -388,19 +426,10 @@ class GameTabService {
       const updatedSubTabs = freshConversation.subtabs?.map(subTab => {
         let content: string = '';
         
-        // Map subtab type to insight key
-        const insightKey = typeToKeyMap[subTab.type];
+        // ✅ FIX: Map subtab TITLE to insight key (not type)
+        const insightKey = titleToKeyMap[subTab.title];
         
-        // For multiple tabs of same type, use alternate keys
-        if (subTab.type === 'strategies' && subTab.title.includes('Boss')) {
-          const bossKey = 'boss_strategy';
-          if (hasInsights && insights[bossKey]) {
-            content = insights[bossKey];
-            console.error(`🤖 [GameTabService] Subtab "${subTab.title}" using AI content from key "${bossKey}" (${content.length} chars)`);
-          }
-        }
-        
-        if (!content && hasInsights && insightKey && insights[insightKey]) {
+        if (hasInsights && insightKey && insights[insightKey]) {
           // Use AI-generated content
           content = insights[insightKey];
           console.error(`🤖 [GameTabService] Subtab "${subTab.title}" using AI content from key "${insightKey}" (${content.length} chars)`);
