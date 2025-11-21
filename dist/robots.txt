@@ -3,7 +3,7 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://otakon.app/sitemap.xml
+Sitemap: https://otagon.app/sitemap.xml
 
 # Crawl-delay for respectful crawling
 Crawl-delay: 1
