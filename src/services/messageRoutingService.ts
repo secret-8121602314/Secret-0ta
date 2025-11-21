@@ -118,6 +118,33 @@ export class MessageRoutingService {
     
     console.error('📦 [MessageRouting] Messages to add (after duplicate check):', messagesToAdd.map(m => ({ id: m.id, role: m.role })));
     
+    // ✅ CRITICAL: Update database conversation_id for normalized messages
+    const { FEATURE_FLAGS } = await import('../constants');
+    if (FEATURE_FLAGS.USE_NORMALIZED_MESSAGES && messagesToAdd.length > 0) {
+      try {
+        console.error('🔄 [MessageRouting] Updating conversation_id in database for', messagesToAdd.length, 'messages');
+        const { supabase } = await import('../lib/supabase');
+        
+        // Update conversation_id for all migrated messages in a single query
+        const messageIdsToUpdate = messagesToAdd.map(m => m.id);
+        const { error } = await supabase
+          .from('messages')
+          .update({ conversation_id: toConversationId })
+          .in('id', messageIdsToUpdate);
+        
+        if (error) {
+          console.error('❌ [MessageRouting] Failed to update conversation_id in database:', error);
+          throw error;
+        }
+        
+        console.error('✅ [MessageRouting] Database conversation_id updated for', messageIdsToUpdate.length, 'messages');
+      } catch (error) {
+        console.error('❌ [MessageRouting] Database migration failed:', error);
+        // Don't continue if database update fails - this would leave inconsistent state
+        throw error;
+      }
+    }
+    
     // ATOMIC UPDATE: Modify both conversations in a single object
     const updatedConversations: Conversations = {
       ...conversations,
