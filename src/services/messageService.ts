@@ -91,21 +91,13 @@ export class MessageService {
         return [];
       }
 
-      interface DbMessage {
-        id: string;
-        role: 'user' | 'assistant' | 'system';
-        content: string;
-        created_at: string;
-        image_url?: string;
-        metadata?: Record<string, unknown>;
-      }
-      return (data || []).map((msg: DbMessage) => ({
+      return (data || []).map(msg => ({
         id: msg.id,
         role: msg.role as 'user' | 'assistant' | 'system',
         content: msg.content,
         timestamp: new Date(msg.created_at).getTime(),
-        imageUrl: msg.image_url,
-        metadata: msg.metadata || {},
+        imageUrl: msg.image_url || undefined,
+        metadata: jsonToRecord(msg.metadata),
       }));
     } catch (error) {
       console.error('Error getting messages from table:', error);
@@ -115,49 +107,73 @@ export class MessageService {
 
   /**
    * Add message to normalized messages table using database function
+   * @throws Error if message cannot be saved after retries
    */
   private async addMessageToTable(
     conversationId: string,
     message: Omit<ChatMessage, 'id' | 'timestamp'>
   ): Promise<ChatMessage | null> {
-    try {
-      const { data, error } = await supabase.rpc('add_message', {
-        p_conversation_id: conversationId,
-        p_role: message.role,
-        p_content: message.content,
-        p_image_url: safeString(message.imageUrl, undefined),
-        p_metadata: message.metadata || {},
-      });
+    const maxRetries = 3;
+    const delays = [0, 1000, 2000]; // 0ms, 1s, 2s
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        if (attempt > 0) {
+          await new Promise(resolve => setTimeout(resolve, delays[attempt]));
+          console.warn(`🔄 [MessageService] Retry attempt ${attempt + 1}/${maxRetries}`);
+        }
+        
+        const { data, error } = await supabase.rpc('add_message', {
+          p_conversation_id: conversationId,
+          p_role: message.role,
+          p_content: message.content,
+          p_image_url: safeString(message.imageUrl, undefined),
+          p_metadata: toJson(message.metadata || {}),
+        });
 
-      if (error) {
-        console.error('Error adding message to table:', error);
-        return null;
+        if (error) {
+          // Transient errors: retry
+          if (attempt < maxRetries - 1 && (error.code === 'PGRST301' || error.message?.includes('timeout') || error.message?.includes('network'))) {
+            console.warn(`⚠️ [MessageService] Transient error, will retry:`, error);
+            continue;
+          }
+          // Permanent errors: throw immediately
+          throw new Error(`Failed to add message: ${error.message} (code: ${error.code})`);
+        }
+
+        // Fetch the newly created message
+        const { data: newMessage, error: fetchError } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('id', data)
+          .single();
+
+        if (fetchError) {
+          throw new Error(`Failed to fetch new message: ${fetchError.message}`);
+        }
+        
+        if (!newMessage) {
+          throw new Error('Message not found after insert - database inconsistency');
+        }
+
+        return {
+          id: newMessage.id,
+          role: newMessage.role as 'user' | 'assistant' | 'system',
+          content: newMessage.content,
+          timestamp: safeParseDate(newMessage.created_at),
+          imageUrl: safeString(newMessage.image_url, undefined),
+          metadata: jsonToRecord(newMessage.metadata),
+        };
+      } catch (error) {
+        if (attempt === maxRetries - 1) {
+          // Final attempt failed
+          console.error('❌ [MessageService] All retry attempts exhausted:', error);
+          throw error;
+        }
       }
-
-      // Fetch the newly created message
-      const { data: newMessage, error: fetchError } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('id', data)
-        .single();
-
-      if (fetchError || !newMessage) {
-        console.error('Error fetching new message:', fetchError);
-        return null;
-      }
-
-      return {
-        id: newMessage.id,
-        role: newMessage.role as 'user' | 'assistant' | 'system',
-        content: newMessage.content,
-        timestamp: safeParseDate(newMessage.created_at),
-        imageUrl: safeString(newMessage.image_url, undefined),
-        metadata: jsonToRecord(newMessage.metadata),
-      };
-    } catch (error) {
-      console.error('Error adding message to table:', error);
-      return null;
     }
+    
+    throw new Error('Unexpected: retry loop completed without result');
   }
 
   /**

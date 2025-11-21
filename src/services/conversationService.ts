@@ -486,39 +486,54 @@ export class ConversationService {
       }
       
       // ✅ CRITICAL FIX: Save message to database first before adding to memory
-      console.error('💾 [ConversationService] Saving message to database...');
-      const { MessageService } = await import('./messageService');
-      const messageService = MessageService.getInstance();
-      const savedMessage = await messageService.addMessage(conversationId, {
-        role: message.role,
-        content: message.content,
-        imageUrl: message.imageUrl,
-        metadata: message.metadata
-      });
-      
-      if (!savedMessage) {
-        console.error('❌ [ConversationService] Failed to save message to database');
-        return { success: false, reason: 'Failed to save message to database' };
+      try {
+        console.error('💾 [ConversationService] Saving message to database...');
+        const { MessageService } = await import('./messageService');
+        const messageService = MessageService.getInstance();
+        const savedMessage = await messageService.addMessage(conversationId, {
+          role: message.role,
+          content: message.content,
+          imageUrl: message.imageUrl,
+          metadata: message.metadata
+        });
+        
+        if (!savedMessage) {
+          throw new Error('Database returned null for saved message');
+        }
+        
+        console.error('✅ [ConversationService] Message saved to database:', savedMessage.id);
+        
+        // Add the message to memory (using the database-generated ID and timestamp)
+        const messageWithDbFields: ChatMessage = {
+          ...message,
+          id: savedMessage.id,
+          timestamp: savedMessage.timestamp
+        };
+        
+        conversation.messages.push(messageWithDbFields);
+        conversation.updatedAt = Date.now();
+        
+        console.error('✅ [ConversationService] Message added to conversation, new count:', conversation.messages.length);
+        console.error('✅ [ConversationService] Updated messages:', conversation.messages.map(m => ({ id: m.id, role: m.role })));
+        
+        await this.setConversations(conversations);
+        
+        console.error('✅ [ConversationService] Conversations saved to storage');
+      } catch (error) {
+        console.error('❌ [ConversationService] Failed to save message:', error);
+        
+        // Invalidate cache to force fresh read on next access
+        this.clearCache();
+        
+        // Show error to user
+        const { toastService } = await import('./toastService');
+        toastService.error('Failed to save message. Please try again.');
+        
+        return { 
+          success: false, 
+          reason: error instanceof Error ? error.message : 'Unknown error' 
+        };
       }
-      
-      console.error('✅ [ConversationService] Message saved to database:', savedMessage.id);
-      
-      // Add the message to memory (using the database-generated ID and timestamp)
-      const messageWithDbFields: ChatMessage = {
-        ...message,
-        id: savedMessage.id,
-        timestamp: savedMessage.timestamp
-      };
-      
-      conversation.messages.push(messageWithDbFields);
-      conversation.updatedAt = Date.now();
-      
-      console.error('✅ [ConversationService] Message added to conversation, new count:', conversation.messages.length);
-      console.error('✅ [ConversationService] Updated messages:', conversation.messages.map(m => ({ id: m.id, role: m.role })));
-      
-      await this.setConversations(conversations);
-      
-      console.error('✅ [ConversationService] Conversations saved to storage');
       
       // ✅ SCALABILITY: Save individual conversation to cache (non-blocking)
       chatMemoryService.saveConversation(conversation)
@@ -651,25 +666,6 @@ export class ConversationService {
         : tab
     );
 
-    // ✅ CRITICAL FIX: Save subtab to database using SubtabsService
-    console.error('💾 [ConversationService] Saving subtab to database...');
-    const { SubtabsService } = await import('./subtabsService');
-    const subtabsService = SubtabsService.getInstance();
-    
-    // Update the specific subtab in the database
-    const success = await subtabsService.updateSubtab(conversationId, subTabId, {
-      content,
-      status: 'loaded'
-    });
-    
-    if (!success) {
-      console.error('❌ [ConversationService] Failed to update subtab in database');
-      throw new Error('Failed to update subtab content');
-    }
-    
-    console.error('✅ [ConversationService] Subtab saved to database:', subTabId);
-
-    // Update in-memory for immediate UI response
     await this.updateConversation(conversationId, {
       subtabs: updatedSubTabs,
       updatedAt: Date.now()

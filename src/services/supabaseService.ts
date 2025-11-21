@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { User, Conversation, Game, UserTier, TrialStatus } from '../types';
 import { USER_TIERS, TIER_LIMITS } from '../constants';
-import { jsonToRecord, safeParseDate, safeBoolean, safeNumber, toJson, safeString } from '../utils/typeHelpers';
+import { jsonToRecord, safeParseDate, safeBoolean, safeNumber, safeString, toJson } from '../utils/typeHelpers';
 import { toastService } from './toastService';
 import { mapUserData } from '../utils/userMapping';
 
@@ -249,8 +249,8 @@ export class SupabaseService {
               id: msg.id,
               role: msg.role as 'user' | 'assistant' | 'system',
               content: msg.content,
-              timestamp: msg.created_at ? new Date(msg.created_at).getTime() : Date.now(),
-              imageUrl: msg.image_url || undefined,
+              timestamp: safeParseDate(msg.created_at),
+              imageUrl: safeString(msg.image_url, undefined),
               metadata: typeof msg.metadata === 'object' && msg.metadata !== null ? msg.metadata as Record<string, unknown> : undefined,
             };
             console.error('🔍 [Supabase] Processed message:', { id: processed.id, role: processed.role, contentLength: processed.content?.length });
@@ -278,8 +278,8 @@ export class SupabaseService {
         isActiveSession: conv.is_active_session,
         activeObjective: conv.active_objective ?? undefined,
         gameProgress: conv.game_progress ?? undefined,
-        createdAt: conv.created_at ? new Date(conv.created_at).getTime() : Date.now(),
-        updatedAt: conv.updated_at ? new Date(conv.updated_at).getTime() : Date.now(),
+        createdAt: safeParseDate(conv.created_at),
+        updatedAt: safeParseDate(conv.updated_at),
         isActive: conv.is_active,
         isPinned: conv.is_pinned ?? undefined,
         pinnedAt: conv.pinned_at ? new Date(conv.pinned_at).getTime() : undefined,

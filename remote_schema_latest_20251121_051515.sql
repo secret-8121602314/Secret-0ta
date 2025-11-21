@@ -13,10 +13,44 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 
-CREATE SCHEMA IF NOT EXISTS "public";
+CREATE EXTENSION IF NOT EXISTS "pg_cron" WITH SCHEMA "pg_catalog";
+
+
+
+
+
+
 
 
 ALTER SCHEMA "public" OWNER TO "postgres";
+
+
+CREATE EXTENSION IF NOT EXISTS "pg_graphql" WITH SCHEMA "graphql";
+
+
+
+
+
+
+CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA "extensions";
+
+
+
+
+
+
+CREATE EXTENSION IF NOT EXISTS "supabase_vault" WITH SCHEMA "vault";
+
+
+
+
+
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "extensions";
+
+
+
+
 
 
 CREATE OR REPLACE FUNCTION "public"."add_message"("p_conversation_id" "text", "p_role" "text", "p_content" "text", "p_image_url" "text" DEFAULT NULL::"text", "p_metadata" "jsonb" DEFAULT '{}'::"jsonb") RETURNS "uuid"
@@ -2220,11 +2254,62 @@ ALTER TABLE "public"."users" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."waitlist" ENABLE ROW LEVEL SECURITY;
 
 
+
+
+ALTER PUBLICATION "supabase_realtime" OWNER TO "postgres";
+
+
+
+
+
+
+
+
+
 REVOKE USAGE ON SCHEMA "public" FROM PUBLIC;
 GRANT USAGE ON SCHEMA "public" TO "anon";
 GRANT USAGE ON SCHEMA "public" TO "authenticated";
 GRANT USAGE ON SCHEMA "public" TO "service_role";
 GRANT ALL ON SCHEMA "public" TO PUBLIC;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2426,6 +2511,24 @@ GRANT ALL ON FUNCTION "public"."validate_subtab_for_unreleased"() TO "service_ro
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 GRANT ALL ON TABLE "public"."ai_responses" TO "anon";
 GRANT ALL ON TABLE "public"."ai_responses" TO "authenticated";
 GRANT ALL ON TABLE "public"."ai_responses" TO "service_role";
@@ -2507,6 +2610,12 @@ GRANT ALL ON TABLE "public"."waitlist" TO "service_role";
 GRANT ALL ON TABLE "public"."waitlist_pending_emails" TO "anon";
 GRANT ALL ON TABLE "public"."waitlist_pending_emails" TO "authenticated";
 GRANT ALL ON TABLE "public"."waitlist_pending_emails" TO "service_role";
+
+
+
+
+
+
 
 
 

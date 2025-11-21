@@ -624,16 +624,12 @@ class GameTabService {
         return;
       }
 
-      // ✅ CRITICAL FIX: Update each subtab in the database first
-      console.error(`💾 [GameTabService] [${conversationId}] Saving ${updates.length} progressive updates to database...`);
-      const subtabsService = SubtabsService.getInstance();
-      
+      // Update the specific subtabs with linear progression (append, not overwrite)
       let updatedCount = 0;
-      const updatedSubTabs = [];
-      
-      for (const tab of conversation.subtabs) {
+      const updatedSubTabs = conversation.subtabs.map(tab => {
         const update = updates.find(u => u.tabId === tab.id);
         if (update) {
+          updatedCount++;
           console.error(`📝 [GameTabService] [${conversationId}] Updating subtab: ${tab.id} - ${update.title}`);
           
           // ✅ LINEAR PROGRESSION: Append new content with timestamp separator
@@ -650,45 +646,30 @@ class GameTabService {
             ? tab.content + separator + update.content  // ✅ Append to existing
             : update.content;  // First update or loading state
           
-          // ✅ Save to database
-          const success = await subtabsService.updateSubtab(conversationId, tab.id, {
-            title: update.title || tab.title,
-            content: newContent,
-            status: 'loaded'
-          });
-          
-          if (success) {
-            updatedCount++;
-            console.error(`✅ [GameTabService] [${conversationId}] Saved subtab ${tab.id} to database`);
-          } else {
-            console.error(`❌ [GameTabService] [${conversationId}] Failed to save subtab ${tab.id}`);
-          }
-          
-          updatedSubTabs.push({
+          return {
             ...tab,
             title: update.title || tab.title, // Update title if provided
             content: newContent,  // ✅ Accumulated history
             isNew: true, // Mark as new to show indicator
             status: 'loaded' as const
-          });
-        } else {
-          updatedSubTabs.push(tab);
+          };
         }
-      }
+        return tab;
+      });
 
-      // Only update memory if something changed
+      // Only update if something changed
       if (updatedCount === 0) {
-        console.error(`📝 [GameTabService] [${conversationId}] ⚠️ No subtabs were successfully updated`);
+        console.error(`📝 [GameTabService] [${conversationId}] ⚠️ No subtabs matched for update`);
         return;
       }
 
-      // Update in-memory for immediate UI response
+      // Update conversation with new subtab content
       await ConversationService.updateConversation(conversationId, {
         subtabs: updatedSubTabs,
         updatedAt: Date.now()
       });
 
-      console.error(`📝 [GameTabService] [${conversationId}] ✅ Updated ${updatedCount} subtabs successfully (database + memory)`);
+      console.error(`📝 [GameTabService] [${conversationId}] ✅ Updated ${updatedCount} subtabs successfully`);
     } catch (error) {
       console.error(`📝 [GameTabService] [${conversationId}] ❌ Failed to update subtabs:`, error);
       throw error;
