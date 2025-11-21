@@ -113,7 +113,7 @@ const FeatureIcon = ({ icon }: { icon: 'eye' | 'bookmark' | 'network' | 'mic' | 
     );
 };
 
-const Feature = React.memo(({ title, description, icon, image, isGemini }: { title: React.ReactNode, description: string, icon?: 'eye' | 'bookmark' | 'network' | 'mic' | 'insights' | 'cpu', image?: string, isGemini?: boolean }) => {
+const Feature = React.memo(({ title, description, icon, image, isGemini, altText }: { title: React.ReactNode, description: string, icon?: 'eye' | 'bookmark' | 'network' | 'mic' | 'insights' | 'cpu', image?: string, isGemini?: boolean, altText?: string }) => {
         return (
         <div className="flex flex-col items-center text-center group p-6 md:p-8 rounded-2xl md:hover:bg-gradient-to-br md:hover:from-neutral-800/20 md:hover:to-neutral-900/20 transition-all duration-500">
             <div className={`w-full max-w-4xl aspect-video min-h-[350px] md:min-h-[500px] mb-6 animate-fade-slide-up md:group-hover:scale-105 transition-transform duration-500 ${isGemini ? 'bg-transparent flex items-center justify-center' : ''}`}>
@@ -122,7 +122,7 @@ const Feature = React.memo(({ title, description, icon, image, isGemini }: { tit
                         <div className="w-full max-w-md aspect-[5/6] flex items-center justify-center bg-transparent">
                             <img 
                                 src={image} 
-                                alt={typeof title === 'string' ? title : ''} 
+                                alt={altText || (typeof title === 'string' ? title : 'Feature image')} 
                                 className="w-1/2 h-1/2 object-contain"
                                 loading="lazy"
                                 decoding="async"
@@ -143,7 +143,7 @@ const Feature = React.memo(({ title, description, icon, image, isGemini }: { tit
                     ) : (
                         <img 
                             src={image} 
-                            alt={typeof title === 'string' ? title : ''} 
+                            alt={altText || (typeof title === 'string' ? title : 'Feature image')} 
                             className="w-full h-full object-contain"
                             loading="lazy"
                             decoding="async"
@@ -173,7 +173,7 @@ const Feature = React.memo(({ title, description, icon, image, isGemini }: { tit
     );
 });
 
-const FeaturesCarousel = ({ features }: { features: Array<{ title: React.ReactNode; description: string; image: string; isGemini?: boolean }> }) => {
+const FeaturesCarousel = ({ features }: { features: Array<{ title: React.ReactNode; description: string; image: string; isGemini?: boolean; altText?: string }> }) => {
     const autoplayOptions = {
         delay: 5000,
         stopOnInteraction: true,
@@ -980,7 +980,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                                 {
                                     title: <><span>Stay Focused, Stay Ahead</span><ProBadge /></>,
                                     description: "Skip the wiki-hunting. Otagon provides quest tips, secret locations, build optimization—all without spoiling your discovery.",
-                                    image: feature6
+                                    image: feature6,
+                                    altText: "Stay Focused, Stay Ahead - Pro feature showing quest tips and build optimization"
                                 },
                                 {
                                     title: "Play From Anywhere",
@@ -990,7 +991,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
                                 {
                                     title: <><span>Hands-Free & AI Mode Toggle</span><ProBadge /></>,
                                     description: "Pro users can enable hands-free mode to get hints read aloud, and toggle AI analysis on/off to save screenshots for social sharing without using credits.",
-                                    image: feature3
+                                    image: feature3,
+                                    altText: "Hands-Free & AI Mode Toggle - Pro feature with voice commands and AI analysis controls"
                                 },
                                 {
                                     title: "Build Your Game Library",
