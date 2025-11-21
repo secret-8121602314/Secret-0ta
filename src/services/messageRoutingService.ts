@@ -146,11 +146,8 @@ export class MessageRoutingService {
     // This ensures the database knows about the migration, not just the in-memory state
     console.error('📦 [MessageRouting] Updating message records in database...');
     try {
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabase = createClient(
-        process.env.REACT_APP_SUPABASE_URL || '',
-        process.env.REACT_APP_SUPABASE_ANON_KEY || ''
-      );
+      // Import the existing Supabase instance
+      const { supabase } = await import('../lib/supabase');
       
       // Update each message's conversation_id in the messages table
       for (const message of messagesToAdd) {
