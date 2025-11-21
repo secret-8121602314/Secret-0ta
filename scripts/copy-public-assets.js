@@ -36,6 +36,19 @@ pwaIcons.forEach(icon => {
   }
 });
 
+// Copy SEO and PWA files
+const seoFiles = ['sitemap.xml', 'robots.txt', 'manifest.json'];
+seoFiles.forEach(file => {
+  const fileSrc = join(publicDir, file);
+  const fileDest = join(distDir, file);
+  if (existsSync(fileSrc)) {
+    copyFileSync(fileSrc, fileDest);
+    console.log(`✅ Copied ${file} to dist`);
+  } else {
+    console.warn(`⚠️ Warning: ${file} not found in public/`);
+  }
+});
+
 // Create .nojekyll file for GitHub Pages
 const nojekyllPath = join(distDir, '.nojekyll');
 writeFileSync(nojekyllPath, '');
