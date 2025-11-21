@@ -1220,6 +1220,7 @@ const MainApp: React.FC<MainAppProps> = ({
         genre: gameInfo.genre || 'Action RPG',
         conversationId,
         userId: user.id,
+        userTier: currentUser.tier, // Pass user tier for subtabs gating
         aiResponse: gameInfo.aiResponse, // Pass AI response for subtab population
         isUnreleased: gameInfo.isUnreleased || false // Pass unreleased status
       });

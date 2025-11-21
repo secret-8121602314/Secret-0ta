@@ -95,25 +95,49 @@ const MainAppRoute: React.FC = () => {
         hasPendingRequests={false}
         showProfileSetupBanner={!user?.hasProfileSetup}
         onProfileSetupComplete={async (profileData) => {
-          // Save profile data and mark setup as complete
-          const { onboardingService } = await import('../../services/onboardingService');
-          const { authService } = await import('../../services/authService');
-          
-          if (user?.authUserId) {
-            await onboardingService.markProfileSetupComplete(user.authUserId, profileData);
-            // Refresh user data without full page reload
-            await authService.refreshUser();
+          try {
+            // Save profile data and mark setup as complete
+            const { onboardingService } = await import('../../services/onboardingService');
+            const { authService } = await import('../../services/authService');
+            
+            if (user?.authUserId) {
+              await onboardingService.markProfileSetupComplete(user.authUserId, profileData);
+              // Try to refresh user data, but don't block if it fails
+              try {
+                await authService.refreshUser();
+              } catch (refreshError) {
+                console.warn('Failed to refresh user after profile setup:', refreshError);
+                // Force page reload as fallback
+                window.location.reload();
+              }
+            }
+          } catch (error) {
+            console.error('Error completing profile setup:', error);
+            // Still allow dismissal by reloading
+            window.location.reload();
           }
         }}
         onProfileSetupDismiss={async () => {
-          // Mark as dismissed in database (without saving profile data)
-          const { onboardingService } = await import('../../services/onboardingService');
-          const { authService } = await import('../../services/authService');
-          
-          if (user?.authUserId) {
-            await onboardingService.markProfileSetupComplete(user.authUserId, {});
-            // Refresh user data without full page reload
-            await authService.refreshUser();
+          try {
+            // Mark as dismissed in database (without saving profile data)
+            const { onboardingService } = await import('../../services/onboardingService');
+            const { authService } = await import('../../services/authService');
+            
+            if (user?.authUserId) {
+              await onboardingService.markProfileSetupComplete(user.authUserId, {});
+              // Try to refresh user data, but don't block if it fails
+              try {
+                await authService.refreshUser();
+              } catch (refreshError) {
+                console.warn('Failed to refresh user after profile dismiss:', refreshError);
+                // Force page reload as fallback
+                window.location.reload();
+              }
+            }
+          } catch (error) {
+            console.error('Error dismissing profile setup:', error);
+            // Still allow dismissal by reloading
+            window.location.reload();
           }
         }}
       />

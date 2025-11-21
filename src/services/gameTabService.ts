@@ -20,6 +20,7 @@ export interface GameTabCreationData {
   genre: string;
   conversationId: string;
   userId: string;
+  userTier?: string; // User tier for feature gating (free, pro, vanguard_pro)
   aiResponse?: AIResponse; // Optional AI response to extract insights from
   playerProfile?: PlayerProfile; // Optional player profile for personalization
   gameContext?: GameContext; // Optional game context (playthrough count, etc.)
@@ -56,10 +57,14 @@ class GameTabService {
     }
 
     // Tab doesn't exist - create new one
-        // For unreleased games, don't generate subtabs
+    // 🔒 TIER-GATING: Check if subtabs should be generated based on user tier
+    const userTier = data.userTier || 'free';
+    const isPro = userTier === 'pro' || userTier === 'vanguard_pro';
+    
+    // For unreleased games, don't generate subtabs
     let subTabs: SubTab[] = [];
     
-    if (!data.isUnreleased) {
+    if (!data.isUnreleased && isPro) {
       if (data.aiResponse) {
         console.error('🎮 [GameTabService] Extracting subtabs from AI response');
         
@@ -106,12 +111,14 @@ class GameTabService {
           }
         }
       } else {
-        // No AI response - create template subtabs
+        // No AI response - create template subtabs for pro users
         subTabs = this.generateInitialSubTabs(data.genre || 'Default', data.playerProfile);
         console.error('🎮 [GameTabService] Created', subTabs.length, 'initial template subtabs (no AI response)');
       }
-    } else {
+    } else if (data.isUnreleased) {
       console.error('🎮 [GameTabService] Creating unreleased game tab (no subtabs, Discuss mode only)');
+    } else {
+      console.error('🔒 [GameTabService] Subtabs disabled for free tier users');
     }
     
     // Create the conversation
@@ -137,7 +144,7 @@ class GameTabService {
     await ConversationService.addConversation(conversation);
 
     // Save subtabs using the subtabsService (handles both JSONB and normalized approaches)
-    if (subTabs.length > 0) {
+    if (subTabs.length > 0 && isPro) {
       console.error('🎮 [GameTabService] Saving', subTabs.length, 'subtabs for conversation:', conversation.id);
       console.error('🎮 [GameTabService] Subtabs:', JSON.stringify(subTabs.map(s => ({ id: s.id, title: s.title, type: s.type, hasType: !!s.type })), null, 2));
       
@@ -151,25 +158,31 @@ class GameTabService {
         console.error('❌ [GameTabService] Failed to save subtabs - conversation may not exist yet');
         // Don't throw - let background insights retry
       }
+    } else if (!isPro) {
+      console.error('🔒 [GameTabService] Skipping subtabs save for free tier user');
     } else {
       console.error('🎮 [GameTabService] No subtabs to save for conversation:', conversation.id);
     }
 
-    // Generate AI insights in background (non-blocking)
+    // 🔒 TIER-GATING: Generate AI insights in background only for Pro users
     // Only generate if we didn't already get them from the response
-    if (!data.aiResponse) {
-      this.generateInitialInsights(conversation, data.playerProfile, data.aiResponse).catch(error => 
-        console.error('Background insight generation failed:', error)
-      );
-    } else {
-      // If some subtabs still have "Loading..." content, generate insights for them in background
-      const needsInsights = conversation.subtabs?.some(tab => tab.content === 'Loading...');
-      if (needsInsights) {
-        // ✅ CRITICAL: Pass aiResponse so the AI has context from the screenshot
+    if (isPro) {
+      if (!data.aiResponse) {
         this.generateInitialInsights(conversation, data.playerProfile, data.aiResponse).catch(error => 
           console.error('Background insight generation failed:', error)
         );
+      } else {
+        // If some subtabs still have "Loading..." content, generate insights for them in background
+        const needsInsights = conversation.subtabs?.some(tab => tab.content === 'Loading...');
+        if (needsInsights) {
+          // ✅ CRITICAL: Pass aiResponse so the AI has context from the screenshot
+          this.generateInitialInsights(conversation, data.playerProfile, data.aiResponse).catch(error => 
+            console.error('Background insight generation failed:', error)
+          );
+        }
       }
+    } else {
+      console.error('🔒 [GameTabService] Skipping AI insight generation for free tier user');
     }
 
     // Return immediately without waiting for insights
