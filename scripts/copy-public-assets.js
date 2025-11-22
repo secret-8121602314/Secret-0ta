@@ -37,7 +37,7 @@ pwaIcons.forEach(icon => {
 });
 
 // Copy SEO and PWA files
-const seoFiles = ['sitemap.xml', 'robots.txt', 'manifest.json'];
+const seoFiles = ['sitemap.xml', 'robots.txt', 'manifest.json', 'ads.txt'];
 seoFiles.forEach(file => {
   const fileSrc = join(publicDir, file);
   const fileDest = join(distDir, file);
