@@ -29,42 +29,6 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
   // Optimistic: Show trial button immediately for free users, hide if check fails
   const [isTrialEligible, setIsTrialEligible] = useState(userTier === 'free');
   const [isStartingTrial, setIsStartingTrial] = useState(false);
-  const [adjustedPosition, setAdjustedPosition] = React.useState(position);
-
-  // Viewport-aware positioning
-  useEffect(() => {
-    if (!isOpen || !menuRef.current) return;
-
-    const menu = menuRef.current;
-    const menuRect = menu.getBoundingClientRect();
-    const viewport = {
-      width: window.innerWidth,
-      height: window.innerHeight,
-    };
-    const padding = 16;
-
-    let { x, y } = position;
-
-    // Horizontal boundary check
-    const menuHalfWidth = menuRect.width / 2;
-    if (x - menuHalfWidth < padding) {
-      x = menuHalfWidth + padding;
-    } else if (x + menuHalfWidth > viewport.width - padding) {
-      x = viewport.width - menuHalfWidth - padding;
-    }
-
-    // Vertical boundary check
-    const spaceBelow = viewport.height - y;
-    const spaceAbove = y;
-    
-    if (spaceBelow < menuRect.height + padding && spaceAbove > spaceBelow) {
-      y = Math.max(padding, y - 10);
-    } else if (y < padding) {
-      y = padding + 10;
-    }
-
-    setAdjustedPosition({ x, y });
-  }, [isOpen, position]);
 
   // Check trial eligibility when menu opens
   useEffect(() => {
@@ -145,27 +109,14 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
     return null;
   }
 
-  const calculateTransform = () => {
-    if (!menuRef.current) return 'translate(-50%, 10px)';
-    
-    const menuRect = menuRef.current.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - adjustedPosition.y;
-    
-    if (spaceBelow > menuRect.height + 20) {
-      return 'translate(-50%, 10px)';
-    } else {
-      return 'translate(-50%, calc(-100% - 10px))';
-    }
-  };
-
   return (
     <div
       ref={menuRef}
-      className="fixed z-[100] bg-surface border border-surface-light/20 rounded-lg shadow-xl py-2 min-w-[200px] max-h-[80vh] overflow-y-auto custom-scrollbar"
+      className="fixed z-[100] bg-surface border border-surface-light/20 rounded-lg shadow-xl py-2 min-w-[200px]"
       style={{
-        left: adjustedPosition.x,
-        top: adjustedPosition.y,
-        transform: calculateTransform(),
+        left: position.x,
+        top: position.y,
+        transform: position.y < 200 ? 'translate(-50%, 10px)' : 'translate(-50%, -100%)',
       }}
     >
       {/* Settings Option */}
