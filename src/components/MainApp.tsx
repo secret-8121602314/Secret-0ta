@@ -648,13 +648,16 @@ const MainApp: React.FC<MainAppProps> = ({
   // Function to refresh user data (for credit updates)
   const refreshUserData = async () => {
     try {
+      // ✅ FIX: Call refreshUser() to fetch fresh data from Supabase, not getCurrentUser() which returns cached data
+      await authService.refreshUser();
       const currentUser = authService.getCurrentUser();
       if (currentUser) {
         setUser(currentUser);
         UserService.setCurrentUser(currentUser);
-              }
+      }
     } catch (error) {
-            toastService.warning('Failed to refresh user data. Please refresh the page if you experience issues.');
+      console.error('Failed to refresh user data:', error);
+      toastService.warning('Failed to refresh user data. Please refresh the page if you experience issues.');
     }
   };
 
@@ -2292,11 +2295,14 @@ const MainApp: React.FC<MainAppProps> = ({
           {/* Chat Thread Name - Show on mobile when sidebar is collapsed */}
           {activeConversation && (
             <div className="lg:hidden px-3 sm:px-4 mb-3 sm:mb-4 flex-shrink-0">
-              <div className="bg-gradient-to-r from-surface/30 to-background/30 backdrop-blur-sm border border-surface-light/20 rounded-lg px-4 py-3">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="w-full bg-gradient-to-r from-surface/30 to-background/30 backdrop-blur-sm border border-surface-light/20 rounded-lg px-4 py-3 transition-all duration-200 hover:from-surface/40 hover:to-background/40 hover:border-surface-light/30 active:scale-[0.98]"
+              >
                 <h2 className="text-sm sm:text-base font-semibold bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent text-center">
                   {activeConversation.title}
                 </h2>
-              </div>
+              </button>
             </div>
           )}
 

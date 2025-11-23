@@ -600,18 +600,24 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       {/* Game Hub Quick Prompts - Only show in Game Hub tab */}
       {conversation?.isGameHub && (
-        <div className="flex-shrink-0 px-3 pb-3">
+        <div className="flex-shrink-0 mx-3 pb-1.5">
           {/* Collapsible Header */}
           <button
             onClick={() => setIsQuickActionsExpanded(!isQuickActionsExpanded)}
             className="w-full flex items-center justify-between mb-2 py-2 px-3 rounded-lg bg-[#1C1C1C]/50 hover:bg-[#1C1C1C] border border-[#424242]/30 hover:border-[#424242]/60 transition-all duration-200"
           >
-            <div className="text-xs font-semibold text-[#A3A3A3] uppercase tracking-wider">
+            <div className={`text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
+              isQuickActionsExpanded 
+                ? 'bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent' 
+                : 'text-[#A3A3A3]'
+            }`}>
               Latest Gaming News
             </div>
             <svg
-              className={`w-4 h-4 text-[#A3A3A3] transition-transform duration-200 ${
-                isQuickActionsExpanded ? 'rotate-180' : ''
+              className={`w-4 h-4 transition-all duration-200 ${
+                isQuickActionsExpanded 
+                  ? 'rotate-180 text-[#FF4D4D]' 
+                  : 'text-[#A3A3A3]'
               }`}
               fill="none"
               stroke="currentColor"
