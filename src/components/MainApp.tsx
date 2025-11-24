@@ -2394,6 +2394,10 @@ const MainApp: React.FC<MainAppProps> = ({
             setUser(refreshedUser);
           }
         }}
+        onUpgradeClick={() => {
+          setCreditModalOpen(true);
+          closeSettingsContextMenu();
+        }}
       />
 
       {/* Welcome Screen / Guide */}

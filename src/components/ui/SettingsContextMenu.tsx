@@ -13,6 +13,7 @@ interface SettingsContextMenuProps {
   onLogout: () => void;
   userTier?: UserTier;
   onTrialStart?: () => void;
+  onUpgradeClick?: () => void;
 }
 
 const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
@@ -24,37 +25,81 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
   onLogout,
   userTier,
   onTrialStart,
+  onUpgradeClick,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
-  // Optimistic: Show trial button immediately for free users, hide if check fails
-  const [isTrialEligible, setIsTrialEligible] = useState(userTier === 'free');
+  const [isTrialEligible, setIsTrialEligible] = useState(false);
+  const [isTrialActive, setIsTrialActive] = useState(false);
+  const [trialExpiresAt, setTrialExpiresAt] = useState<number | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState('');
   const [isStartingTrial, setIsStartingTrial] = useState(false);
 
-  // Check trial eligibility when menu opens
+  // Check trial status when menu opens
   useEffect(() => {
-    const checkTrialEligibility = async () => {
+    const checkTrialStatus = async () => {
       if (isOpen && userTier === 'free') {
         try {
           const currentUser = authService.getCurrentUser();
           if (currentUser) {
             const status = await supabaseService.getTrialStatus(currentUser.authUserId);
-            setIsTrialEligible(status?.isEligible && !status?.isActive || false);
+            if (status) {
+              setIsTrialEligible(status.isEligible && !status.isActive);
+              setIsTrialActive(status.isActive);
+              setTrialExpiresAt(status.expiresAt || null);
+            }
           }
         } catch (error) {
-          console.error('Error checking trial eligibility:', error);
-          // Keep showing the button on error - user can try
+          console.error('Error checking trial status:', error);
           setIsTrialEligible(true);
+          setIsTrialActive(false);
         }
       } else {
         setIsTrialEligible(false);
+        setIsTrialActive(false);
       }
     };
 
-    checkTrialEligibility();
+    checkTrialStatus();
   }, [isOpen, userTier]);
 
+  // Timer countdown for active trial
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    if (!isTrialActive || !trialExpiresAt) {
+      return;
+    }
+
+    const updateTimer = () => {
+      const now = Date.now();
+      const remaining = trialExpiresAt - now;
+
+      if (remaining <= 0) {
+        setTimeRemaining('Trial Expired');
+        setIsTrialActive(false);
+        return;
+      }
+
+      const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+
+      if (days > 0) {
+        setTimeRemaining(`${days}d ${hours}h ${minutes}m`);
+      } else if (hours > 0) {
+        setTimeRemaining(`${hours}h ${minutes}m`);
+      } else {
+        setTimeRemaining(`${minutes}m`);
+      }
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(interval);
+  }, [isTrialActive, trialExpiresAt]);
+
+  // Click outside handler with delay to prevent race condition with toggle button
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         onClose();
       }
@@ -67,12 +112,17 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
     };
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('keydown', handleEscape);
+      // Delay registration to avoid race condition with button click
+      setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener('touchstart', handleClickOutside);
+        document.addEventListener('keydown', handleEscape);
+      }, 0);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
     };
   }, [isOpen, onClose]);
@@ -88,11 +138,19 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
       const success = await supabaseService.startTrial(currentUser.authUserId);
       
       if (success) {
-                toastService.success('Pro trial activated! Enjoy your 7-day trial.');
+        toastService.success('Pro trial activated! Enjoy your 7-day trial.');
+        
+        // Refresh trial status to show timer
+        const status = await supabaseService.getTrialStatus(currentUser.authUserId);
+        if (status) {
+          setIsTrialEligible(false);
+          setIsTrialActive(status.isActive);
+          setTrialExpiresAt(status.expiresAt || null);
+        }
+        
         if (onTrialStart) {
           onTrialStart();
         }
-        onClose();
       } else {
         console.error('❌ Failed to start trial');
         toastService.error('Failed to start trial. Please try again.');
@@ -150,8 +208,18 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
         </button>
       )}
 
-      {/* Start Free Trial - Only show for free users who haven't used trial */}
-      {isTrialEligible && (
+      {/* Trial Status Display */}
+      {isTrialActive && timeRemaining && (
+        <div className="w-full px-4 py-2 text-left text-blue-400 flex items-center space-x-3 cursor-default">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          <span className="text-sm">Pro Trial: {timeRemaining}</span>
+        </div>
+      )}
+
+      {/* Start Free Trial - Only show for eligible users */}
+      {isTrialEligible && !isTrialActive && (
         <button
           onClick={handleStartTrial}
           disabled={isStartingTrial}
@@ -161,6 +229,24 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
           <span>{isStartingTrial ? 'Starting...' : 'Start 7-Day Pro Trial'}</span>
+        </button>
+      )}
+
+      {/* Upgrade to Pro - Show when trial expired */}
+      {!isTrialEligible && !isTrialActive && userTier === 'free' && (
+        <button
+          onClick={() => {
+            if (onUpgradeClick) {
+              onUpgradeClick();
+            }
+            onClose();
+          }}
+          className="w-full px-4 py-2 text-left text-[#FFAB40] hover:bg-gradient-to-r hover:from-[#FF4D4D]/10 hover:to-[#FFAB40]/10 transition-colors duration-200 flex items-center space-x-3"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+          </svg>
+          <span>Upgrade to Pro</span>
         </button>
       )}
 
