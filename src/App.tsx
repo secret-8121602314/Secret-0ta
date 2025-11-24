@@ -19,7 +19,10 @@ function App() {
     isLoading: true,
     error: null,
   });
-  const [hasEverLoggedIn, setHasEverLoggedIn] = useState(false);
+  const [hasEverLoggedIn, setHasEverLoggedIn] = useState(() => {
+    // Check if user has ever logged in (persisted in localStorage)
+    return localStorage.getItem('otagon_has_logged_in') === 'true';
+  });
   const [appState, setAppState] = useState<AppState>({
     view: 'landing', // Will be updated once auth state is checked
     onboardingStatus: 'initial',
@@ -124,6 +127,7 @@ function App() {
       try {
         if (newAuthState.user) {
           setHasEverLoggedIn(true);
+          localStorage.setItem('otagon_has_logged_in', 'true');
           const savedAppState = newAuthState.user.appState || {};
           const nextStep = await onboardingService.getNextOnboardingStep(newAuthState.user.authUserId);
           console.log('🎯 [App] Next onboarding step:', nextStep);
