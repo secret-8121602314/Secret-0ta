@@ -326,6 +326,7 @@ function App() {
     setShowLogoutConfirm(false);
     
     // ✅ CRITICAL: Set processing flag to prevent race condition
+    // Keep it TRUE to block the auth subscription from overriding our state
     isProcessingAuthRef.current = true;
     
     // Preserve welcome screen flag (user has seen it once, don't show again)
@@ -347,9 +348,13 @@ function App() {
     }));
     setAuthState({ user: null, isLoading: false, error: null });
     
-    // ✅ Release processing flag AFTER state is set
-    isProcessingAuthRef.current = false;
     console.log('🎯 [App] Logout completed, state set to view: app, onboardingStatus: login');
+    
+    // ✅ Release processing flag after a small delay to ensure auth subscription doesn't override
+    setTimeout(() => {
+      isProcessingAuthRef.current = false;
+      console.log('🎯 [App] Processing flag released after logout');
+    }, 100);
   };
 
   const openModal = (modal: ActiveModal) => {
