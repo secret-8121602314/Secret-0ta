@@ -162,6 +162,13 @@ function App() {
           if (isMounted) {
             // Check if running as PWA (standalone mode)
             const isPWA = isPWAMode();
+            console.log('🎯 [App] No user - determining view:', {
+              hasEverLoggedIn,
+              isPWA,
+              willShowLogin: hasEverLoggedIn || isPWA,
+              viewToSet: (hasEverLoggedIn || isPWA) ? 'app' : 'landing',
+              onboardingStatusToSet: (hasEverLoggedIn || isPWA) ? 'login' : 'initial'
+            });
             
             // If PWA, always show login page instead of landing page
             setAppState((prev: AppState) => ({
@@ -325,19 +332,36 @@ function App() {
   };
 
   const confirmLogout = async () => {
-    console.log('🎯 [App] Starting logout process...');
+    console.log('🎯 [App] Starting logout process...', {
+      currentView: appState.view,
+      currentOnboardingStatus: appState.onboardingStatus,
+      hasEverLoggedIn,
+      isPWA: isPWAMode()
+    });
     setShowLogoutConfirm(false);
     
-    // Preserve welcome screen flag (user has seen it once, don't show again)
+    // Preserve flags that should persist across logout
     const welcomeShown = localStorage.getItem('otakon_welcome_shown');
+    const hasLoggedIn = localStorage.getItem('otagon_has_logged_in');
+    console.log('🎯 [App] Preserving flags before signOut:', { welcomeShown, hasLoggedIn });
     
     // Sign out (clears Supabase session and localStorage)
     await authService.signOut();
     
-    // Restore welcome screen flag after signOut cleared localStorage
+    // Restore persistent flags after signOut cleared localStorage
     if (welcomeShown) {
       localStorage.setItem('otakon_welcome_shown', welcomeShown);
     }
+    // Critical: ALWAYS restore has_logged_in flag so user always sees login page, never landing page
+    // If they're logging out, they obviously have logged in before
+    localStorage.setItem('otagon_has_logged_in', 'true');
+    console.log('🎯 [App] Set otagon_has_logged_in=true after logout');
+    
+    // Update in-memory state to ensure consistency
+    setHasEverLoggedIn(true);
+    
+    // Block auth subscription from overriding our navigation
+    isProcessingAuthRef.current = true;
     
     setAppState((prev: AppState) => ({
       ...prev,
@@ -345,8 +369,18 @@ function App() {
       onboardingStatus: 'login' // This will show login screen
     }));
     setAuthState({ user: null, isLoading: false, error: null });
-    isProcessingAuthRef.current = false;
-    console.log('🎯 [App] Logout completed, showing login screen');
+    
+    // Allow auth subscription to process again after a brief delay
+    setTimeout(() => {
+      isProcessingAuthRef.current = false;
+    }, 100);
+    
+    console.log('🎯 [App] Logout completed, state set to:', {
+      view: 'app',
+      onboardingStatus: 'login',
+      hasEverLoggedIn: true,
+      localStorageHasLoggedIn: localStorage.getItem('otagon_has_logged_in')
+    });
   };
 
   const openModal = (modal: ActiveModal) => {

@@ -110,7 +110,12 @@ const AppRouter: React.FC<AppRouterProps> = ({
   }
 
   if (appState.view === 'landing' && !authState.user && !authState.isLoading) {
-                    return (
+    console.log('🎯 [AppRouter] Rendering LandingPage', {
+      view: appState.view,
+      hasUser: !!authState.user,
+      isLoading: authState.isLoading
+    });
+    return (
       <>
         <LandingPage
           onGetStarted={handleGetStarted}
@@ -132,6 +137,10 @@ const AppRouter: React.FC<AppRouterProps> = ({
   }
 
   if (appState.onboardingStatus === 'login') {
+    console.log('🎯 [AppRouter] Rendering LoginSplashScreen', {
+      onboardingStatus: appState.onboardingStatus,
+      view: appState.view
+    });
     return (
       <LoginSplashScreen
         onComplete={handleLoginComplete}
