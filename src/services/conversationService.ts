@@ -117,7 +117,8 @@ export class ConversationService {
   }
 
   // ✅ In-memory cache to reduce Supabase reads during polling
-  private static conversationsCache: { data: Conversations; timestamp: number } | null = null;
+  // ✅ SECURITY: Now includes userId to prevent data leakage between accounts
+  private static conversationsCache: { userId: string; data: Conversations; timestamp: number } | null = null;
   private static CACHE_TTL = 5000; // 5 second cache (balance between real-time and performance)
 
   /**
@@ -129,10 +130,31 @@ export class ConversationService {
   }
 
   /**
+   * ✅ SECURITY FIX: Clear ALL cached data - call on logout to prevent data leakage
+   * This prevents User B from seeing User A's conversations after logout
+   */
+  static clearAllCaches(): void {
+    console.log('🗑️ [ConversationService] Clearing all caches and state to prevent data leakage');
+    
+    // Clear conversations cache
+    this.conversationsCache = null;
+    
+    // Clear pending creation promises
+    this.pendingCreations.clear();
+    
+    // Clear localStorage backup
+    localStorage.removeItem('otakon_conversations');
+    localStorage.removeItem('otakon_active_conversation');
+    
+    console.log('✅ [ConversationService] All caches cleared - ready for new user login');
+  }
+
+  /**
    * Get cached conversations without querying Supabase
    * Returns null if cache is empty or expired
    */
   static getCachedConversations(): Conversations | null {
+    // ✅ SECURITY: Cache validation is now done in getConversations() with userId check
     if (this.conversationsCache && Date.now() - this.conversationsCache.timestamp < this.CACHE_TTL) {
       console.log('🔍 [ConversationService] Returning cached conversations (age:', Date.now() - this.conversationsCache.timestamp, 'ms)');
       
@@ -159,9 +181,13 @@ export class ConversationService {
     const userId = await this.getCurrentUserId();
     let conversations: Conversations = {};
     
-    // ✅ PERFORMANCE: Check in-memory cache first (unless explicitly skipped)
-    if (!skipCache && this.conversationsCache && Date.now() - this.conversationsCache.timestamp < this.CACHE_TTL) {
-      console.log('🔍 [ConversationService] Using cached conversations (age:', Date.now() - this.conversationsCache.timestamp, 'ms)');
+    // ✅ SECURITY: Check in-memory cache first (unless explicitly skipped)
+    // ✅ CRITICAL: Validate userId matches cache to prevent data leakage between accounts
+    if (!skipCache && 
+        this.conversationsCache && 
+        this.conversationsCache.userId === userId &&
+        Date.now() - this.conversationsCache.timestamp < this.CACHE_TTL) {
+      console.log('🔍 [ConversationService] Using cached conversations for user', userId, '(age:', Date.now() - this.conversationsCache.timestamp, 'ms)');
       return this.conversationsCache.data;
     }
     
@@ -189,8 +215,9 @@ export class ConversationService {
           });
         }
         
-        // ✅ Update cache
+        // ✅ SECURITY: Update cache with userId validation
         this.conversationsCache = {
+          userId: userId,
           data: conversations,
           timestamp: Date.now()
         };

@@ -621,11 +621,26 @@ export class AuthService {
       // Clear any stored app state
       localStorage.removeItem('otakon_app_state');
       
+      // ✅ SECURITY: Clear connection state (new user might have different PC)
+      localStorage.removeItem('otakon_connection_code');
+      localStorage.removeItem('otakon_last_connection');
+      localStorage.removeItem('otakonHasConnectedBefore');
+      
       // Clear sessionStorage
       sessionStorage.clear();
       
       // ✅ SCALABILITY: Clear cache
       this.clearCache();
+      
+      // ✅ CRITICAL SECURITY FIX: Clear conversation service caches to prevent data leakage
+      // This ensures User B doesn't see User A's conversations after logout
+      try {
+        const { ConversationService } = await import('./conversationService');
+        ConversationService.clearAllCaches();
+        console.log('🔒 [AuthService] Conversation caches cleared - no data leakage');
+      } catch (error) {
+        console.error('⚠️ [AuthService] Failed to clear conversation caches:', error);
+      }
       
       // Clear auth state
       this.updateAuthState({ user: null, isLoading: false, error: null });

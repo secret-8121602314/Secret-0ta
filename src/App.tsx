@@ -322,7 +322,11 @@ function App() {
 
   const confirmLogout = async () => {
     console.log('🎯 [App] Starting logout process...');
+    console.log('🎯 [App] isProcessingAuthRef.current BEFORE:', isProcessingAuthRef.current);
     setShowLogoutConfirm(false);
+    
+    // ✅ CRITICAL: Set processing flag to prevent race condition
+    isProcessingAuthRef.current = true;
     
     // Preserve welcome screen flag (user has seen it once, don't show again)
     const welcomeShown = localStorage.getItem('otakon_welcome_shown');
@@ -335,14 +339,17 @@ function App() {
       localStorage.setItem('otakon_welcome_shown', welcomeShown);
     }
     
+    // ✅ Set state to show login screen
     setAppState((prev: AppState) => ({
       ...prev,
       view: 'app', // Set to app view so landing page check doesn't trigger
       onboardingStatus: 'login' // This will show login screen
     }));
     setAuthState({ user: null, isLoading: false, error: null });
+    
+    // ✅ Release processing flag AFTER state is set
     isProcessingAuthRef.current = false;
-    console.log('🎯 [App] Logout completed, showing login screen');
+    console.log('🎯 [App] Logout completed, state set to view: app, onboardingStatus: login');
   };
 
   const openModal = (modal: ActiveModal) => {
