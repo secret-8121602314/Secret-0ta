@@ -67,9 +67,15 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-700">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-gradient-to-br from-[#FF4D4D] to-[#FFAB40]">
-              <PuzzlePieceIcon className="w-6 h-6 text-white" />
-            </div>
+            <img
+              src="/images/mascot/6.png"
+              alt="Add Game"
+              className="w-16 h-16 sm:w-20 sm:h-20 object-contain aspect-square"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+              }}
+            />
             <h2 className="text-2xl font-bold text-white">Add Game</h2>
           </div>
           <button

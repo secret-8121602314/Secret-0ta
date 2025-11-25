@@ -100,6 +100,36 @@ const connect = (
         keys: Object.keys(data)
       });
       
+      // ✅ Handle error messages from relay server (e.g., invalid code, no partner)
+      if (data.type === 'error' || data.error) {
+        const errorMsg = data.message || data.error || 'Connection failed';
+        console.error('🔗 [WebSocket] Server error:', errorMsg);
+        
+        // Clear saved connection code on error
+        localStorage.removeItem('otakon_connection_code');
+        localStorage.removeItem('otakon_last_connection');
+        
+        if (handlers && typeof handlers.onError === 'function') {
+          handlers.onError(errorMsg);
+        }
+        return;
+      }
+      
+      // ✅ Handle "no_partner" - PC client not found with this code
+      if (data.type === 'no_partner' || data.type === 'partner_not_found' || data.type === 'invalid_code') {
+        const errorMsg = 'No PC client found with this code. Please check the code and ensure the PC client is running.';
+        console.error('🔗 [WebSocket] No partner found:', data);
+        
+        // Clear saved connection code
+        localStorage.removeItem('otakon_connection_code');
+        localStorage.removeItem('otakon_last_connection');
+        
+        if (handlers && typeof handlers.onError === 'function') {
+          handlers.onError(errorMsg);
+        }
+        return;
+      }
+      
       // Log full message for screenshot types to debug
       if (data.type === 'screenshot_success' || data.type === 'screenshot_batch' || data.type === 'screenshot') {
         console.log('🔗 [WebSocket] Full screenshot message:', JSON.stringify(data).substring(0, 500));

@@ -17,6 +17,8 @@ const HowToUseRoute: React.FC = () => {
   const [status, setStatus] = React.useState<ConnectionStatus>(ConnectionStatus.DISCONNECTED);
   const [error, setError] = React.useState<string | null>(null);
   const [connectionCode, setConnectionCode] = React.useState<string | null>(null);
+  const connectionTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const webSocketOpenedRef = React.useRef<boolean>(false);
 
   // Restore connection code from localStorage on mount
   React.useEffect(() => {
@@ -29,6 +31,12 @@ const HowToUseRoute: React.FC = () => {
   // Cleanup: Disconnect WebSocket when user navigates away from this screen
   React.useEffect(() => {
     return () => {
+      // Clear any pending timeout
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current);
+        connectionTimeoutRef.current = null;
+      }
+      
       // Only disconnect if we're in CONNECTING state (user navigated away before completion)
       // Don't disconnect if CONNECTED - user successfully connected and moved forward
       if (status === ConnectionStatus.CONNECTING) {
@@ -73,29 +81,69 @@ const HowToUseRoute: React.FC = () => {
   };
 
   const handleConnect = (code: string) => {
-        // Reset error state for retry
+    console.log('[HowToUseRoute] handleConnect called with code:', code);
+    // Reset error state for retry
     setError(null);
     setStatus(ConnectionStatus.CONNECTING);
     setConnectionCode(code);
+    webSocketOpenedRef.current = false;
 
-    // Store code in localStorage for persistence (use same key as MainApp)
-    localStorage.setItem('otakon_connection_code', code);
-    localStorage.setItem('otakon_last_connection', new Date().toISOString());
+    // Clear any existing timeout
+    if (connectionTimeoutRef.current) {
+      clearTimeout(connectionTimeoutRef.current);
+      connectionTimeoutRef.current = null;
+    }
+
+    // Set timeout for connection attempt (15 seconds - allows for Render.com cold start)
+    connectionTimeoutRef.current = setTimeout(() => {
+      console.log('[HowToUseRoute] Connection timeout after 15 seconds, webSocketOpened:', webSocketOpenedRef.current);
+      disconnectWebSocket();
+      
+      if (webSocketOpenedRef.current) {
+        // WebSocket connected to relay, but no partner_connected received
+        setError('No PC client found with this code. Please check that:\n• The code is correct (all 6 digits)\n• PC client is running and showing the same code');
+      } else {
+        // WebSocket never connected to relay server
+        setError('Could not reach the relay server. Please check your internet connection and try again.');
+      }
+      setStatus(ConnectionStatus.ERROR);
+      // Remove the invalid code from localStorage
+      localStorage.removeItem('otakon_connection_code');
+      localStorage.removeItem('otakon_last_connection');
+    }, 15000);
+
+    // DON'T save code to localStorage yet - wait until connection is confirmed
+    // localStorage.setItem('otakon_connection_code', code);
+    // localStorage.setItem('otakon_last_connection', new Date().toISOString());
 
     // Connect via WebSocket
     connectWebSocket(
       code,
       // onOpen
       () => {
-                // Don't set as connected yet - wait for PC client response
+        console.log('[HowToUseRoute] ✅ WebSocket connection opened to relay server, waiting for partner_connected...');
+        webSocketOpenedRef.current = true;
+        // Don't set as connected yet - wait for PC client response
       },
       // onMessage
       (data: Record<string, unknown>) => {
-                // Check if this is a connection confirmation from PC client
+        console.log('[HowToUseRoute] WebSocket message received:', data.type, data);
+        // Check if this is a connection confirmation from PC client
         // PC client sends: {type: 'partner_connected'} immediately, then {type: 'connection_alive'} later
         if (data.type === 'partner_connected' || data.type === 'connection_alive' || data.type === 'connected' || data.status === 'connected') {
-                    setStatus(ConnectionStatus.CONNECTED);
+          console.log('[HowToUseRoute] ✅ Partner connected! Setting status to CONNECTED');
+          // Clear timeout on successful connection
+          if (connectionTimeoutRef.current) {
+            clearTimeout(connectionTimeoutRef.current);
+            connectionTimeoutRef.current = null;
+          }
+
+          setStatus(ConnectionStatus.CONNECTED);
           setError(null);
+          
+          // NOW save the code to localStorage since connection is confirmed
+          localStorage.setItem('otakon_connection_code', code);
+          localStorage.setItem('otakon_last_connection', new Date().toISOString());
           
           // Mark as having connected before
           localStorage.setItem('otakonHasConnectedBefore', 'true');
@@ -119,13 +167,30 @@ const HowToUseRoute: React.FC = () => {
       },
       // onError
       (errorMsg: string) => {
-        console.error('[HowToUseRoute] WebSocket error:', errorMsg);
-        // User-friendly error messages
+        console.error('[HowToUseRoute] ❌ WebSocket error:', errorMsg);
+        
+        // Clear timeout on error
+        if (connectionTimeoutRef.current) {
+          clearTimeout(connectionTimeoutRef.current);
+          connectionTimeoutRef.current = null;
+        }
+        
+        // Clear saved connection code on error
+        localStorage.removeItem('otakon_connection_code');
+        localStorage.removeItem('otakon_last_connection');
+        
+        // User-friendly error messages based on whether we reached the server
         let displayError = errorMsg;
-        if (errorMsg.includes('Connection to the server failed')) {
-          displayError = 'Unable to connect. Please check that:\n• The code is correct\n• PC client is running\n• Both devices are online';
+        if (errorMsg.includes('Connection to the server failed') || errorMsg.includes('Connection closed unexpectedly')) {
+          if (webSocketOpenedRef.current) {
+            displayError = 'Connection lost. Please try again.';
+          } else {
+            displayError = 'Could not connect to relay server. Please check your internet connection.';
+          }
         } else if (errorMsg.includes('Invalid code')) {
           displayError = 'Please enter a valid 6-digit code';
+        } else if (errorMsg.includes('No PC client found')) {
+          displayError = 'No PC client found with this code. Please check that:\n• The code is correct\n• PC client is running and showing the same code';
         }
         setError(displayError);
         setStatus(ConnectionStatus.ERROR);
@@ -134,10 +199,21 @@ const HowToUseRoute: React.FC = () => {
       },
       // onClose
       () => {
-                // Only set to disconnected if not in error state
-        if (status !== ConnectionStatus.ERROR) {
-          setStatus(ConnectionStatus.DISCONNECTED);
-        }
+        console.log('[HowToUseRoute] WebSocket connection closed, webSocketOpened:', webSocketOpenedRef.current);
+        // Only update status if we're in CONNECTING state and keep it there for timeout
+        // Don't override ERROR or CONNECTED states
+        setStatus(prev => {
+          if (prev === ConnectionStatus.CONNECTING) {
+            return prev; // Keep CONNECTING, let timeout handle it
+          }
+          if (prev === ConnectionStatus.ERROR) {
+            return prev; // Keep ERROR state
+          }
+          if (prev === ConnectionStatus.CONNECTED) {
+            return ConnectionStatus.DISCONNECTED;
+          }
+          return ConnectionStatus.DISCONNECTED;
+        });
       }
     );
   };

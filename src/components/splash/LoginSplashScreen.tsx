@@ -353,7 +353,15 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
       <div className={`w-full max-w-md lg:max-w-lg xl:max-w-xl relative z-10 transition-all duration-500 ${isAnimating ? 'scale-105' : 'scale-100'} mx-auto`}>
         {/* Logo and Title */}
         <div className="text-center mb-4 md:mb-5 lg:mb-6">
-          <Logo size="lg" className="mx-auto mb-3 md:mb-3 lg:mb-4 w-16 h-16 md:w-16 md:h-16 lg:w-20 lg:h-20" spinOnce={true} />
+          <img
+            src="/images/mascot/10.png"
+            alt="Otagon Mascot"
+            className="mx-auto mb-3 md:mb-3 lg:mb-4 w-32 h-32 sm:w-40 sm:h-40 lg:w-48 lg:h-48 object-contain aspect-square"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+            }}
+          />
           <h1 className="text-2xl md:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">
             Welcome to Otagon
           </h1>

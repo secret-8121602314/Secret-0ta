@@ -69,7 +69,19 @@ const InitialSplashScreen: React.FC<InitialSplashScreenProps> = ({ onComplete, u
       
       <div className="flex flex-col items-center justify-center w-full max-w-2xl">
         <div className="flex-shrink-0 mb-1">
-          <Logo className="w-24 h-24 sm:w-26 sm:h-26 md:w-28 md:h-28" spinOnce={true} />
+          <img
+            src="/images/mascot/1.png"
+            alt="Otagon Mascot"
+            className="w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 object-contain aspect-square"
+            onError={(e) => {
+              // Fallback to Logo component if image fails to load
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              const fallback = document.createElement('div');
+              fallback.innerHTML = '<div class="w-24 h-24 sm:w-26 sm:h-26 md:w-28 md:h-28"></div>';
+              target.parentNode?.appendChild(fallback);
+            }}
+          />
         </div>
 
         <h1 

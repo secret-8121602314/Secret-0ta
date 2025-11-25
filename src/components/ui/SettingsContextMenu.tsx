@@ -14,6 +14,7 @@ interface SettingsContextMenuProps {
   userTier?: UserTier;
   onTrialStart?: () => void;
   onUpgradeClick?: () => void;
+  buttonRef?: React.RefObject<HTMLButtonElement | null>;
 }
 
 const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
@@ -26,6 +27,7 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
   userTier,
   onTrialStart,
   onUpgradeClick,
+  buttonRef,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const [isTrialEligible, setIsTrialEligible] = useState(false);
@@ -37,25 +39,31 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
   // Check trial status when menu opens
   useEffect(() => {
     const checkTrialStatus = async () => {
-      if (isOpen && userTier === 'free') {
+      // Check trial status for both free and pro users (pro could be on trial)
+      if (isOpen) {
         try {
           const currentUser = authService.getCurrentUser();
           if (currentUser) {
             const status = await supabaseService.getTrialStatus(currentUser.authUserId);
             if (status) {
-              setIsTrialEligible(status.isEligible && !status.isActive);
+              // For free users: show trial eligibility
+              // For pro users on trial: show the timer
+              setIsTrialEligible(status.isEligible && !status.isActive && userTier === 'free');
               setIsTrialActive(status.isActive);
               setTrialExpiresAt(status.expiresAt || null);
             }
           }
         } catch (error) {
           console.error('Error checking trial status:', error);
-          setIsTrialEligible(true);
+          setIsTrialEligible(userTier === 'free');
           setIsTrialActive(false);
         }
       } else {
+        // Reset when menu closes
         setIsTrialEligible(false);
         setIsTrialActive(false);
+        setTrialExpiresAt(null);
+        setTimeRemaining('');
       }
     };
 
@@ -97,12 +105,19 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
     return () => clearInterval(interval);
   }, [isTrialActive, trialExpiresAt]);
 
-  // Click outside handler with delay to prevent race condition with toggle button
+  // Click outside handler - exclude the toggle button to allow proper toggle behavior
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        onClose();
+      const target = event.target as Node;
+      // Don't close if clicking inside the menu
+      if (menuRef.current && menuRef.current.contains(target)) {
+        return;
       }
+      // Don't close if clicking on the toggle button (let the button handler manage toggle)
+      if (buttonRef?.current && buttonRef.current.contains(target)) {
+        return;
+      }
+      onClose();
     };
 
     const handleEscape = (event: KeyboardEvent) => {
@@ -112,12 +127,19 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
     };
 
     if (isOpen) {
-      // Delay registration to avoid race condition with button click
-      setTimeout(() => {
+      // Small delay to avoid catching the same click that opened the menu
+      const timeoutId = setTimeout(() => {
         document.addEventListener('mousedown', handleClickOutside);
         document.addEventListener('touchstart', handleClickOutside);
         document.addEventListener('keydown', handleEscape);
-      }, 0);
+      }, 10);
+      
+      return () => {
+        clearTimeout(timeoutId);
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('touchstart', handleClickOutside);
+        document.removeEventListener('keydown', handleEscape);
+      };
     }
 
     return () => {
@@ -125,7 +147,7 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
       document.removeEventListener('touchstart', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, buttonRef]);
 
   const handleStartTrial = async () => {
     const currentUser = authService.getCurrentUser();
@@ -163,18 +185,48 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
     }
   };
 
+  // Calculate safe position within viewport
+  const getMenuPosition = () => {
+    const menuWidth = 200;
+    const menuHeight = 280; // Approximate max height
+    const padding = 8;
+    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 800;
+    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 600;
+    
+    let left = position.x;
+    let top = position.y;
+    
+    // Horizontal positioning - keep menu on screen
+    // Try to center horizontally on the click point
+    left = Math.max(padding + menuWidth / 2, Math.min(left, viewportWidth - menuWidth / 2 - padding));
+    
+    // Vertical positioning - prefer showing below, but flip above if needed
+    const showAbove = position.y + menuHeight + padding > viewportHeight;
+    if (showAbove) {
+      top = position.y - menuHeight - 10;
+      // Make sure it doesn't go off the top
+      top = Math.max(padding, top);
+    } else {
+      top = position.y + 10;
+    }
+    
+    return { left, top };
+  };
+
   if (!isOpen) {
     return null;
   }
+
+  const safePosition = getMenuPosition();
 
   return (
     <div
       ref={menuRef}
       className="fixed z-[100] bg-surface border border-surface-light/20 rounded-lg shadow-xl py-2 min-w-[200px]"
       style={{
-        left: position.x,
-        top: position.y,
-        transform: position.y < 200 ? 'translate(-50%, 10px)' : 'translate(-50%, -100%)',
+        left: safePosition.left,
+        top: safePosition.top,
+        transform: 'translateX(-50%)',
       }}
     >
       {/* Settings Option */}

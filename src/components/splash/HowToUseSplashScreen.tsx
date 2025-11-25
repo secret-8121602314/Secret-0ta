@@ -57,6 +57,16 @@ const HowToUseSplashScreen: React.FC<HowToUseSplashScreenProps> = ({ onComplete 
       {/* Fixed Header */}
       <header className="flex-shrink-0 px-4 sm:px-6 md:px-8 pt-3 sm:pt-4 md:pt-6 pb-2 sm:pb-3 text-center z-10 bg-gradient-to-br from-[#111111] to-[#0A0A0A]">
         <div className="max-w-4xl mx-auto">
+          {/* Mascot Image */}
+          <img
+            src="/images/mascot/5.2.png"
+            alt="Connected Mascot"
+            className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 object-contain mx-auto mb-3"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+            }}
+          />
           <h1 className="text-3xl font-bold text-white leading-normal">You're Connected!</h1>
           <p className="text-base text-neutral-300 leading-relaxed mt-2">Master Otagon in four easy steps.</p>
         </div>

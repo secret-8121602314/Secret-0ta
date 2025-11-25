@@ -39,7 +39,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStartChat, onAddGame: _
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center justify-center px-2.5 sm:px-4 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-[10px] sm:text-xs md:text-sm font-medium whitespace-nowrap transition-all duration-200 border-b-2 flex-shrink-0 ${
+                className={`flex items-center justify-center px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-xs sm:text-sm md:text-sm font-medium whitespace-nowrap transition-all duration-200 border-b-2 flex-shrink-0 ${
                   activeTab === tab.id
                     ? 'border-[#FF4D4D] text-white bg-gradient-to-b from-[#FF4D4D]/10 to-transparent'
                     : 'border-transparent text-gray-400 hover:text-white hover:bg-gray-700/50'

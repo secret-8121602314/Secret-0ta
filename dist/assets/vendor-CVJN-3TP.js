@@ -1,4 +1,4 @@
-import{b as ga,g as wo,h as ya}from"./react-vendor-ytDMyTZl.js";var er={exports:{}},tr={};/**
+import{a as ga,g as wo,h as ya}from"./react-vendor-IfoC2dlx.js";var er={exports:{}},tr={};/**
  * @license React
  * scheduler.production.min.js
  *

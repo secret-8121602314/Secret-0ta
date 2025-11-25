@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ConnectionStatus } from '../../types';
+import DesktopIcon from '../ui/DesktopIcon';
 
 interface ConnectionModalProps {
   isOpen: boolean;
@@ -27,48 +28,59 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
   onClearError
 }) => {
   const [code, setCode] = useState(connectionCode || '');
+  // Track if modal was opened while already connected (to prevent auto-close)
   const wasOpenedWhileConnectedRef = useRef(false);
+  // Track if this connection was initiated from this modal session
+  const connectionInitiatedRef = useRef(false);
 
   const isConnecting = status === ConnectionStatus.CONNECTING;
   const isConnected = status === ConnectionStatus.CONNECTED;
 
   // Track if modal was opened while already connected
   useEffect(() => {
-    if (isOpen && isConnected) {
+    if (isOpen && isConnected && !connectionInitiatedRef.current) {
+      // Modal opened while already connected (user clicked to manage connection)
       wasOpenedWhileConnectedRef.current = true;
-          } else if (!isOpen) {
+    } else if (!isOpen) {
+      // Reset refs when modal closes
       wasOpenedWhileConnectedRef.current = false;
+      connectionInitiatedRef.current = false;
     }
   }, [isOpen, isConnected]);
 
-  // Auto-close modal after successful connection (but not if manually opened)
+  // Auto-close modal after successful connection (but not if manually opened while connected)
   useEffect(() => {
-    if (isConnected && !wasOpenedWhileConnectedRef.current) {
+    // Only auto-close if:
+    // 1. Connection just became active
+    // 2. User initiated this connection from this modal (connectionInitiatedRef is true)
+    // 3. Modal was NOT opened while already connected
+    if (isConnected && connectionInitiatedRef.current && !wasOpenedWhileConnectedRef.current) {
       const hasConnectedBefore = localStorage.getItem('otakonHasConnectedBefore') === 'true';
       
       if (!hasConnectedBefore) {
         // First time connecting - trigger onboarding flow
-                // Close modal and let App.tsx handle onboarding progression
+        // Close modal and let App.tsx handle onboarding progression
         setTimeout(() => {
           onClose();
           // Trigger onboarding update to show how-to-use splash screen
           if (onShowHowToUse) {
             onShowHowToUse();
           }
-        }, 1000); // Small delay to show the success message first
+        }, 2000); // Show success message for 2 seconds
       } else {
         // Returning user - auto-close modal and show chat screen
-                setTimeout(() => {
+        setTimeout(() => {
           onClose();
-        }, 1500); // Show success message for 1.5 seconds then close
+        }, 2000); // Show success message for 2 seconds then close
       }
-    } else if (isConnected && wasOpenedWhileConnectedRef.current) {
-          }
+    }
   }, [isConnected, onClose, onShowHowToUse]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (code && /^\d{6}$/.test(code)) {
+      // Mark that connection was initiated from this modal
+      connectionInitiatedRef.current = true;
       onConnect(code);
     }
   };
@@ -121,16 +133,14 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
           <h2 className="text-3xl font-bold text-[#F5F5F5] mb-4 leading-tight">PC Connection</h2>
           <p className="text-[#A3A3A3] mb-6 text-lg leading-relaxed">Sync with the PC client to send screenshots directly from your game.</p>
           
-          {/* Saved connection info */}
-          {connectionCode && (
+          {/* Saved connection info - only show if there was a previous successful connection */}
+          {connectionCode && lastSuccessfulConnection && !isConnecting && (
             <div className="mb-6 p-4 bg-gradient-to-r from-[#2E2E2E]/60 to-[#1A1A1A]/60 border-2 border-[#424242]/60 rounded-2xl backdrop-blur-sm">
               <div className="text-base text-[#A3A3A3]">
                 <span className="font-medium text-[#F5F5F5]">Saved connection:</span> {connectionCode}
-                {lastSuccessfulConnection && (
-                  <span className="block text-sm text-[#6E6E6E] mt-2">
-                    Last connected: {formatLastConnection(lastSuccessfulConnection)}
-                  </span>
-                )}
+                <span className="block text-sm text-[#6E6E6E] mt-2">
+                  Last connected: {formatLastConnection(lastSuccessfulConnection)}
+                </span>
               </div>
             </div>
           )}
@@ -140,7 +150,10 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
             <div className="mb-8">
               <div className="bg-gradient-to-r from-[#2E2E2E]/60 to-[#1A1A1A]/60 border-2 border-[#424242]/60 rounded-2xl p-6 backdrop-blur-sm">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold text-[#F5F5F5]">PC Client</h3>
+                  <div className="flex items-center gap-3">
+                    <DesktopIcon className="w-8 h-8 text-[#FFAB40]" />
+                    <h3 className="text-xl font-semibold text-[#F5F5F5]">PC Client</h3>
+                  </div>
                   <span className="text-sm text-[#A3A3A3] bg-gradient-to-r from-[#1C1C1C]/80 to-[#0A0A0A]/80 px-3 py-1.5 rounded-xl border border-[#424242]/60">
                     v1.0.0
                   </span>
@@ -169,6 +182,20 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Mascot image - only show when not connected */}
+            {!isConnected && (
+              <div className="flex justify-center mb-2">
+                <img
+                  src="/images/mascot/5.1.png"
+                  alt="Otagon Mascot"
+                  className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 object-contain"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
             <div>
               <label htmlFor="connection-code" className="block text-base font-medium text-[#CFCFCF] mb-3">
                 6-Digit Connection Code
@@ -200,7 +227,18 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
             {error && <p className="text-[#E53A3A] text-base">{error}</p>}
             {isConnected && (
               <div className="space-y-4">
-                <p className="text-[#5CBB7B] text-base">Connected successfully. Ready to receive screenshots.</p>
+                <div className="flex items-center gap-3">
+                  <img
+                    src="/images/mascot/5.2.png"
+                    alt="Connected"
+                    className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 object-contain aspect-square"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                    }}
+                  />
+                  <p className="text-[#5CBB7B] text-base">Connected successfully. Ready to receive screenshots.</p>
+                </div>
                 
                 {/* Enhanced Status for 6-digit connections */}
                 <div className="p-4 bg-gradient-to-r from-green-600/10 to-emerald-600/10 border-2 border-green-600/20 rounded-2xl backdrop-blur-sm">

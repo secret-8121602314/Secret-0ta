@@ -98,11 +98,11 @@ const SubTabs: React.FC<SubTabsProps> = ({
   }
 
   return (
-    <div className="mb-4">
+    <div className="mb-4 relative">
       {/* Collapsible Header - Matching Latest Gaming News style */}
       <button
         onClick={toggleExpanded}
-        className="w-full flex items-center justify-between mb-2 py-2 px-3 rounded-lg bg-[#1C1C1C]/50 hover:bg-[#1C1C1C] border border-[#424242]/30 hover:border-[#424242]/60 transition-all duration-200"
+        className="w-full flex items-center justify-between mb-2 py-2 px-3 rounded-lg bg-[#1C1C1C]/50 hover:bg-[#1C1C1C] border border-[#424242]/30 hover:border-[#424242]/60 transition-all duration-200 relative z-10"
       >
         <div className="text-xs font-semibold text-[#A3A3A3] uppercase tracking-wider">
           Lore & Insights
@@ -119,15 +119,12 @@ const SubTabs: React.FC<SubTabsProps> = ({
         </svg>
       </button>
 
-      {/* Collapsible Content */}
-      <div
-        className={`transition-all duration-300 ease-in-out overflow-hidden ${
-          isExpanded 
-            ? 'max-h-[500px] opacity-100' 
-            : 'max-h-0 opacity-0'
-        }`}
-      >
-        <div className="bg-[#1C1C1C]/60 border border-[#424242]/40 rounded-xl backdrop-blur-sm">
+      {/* Collapsible Content - Overlay positioned above the button */}
+      {isExpanded && (
+        <div
+          className="absolute bottom-full left-0 right-0 mb-2 z-50 animate-fade-in"
+        >
+          <div className="bg-[#1C1C1C]/95 backdrop-blur-md border border-[#424242]/60 rounded-xl shadow-2xl">
           {/* Tab Headers */}
           <div className="flex items-center gap-2 p-2 sm:p-3 border-b border-[#424242]/40">
             <div className="flex flex-wrap gap-1 sm:gap-2 flex-1">
@@ -249,6 +246,7 @@ const SubTabs: React.FC<SubTabsProps> = ({
           )}
         </div>
       </div>
+      )}
     </div>
   );
 };

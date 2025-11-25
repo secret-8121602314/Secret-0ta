@@ -72,6 +72,7 @@ interface MainAppProps {
   onOpenTerms?: () => void;
   connectionStatus?: ConnectionStatus;
   connectionError?: string | null;
+  connectionCode?: string | null;
   onConnect?: (_code: string) => void;
   onDisconnect?: () => void;
   onClearConnectionError?: () => void;
@@ -91,6 +92,7 @@ const MainApp: React.FC<MainAppProps> = ({
   onOpenTerms: _onOpenTerms,
   connectionStatus: propConnectionStatus,
   connectionError: propConnectionError,
+  connectionCode: propConnectionCode,
   onConnect: propOnConnect,
   onDisconnect: propOnDisconnect,
   onClearConnectionError: propOnClearConnectionError,
@@ -119,8 +121,12 @@ const MainApp: React.FC<MainAppProps> = ({
   const [creditModalOpen, setCreditModalOpen] = useState(false);
   const [welcomeScreenOpen, setWelcomeScreenOpen] = useState(false);
   const [connectionModalOpen, setConnectionModalOpen] = useState(false);
-  const [connectionCode, setConnectionCode] = useState<string | null>(null);
+  const [localConnectionCode, setLocalConnectionCode] = useState<string | null>(null);
   const [lastSuccessfulConnection, setLastSuccessfulConnection] = useState<Date | null>(null);
+  
+  // Use prop connection code if provided, otherwise use local state
+  const connectionCode = propConnectionCode ?? localConnectionCode;
+  const setConnectionCode = setLocalConnectionCode;
   
   // Hands-free mode state (persisted to localStorage)
   const [isHandsFreeMode, setIsHandsFreeMode] = useState(() => {
@@ -134,6 +140,9 @@ const MainApp: React.FC<MainAppProps> = ({
     const saved = localStorage.getItem('otakonAiMode');
     return saved !== 'false'; // Default to true (AI ON)
   });
+  
+  // ✅ Track if pause mode was active before AI mode was turned off (to restore when turned back on)
+  const pauseStateBeforeAiOffRef = useRef<boolean | null>(null);
   
   // Input preservation for tab switching
   const [currentInputMessage, setCurrentInputMessage] = useState<string>('');
@@ -183,6 +192,7 @@ const MainApp: React.FC<MainAppProps> = ({
     isOpen: false,
     position: { x: 0, y: 0 },
   });
+  const settingsButtonRef = useRef<HTMLButtonElement>(null);
   
   // Use props for connection state, fallback to local state if not provided
   const connectionStatus = propConnectionStatus ?? ConnectionStatus.DISCONNECTED;
@@ -212,19 +222,18 @@ const MainApp: React.FC<MainAppProps> = ({
   }, [isManualUploadMode]);
 
   // Handle WebSocket messages for screenshot processing
+  // Note: Connection confirmation (partner_connected) is handled by MainAppRoute
+  // This handler processes screenshots and other data messages
   const handleWebSocketMessage = useCallback((data: Record<string, unknown>) => {
     console.log('📸 [MainApp] handleWebSocketMessage called with type:', data.type);
     
-    // Check if this is a connection confirmation from PC client
+    // Connection confirmation is handled by MainAppRoute's WebSocket handlers
+    // We just log it here for debugging
     if (data.type === 'partner_connected' || data.type === 'connection_alive' || data.type === 'connected' || data.status === 'connected') {
-      // Get connection code from state or localStorage
-      const codeToUse = connectionCode || localStorage.getItem('otakon_connection_code');
-      // Update connection status in parent
-      if (propOnConnect && codeToUse) {
-        propOnConnect(codeToUse);
-      } else if (!propOnConnect) {
-      } else if (!codeToUse) {
-      }
+      console.log('📸 [MainApp] Connection confirmation received (handled by MainAppRoute)');
+      // Update last successful connection time
+      setLastSuccessfulConnection(new Date());
+      return;
     }
     
     // ✅ FIX: Handle screenshot-single from PC client F1 hotkey
@@ -382,6 +391,30 @@ const MainApp: React.FC<MainAppProps> = ({
       propOnWebSocketMessage(handleWebSocketMessage);
     }
   }, [propOnWebSocketMessage, handleWebSocketMessage]);
+
+  // ✅ FIX: Update WebSocket handlers when connected so MainApp receives screenshot messages
+  // MainAppRoute handles the initial connection, but we need to update handlers to process screenshots
+  useEffect(() => {
+    if (connectionStatus === ConnectionStatus.CONNECTED) {
+      console.log('📸 [MainApp] Connection is CONNECTED - updating WebSocket handlers to receive screenshots');
+      setHandlers(
+        // onOpen - no-op, connection already open
+        () => {
+          console.log('📸 [MainApp] WebSocket onOpen (already connected)');
+        },
+        // onMessage - route to MainApp's handler for screenshot processing
+        handleWebSocketMessage,
+        // onError - log but let MainAppRoute handle state
+        (error: string) => {
+          console.error('📸 [MainApp] WebSocket error:', error);
+        },
+        // onClose - log but let MainAppRoute handle state
+        () => {
+          console.log('📸 [MainApp] WebSocket closed');
+        }
+      );
+    }
+  }, [connectionStatus, handleWebSocketMessage]);
 
   useEffect(() => {
     const loadData = async (retryCount = 0) => {
@@ -669,44 +702,41 @@ const MainApp: React.FC<MainAppProps> = ({
 
   // WebSocket message handling and auto-reconnection
   useEffect(() => {
-    const handleWebSocketError = (error: string) => {
-      console.error('WebSocket error:', error);
-    };
-
-    const handleWebSocketOpen = () => {
-            // Save connection time for status tracking
-      setLastSuccessfulConnection(new Date());
-      // Update connection status in parent
-      if (propOnConnect && connectionCode) {
-        propOnConnect(connectionCode);
-      }
-    };
-
-    const handleWebSocketClose = () => {
-          };
-
     // Check if we have a stored connection code and try to reconnect
     const storedCode = localStorage.getItem('otakon_connection_code');
-    if (storedCode) {
-      console.log('🔗 [MainApp] Auto-reconnecting with stored code:', storedCode);
+    if (storedCode && !connectionCode) {
+      console.log('🔗 [MainApp] Found stored code, triggering reconnection via parent...');
       setConnectionCode(storedCode);
       
-      // Call connect with placeholder handlers
-      connect(storedCode, () => {}, () => {}, () => {}, () => {});
-      
-      // ✅ CRITICAL: Immediately set handlers AFTER connect() to override and prevent stale closures
-      console.log('🔗 [MainApp] Setting WebSocket handlers after auto-reconnect');
-      setHandlers(
-        handleWebSocketOpen,
-        handleWebSocketMessage,
-        handleWebSocketError,
-        handleWebSocketClose
-      );
+      // If we have a prop handler (MainAppRoute), let it handle the WebSocket connection
+      // This ensures the proper flow: CONNECTING -> partner_connected -> CONNECTED
+      if (propOnConnect) {
+        console.log('🔗 [MainApp] Using propOnConnect for reconnection');
+        propOnConnect(storedCode);
+      } else {
+        // Fallback: Handle reconnection locally (shouldn't happen normally)
+        console.log('🔗 [MainApp] No propOnConnect, handling WebSocket locally');
+        
+        const handleWebSocketError = (error: string) => {
+          console.error('WebSocket error:', error);
+        };
+
+        const handleWebSocketOpen = () => {
+          console.log('🔗 [MainApp] Local WebSocket opened');
+        };
+
+        const handleWebSocketClose = () => {
+          console.log('🔗 [MainApp] Local WebSocket closed');
+        };
+        
+        // Call connect with handlers
+        connect(storedCode, handleWebSocketOpen, handleWebSocketMessage, handleWebSocketError, handleWebSocketClose);
+      }
     }
 
     // Note: Removed automatic disconnect on unmount to maintain persistent connection
     // WebSocket should only disconnect when user explicitly disconnects or logs out
-  }, [activeConversation, propOnConnect, handleWebSocketMessage, connectionCode]);
+  }, []); // Only run once on mount
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -1021,7 +1051,16 @@ const MainApp: React.FC<MainAppProps> = ({
   };
 
   const handleHandsFreeToggle = () => {
-    // Just open the modal - don't toggle the state
+    // Verify Pro tier before opening modal (extra safety check)
+    const currentUser = authService.getCurrentUser();
+    const isPro = currentUser?.tier === 'pro' || currentUser?.tier === 'vanguard_pro';
+    
+    if (!isPro) {
+      toastService.show('Hands-free mode is a Pro feature', 'info');
+      return;
+    }
+    
+    // Open the modal
     setHandsFreeModalOpen(true);
   };
 
@@ -1056,10 +1095,36 @@ const MainApp: React.FC<MainAppProps> = ({
     setAiModeEnabled(newMode);
     localStorage.setItem('otakonAiMode', String(newMode));
     
-    toastService.show(
-      newMode ? 'AI mode enabled - Screenshots will be analyzed' : 'AI mode disabled - Screenshots will be stored only',
-      'success'
-    );
+    // ✅ FIX: When AI mode is turned OFF and we're in manual/pause mode,
+    // save the pause state and switch to auto/play mode
+    if (!newMode && isManualUploadMode) {
+      // Remember that pause was active before we turned AI mode off
+      pauseStateBeforeAiOffRef.current = true;
+      setIsManualUploadMode(false);
+      localStorage.setItem('otakon_manual_upload_mode', 'false');
+      toastService.show(
+        'AI mode disabled - Auto-upload enabled for direct screenshot capture',
+        'success'
+      );
+    } else if (newMode && pauseStateBeforeAiOffRef.current === true) {
+      // ✅ FIX: When AI mode is turned back ON, restore the previous pause state
+      pauseStateBeforeAiOffRef.current = null; // Clear the saved state
+      setIsManualUploadMode(true);
+      localStorage.setItem('otakon_manual_upload_mode', 'true');
+      toastService.show(
+        'AI mode enabled - Pause mode restored',
+        'success'
+      );
+    } else {
+      // Clear saved state if turning off AI mode while not in pause mode
+      if (!newMode) {
+        pauseStateBeforeAiOffRef.current = null;
+      }
+      toastService.show(
+        newMode ? 'AI mode enabled - Screenshots will be analyzed' : 'AI mode disabled - Screenshots will be stored only',
+        'success'
+      );
+    }
   };
 
   // Settings context menu handlers
@@ -1094,35 +1159,42 @@ const MainApp: React.FC<MainAppProps> = ({
   };
 
   const handleConnect = (code: string) => {
+    console.log('[MainApp] handleConnect called with code:', code);
     setConnectionCode(code);
     
-    // Store connection code for persistence
-    localStorage.setItem('otakon_connection_code', code);
-    localStorage.setItem('otakon_last_connection', new Date().toISOString());
-    
-    // Use prop handler if available, otherwise use local websocket
+    // Let the parent (MainAppRoute) handle the actual WebSocket connection
+    // This ensures proper connection flow: CONNECTING -> wait for partner_connected -> CONNECTED
     if (propOnConnect) {
       propOnConnect(code);
     } else {
-      // Fallback to local websocket connection
+      // Fallback to local websocket connection (shouldn't happen normally)
+      console.warn('[MainApp] No propOnConnect provided, using local WebSocket connection');
       connect(
         code,
         () => {
-          setLastSuccessfulConnection(new Date());
-          localStorage.setItem('otakonHasConnectedBefore', 'true');
+          console.log('[MainApp] Local WebSocket opened');
         },
-        (_data: Record<string, unknown>) => {
-                  },
+        (data: Record<string, unknown>) => {
+          // Check for partner_connected to confirm connection
+          if (data.type === 'partner_connected' || data.type === 'connection_alive') {
+            setLastSuccessfulConnection(new Date());
+            localStorage.setItem('otakon_connection_code', code);
+            localStorage.setItem('otakon_last_connection', new Date().toISOString());
+            localStorage.setItem('otakonHasConnectedBefore', 'true');
+          }
+        },
         (error: string) => {
-          console.error('Connection error:', error);
+          console.error('[MainApp] Connection error:', error);
         },
         () => {
-                  }
+          console.log('[MainApp] Local WebSocket closed');
+        }
       );
     }
   };
 
   const handleDisconnect = () => {
+    console.log('[MainApp] handleDisconnect called');
     if (propOnDisconnect) {
       propOnDisconnect();
     } else {
@@ -1130,8 +1202,6 @@ const MainApp: React.FC<MainAppProps> = ({
     }
     setConnectionCode(null);
     setLastSuccessfulConnection(null);
-    localStorage.removeItem('otakon_connection_code');
-    localStorage.removeItem('otakon_last_connection');
   };
 
   // Handle suggested prompt clicks
@@ -1596,7 +1666,7 @@ const MainApp: React.FC<MainAppProps> = ({
           // Add a simple acknowledgment message (no AI processing)
           const storageMessage = {
             id: `msg_${Date.now() + 1}`,
-            content: `Screenshot saved to your gallery. AI analysis is currently disabled. Enable AI mode to get insights about your gameplay.`,
+            content: `Screenshot saved to your chat. AI analysis is currently disabled. Enable AI mode to get insights about your gameplay.`,
             role: 'assistant' as const,
             timestamp: Date.now(),
           };
@@ -1617,6 +1687,9 @@ const MainApp: React.FC<MainAppProps> = ({
           
           // Save message
           await ConversationService.addMessage(activeConversation.id, storageMessage);
+          
+          // ✅ FIX: Clear suggested prompts for AI-off screenshot uploads (no follow-up needed)
+          setSuggestedPrompts([]);
           
           // Clear loading state and exit early (skip AI processing)
           setIsLoading(false);
@@ -2243,6 +2316,7 @@ const MainApp: React.FC<MainAppProps> = ({
             </button>
             
             <button
+              ref={settingsButtonRef}
               onClick={handleSettingsContextMenu}
               className="btn-icon p-3 text-text-muted hover:text-text-primary transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             >
@@ -2392,6 +2466,7 @@ const MainApp: React.FC<MainAppProps> = ({
         onOpenGuide={handleOpenGuide}
         onLogout={handleLogout}
         userTier={currentUser.tier}
+        buttonRef={settingsButtonRef}
         onTrialStart={async () => {
           // Refresh user data after trial starts
           await authService.refreshUser();

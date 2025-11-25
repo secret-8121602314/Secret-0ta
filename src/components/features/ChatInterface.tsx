@@ -74,9 +74,9 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
           {/* Avatar */}
           <div className="flex-shrink-0">
             {message.role === 'user' ? (
-              <UserAvatar className="w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0 text-[#D98C1F]" />
+              <UserAvatar className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 text-[#D98C1F]" />
             ) : (
-              <AIAvatar className="w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0" />
+              <AIAvatar className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0" />
             )}
           </div>
           
@@ -532,10 +532,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         {conversation.messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
+              <img
+                src="/images/mascot/4.png"
+                alt="Otagon Mascot"
+                className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 object-contain aspect-square mx-auto mb-4"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                }}
+              />
               <p className="text-text-muted text-lg">
                 Start a conversation with <span className="bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent font-semibold">Otagon</span>
               </p>
-              <p className="text-text-muted text-sm mt-2">Ask me anything about gaming, strategies, or tips.</p>
+              <p className="text-text-muted text-sm mt-2">Ask me anything about gaming, strategies, or tips. You can also start uploading gameplay screenshots for help!</p>
             </div>
           </div>
         ) : (
@@ -557,7 +566,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             <div className="flex items-start gap-3">
               {/* AI Avatar */}
               <div className="flex-shrink-0">
-                <AIAvatar className="w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0" />
+                <AIAvatar className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0" />
               </div>
               
               {/* Loading content */}
@@ -600,11 +609,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       {/* Game Hub Quick Prompts - Only show in Game Hub tab */}
       {conversation?.isGameHub && (
-        <div className="flex-shrink-0 mx-3 pb-1.5">
+        <div className="flex-shrink-0 mx-3 pb-1.5 relative">
           {/* Collapsible Header */}
           <button
             onClick={() => setIsQuickActionsExpanded(!isQuickActionsExpanded)}
-            className="w-full flex items-center justify-between mb-2 py-2 px-3 rounded-lg bg-[#1C1C1C]/50 hover:bg-[#1C1C1C] border border-[#424242]/30 hover:border-[#424242]/60 transition-all duration-200"
+            className="w-full flex items-center justify-between mb-2 py-2 px-3 rounded-lg bg-[#1C1C1C]/50 hover:bg-[#1C1C1C] border border-[#424242]/30 hover:border-[#424242]/60 transition-all duration-200 relative z-10"
           >
             <div className={`text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
               isQuickActionsExpanded 
@@ -627,39 +636,39 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             </svg>
           </button>
 
-          {/* Collapsible Content */}
-          <div
-            className={`grid grid-cols-2 gap-2 transition-all duration-300 ease-in-out overflow-hidden ${
-              isQuickActionsExpanded 
-                ? 'max-h-96 opacity-100' 
-                : 'max-h-0 opacity-0'
-            }`}
-          >
-            {[
-              { text: "What's the latest gaming news?", shape: "✕" },
-              { text: "Which games are releasing soon?", shape: "■" },
-              { text: "What are the latest game reviews?", shape: "▲" },
-              { text: "Show me the hottest new game trailers.", shape: "◯" }
-            ].map((prompt) => (
-              <button
-                key={prompt.text}
-                onClick={() => {
-                  setIsQuickActionsExpanded(false);
-                  onSuggestedPromptClick?.(prompt.text);
-                }}
-                disabled={isLoading}
-                className="group relative px-3 py-3 rounded-xl bg-gradient-to-br from-[#1C1C1C] to-[#0F0F0F] hover:from-[#252525] hover:to-[#1A1A1A] border border-[#424242]/30 hover:border-[#E53A3A]/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-left overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-[#E53A3A]/10 to-[#FF6B35]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-2">
-                  <span className="text-lg flex-shrink-0 text-[#E53A3A] font-bold leading-none">{prompt.shape}</span>
-                  <span className="text-xs sm:text-sm text-[#E5E5E5] font-medium group-hover:text-white transition-colors leading-tight">
-                    {prompt.text}
-                  </span>
-                </div>
-              </button>
-            ))}
-          </div>
+          {/* Collapsible Content - Overlay positioned above the button */}
+          {isQuickActionsExpanded && (
+            <div
+              className="absolute bottom-full left-0 right-0 mb-2 z-50 animate-fade-in"
+            >
+              <div className="grid grid-cols-2 gap-2 p-3 rounded-xl bg-[#1C1C1C]/95 backdrop-blur-md border border-[#424242]/60 shadow-2xl">
+                {[
+                  { text: "What's the latest gaming news?", shape: "✕" },
+                  { text: "Which games are releasing soon?", shape: "■" },
+                  { text: "What are the latest game reviews?", shape: "▲" },
+                  { text: "Show me the hottest new game trailers.", shape: "◯" }
+                ].map((prompt) => (
+                  <button
+                    key={prompt.text}
+                    onClick={() => {
+                      setIsQuickActionsExpanded(false);
+                      onSuggestedPromptClick?.(prompt.text);
+                    }}
+                    disabled={isLoading}
+                    className="group relative px-3 py-3 rounded-xl bg-gradient-to-br from-[#1C1C1C] to-[#0F0F0F] hover:from-[#252525] hover:to-[#1A1A1A] border border-[#424242]/30 hover:border-[#E53A3A]/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-left overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#E53A3A]/10 to-[#FF6B35]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                    <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                      <span className="text-lg flex-shrink-0 text-[#E53A3A] font-bold leading-none">{prompt.shape}</span>
+                      <span className="text-xs sm:text-sm text-[#E5E5E5] font-medium group-hover:text-white transition-colors leading-tight">
+                        {prompt.text}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

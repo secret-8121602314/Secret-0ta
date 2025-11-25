@@ -25,7 +25,17 @@ const allSlides = [
     description: "Otagon automatically organizes your chats by game and tracks your main story progress. Easily see how far you've come and pick up right where you left off."
   },
   {
-    icon: <DesktopIcon className="w-24 h-24 text-[#FF4D4D]" />,
+    icon: (
+      <img
+        src="/images/mascot/2.png"
+        alt="Connect PC"
+        className="w-36 h-36 sm:w-48 sm:h-48 md:w-56 md:h-56 object-contain aspect-square"
+        onError={(e) => {
+          const target = e.target as HTMLImageElement;
+          target.style.display = 'none';
+        }}
+      />
+    ),
     title: "Connect Your PC for Instant Help",
     description: "Link your desktop and mobile app to get help without leaving your game. Press a hotkey to instantly send a screenshot for analysis."
   }
@@ -194,7 +204,20 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
                           </button>
                         </div>
                       )}
-                      {isConnected && <p className="text-[#5CBB7B]">You're all set! Your PC is now connected.</p>}
+                      {isConnected && (
+                        <div className="flex flex-col items-center gap-3">
+                          <img
+                            src="/images/mascot/5.2.png"
+                            alt="Connected"
+                            className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 object-contain aspect-square"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                            }}
+                          />
+                          <p className="text-[#5CBB7B]">You're all set! Your PC is now connected.</p>
+                        </div>
+                      )}
                       {isConnecting && (
                         <div className="flex items-center justify-center gap-2">
                           <div className="flex space-x-1">

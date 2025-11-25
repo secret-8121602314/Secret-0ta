@@ -37,6 +37,18 @@ const CreditModal: React.FC<CreditModalProps> = ({ isOpen, onClose, onUpgrade, u
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
         
+        <div className="flex justify-center mb-4">
+          <img
+            src="/images/mascot/8.png"
+            alt="Credits"
+            className="w-28 h-28 sm:w-32 sm:h-32 md:w-40 md:h-40 object-contain aspect-square"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+            }}
+          />
+        </div>
+        
         <h2 className="text-2xl font-bold text-[#F5F5F5] mb-2">Monthly Credits</h2>
         <p className="text-[#A3A3A3] mb-8">Your usage resets at the start of each month.</p>
         

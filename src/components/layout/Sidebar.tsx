@@ -241,7 +241,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                           )}
                         </div>
                         <p className="text-xs text-text-muted mt-2">
-                          {conversation.messages.length} messages
+                          {conversation.messages.filter(m => m.role === 'assistant').length} messages
                         </p>
                         <p className="text-xs text-text-muted mt-1">
                           {new Date(conversation.updatedAt).toLocaleDateString()}
