@@ -7,12 +7,17 @@ interface PWAInstallBannerProps {
   alwaysShow?: boolean; // Keep banner visible on login screen even if installed
 }
 
-const BANNER_DISMISS_KEY = 'otakon_pwa_banner_dismissed';
 const GLOBAL_PROMPT_KEY = '__otagon_beforeinstallprompt';
 
-// Extend Window interface for global prompt storage
-interface WindowWithPrompt extends Window {
-  [key: string]: BeforeInstallPromptEvent | null | unknown;
+// Helper functions for accessing global prompt on window object
+function getGlobalPrompt(): BeforeInstallPromptEvent | null {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (window as any)[GLOBAL_PROMPT_KEY] ?? null;
+}
+
+function setGlobalPrompt(prompt: BeforeInstallPromptEvent | null): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (window as any)[GLOBAL_PROMPT_KEY] = prompt;
 }
 
 const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '', alwaysShow = false }) => {
@@ -48,7 +53,7 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '', alw
 
     checkIfInstalled();
 
-    const globalPrompt = (window as WindowWithPrompt)[GLOBAL_PROMPT_KEY] as BeforeInstallPromptEvent | null;
+    const globalPrompt = getGlobalPrompt();
     if (globalPrompt) {
       console.log('✅ [PWA Install Banner] Found existing beforeinstallprompt event');
       setDeferredPrompt(globalPrompt);
@@ -60,7 +65,7 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '', alw
       console.log('✅ [PWA Install Banner] beforeinstallprompt event fired');
       e.preventDefault();
       const installEvent = e as BeforeInstallPromptEvent;
-      (window as WindowWithPrompt)[GLOBAL_PROMPT_KEY] = installEvent;
+      setGlobalPrompt(installEvent);
       setDeferredPrompt(installEvent);
       setHasPrompt(true);
     };
@@ -70,7 +75,7 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '', alw
       console.log('🎉 [PWA Install Banner] App installed successfully!');
       setIsInstalled(true);
       markAppAsInstalled();
-      (window as WindowWithPrompt)[GLOBAL_PROMPT_KEY] = null;
+      setGlobalPrompt(null);
       setHasPrompt(false);
       setDeferredPrompt(null);
     };

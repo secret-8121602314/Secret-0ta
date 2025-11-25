@@ -39,7 +39,7 @@ class CacheService {
       if (error) {
               } else {
               }
-    } catch (error) {
+    } catch (_error) {
           }
     
     // Cleanup memory cache if it gets too large
@@ -124,7 +124,7 @@ class CacheService {
       this.memoryCache.set(key, { value, expires: expiresAt });
       return value as T;
       
-    } catch (error) {
+    } catch (_error) {
             return null;
     }
   }
@@ -153,7 +153,7 @@ class CacheService {
       
       if (error) {
               }
-    } catch (error) {
+    } catch (_error) {
           }
     
     return memoryDeleted;
@@ -178,7 +178,7 @@ class CacheService {
       
       if (error) {
               }
-    } catch (error) {
+    } catch (_error) {
           }
   }
 
@@ -200,7 +200,7 @@ class CacheService {
       
       if (error) {
               }
-    } catch (error) {
+    } catch (_error) {
           }
   }
 
@@ -249,7 +249,7 @@ class CacheService {
                 return null;
       }
       return data;
-    } catch (error) {
+    } catch (_error) {
             return null;
     }
   }
@@ -264,7 +264,7 @@ class CacheService {
                 return null;
       }
       return data;
-    } catch (error) {
+    } catch (_error) {
             return null;
     }
   }
@@ -279,7 +279,7 @@ class CacheService {
                 return [];
       }
       return data || [];
-    } catch (error) {
+    } catch (_error) {
             return [];
     }
   }
@@ -294,7 +294,7 @@ class CacheService {
                 return 0;
       }
       return data || 0;
-    } catch (error) {
+    } catch (_error) {
             return 0;
     }
   }
@@ -404,7 +404,7 @@ class CacheService {
                 // Note: This would typically be done via a migration
         // For now, we'll just log that it needs to be created
               }
-    } catch (error) {
+    } catch (_error) {
       // Silently fail - cache table initialization is optional
       // This prevents errors on landing page before auth
     }

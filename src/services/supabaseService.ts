@@ -1,9 +1,13 @@
 import { supabase } from '../lib/supabase';
-import { User, Conversation, Game, UserTier, TrialStatus } from '../types';
+import { User, Conversation, Game, TrialStatus, SubTab } from '../types';
+import type { Json } from '../types/database';
 import { USER_TIERS, TIER_LIMITS } from '../constants';
 import { jsonToRecord, safeParseDate, safeBoolean, safeNumber, safeString, toJson } from '../utils/typeHelpers';
 import { toastService } from './toastService';
 import { mapUserData } from '../utils/userMapping';
+
+// Helper to cast our custom types to Json for Supabase
+const asJson = <T>(value: T): Json => value as unknown as Json;
 
 export class SupabaseService {
   private static instance: SupabaseService;
@@ -47,13 +51,13 @@ export class SupabaseService {
           tier: updates.tier,
           has_used_trial: updates.hasUsedTrial,
           last_activity: updates.lastActivity,
-          preferences: updates.preferences,
-          app_state: updates.appState,
-          profile_data: updates.profileData,
-          onboarding_data: updates.onboardingData,
-          behavior_data: updates.behaviorData,
-          feedback_data: updates.feedbackData,
-          usage_data: updates.usageData,
+          preferences: asJson(updates.preferences),
+          app_state: asJson(updates.appState),
+          profile_data: asJson(updates.profileData),
+          onboarding_data: asJson(updates.onboardingData),
+          behavior_data: asJson(updates.behaviorData),
+          feedback_data: asJson(updates.feedbackData),
+          usage_data: asJson(updates.usageData),
           updated_at: new Date().toISOString(),
         })
         .eq('auth_user_id', userId);
@@ -303,28 +307,28 @@ export class SupabaseService {
       }
       
       return {
-        id: conv.id,
-        authUserId: conv.auth_user_id ?? undefined,
-        userId: conv.user_id ?? undefined,
-        title: conv.title,
+        id: conv.id as string,
+        authUserId: (conv.auth_user_id as string | null) ?? undefined,
+        userId: (conv.user_id as string | null) ?? undefined,
+        title: conv.title as string,
         messages: processedMessages,
-        gameId: conv.game_id ?? undefined,
-        gameTitle: conv.game_title ?? undefined,
-        genre: conv.genre ?? undefined,
+        gameId: (conv.game_id as string | null) ?? undefined,
+        gameTitle: (conv.game_title as string | null) ?? undefined,
+        genre: (conv.genre as string | null) ?? undefined,
         subtabs: processedSubtabs,
-        subtabsOrder: conv.subtabs_order || [],
-        isActiveSession: conv.is_active_session,
-        activeObjective: conv.active_objective ?? undefined,
-        gameProgress: conv.game_progress ?? undefined,
-        createdAt: safeParseDate(conv.created_at),
-        updatedAt: safeParseDate(conv.updated_at),
-        isActive: conv.is_active,
-        isPinned: conv.is_pinned ?? undefined,
-        pinnedAt: conv.pinned_at ? new Date(conv.pinned_at).getTime() : undefined,
-        isGameHub: conv.is_game_hub ?? undefined,
-        isUnreleased: conv.is_unreleased ?? undefined,
-        contextSummary: conv.context_summary ?? undefined,
-        lastSummarizedAt: conv.last_summarized_at ? new Date(conv.last_summarized_at).getTime() : undefined,
+        subtabsOrder: (conv.subtabs_order as string[]) || [],
+        isActiveSession: conv.is_active_session as boolean | null,
+        activeObjective: (conv.active_objective as string | null) ?? undefined,
+        gameProgress: (conv.game_progress as number | null) ?? undefined,
+        createdAt: safeParseDate(conv.created_at as string | null),
+        updatedAt: safeParseDate(conv.updated_at as string | null),
+        isActive: conv.is_active as boolean | null,
+        isPinned: (conv.is_pinned as boolean | null) ?? undefined,
+        pinnedAt: conv.pinned_at ? new Date(conv.pinned_at as string).getTime() : undefined,
+        isGameHub: (conv.is_game_hub as boolean | null) ?? undefined,
+        isUnreleased: (conv.is_unreleased as boolean | null) ?? undefined,
+        contextSummary: (conv.context_summary as string | null) ?? undefined,
+        lastSummarizedAt: conv.last_summarized_at ? new Date(conv.last_summarized_at as number).getTime() : undefined,
       };
     }) as Conversation[];
   }
@@ -369,9 +373,11 @@ export class SupabaseService {
       
       // ✅ FIX: Use UPSERT to handle duplicate Game Hub (409 Conflict)
       // If a conversation with this ID exists, update it instead of failing
+      // Note: We cast insertData because the generated types may not include auth_user_id
+       
             const { data, error } = await supabase
         .from('conversations')
-        .upsert(insertData, { 
+        .upsert(insertData as any, { 
           onConflict: 'id',
           ignoreDuplicates: false // Update existing record
         })
@@ -397,10 +403,12 @@ export class SupabaseService {
       } else {
                 // 🔍 Check if this row would pass RLS
         const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user?.id !== verifyData.auth_user_id) {
+        // Note: auth_user_id exists in actual DB but may not be in generated types
+        const rowAuthUserId = (verifyData as unknown as { auth_user_id?: string }).auth_user_id;
+        if (session?.user?.id !== rowAuthUserId) {
           console.error('🚨 [Supabase] AUTH_USER_ID MISMATCH!', {
             sessionUserId: session?.user?.id,
-            rowAuthUserId: verifyData.auth_user_id,
+            rowAuthUserId: rowAuthUserId,
             match: false
           });
         } else {
@@ -528,7 +536,7 @@ export class SupabaseService {
           platform: game.platform,
           rating: game.rating,
           cover_url: game.imageUrl,
-          metadata: game.metadata,
+          metadata: asJson(game.metadata),
         })
         .select('id')
         .single();

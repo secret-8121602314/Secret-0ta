@@ -9,7 +9,6 @@
 
 import type { 
   AdConfig, 
-  AdSlot, 
   AdPlacement, 
   AdPerformance,
   IAdService 
@@ -57,7 +56,7 @@ class AdService implements IAdService {
    * - Pro users: No ads
    * - Vanguard Pro users: No ads
    */
-  shouldShowAd(userId: string, tier: UserTier, placement: AdPlacement): boolean {
+  shouldShowAd(_userId: string, tier: UserTier, placement: AdPlacement): boolean {
     if (!this.isInitialized || !this.config?.isEnabled) {
       return false;
     }
@@ -108,7 +107,7 @@ class AdService implements IAdService {
   /**
    * Load an ad into a slot
    */
-  async loadAd(slotId: string): Promise<void> {
+  async loadAd(_slotId: string): Promise<void> {
     this.ensureInitialized();
         // @todo: Implement ad loading with AdSense
     // const adElement = document.querySelector(`[data-ad-slot="${slotId}"]`);
@@ -120,7 +119,7 @@ class AdService implements IAdService {
   /**
    * Refresh an existing ad
    */
-  async refreshAd(slotId: string): Promise<void> {
+  async refreshAd(_slotId: string): Promise<void> {
     this.ensureInitialized();
         // @todo: Implement ad refresh
     // Note: AdSense doesn't officially support ad refresh
@@ -158,7 +157,7 @@ class AdService implements IAdService {
   /**
    * Track ad impression
    */
-  trackImpression(slotId: string, userId?: string): void {
+  trackImpression(slotId: string, _userId?: string): void {
     const impressions = this.impressionTracking.get(slotId) || [];
     impressions.push(Date.now());
     this.impressionTracking.set(slotId, impressions);
@@ -169,14 +168,14 @@ class AdService implements IAdService {
   /**
    * Track ad click
    */
-  trackClick(slotId: string, userId?: string): void {
+  trackClick(_slotId: string, _userId?: string): void {
         // @todo: Send click data to analytics
   }
 
   /**
    * Get ad performance metrics
    */
-  async getPerformance(startDate: number, endDate: number): Promise<AdPerformance[]> {
+  async getPerformance(_startDate: number, _endDate: number): Promise<AdPerformance[]> {
     this.ensureInitialized();
         // @todo: Fetch from AdSense API or analytics
     return [];

@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+ 
 import { ConversationService } from './conversationService';
 import { ChatMessage, Conversations } from '../types';
 

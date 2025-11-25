@@ -242,10 +242,17 @@ class GameTabService {
     console.error('🤖 [GameTabService] Extracting dynamic insights from AI response');
     
     // Check if AI provided INSIGHT_UPDATE tags
-    const insightUpdates = aiResponse.otakonTags.get('INSIGHT_UPDATE');
+    const rawInsightUpdates = aiResponse.otakonTags.get('INSIGHT_UPDATE');
     
-    if (insightUpdates) {
-      console.error('🤖 [GameTabService] Found INSIGHT_UPDATE:', insightUpdates);
+    if (rawInsightUpdates) {
+      console.error('🤖 [GameTabService] Found INSIGHT_UPDATE:', rawInsightUpdates);
+      
+      // Cast to expected type
+      const insightUpdates = rawInsightUpdates as { id?: string; content?: string };
+      if (!insightUpdates.id) {
+        console.error('🤖 [GameTabService] INSIGHT_UPDATE missing id, skipping');
+        return existingSubtabs;
+      }
       
       // Check if subtab already exists
       const existingTab = existingSubtabs.find(tab => tab.id === insightUpdates.id);
@@ -256,7 +263,7 @@ class GameTabService {
           tab.id === insightUpdates.id
             ? {
                 ...tab,
-                content: insightUpdates.content,
+                content: insightUpdates.content || tab.content,
                 isNew: true,
                 status: 'loaded' as const
               }
@@ -268,7 +275,7 @@ class GameTabService {
           id: generateUUID(), // ✅ Generate proper UUID
           title: this.formatTabTitle(insightUpdates.id),
           type: this.determineTabType(insightUpdates.id),
-          content: insightUpdates.content,
+          content: insightUpdates.content || '',
           isNew: true,
           status: 'loaded' as const
         };

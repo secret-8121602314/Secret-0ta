@@ -275,7 +275,7 @@ export interface AuthState {
 // AI Types
 export interface SubTab {
   id: string;
-  conversationId: string; // PRIMARY foreign key to conversations.id (required in DB)
+  conversationId?: string; // Foreign key to conversations.id (set when saved to DB)
   gameId?: string; // DEPRECATED in DB (nullable) - use conversationId instead
   title: string;
   content: string;
@@ -313,6 +313,7 @@ export interface AIResponse {
     cost: number;
     tokens: number;
     fromCache?: boolean;
+    cacheType?: string; // Type of cache: 'ai_persistent', 'memory', etc.
   };
   // Enhanced fields from old build (optional for backward compatibility)
   followUpPrompts?: string[]; // 3-4 contextual suggested prompts

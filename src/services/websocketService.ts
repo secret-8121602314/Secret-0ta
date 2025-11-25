@@ -57,7 +57,7 @@ const connect = (
     
     // Immediately send connection request to speed up handshake
     try {
-      ws.send(JSON.stringify({ type: 'connection_request', code: code, ts: Date.now() }));
+      ws?.send(JSON.stringify({ type: 'connection_request', code: code, ts: Date.now() }));
       console.log('🔗 [WebSocket] Sent connection_request with code:', code);
     } catch (error) {
       console.error('🔗 [WebSocket] Failed to send connection_request:', error);
@@ -68,7 +68,7 @@ const connect = (
       const payload = sendQueue.shift();
       try { 
         ws.send(JSON.stringify(payload)); 
-        console.log('🔗 [WebSocket] Sent queued message:', payload.type);
+        console.log('🔗 [WebSocket] Sent queued message:', payload?.type);
       } catch (error) {
         console.error('🔗 [WebSocket] Failed to send queued message:', error);
       }

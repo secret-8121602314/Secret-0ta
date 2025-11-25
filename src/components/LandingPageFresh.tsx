@@ -198,8 +198,8 @@ const FeaturesCarousel = ({ features }: { features: Array<{ title: React.ReactNo
         [Autoplay(autoplayOptions)]
     );
     
-    const [selectedIndex, setSelectedIndex] = useState(0);
-    const [scrollSnaps, setScrollSnaps] = useState<number[]>([]);
+    const [, setSelectedIndex] = useState(0);
+    const [, setScrollSnaps] = useState<number[]>([]);
     const [isMobile, setIsMobile] = useState(false);
 
     // Detect mobile screen size
@@ -213,24 +213,27 @@ const FeaturesCarousel = ({ features }: { features: Array<{ title: React.ReactNo
     }, []);
 
     const scrollPrev = useCallback(() => {
-        if (emblaApi) emblaApi.scrollPrev();
+        if (emblaApi) {emblaApi.scrollPrev();}
     }, [emblaApi]);
     
     const scrollNext = useCallback(() => {
-        if (emblaApi) emblaApi.scrollNext();
+        if (emblaApi) {emblaApi.scrollNext();}
     }, [emblaApi]);
     
-    const scrollTo = useCallback((index: number) => {
-        if (emblaApi) emblaApi.scrollTo(index);
+    // Keep scrollTo for potential future use in pagination dots
+     
+    const _scrollTo = useCallback((index: number) => {
+        if (emblaApi) {emblaApi.scrollTo(index);}
     }, [emblaApi]);
+    void _scrollTo; // Mark as intentionally unused for future use
 
     const onSelect = useCallback(() => {
-        if (!emblaApi) return;
+        if (!emblaApi) {return;}
         setSelectedIndex(emblaApi.selectedScrollSnap());
     }, [emblaApi]);
 
     useEffect(() => {
-        if (!emblaApi) return;
+        if (!emblaApi) {return;}
         onSelect();
         setScrollSnaps(emblaApi.scrollSnapList());
         emblaApi.on('select', onSelect);
@@ -408,28 +411,31 @@ const TestimonialsCarousel = ({ testimonials }: { testimonials: Array<{ quote: s
         [Autoplay(autoplayOptions)]
     );
     
-    const [selectedIndex, setSelectedIndex] = useState(0);
-    const [scrollSnaps, setScrollSnaps] = useState<number[]>([]);
+    const [, setSelectedIndex] = useState(0);
+    const [, setScrollSnaps] = useState<number[]>([]);
 
     const scrollPrev = useCallback(() => {
-        if (emblaApi) emblaApi.scrollPrev();
+        if (emblaApi) {emblaApi.scrollPrev();}
     }, [emblaApi]);
     
     const scrollNext = useCallback(() => {
-        if (emblaApi) emblaApi.scrollNext();
+        if (emblaApi) {emblaApi.scrollNext();}
     }, [emblaApi]);
     
-    const scrollTo = useCallback((index: number) => {
-        if (emblaApi) emblaApi.scrollTo(index);
+    // Keep scrollTo for potential future use in pagination dots
+     
+    const _scrollTo = useCallback((index: number) => {
+        if (emblaApi) {emblaApi.scrollTo(index);}
     }, [emblaApi]);
+    void _scrollTo; // Mark as intentionally unused for future use
 
     const onSelect = useCallback(() => {
-        if (!emblaApi) return;
+        if (!emblaApi) {return;}
         setSelectedIndex(emblaApi.selectedScrollSnap());
     }, [emblaApi]);
 
     useEffect(() => {
-        if (!emblaApi) return;
+        if (!emblaApi) {return;}
         onSelect();
         setScrollSnaps(emblaApi.scrollSnapList());
         emblaApi.on('select', onSelect);
@@ -518,7 +524,7 @@ interface LandingPageProps {
   onDirectNavigation: (_path: string) => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, onOpenPrivacy, onOpenRefund, onOpenTerms, onOpenContact, onDirectNavigation }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, onOpenAbout, onOpenPrivacy, onOpenRefund, onOpenTerms, onOpenContact, onDirectNavigation }) => {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState('');
@@ -570,7 +576,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
     // Scroll animations for mobile only
     useEffect(() => {
         const isMobile = window.innerWidth < 768;
-        if (!isMobile) return;
+        if (!isMobile) {return;}
 
         const observerOptions: IntersectionObserverInit = {
             threshold: 0.6,
@@ -609,7 +615,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onOpenAbout, on
         }
 
         const testimonialObservers = testimonialRefs.current.map((ref, index) => {
-            if (!ref) return null;
+            if (!ref) {return null;}
             const observer = new IntersectionObserver(
                 (entries) => handleIntersection(entries, setTestimonialsVisible, index),
                 observerOptions

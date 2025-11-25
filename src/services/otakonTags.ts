@@ -14,11 +14,12 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
 
         // Parse JSON for complex tags
     try {
-      if (tagValue.startsWith('{') && tagValue.endsWith('}')) {
-        tagValue = JSON.parse(tagValue);
+      const strValue = tagValue as string;
+      if (strValue.startsWith('{') && strValue.endsWith('}')) {
+        tagValue = JSON.parse(strValue);
               }
-      if (tagValue.startsWith('[') && tagValue.endsWith(']')) {
-        tagValue = JSON.parse(tagValue.replace(/'/g, '"'));
+      if (strValue.startsWith('[') && strValue.endsWith(']')) {
+        tagValue = JSON.parse(strValue.replace(/'/g, '"'));
               }
     } catch (_e) {
             // Keep as string if not valid JSON

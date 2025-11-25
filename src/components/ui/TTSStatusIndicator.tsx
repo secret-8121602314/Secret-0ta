@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 export interface TTSStatus {
   status: 'available' | 'unavailable' | 'error' | 'testing';
   message: string;
-  lastError?: Error | null;
+  lastError?: unknown;
 }
 
 export const TTSStatusIndicator: React.FC<{
@@ -124,12 +124,18 @@ export const TTSStatusIndicator: React.FC<{
         )}
       </div>
       
-      {showDetails && ttsStatus.lastError && (
+      {showDetails && ttsStatus.lastError !== undefined && ttsStatus.lastError !== null && (
         <div className="mt-2 p-2 bg-gray-100 rounded text-xs text-gray-600">
           <details>
             <summary className="cursor-pointer font-medium">Error Details</summary>
             <pre className="mt-1 whitespace-pre-wrap">
-              {JSON.stringify(ttsStatus.lastError, null, 2)}
+              {(() => {
+                try {
+                  return JSON.stringify(ttsStatus.lastError, null, 2);
+                } catch {
+                  return String(ttsStatus.lastError);
+                }
+              })()}
             </pre>
           </details>
         </div>

@@ -215,8 +215,8 @@ export class SessionService {
     const isTablet = /Tablet|iPad/.test(userAgent);
     
     let deviceType = 'desktop';
-    if (isMobile && !isTablet) deviceType = 'mobile';
-    if (isTablet) deviceType = 'tablet';
+    if (isMobile && !isTablet) {deviceType = 'mobile';}
+    if (isTablet) {deviceType = 'tablet';}
 
     return deviceType;
   }

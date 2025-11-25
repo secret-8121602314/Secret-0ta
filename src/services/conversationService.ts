@@ -32,7 +32,7 @@ export class ConversationService {
       const { authService } = await import('./authService');
       const user = authService.getCurrentUser();
       return user?.authUserId || null;
-    } catch (error) {
+    } catch {
             return null;
     }
   }
@@ -46,7 +46,7 @@ export class ConversationService {
       if (user?.tier) {
         return user.tier;
       }
-    } catch (error) {
+    } catch {
           }
     
     // Fallback to localStorage
@@ -304,7 +304,7 @@ export class ConversationService {
                 console.warn(`Failed to create conversation ${conv.id} in Supabase (returned null)`);
               }
             }
-          } catch (error) {
+          } catch {
                         // Don't re-throw - allow other conversations to sync
           }
         });
@@ -655,7 +655,7 @@ export class ConversationService {
     // ✅ SCALABILITY: Clear all conversation cache entries
     try {
       await cacheService.clear();
-    } catch (error) {
+    } catch {
           }
   }
 

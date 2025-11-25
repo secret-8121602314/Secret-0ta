@@ -9,7 +9,7 @@ import type {
   UserFeedbackData,
   UserUsageData,
   MessageObject,
-  SubtabMetadata,
+  // SubtabMetadata is used in type definitions elsewhere but imported here for consistency
 } from '../types/enhanced';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;

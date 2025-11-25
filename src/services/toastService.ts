@@ -274,10 +274,8 @@ export const showAINotification = async (
       icon: '/icon-192.png',
       badge: '/icon-192.png',
       tag: 'otagon-ai-response',
-      renotify: true,
       requireInteraction: false,
-      silent: false,
-      vibrate: [200, 100, 200]
+      silent: false
     });
 
     setTimeout(() => notification.close(), 10000);

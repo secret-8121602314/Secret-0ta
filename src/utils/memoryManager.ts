@@ -129,7 +129,7 @@ class MemoryManager {
     if (typeof window !== 'undefined' && 'gc' in window) {
       try {
         (window as ExtendedWindow).gc?.();
-              } catch (error) {
+              } catch {
               }
     }
   }
@@ -159,7 +159,7 @@ class MemoryManager {
     this.intervals.forEach(interval => {
       try {
         clearInterval(interval);
-      } catch (error) {
+      } catch {
               }
     });
     this.intervals.clear();
@@ -168,7 +168,7 @@ class MemoryManager {
     this.timeouts.forEach(timeout => {
       try {
         clearTimeout(timeout);
-      } catch (error) {
+      } catch {
               }
     });
     this.timeouts.clear();
@@ -177,7 +177,7 @@ class MemoryManager {
     this.abortControllers.forEach(controller => {
       try {
         controller.abort();
-      } catch (error) {
+      } catch {
               }
     });
     this.abortControllers.clear();
@@ -217,7 +217,7 @@ class MemoryManager {
     this.intervals.forEach(interval => {
       try {
         clearInterval(interval);
-      } catch (error) {
+      } catch {
               }
     });
     this.intervals.clear();
@@ -226,7 +226,7 @@ class MemoryManager {
     this.timeouts.forEach(timeout => {
       try {
         clearTimeout(timeout);
-      } catch (error) {
+      } catch {
               }
     });
     this.timeouts.clear();
@@ -235,7 +235,7 @@ class MemoryManager {
     this.eventListeners.forEach(({ element, event, handler }) => {
       try {
         element.removeEventListener(event, handler);
-      } catch (error) {
+      } catch {
               }
     });
     this.eventListeners.clear();
@@ -244,7 +244,7 @@ class MemoryManager {
     this.abortControllers.forEach(controller => {
       try {
         controller.abort();
-      } catch (error) {
+      } catch {
               }
     });
     this.abortControllers.clear();

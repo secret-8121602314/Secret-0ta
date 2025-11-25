@@ -24,7 +24,7 @@ const requestWakeLock = async () => {
                 }
             });
         }
-    } catch (err) {
+    } catch (_err) {
             }
 };
 
@@ -35,7 +35,7 @@ const releaseWakeLock = async () => {
             await wakeLock.release();
             wakeLock = null;
         }
-    } catch (err) {
+    } catch (_err) {
             }
 };
 
@@ -44,7 +44,10 @@ const initAudioContext = () => {
     try {
         if (!audioContext) {
             const win = window as ExtendedWindow;
-            audioContext = new (win.AudioContext || win.webkitAudioContext)();
+            const AudioContextClass = win.AudioContext || win.webkitAudioContext;
+            if (AudioContextClass) {
+                audioContext = new AudioContextClass();
+            }
         }
         
         if (!silentAudio) {
@@ -55,12 +58,12 @@ const initAudioContext = () => {
             silentAudio.volume = 0.01; // Very low volume
             
             // Connect to audio context to keep it active
-            if (audioContext) {
+            if (audioContext && silentAudio) {
                 const source = audioContext.createMediaElementSource(silentAudio);
-                source.connect(audioContext.destination);
+                source.connect(audioContext!.destination);
             }
         }
-    } catch (err) {
+    } catch (_err) {
             }
 };
 
@@ -73,7 +76,7 @@ const startSilentAudio = async () => {
             }
             await silentAudio.play();
         }
-    } catch (err) {
+    } catch (_err) {
             }
 };
 
@@ -84,7 +87,7 @@ const stopSilentAudio = () => {
             silentAudio.pause();
             silentAudio.currentTime = 0;
         }
-    } catch (err) {
+    } catch (_err) {
             }
 };
 

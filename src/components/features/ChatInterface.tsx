@@ -272,7 +272,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   // ✅ NEW: Scroll to show the START of new AI messages instead of the end
   const scrollToLatestMessage = () => {
-    if (!conversation || !messagesContainerRef.current) return;
+    if (!conversation || !messagesContainerRef.current) {return;}
     
     const messages = conversation.messages;
     const messageCount = messages.length;

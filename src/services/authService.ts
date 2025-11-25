@@ -1,13 +1,15 @@
 import { supabase } from '../lib/supabase';
-import { User, AuthResult, AuthState, UserTier } from '../types';
-import { TIER_LIMITS } from '../constants';
+import { User, AuthResult, AuthState } from '../types';
+import type { Json } from '../types/database';
 import { cacheService } from './cacheService';
 import { ErrorService } from './errorService';
 import { toastService } from './toastService';
-import { jsonToRecord } from '../utils/typeHelpers';
 import { isPWAMode } from '../utils/pwaDetection';
 import { mapUserData } from '../utils/userMapping';
 import { sessionService } from './sessionService';
+
+// Helper to cast our custom types to Json for Supabase
+const asJson = <T>(value: T): Json => value as unknown as Json;
 
 export class AuthService {
   private static instance: AuthService;
@@ -31,7 +33,6 @@ export class AuthService {
   // Helper to get the correct callback URL for both dev and production
   private getCallbackUrl(): string {
     const origin = window.location.origin;
-    const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     
     // Check if running in PWA mode
     const isPWA = isPWAMode();
@@ -113,7 +114,8 @@ export class AuthService {
       return;
     }
     
-    await cacheService.setUser(authUserId, user);
+    // Cast User to Record for cache storage
+    await cacheService.setUser(authUserId, user as unknown as Record<string, unknown>);
   }
 
   // ✅ SCALABILITY: Clear cache using centralized service
@@ -174,10 +176,17 @@ export class AuthService {
     }
   }
 
-  private async createUserRecord(authUser: { id: string; email?: string; user_metadata?: Record<string, unknown> }): Promise<void> {
+  private async createUserRecord(authUser: { 
+    id: string; 
+    email?: string; 
+    user_metadata?: Record<string, unknown>;
+    app_metadata?: { provider?: string; providers?: string[] };
+    identities?: Array<{ provider: string }>;
+  }): Promise<void> {
     try {
             // Get the OAuth provider from the auth user metadata
       // Check multiple possible locations for provider information
+      // Note: provider is tracked but not used yet - keeping for future analytics
       let provider = 'email';
       
       if (authUser.app_metadata?.provider) {
@@ -187,18 +196,20 @@ export class AuthService {
       } else if (authUser.identities && authUser.identities.length > 0) {
         provider = authUser.identities[0].provider;
       } else if (authUser.user_metadata?.provider) {
-        provider = authUser.user_metadata.provider;
+        provider = authUser.user_metadata.provider as string;
       }
+      
+      void provider; // Explicitly mark as intentionally unused (for future analytics)
       
                   // Use the real email from OAuth provider
       // Supabase auth.users handles uniqueness via auth_user_id
-      const userEmail = authUser.email;
+      const userEmail = authUser.email || '';
       
             const { error } = await supabase.rpc('create_user_record', {
         p_auth_user_id: authUser.id,
         p_email: userEmail,
-        p_full_name: authUser.user_metadata?.full_name || authUser.user_metadata?.name || 'User',
-        p_avatar_url: authUser.user_metadata?.avatar_url,
+        p_full_name: String(authUser.user_metadata?.full_name || authUser.user_metadata?.name || 'User'),
+        p_avatar_url: authUser.user_metadata?.avatar_url as string | undefined,
         p_is_developer: false,
         p_tier: 'free'
       });
@@ -400,7 +411,7 @@ export class AuthService {
       localStorage.setItem('otakon_discord_auth_attempt', Date.now().toString());
       
       // Initiate Discord OAuth with proper error handling
-            const { data, error } = await supabase.auth.signInWithOAuth({
+            const { error } = await supabase.auth.signInWithOAuth({
         provider: 'discord',
         options: {
           redirectTo: redirectUrl,
@@ -682,15 +693,10 @@ export class AuthService {
   }
 
   // Method to check which provider was used for a given email
-  async checkEmailProvider(email: string): Promise<{ provider: string | null; message: string }> {
-    try {
-            // For now, skip provider checking during sign-in to avoid 401 errors
-      // This will be handled by the actual sign-in attempt
-            return { provider: null, message: '' };
-    } catch (error) {
-      console.error('🔐 [AuthService] Error checking email provider:', error);
-      return { provider: null, message: '' };
-    }
+  async checkEmailProvider(_email: string): Promise<{ provider: string | null; message: string }> {
+    // For now, skip provider checking during sign-in to avoid 401 errors
+    // This will be handled by the actual sign-in attempt
+    return { provider: null, message: '' };
   }
 
   async resendConfirmationEmail(email: string): Promise<AuthResult> {
@@ -789,7 +795,7 @@ export class AuthService {
       // Update in Supabase
       const { error } = await supabase
         .from('users')
-        .update({ profile_data: profileData })
+        .update({ profile_data: asJson(profileData) })
         .eq('auth_user_id', authUserId);
 
       if (error) {

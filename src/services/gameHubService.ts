@@ -73,7 +73,7 @@ class GameHubService {
   /**
    * Search games
    */
-  async searchGames(query: string): Promise<any[]> {
+  async searchGames(_query: string): Promise<any[]> {
     // TODO: Implement game search
         return [];
   }

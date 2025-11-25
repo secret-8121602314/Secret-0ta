@@ -3,7 +3,7 @@
  * Tracks app performance, errors, and user experience metrics
  */
 
-import type { ExtendedPerformance } from '../types/enhanced';
+import type { ExtendedPerformance as _ExtendedPerformance } from '../types/enhanced';
 
 interface PerformanceMetrics {
   // Core performance metrics

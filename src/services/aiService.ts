@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, GenerativeModel, SchemaType, HarmCategory, HarmBlockThreshold, SafetySetting } from "@google/generative-ai";
+import { GoogleGenerativeAI, GenerativeModel, SchemaType, HarmCategory, HarmBlockThreshold, SafetySetting, Part, InlineDataPart, TextPart } from "@google/generative-ai";
 import { parseOtakonTags } from './otakonTags';
 import { AIResponse, Conversation, User, insightTabsConfig, PlayerProfile } from '../types';
 import type { ViteImportMeta, UserProfileData } from '../types/enhanced';
@@ -68,12 +68,14 @@ class AIService {
         safetySettings: SAFETY_SETTINGS
       });
       // ? NEW: Model with Google Search grounding enabled
+      // Note: google_search is a valid Gemini 2.5 tool but not in the @google/generative-ai types yet
       this.flashModelWithGrounding = this.genAI.getGenerativeModel({
         model: "gemini-2.5-flash-preview-09-2025",
         safetySettings: SAFETY_SETTINGS,
         tools: [{
           google_search: {}  // ? Gemini 2.5 syntax, works for both text and images
-        }]
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        }] as any
       });
     } else {
       // Edge Function mode: Initialize dummy models (won't be used)
@@ -127,7 +129,7 @@ class AIService {
   /**
    * ? FIX 3: Check if AI response was blocked by safety filters
    */
-  private checkSafetyResponse(result: Record<string, unknown>): { safe: boolean; reason?: string } {
+  private checkSafetyResponse(result: { response: { promptFeedback?: { blockReason?: string }; candidates?: Array<{ finishReason?: string }> } }): { safe: boolean; reason?: string } {
     // Check if prompt was blocked
     if (result.response.promptFeedback?.blockReason) {
       return {
@@ -272,11 +274,16 @@ class AIService {
                 // Parse the cached content and return as AIResponse
         const { cleanContent, tags } = parseOtakonTags(cachedAIResponse.content || '');
         return {
-          ...cachedAIResponse,
           content: cleanContent,
+          rawContent: cachedAIResponse.content || '',
           otakonTags: tags,
+          suggestions: cachedAIResponse.suggestions || [],
+          followUpPrompts: cachedAIResponse.followUpPrompts,
           metadata: {
-            ...cachedAIResponse.metadata,
+            model: cachedAIResponse.metadata?.model || 'cached',
+            timestamp: cachedAIResponse.metadata?.timestamp || Date.now(),
+            cost: cachedAIResponse.metadata?.cost || 0,
+            tokens: cachedAIResponse.metadata?.tokens || 0,
             fromCache: true,
             cacheType: 'ai_persistent'
           }
@@ -312,8 +319,16 @@ class AIService {
     // TODO: Implement proper session context when needed
     const sessionContext = '';
 
-    // Get player profile from user preferences
-    const playerProfile = user.profileData as UserProfileData;
+    // Get player profile from user preferences - convert with defaults if needed
+    const userProfileData = user.profileData as UserProfileData;
+    const playerProfile: PlayerProfile | undefined = userProfileData?.hintStyle && userProfileData?.playerFocus && userProfileData?.preferredTone && userProfileData?.spoilerTolerance 
+      ? {
+          hintStyle: userProfileData.hintStyle,
+          playerFocus: userProfileData.playerFocus,
+          preferredTone: userProfileData.preferredTone,
+          spoilerTolerance: userProfileData.spoilerTolerance
+        }
+      : undefined;
     
     // Use the enhanced prompt system with session context and player profile
     const basePrompt = getPromptForPersona(
@@ -401,24 +416,21 @@ class AIService {
         }
         
         // Prepare content for Gemini API
-        let content: string | Array<Record<string, unknown>>;
+        let content: string | Part[];
         if (hasImages && imageData) {
           // Extract MIME type from data URL
           const mimeType = imageData.split(';')[0].split(':')[1] || 'image/jpeg';
           const base64Data = imageData.split(',')[1];
           
           // For image analysis, we need to send both text and image
-          content = [
-            {
-              text: prompt
-            },
-            {
-              inlineData: {
-                mimeType: mimeType,
-                data: base64Data
-              }
+          const textPart: TextPart = { text: prompt };
+          const imagePart: InlineDataPart = {
+            inlineData: {
+              mimeType: mimeType,
+              data: base64Data
             }
-          ];
+          };
+          content = [textPart, imagePart];
         } else {
           // For text-only requests
           content = prompt;
@@ -483,7 +495,7 @@ class AIService {
         aiCacheService.cacheResponse(aiCacheKey, {
           content: rawContent,
           suggestions: aiResponse.suggestions,
-          otakonTags: Array.from(aiResponse.otakonTags.entries()),
+          otakonTags: Object.fromEntries(aiResponse.otakonTags),
           metadata: aiResponse.metadata
         }, {
           cacheType,
@@ -508,7 +520,7 @@ class AIService {
       // ? API USAGE TRACKING: Log all Gemini API calls for analytics and cost tracking
       this.logApiUsage({
         userId: user.id,
-        authUserId: user.auth_user_id,
+        authUserId: user.authUserId,
         requestType: conversation.isGameHub ? 'game_hub' : hasImages ? 'image_analysis' : 'chat',
         tokensUsed: aiResponse.metadata.tokens || 0,
         aiModel: 'gemini-2.5-flash-preview-09-2025',
@@ -711,7 +723,7 @@ In addition to your regular response, provide structured data in the following o
         const rawContent = edgeResponse.response;
         const { cleanContent, tags } = parseOtakonTags(rawContent);
 
-        const suggestions = tags.get('SUGGESTIONS') || [];
+        const suggestions = (tags.get('SUGGESTIONS') as string[]) || [];
         const aiResponse: AIResponse = {
           content: cleanContent,
           suggestions: suggestions,
@@ -745,22 +757,23 @@ In addition to your regular response, provide structured data in the following o
       }
       
       // Prepare content
-      let content: string | Array<Record<string, unknown>>;
+      let content: string | Part[];
       if (hasImages && imageData) {
         const mimeType = imageData.split(';')[0].split(':')[1] || 'image/jpeg';
         const base64Data = imageData.split(',')[1];
         
-        content = [
-          { text: prompt },
-          { inlineData: { mimeType, data: base64Data } }
-        ];
+        const textPart: TextPart = { text: prompt };
+        const imagePart: InlineDataPart = {
+          inlineData: { mimeType, data: base64Data }
+        };
+        content = [textPart, imagePart];
         
         // For images, use regular mode (not JSON) because images don't work well with JSON schema
         const result = await modelToUse.generateContent(content);
         const rawContent = await result.response.text();
         const { cleanContent, tags } = parseOtakonTags(rawContent);
         
-        const suggestions = tags.get('SUGGESTIONS') || [];
+        const suggestions = tags.get('SUGGESTIONS') as string[] || [];
         const aiResponse: AIResponse = {
           content: cleanContent,
           suggestions: suggestions,
@@ -875,7 +888,7 @@ In addition to your regular response, provide structured data in the following o
           // ? STEP 8: Remove separator lines
           .replace(/_{3,}/g, '')
           // ? STEP 9: Clean leading/trailing junk
-          .replace(/^[\s\]}\[{),]+/g, '')
+          .replace(/^[\s\]}[{),]+/g, '')
           .replace(/\s*[\]}\s]*$/g, '')
           // Clean up any remaining JSON artifacts
           .replace(/\{[\s\S]*?"OTAKON_[A-Z_]+":[\s\S]*?\}/g, '')
@@ -953,32 +966,13 @@ In addition to your regular response, provide structured data in the following o
         
         cacheService.set(cacheKey, aiResponse, 60 * 60 * 1000).catch(err => console.warn(err));
         
-        // ? AI PERSISTENT CACHE: Store structured response too
-        if (shouldUseCache && aiCacheKey) {
-          const cacheType = aiCacheService.determineCacheType(cacheContext);
-          const ttl = aiCacheService.determineTTL(cacheType, cacheContext);
-          
-          aiCacheService.cacheResponse(aiCacheKey, {
-            content: rawResponse,
-            suggestions: aiResponse.suggestions,
-            metadata: aiResponse.metadata,
-            followUpPrompts: aiResponse.followUpPrompts,
-            progressiveInsightUpdates: aiResponse.progressiveInsightUpdates,
-            stateUpdateTags: aiResponse.stateUpdateTags,
-            gamePillData: aiResponse.gamePillData
-          }, {
-            cacheType,
-            gameTitle: conversation.gameTitle,
-            conversationId: conversation.id,
-            modelUsed: 'gemini-2.5-flash-preview-09-2025',
-            tokensUsed: aiResponse.metadata.tokens || 0,
-            ttlHours: ttl
-          }).catch(error => console.warn('Failed to cache structured AI response:', error));
-        }
+        // Note: AI persistent cache not implemented for structured responses yet
+        // The shouldUseCache/aiCacheKey/cacheContext variables would need to be
+        // defined in this function scope to enable persistent caching
         
         return aiResponse;
         
-      } catch (jsonError) {
+      } catch (_jsonError) {
                 // Fallback to regular OTAKON_TAG parsing
         let rawContent: string;
 
@@ -1013,7 +1007,7 @@ In addition to your regular response, provide structured data in the following o
 
         const { cleanContent, tags } = parseOtakonTags(rawContent);
         
-        const suggestions = tags.get('SUGGESTIONS') || [];
+        const suggestions = (tags.get('SUGGESTIONS') as string[]) || [];
         const aiResponse: AIResponse = {
           content: cleanContent,
           suggestions: suggestions,
@@ -1135,7 +1129,7 @@ CRITICAL FORMATTING RULES:
    - Use \\n\\n for paragraph breaks (double newline)
    - Escape ALL quotes with \\"
    - NO line breaks inside strings (use \\n instead)
-   - Use bullet points with • for lists when appropriate
+   - Use bullet points with ï¿½ for lists when appropriate
 5. Content should be detailed, spoiler-free, and helpful for players at this stage
 6. Adapt content style based on the Player Profile above
 7. YOU MUST generate comprehensive content for ALL ${config.length} tab IDs listed below
@@ -1144,9 +1138,9 @@ CRITICAL FORMATTING RULES:
 Example valid JSON (TARGET THIS LEVEL OF DETAIL):
 {
   "story_so_far": "Following the disastrous **Konpeki Plaza heist**, you barely escaped with your life. The Relic, an advanced biochip containing the digital ghost of legendary rockerboy **Johnny Silverhand**, is now killing you from the inside. You have mere weeks to find a solution.\\n\\nYou've been working with **Takemura**, a disgraced Arasaka bodyguard seeking to clear his name and expose the conspiracy behind the assassination of his former boss. The investigation has led you through Night City's criminal underworld, uncovering corporate secrets and dangerous truths.\\n\\nYour current location in **Jig-Jig Street** suggests you're deep in the heart of Westbrook, a district known for high-end entertainment and corporate intrigue. Every decision matters as you race against time.",
-  "quest_log": "**Main Quest: The Space in Between**\\nTakemura has information crucial to your survival. His message indicated urgency and possible security concerns. Meeting him could provide vital leads on removing the Relic or expose you to Arasaka operatives still hunting you both.\\n\\n**Recommended Side Activities:**\\n• Explore Jig-Jig Street for vendors offering rare cyberware upgrades\\n• Check nearby ripperdocs for health monitoring and neural optimization\\n• Investigate gig opportunities from local fixers to build street cred",
+  "quest_log": "**Main Quest: The Space in Between**\\nTakemura has information crucial to your survival. His message indicated urgency and possible security concerns. Meeting him could provide vital leads on removing the Relic or expose you to Arasaka operatives still hunting you both.\\n\\n**Recommended Side Activities:**\\nï¿½ Explore Jig-Jig Street for vendors offering rare cyberware upgrades\\nï¿½ Check nearby ripperdocs for health monitoring and neural optimization\\nï¿½ Investigate gig opportunities from local fixers to build street cred",
   "build_optimization": "Based on your current progress, consider these optimization strategies:\\n\\n**Cyberware Focus:** Invest in neural processors and reflex boosters to improve combat responsiveness. The **Sandevistan** operating system offers time dilation for tactical advantages during firefights.\\n\\n**Skill Synergies:** Balance Technical Ability for crafting legendary gear with Intelligence for quickhacking capabilities. This combination allows both direct combat and stealthy netrunning approaches.\\n\\n**Weapon Loadout:** Maintain variety - keep a silenced pistol for stealth, a tech weapon for cover penetration, and a power weapon for raw damage.",
-  "boss_strategy": "Upcoming encounters in this arc will test your combat adaptability. **Tactical Recommendations:**\\n\\nYour opponents likely use advanced corporate-grade cyberware and coordinated tactics. Prioritize cover-based gameplay and use the environment to your advantage. Explosive barrels and electrical panels can turn the battlefield in your favor.\\n\\n**Key Strategies:**\\n• Maintain distance and use tech weapons to attack through walls\\n• Neutralize enemy netrunners first to prevent quickhacks\\n• Stock up on MaxDoc inhalers and bounce-back injectors\\n• Save frequently before major confrontations",
+  "boss_strategy": "Upcoming encounters in this arc will test your combat adaptability. **Tactical Recommendations:**\\n\\nYour opponents likely use advanced corporate-grade cyberware and coordinated tactics. Prioritize cover-based gameplay and use the environment to your advantage. Explosive barrels and electrical panels can turn the battlefield in your favor.\\n\\n**Key Strategies:**\\nï¿½ Maintain distance and use tech weapons to attack through walls\\nï¿½ Neutralize enemy netrunners first to prevent quickhacks\\nï¿½ Stock up on MaxDoc inhalers and bounce-back injectors\\nï¿½ Save frequently before major confrontations",
   "hidden_paths": "**Jig-Jig Street Secrets:**\\nLook for the **Clouds** entertainment establishment - there's a hidden databank terminal behind the reception desk containing valuable corporate intel. Access requires moderate Technical Ability or convincing dialogue options.\\n\\n**Exploration Tip:**\\nThe alleyways near the main street have vertical access points leading to rooftop areas. These elevated positions offer tactical advantages and often contain loot crates with rare crafting components. Watch for glowing yellow ledges indicating climbable surfaces."
 }
 
@@ -1283,15 +1277,15 @@ NOW generate COMPREHENSIVE valid JSON for ALL these tab IDs (MUST include every 
     user: User;
     userMessage: string;
     aiResponse: AIResponse;
-    otakonTags: Map<string, string>;
+    otakonTags: Map<string, unknown>;
   }): Promise<void> {
     try {
       const { user, userMessage, aiResponse, otakonTags } = data;
       
-      // Extract OTAKON tags for game detection
-      const detectedGame = otakonTags.get('GAME_ID') || otakonTags.get('GAME_TITLE') || null;
-      const detectedGenre = otakonTags.get('GENRE') || null;
-      const confidence = otakonTags.get('CONFIDENCE') || 'low';
+      // Extract OTAKON tags for game detection (cast to string for Map values)
+      const detectedGame = (otakonTags.get('GAME_ID') || otakonTags.get('GAME_TITLE') || null) as string | null;
+      const detectedGenre = (otakonTags.get('GENRE') || null) as string | null;
+      const confidence = (otakonTags.get('CONFIDENCE') || 'low') as string;
       const gameStatus = otakonTags.get('GAME_STATUS') || null;
       
       // Determine query type based on whether a game was detected
@@ -1303,7 +1297,9 @@ NOW generate COMPREHENSIVE valid JSON for ALL these tab IDs (MUST include every 
       }
       
       // Insert into game_hub_interactions table
-      const { error } = await supabase
+      // Note: table may not be in generated types yet - using type assertion
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('game_hub_interactions')
         .insert({
           user_id: user.id,
@@ -1341,7 +1337,9 @@ NOW generate COMPREHENSIVE valid JSON for ALL these tab IDs (MUST include every 
   ): Promise<void> {
     try {
       // Find the most recent Game Hub interaction for this game and user
-      const { error } = await supabase
+      // Note: table may not be in generated types yet - using type assertion
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('game_hub_interactions')
         .update({
           tab_created: true,

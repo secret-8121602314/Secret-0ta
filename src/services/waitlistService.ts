@@ -12,7 +12,7 @@ export class WaitlistService {
   static async addToWaitlist(email: string, source: string = 'landing_page'): Promise<{ success: boolean; error?: string; alreadyExists?: boolean }> {
     try {
             // Try to insert directly first - this will fail if email already exists
-      const { data: insertData, error: insertError } = await supabase
+      const { data: _insertData, error: insertError } = await supabase
         .from('waitlist')
         .insert({
           email,

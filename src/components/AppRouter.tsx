@@ -1,5 +1,5 @@
 import React from 'react';
-import { AuthState, AppState, ActiveModal, ConnectionStatus } from '../types';
+import { AuthState, AppState, ActiveModal, ConnectionStatus, PlayerProfile } from '../types';
 import LandingPage from './LandingPageFresh';
 import LoginSplashScreen from './splash/LoginSplashScreen';
 import InitialSplashScreen from './splash/InitialSplashScreen';
@@ -42,7 +42,7 @@ interface AppRouterProps {
   handleDisconnect: () => void;
   handleClearConnectionError: () => void;
   handleSkipConnection: () => void;
-  handleProfileSetupComplete: (_profileData: Record<string, unknown>) => void;
+  handleProfileSetupComplete: (_profileData: PlayerProfile) => void;
   handleProfileSetupSkip: () => void;
   setSettingsOpen: (_isOpen: boolean) => void;
   setShowLogoutConfirm: (_isOpen: boolean) => void;
@@ -123,6 +123,7 @@ const AppRouter: React.FC<AppRouterProps> = ({
           onOpenPrivacy={() => openModal('privacy')}
           onOpenRefund={() => openModal('refund')}
           onOpenTerms={() => openModal('terms')}
+          onOpenContact={() => openModal('contact')}
           onDirectNavigation={() => {
             // Direct navigation handler for landing page links
           }}

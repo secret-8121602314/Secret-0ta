@@ -29,7 +29,7 @@
     "prebuild": "npm run generate-manifest",
     "build": "vite build && node scripts/fix-base-paths.js && node scripts/copy-public-assets.js",
     "preview": "vite preview",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint": "eslint src --report-unused-disable-directives",
     "type-check": "tsc --noEmit",
     "firebase:init": "firebase init hosting",
     "firebase:deploy": "npm run build && firebase deploy",

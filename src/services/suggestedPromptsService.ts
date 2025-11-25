@@ -18,7 +18,7 @@ class SuggestedPromptsService {
         const prompts = JSON.parse(stored);
         this.usedPrompts = new Set(prompts);
       }
-    } catch (error) {
+    } catch (_error) {
             this.usedPrompts = new Set();
     }
   }
@@ -27,7 +27,7 @@ class SuggestedPromptsService {
     try {
       const prompts = Array.from(this.usedPrompts);
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(prompts));
-    } catch (error) {
+    } catch (_error) {
           }
   }
 
@@ -43,7 +43,7 @@ class SuggestedPromptsService {
                 this.resetUsedPrompts();
         localStorage.setItem(this.LAST_RESET_KEY, now.toString());
       }
-    } catch (error) {
+    } catch (_error) {
           }
   }
 
@@ -103,7 +103,7 @@ class SuggestedPromptsService {
       
       const nextResetTime = parseInt(lastResetTime) + this.RESET_INTERVAL_MS;
       return Math.max(0, nextResetTime - Date.now());
-    } catch (error) {
+    } catch (_error) {
             return 0;
     }
   }

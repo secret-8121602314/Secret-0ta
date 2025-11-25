@@ -17,8 +17,15 @@ import type {
 } from '../types/payment';
 
 class PaymentService implements IPaymentService {
-  private config: PaymentConfig | null = null;
   private isInitialized = false;
+  private config: PaymentConfig | null = null;
+
+  /**
+   * Get current configuration (for future use)
+   */
+  getConfig(): PaymentConfig | null {
+    return this.config;
+  }
 
   /**
    * Initialize payment service with configuration
@@ -42,9 +49,9 @@ class PaymentService implements IPaymentService {
    * @future Will create Stripe subscription and handle payment
    */
   async createSubscription(
-    userId: string, 
-    tier: 'pro' | 'vanguard_pro', 
-    interval: BillingInterval
+    _userId: string, 
+    _tier: 'pro' | 'vanguard_pro', 
+    _interval: BillingInterval
   ): Promise<Subscription> {
     this.ensureInitialized();
 
@@ -63,7 +70,7 @@ class PaymentService implements IPaymentService {
   /**
    * Update an existing subscription
    */
-  async updateSubscription(subscriptionId: string, tier: 'pro' | 'vanguard_pro'): Promise<Subscription> {
+  async updateSubscription(_subscriptionId: string, _tier: 'pro' | 'vanguard_pro'): Promise<Subscription> {
     this.ensureInitialized();
         // @todo: Implement subscription update
     throw new Error('Payment integration not yet implemented');
@@ -75,7 +82,7 @@ class PaymentService implements IPaymentService {
    * @param subscriptionId - The subscription ID to cancel
    * @param immediate - If true, cancel immediately; otherwise at period end
    */
-  async cancelSubscription(subscriptionId: string, immediate = false): Promise<void> {
+  async cancelSubscription(_subscriptionId: string, _immediate = false): Promise<void> {
     this.ensureInitialized();
         // @todo: Implement subscription cancellation
     throw new Error('Payment integration not yet implemented');
@@ -84,7 +91,7 @@ class PaymentService implements IPaymentService {
   /**
    * Reactivate a canceled subscription
    */
-  async reactivateSubscription(subscriptionId: string): Promise<Subscription> {
+  async reactivateSubscription(_subscriptionId: string): Promise<Subscription> {
     this.ensureInitialized();
         // @todo: Implement subscription reactivation
     throw new Error('Payment integration not yet implemented');
@@ -93,7 +100,7 @@ class PaymentService implements IPaymentService {
   /**
    * Add a payment method for a user
    */
-  async addPaymentMethod(userId: string, paymentMethodData: unknown): Promise<PaymentMethod> {
+  async addPaymentMethod(_userId: string, _paymentMethodData: unknown): Promise<PaymentMethod> {
     this.ensureInitialized();
         // @todo: Implement payment method addition
     // Use Stripe Elements or similar
@@ -103,7 +110,7 @@ class PaymentService implements IPaymentService {
   /**
    * Remove a payment method
    */
-  async removePaymentMethod(paymentMethodId: string): Promise<void> {
+  async removePaymentMethod(_paymentMethodId: string): Promise<void> {
     this.ensureInitialized();
         // @todo: Implement payment method removal
     throw new Error('Payment integration not yet implemented');
@@ -112,7 +119,7 @@ class PaymentService implements IPaymentService {
   /**
    * Set default payment method
    */
-  async setDefaultPaymentMethod(paymentMethodId: string): Promise<void> {
+  async setDefaultPaymentMethod(_paymentMethodId: string): Promise<void> {
     this.ensureInitialized();
         // @todo: Implement setting default payment method
     throw new Error('Payment integration not yet implemented');
@@ -121,7 +128,7 @@ class PaymentService implements IPaymentService {
   /**
    * Get all payment methods for a user
    */
-  async getPaymentMethods(userId: string): Promise<PaymentMethod[]> {
+  async getPaymentMethods(_userId: string): Promise<PaymentMethod[]> {
     this.ensureInitialized();
         // @todo: Implement fetching payment methods
     throw new Error('Payment integration not yet implemented');
@@ -130,7 +137,7 @@ class PaymentService implements IPaymentService {
   /**
    * Get invoices for a user
    */
-  async getInvoices(userId: string, limit = 10): Promise<Invoice[]> {
+  async getInvoices(_userId: string, _limit = 10): Promise<Invoice[]> {
     this.ensureInitialized();
         // @todo: Implement fetching invoices
     throw new Error('Payment integration not yet implemented');
@@ -139,7 +146,7 @@ class PaymentService implements IPaymentService {
   /**
    * Download an invoice PDF
    */
-  async downloadInvoice(invoiceId: string): Promise<Blob> {
+  async downloadInvoice(_invoiceId: string): Promise<Blob> {
     this.ensureInitialized();
         // @todo: Implement invoice download
     throw new Error('Payment integration not yet implemented');
@@ -150,7 +157,7 @@ class PaymentService implements IPaymentService {
    * 
    * @future Will process Stripe webhook events
    */
-  async handleWebhook(event: unknown): Promise<void> {
+  async handleWebhook(_event: unknown): Promise<void> {
     this.ensureInitialized();
         // @todo: Implement webhook handling for:
     // - payment_intent.succeeded

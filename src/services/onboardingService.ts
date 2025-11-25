@@ -1,4 +1,8 @@
 import { supabase } from '../lib/supabase';
+import type { Json } from '../types/database';
+
+// Helper to cast our custom types to Json for Supabase
+const asJson = <T>(value: T): Json => value as unknown as Json;
 
 // ========================================
 // TYPES
@@ -85,7 +89,7 @@ class OnboardingService {
       const { error } = await supabase.rpc('update_user_onboarding_status', {
         p_user_id: userId,
         p_step: status,
-        p_data: data
+        p_data: asJson(data)
       });
 
       if (error) {
@@ -117,7 +121,9 @@ class OnboardingService {
       return (data || []).map(item => ({
         step: item.step as OnboardingStep,
         completed_at: item.created_at || '',
-        data: item.data || {}
+        data: (typeof item.data === 'object' && item.data !== null && !Array.isArray(item.data) 
+          ? item.data as Record<string, unknown>
+          : {}) as Record<string, unknown>
       }));
 
     } catch (error) {
@@ -145,7 +151,7 @@ class OnboardingService {
         .from('users')
         .update({
           has_profile_setup: true,
-          profile_data: profileData,
+          profile_data: asJson(profileData),
           updated_at: new Date().toISOString()
         })
         .eq('auth_user_id', userId);
@@ -282,19 +288,20 @@ class OnboardingService {
 
   async trackOnboardingStep(userId: string, step: OnboardingStep, action: string, data: Record<string, unknown> = {}): Promise<void> {
     try {
+       
       await supabase
         .from('user_analytics')
         .insert({
           user_id: userId,
           auth_user_id: userId, // ✅ Use auth_user_id for RLS performance
           event_type: 'onboarding_step',
-          event_data: {
+          event_data: asJson({
             step,
             action,
             data,
             timestamp: new Date().toISOString()
-          }
-        });
+          })
+        } as any);
 
     } catch (error) {
       console.error('Error tracking onboarding step:', error);
@@ -303,19 +310,20 @@ class OnboardingService {
 
   async trackOnboardingDropOff(userId: string, step: OnboardingStep, reason: string, data: Record<string, unknown> = {}): Promise<void> {
     try {
+       
       await supabase
         .from('user_analytics')
         .insert({
           user_id: userId,
           auth_user_id: userId, // ✅ Use auth_user_id for RLS performance
           event_type: 'onboarding_dropoff',
-          event_data: {
+          event_data: asJson({
             step,
             reason,
             data,
             timestamp: new Date().toISOString()
-          }
-        });
+          })
+        } as any);
 
     } catch (error) {
       console.error('Error tracking onboarding dropoff:', error);

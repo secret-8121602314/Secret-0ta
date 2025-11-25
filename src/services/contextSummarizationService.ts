@@ -1,4 +1,4 @@
-import { Conversation, ChatMessage } from '../types';
+import { Conversation, ChatMessage, User } from '../types';
 import { aiService } from './aiService';
 
 interface SummarizationResult {
@@ -118,7 +118,7 @@ Provide ONLY the summary, no additional commentary.`;
         id: 'system',
         email: 'system@otakon.ai',
         profileData: null
-      };
+      } as unknown as User;
 
       const response = await aiService.getChatResponse(
         tempConversation,

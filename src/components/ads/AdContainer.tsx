@@ -8,8 +8,8 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import type { AdContainerProps } from '../types/ads';
-import { adService } from '../services/adService';
+import type { AdContainerProps } from '../../types/ads';
+import { adService } from '../../services/adService';
 
 const AdContainer: React.FC<AdContainerProps> = ({
   slotId,

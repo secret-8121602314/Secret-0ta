@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { User, Conversation, Conversations, newsPrompts, ConnectionStatus } from '../types';
+import { User, Conversation, Conversations, newsPrompts, ConnectionStatus, SubTab, PlayerProfile, AIResponse } from '../types';
 import { GAME_HUB_ID } from '../constants';
 import { ConversationService } from '../services/conversationService';
 import { authService } from '../services/authService';
@@ -75,9 +75,9 @@ interface MainAppProps {
   onConnect?: (_code: string) => void;
   onDisconnect?: () => void;
   onClearConnectionError?: () => void;
-  onWebSocketMessage?: (_data: Record<string, unknown>) => void;
+  onWebSocketMessage?: (_handler: (_data: Record<string, unknown>) => void) => void;
   showProfileSetupBanner?: boolean;
-  onProfileSetupComplete?: (_profileData: Record<string, unknown>) => void;
+  onProfileSetupComplete?: (profile: PlayerProfile) => void;
   onProfileSetupDismiss?: () => void;
 }
 
@@ -202,7 +202,7 @@ const MainApp: React.FC<MainAppProps> = ({
 
   // Initialize TTS service on mount
   useEffect(() => {
-    ttsService.init().catch((err: Error) => {
+    ttsService.init().catch((_err: Error) => {
           });
   }, []);
 
@@ -309,8 +309,9 @@ const MainApp: React.FC<MainAppProps> = ({
           } else {
             // Auto mode: Send each screenshot
             if (activeConversation && handleSendMessageRef.current) {
+              const handler = handleSendMessageRef.current;
               setTimeout(() => {
-                handleSendMessageRef.current("", dataUrl);
+                handler("", dataUrl);
               }, index * 500); // Stagger by 500ms to avoid overwhelming AI
             }
           }
@@ -323,33 +324,36 @@ const MainApp: React.FC<MainAppProps> = ({
     
     // Legacy screenshot format (keep for backward compatibility)
     if (data.type === 'screenshot' && data.dataUrl) {
+      // Cast dataUrl to string since we know it exists at this point
+      const dataUrl = data.dataUrl as string;
+      
       // ✅ FIX: Validate screenshot data before processing
-      const validation = validateScreenshotDataUrl(data.dataUrl);
+      const validation = validateScreenshotDataUrl(dataUrl);
       if (!validation.valid) {
         console.error('📸 [MainApp] Screenshot validation failed:', validation.error);
         toastService.error(`Screenshot validation failed: ${validation.error}`);
         return;
       }
       
-      const sizeMB = getDataUrlSizeMB(data.dataUrl);
+      const sizeMB = getDataUrlSizeMB(dataUrl);
       console.log('📸 [MainApp] Processing screenshot:', {
-        dataUrlLength: data.dataUrl.length,
+        dataUrlLength: dataUrl.length,
         sizeMB: sizeMB,
-        dataUrlPreview: data.dataUrl.substring(0, 50),
+        dataUrlPreview: dataUrl.substring(0, 50),
         isManualUploadMode,
         hasActiveConversation: !!activeConversation
       });
       
       if (isManualUploadMode) {
         // ✅ FIXED: In manual mode, queue the image for ChatInterface (not text input!)
-                setQueuedScreenshot(data.dataUrl);
+                setQueuedScreenshot(dataUrl);
                 toastService.info('Screenshot queued. Review and send when ready.');
         return; // Don't send automatically in manual mode
       }
       
       // Auto mode: Send the screenshot to the active conversation immediately
       if (activeConversation && handleSendMessageRef.current) {
-                handleSendMessageRef.current("", data.dataUrl);
+                handleSendMessageRef.current("", dataUrl);
         // Clear the queued screenshot immediately after sending in auto mode
         setQueuedScreenshot(null);
       } else {
@@ -587,7 +591,7 @@ const MainApp: React.FC<MainAppProps> = ({
 
   // ✅ PHASE 2 FIX: Real-time subscription for subtab updates
   useEffect(() => {
-    if (!activeConversation?.id) return;
+    if (!activeConversation?.id) {return;}
     
         // Subscribe to conversation updates
     const subscription = supabase
@@ -606,12 +610,13 @@ const MainApp: React.FC<MainAppProps> = ({
             const updated = { ...prev };
             
             // Merge the updated conversation data
-            if (payload.new && updated[activeConversation.id]) {
+            const newData = payload.new as Record<string, unknown> | undefined;
+            if (newData && updated[activeConversation.id]) {
               updated[activeConversation.id] = {
                 ...updated[activeConversation.id],
-                ...payload.new,
+                ...newData,
                 // Ensure subtabs array is properly handled
-                subtabs: payload.new.subtabs || updated[activeConversation.id].subtabs || []
+                subtabs: (newData.subtabs as SubTab[]) || updated[activeConversation.id].subtabs || []
               };
               
                           }
@@ -620,13 +625,14 @@ const MainApp: React.FC<MainAppProps> = ({
           });
           
           // Update active conversation if it's the one that changed
-          if (activeConversation.id === payload.new?.id) {
+          const newPayload = payload.new as Record<string, unknown> | undefined;
+          if (activeConversation.id === newPayload?.id) {
             setActiveConversation((prev) => {
-              if (!prev) return prev;
+              if (!prev) {return prev;}
               return {
                 ...prev,
-                ...payload.new,
-                subtabs: payload.new.subtabs || prev.subtabs || []
+                ...(newPayload as Partial<Conversation>),
+                subtabs: (newPayload.subtabs as SubTab[]) || prev.subtabs || []
               };
             });
           }
@@ -1105,7 +1111,7 @@ const MainApp: React.FC<MainAppProps> = ({
           setLastSuccessfulConnection(new Date());
           localStorage.setItem('otakonHasConnectedBefore', 'true');
         },
-        (data: Record<string, unknown>) => {
+        (_data: Record<string, unknown>) => {
                   },
         (error: string) => {
           console.error('Connection error:', error);
@@ -1361,7 +1367,7 @@ const MainApp: React.FC<MainAppProps> = ({
         conversationId,
         userId: user.id,
         userTier: currentUser.tier, // Pass user tier for subtabs gating
-        aiResponse: gameInfo.aiResponse, // Pass AI response for subtab population
+        aiResponse: gameInfo.aiResponse as AIResponse | undefined, // Pass AI response for subtab population
         isUnreleased: gameInfo.isUnreleased || false // Pass unreleased status
       });
 
@@ -1977,7 +1983,7 @@ const MainApp: React.FC<MainAppProps> = ({
 
         if (shouldCreateTab) {
           // ✅ Check if game tab already exists using service (not stale state)
-          const targetConvId = gameTabService.generateGameConversationId(gameTitle);
+          const targetConvId = gameTabService.generateGameConversationId(gameTitle as string);
           const existingGameTab = await ConversationService.getConversation(targetConvId);
 
           let targetConversationId: string;
@@ -1986,7 +1992,7 @@ const MainApp: React.FC<MainAppProps> = ({
                         targetConversationId = existingGameTab.id;
           } else {
             console.log('🎮 [MainApp] Creating new game tab for:', gameTitle, isUnreleased ? '(unreleased)' : '(released)');
-            const gameInfo = { gameTitle, genre, aiResponse: response, isUnreleased };
+            const gameInfo = { gameTitle: gameTitle as string, genre: genre as string | undefined, aiResponse: response as unknown as Record<string, unknown>, isUnreleased };
             const newGameTab = await handleCreateGameTab(gameInfo);
             targetConversationId = newGameTab?.id || '';
             

@@ -89,7 +89,7 @@ class ErrorService {
   /**
    * Show user-friendly error message
    */
-  private static showUserMessage(message: string): void {
+  private static showUserMessage(_message: string): void {
     // TODO: Implement toast notification system
     // For now, we'll use console.warn as a placeholder
         // In a real implementation, this would:

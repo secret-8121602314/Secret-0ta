@@ -453,14 +453,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                       preferredContentStyle
                     };
                     
-                    // Update user profile
-                    await authService.updateUser({ 
-                      profile_data: profileData,
-                      has_profile_setup: true 
-                    });
+                    // Update user profile using the correct method
+                    if (user?.authUserId) {
+                      await authService.updateUserProfile(user.authUserId, profileData);
+                    }
                     
                     // Show success message (you can add a toast notification here)
-                                        onClose();
+                    onClose();
                   }}
                   className="w-full py-2.5 sm:py-3 px-4 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] md:hover:from-[#D42A2A] md:hover:to-[#C87A1A] text-white rounded-lg font-medium transition-all md:hover:scale-105 active:scale-95 text-sm sm:text-base"
                 >

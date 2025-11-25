@@ -95,11 +95,13 @@ const AuthCallback: React.FC<AuthCallbackProps> = ({ onAuthSuccess, onAuthError 
         // Set up auth state change listener
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
                     if (event === 'SIGNED_IN' && session?.user) {
-                                                            // Detect the OAuth provider
-            const provider = session.user.app_metadata?.provider || 
+                                                            // Detect the OAuth provider for logging purposes
+             
+            const _provider = session.user.app_metadata?.provider || 
                            session.user.app_metadata?.providers?.[0] || 
                            session.user.identities?.[0]?.provider || 
                            'unknown';
+            void _provider; // Mark as intentionally unused for future analytics
                         // Wait for database trigger to create user record
                         await new Promise(resolve => setTimeout(resolve, 1500)); // Increased wait time for Discord
             

@@ -37,7 +37,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const selectedPlan = plans.find(p => p.tier === selectedTier && p.interval === interval);
 
   const handlePayment = async () => {
-    if (!selectedPlan) return;
+    if (!selectedPlan) {return;}
 
     setIsProcessing(true);
     setError(null);

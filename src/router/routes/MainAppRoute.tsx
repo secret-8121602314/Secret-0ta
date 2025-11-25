@@ -11,14 +11,17 @@ import type { User } from '../../types';
  * Route wrapper for MainApp
  * Bridges React Router navigation with component props
  * Handles footer modals via URL search params
+ * Note: MainApp manages its own user state internally via authService subscription
  */
 const MainAppRoute: React.FC = () => {
   const navigate = useNavigate();
+  // User from loader is used for profile setup banner logic
   const { user } = useLoaderData() as { user: User | null };
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.DISCONNECTED);
-  const [connectionCode, setConnectionCode] = useState<string | null>(null);
+  // Track connection code internally for state management
+  const [_connectionCode, setConnectionCode] = useState<string | null>(null);
 
   // Initialize connection state from localStorage on mount
   useEffect(() => {
@@ -76,7 +79,6 @@ const MainAppRoute: React.FC = () => {
   return (
     <>
       <MainApp
-        user={user}
         onLogout={handleLogout}
         onOpenSettings={handleOpenSettings}
         onOpenAbout={handleOpenAbout}
@@ -85,14 +87,6 @@ const MainAppRoute: React.FC = () => {
         connectionStatus={connectionStatus}
         onConnect={handleConnect}
         onDisconnect={handleDisconnect}
-        pcConnectionCode={connectionCode}
-        pcConnectionError={null}
-        isGamesRefreshing={false}
-        isConversationsRefreshing={false}
-        isOAuthProcessing={false}
-        isPcConnecting={false}
-        isPcDisconnecting={false}
-        hasPendingRequests={false}
         showProfileSetupBanner={!user?.hasProfileSetup}
         onProfileSetupComplete={async (profileData) => {
           try {
@@ -101,7 +95,7 @@ const MainAppRoute: React.FC = () => {
             const { authService } = await import('../../services/authService');
             
             if (user?.authUserId) {
-              await onboardingService.markProfileSetupComplete(user.authUserId, profileData);
+              await onboardingService.markProfileSetupComplete(user.authUserId, profileData as unknown as Record<string, unknown>);
               
               // Refresh user data to get updated hasProfileSetup flag
               await authService.refreshUser();

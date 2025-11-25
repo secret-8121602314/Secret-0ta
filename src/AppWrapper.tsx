@@ -6,7 +6,7 @@ import { router } from './router';
 // Wrapper to handle router switching since App.tsx won't reload
 export default function AppWrapper() {
   const envValue = import.meta.env.VITE_USE_ROUTER;
-  const useRouter = envValue === 'true' || envValue === true;
+  const useRouter = envValue === 'true';
 
   if (useRouter) {
     return (

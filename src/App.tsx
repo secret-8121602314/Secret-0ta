@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { AuthState, ConnectionStatus, AppState, ActiveModal } from './types';
+import { AuthState, ConnectionStatus, AppState, ActiveModal, PlayerProfile } from './types';
 import type { OnboardingStep } from './services/onboardingService';
 import { authService } from './services/authService';
 import { onboardingService } from './services/onboardingService';
@@ -637,12 +637,13 @@ function App() {
       console.log("📸 [App] batchData keys:", Object.keys(batchData));
       console.log("📸 [App] Has images?", !!batchData.images);
       console.log("📸 [App] Is array?", Array.isArray(batchData.images));
-      console.log("📸 [App] Length:", batchData.images ? (batchData.images as unknown[]).length : 0);
+      const batchImages = batchData.images as string[] | undefined;
+      console.log("📸 [App] Length:", batchImages ? batchImages.length : 0);
       
-      if (batchData.images && Array.isArray(batchData.images) && batchData.images.length > 0) {
-        console.log("📸 [App] Processing", batchData.images.length, "images from batch");
-        batchData.images.forEach((imgSrc: string, index: number) => {
-          console.log("📸 [App] Processing image", index + 1, "of", batchData.images.length);
+      if (batchImages && Array.isArray(batchImages) && batchImages.length > 0) {
+        console.log("📸 [App] Processing", batchImages.length, "images from batch");
+        batchImages.forEach((imgSrc: string, index: number) => {
+          console.log("📸 [App] Processing image", index + 1, "of", batchImages.length);
           // ✅ FIX: Validate and normalize screenshot data before processing
           const normalizedUrl = normalizeDataUrl(imgSrc);
           if (!normalizedUrl) {
@@ -730,7 +731,7 @@ function App() {
         return;
       }
       
-      const normalizedUrl = normalizeDataUrl(data.dataUrl);
+      const normalizedUrl = normalizeDataUrl(data.dataUrl as string);
       if (!normalizedUrl) {
         console.error("📸 [App] Failed to normalize screenshot data");
         toastService.error('Screenshot validation failed. Please try again.');
@@ -783,19 +784,19 @@ function App() {
     }
   };
 
-  const handleProfileSetupComplete = async (profileData: Record<string, unknown>) => {
+  const handleProfileSetupComplete = async (profileData: PlayerProfile) => {
     if (authState.user) {
       try {
         // Immediately update local user state to hide banner
         const updatedUser = {
           ...authState.user,
           hasProfileSetup: true,
-          profileData: profileData
+          profileData: profileData as unknown as Record<string, unknown>
         };
         setAuthState(prev => ({ ...prev, user: updatedUser }));
         
         // Use markProfileSetupComplete to properly set has_profile_setup flag
-        await onboardingService.markProfileSetupComplete(authState.user.authUserId, profileData);
+        await onboardingService.markProfileSetupComplete(authState.user.authUserId, profileData as unknown as Record<string, unknown>);
         
         // Set flag to prevent auth subscription from overriding navigation
         isManualNavigationRef.current = true;

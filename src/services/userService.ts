@@ -1,8 +1,12 @@
 import { StorageService } from './storageService';
 import { User, Usage, UserTier } from '../types';
+import type { Json } from '../types/database';
 import { STORAGE_KEYS, TIER_LIMITS, USER_TIERS } from '../constants';
 import { supabase } from '../lib/supabase';
 import { jsonToRecord, safeParseDate, safeNumber } from '../utils/typeHelpers';
+
+// Helper to cast our custom types to Json for Supabase
+const asJson = <T>(value: T): Json => value as unknown as Json;
 
 export class UserService {
   static getCurrentUser(): User | null {
@@ -271,14 +275,14 @@ export class UserService {
           has_welcome_message: user.hasWelcomeMessage,
           has_used_trial: user.hasUsedTrial,
           
-          // Data objects
-          preferences: user.preferences,
-          profile_data: user.profileData,
-          app_state: user.appState,
-          onboarding_data: user.onboardingData,
-          behavior_data: user.behaviorData,
-          feedback_data: user.feedbackData,
-          usage_data: user.usageData,
+          // Data objects - cast to Json for Supabase
+          preferences: asJson(user.preferences),
+          profile_data: asJson(user.profileData),
+          app_state: asJson(user.appState),
+          onboarding_data: asJson(user.onboardingData),
+          behavior_data: asJson(user.behaviorData),
+          feedback_data: asJson(user.feedbackData),
+          usage_data: asJson(user.usageData),
           
           updated_at: new Date().toISOString(),
         })

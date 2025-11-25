@@ -5,6 +5,7 @@ import { authService } from '../../services/authService';
 import TermsModal from '../modals/TermsModal';
 import PrivacyModal from '../modals/PrivacyModal';
 import PWAInstallBanner from './PWAInstallBanner';
+import type { AppState } from '../../types';
 // Mobile optimizations applied
 
 interface LoginSplashScreenProps {

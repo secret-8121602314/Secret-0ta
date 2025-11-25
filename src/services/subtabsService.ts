@@ -1,6 +1,5 @@
 import { supabase } from '../lib/supabase';
 import { SubTab } from '../types';
-import { FEATURE_FLAGS } from '../constants';
 import { safeString } from '../utils/typeHelpers';
 
 /**
@@ -79,7 +78,7 @@ export class SubtabsService {
    * MIGRATION STRATEGY: Update in BOTH table AND JSONB during transition
    */
   async updateSubtab(
-    conversationId: string,
+    _conversationId: string,
     subtabId: string,
     updates: Partial<SubTab>
   ): Promise<boolean> {
@@ -91,7 +90,7 @@ export class SubtabsService {
   /**
    * Delete a subtab from a conversation
    */
-  async deleteSubtab(conversationId: string, subtabId: string): Promise<boolean> {
+  async deleteSubtab(_conversationId: string, subtabId: string): Promise<boolean> {
     // ✅ Production uses normalized subtabs table only
     return this.deleteSubtabFromTable(subtabId);
   }
@@ -120,6 +119,7 @@ export class SubtabsService {
         const metadata = typeof subtab.metadata === 'object' && subtab.metadata !== null ? subtab.metadata as Record<string, unknown> : {};
         return {
           id: subtab.id,
+          conversationId: subtab.conversation_id ?? undefined,
           title: subtab.title,
           content: subtab.content || '',
           type: subtab.tab_type as SubTab['type'],
@@ -143,19 +143,20 @@ export class SubtabsService {
   ): Promise<boolean> {
     try {
       // ✅ CRITICAL: Get auth_user_id from conversation FIRST to avoid trigger issues
+      // Note: auth_user_id exists in DB but may not be in generated types, so we select * and cast
       const { data: conversation, error: convError } = await supabase
         .from('conversations')
-        .select('auth_user_id')
+        .select('*')
         .eq('id', conversationId)
         .single();
 
-      if (convError || !conversation?.auth_user_id) {
+      const authUserId = (conversation as unknown as { auth_user_id?: string })?.auth_user_id;
+      if (convError || !authUserId) {
         console.error('❌ [SubtabsService] Error getting conversation auth_user_id:', convError);
         console.error('❌ [SubtabsService] Conversation may not exist yet. ConversationId:', conversationId);
         return false;
       }
 
-      const authUserId = conversation.auth_user_id;
       console.error(`🔄 [SubtabsService] Using auth_user_id: ${authUserId} for ${subtabs.length} subtabs`);
 
       // Delete existing subtabs for this conversation
@@ -197,9 +198,10 @@ export class SubtabsService {
         console.error('🔄 [SubtabsService] Inserting subtabs:', subtabsToInsert.map(s => ({ title: s.title, tab_type: s.tab_type, has_auth_user_id: !!s.auth_user_id })));
 
         // Types not regenerated yet, but schema migration applied (game_id nullable)
+         
         const { error: insertError } = await supabase
           .from('subtabs')
-          .insert(subtabsToInsert);
+          .insert(subtabsToInsert as any);
 
         if (insertError) {
           console.error('❌ [SubtabsService] Error inserting subtabs:', insertError);
@@ -270,6 +272,7 @@ export class SubtabsService {
 
       return {
         id: data.id,
+        conversationId: data.conversation_id ?? undefined,
         title: data.title,
         content: safeString(data.content),
         type: data.tab_type as SubTab['type'],
@@ -420,77 +423,6 @@ export class SubtabsService {
       return true;
     } catch (error) {
       console.error('Error setting subtabs in JSONB:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Add a single subtab to conversations.subtabs JSONB array
-   */
-  private async addSubtabToJsonb(
-    conversationId: string,
-    subtab: SubTab
-  ): Promise<SubTab | null> {
-    try {
-      // Get current subtabs
-      const currentSubtabs = await this.getSubtabsFromJsonb(conversationId);
-      
-      // Add new subtab
-      const updatedSubtabs = [...currentSubtabs, subtab];
-      
-      // Save back
-      const success = await this.setSubtabsInJsonb(conversationId, updatedSubtabs);
-      
-      return success ? subtab : null;
-    } catch (error) {
-      console.error('Error adding subtab to JSONB:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Update a subtab in conversations.subtabs JSONB array
-   */
-  private async updateSubtabInJsonb(
-    conversationId: string,
-    subtabId: string,
-    updates: Partial<SubTab>
-  ): Promise<boolean> {
-    try {
-      // Get current subtabs
-      const currentSubtabs = await this.getSubtabsFromJsonb(conversationId);
-      
-      // Find and update subtab
-      const updatedSubtabs = currentSubtabs.map((subtab) =>
-        subtab.id === subtabId ? { ...subtab, ...updates } : subtab
-      );
-      
-      // Save back
-      return await this.setSubtabsInJsonb(conversationId, updatedSubtabs);
-    } catch (error) {
-      console.error('Error updating subtab in JSONB:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Delete a subtab from conversations.subtabs JSONB array
-   */
-  private async deleteSubtabFromJsonb(
-    conversationId: string,
-    subtabId: string
-  ): Promise<boolean> {
-    try {
-      // Get current subtabs
-      const currentSubtabs = await this.getSubtabsFromJsonb(conversationId);
-      
-      // Filter out the subtab
-      const updatedSubtabs = currentSubtabs.filter((subtab) => subtab.id !== subtabId);
-      
-      // Save back
-      return await this.setSubtabsInJsonb(conversationId, updatedSubtabs);
-    } catch (error) {
-      console.error('Error deleting subtab from JSONB:', error);
       return false;
     }
   }

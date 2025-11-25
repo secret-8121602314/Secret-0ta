@@ -9,7 +9,7 @@ import type { ExtendedNavigator } from '../types/enhanced';
  * Check if app is running in PWA (standalone) mode
  */
 export const isPWAMode = (): boolean => {
-  if (typeof window === 'undefined') return false;
+  if (typeof window === 'undefined') {return false;}
   
   return (
     window.matchMedia('(display-mode: standalone)').matches ||
@@ -22,7 +22,7 @@ export const isPWAMode = (): boolean => {
  * Check if running as iOS PWA
  */
 export const isIOSPWA = (): boolean => {
-  if (typeof window === 'undefined') return false;
+  if (typeof window === 'undefined') {return false;}
   return (window.navigator as ExtendedNavigator).standalone === true;
 };
 
@@ -30,7 +30,7 @@ export const isIOSPWA = (): boolean => {
  * Check if running as Android PWA
  */
 export const isAndroidPWA = (): boolean => {
-  if (typeof window === 'undefined') return false;
+  if (typeof window === 'undefined') {return false;}
   
   return (
     window.matchMedia('(display-mode: standalone)').matches ||
@@ -42,11 +42,11 @@ export const isAndroidPWA = (): boolean => {
  * Get current PWA display mode
  */
 export const getPWADisplayMode = (): 'standalone' | 'browser' | 'fullscreen' | 'minimal-ui' => {
-  if (typeof window === 'undefined') return 'browser';
+  if (typeof window === 'undefined') {return 'browser';}
   
-  if (window.matchMedia('(display-mode: fullscreen)').matches) return 'fullscreen';
-  if (window.matchMedia('(display-mode: standalone)').matches) return 'standalone';
-  if (window.matchMedia('(display-mode: minimal-ui)').matches) return 'minimal-ui';
+  if (window.matchMedia('(display-mode: fullscreen)').matches) {return 'fullscreen';}
+  if (window.matchMedia('(display-mode: standalone)').matches) {return 'standalone';}
+  if (window.matchMedia('(display-mode: minimal-ui)').matches) {return 'minimal-ui';}
   return 'browser';
 };
 
@@ -54,7 +54,7 @@ export const getPWADisplayMode = (): 'standalone' | 'browser' | 'fullscreen' | '
  * Check if app is installed (different from currently running in PWA mode)
  */
 export const isAppInstalled = (): boolean => {
-  if (typeof window === 'undefined') return false;
+  if (typeof window === 'undefined') {return false;}
   
   // Check if previously marked as installed
   if (localStorage.getItem('otakon_pwa_installed') === 'true') {
@@ -78,13 +78,13 @@ export const markAppAsInstalled = (): void => {
  * Get platform type
  */
 export const getPlatform = (): 'ios' | 'android' | 'desktop' | 'unknown' => {
-  if (typeof window === 'undefined') return 'unknown';
+  if (typeof window === 'undefined') {return 'unknown';}
   
   const ua = navigator.userAgent.toLowerCase();
   
-  if (/iphone|ipad|ipod/.test(ua)) return 'ios';
-  if (/android/.test(ua)) return 'android';
-  if (/windows|mac|linux/.test(ua)) return 'desktop';
+  if (/iphone|ipad|ipod/.test(ua)) {return 'ios';}
+  if (/android/.test(ua)) {return 'android';}
+  if (/windows|mac|linux/.test(ua)) {return 'desktop';}
   
   return 'unknown';
 };

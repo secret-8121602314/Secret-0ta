@@ -50,7 +50,7 @@ const InitialSplashScreen: React.FC<InitialSplashScreenProps> = ({ onComplete, u
           if (error) {
                       } else {
                       }
-        } catch (error) {
+        } catch {
                   }
       }
       

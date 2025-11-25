@@ -193,7 +193,7 @@ export class SessionManager {
    */
   private getActiveInstances(): SessionInstance[] {
     const stored = localStorage.getItem(SessionManager.STORAGE_KEY);
-    if (!stored) return [];
+    if (!stored) {return [];}
     
     try {
       const instances = JSON.parse(stored) as SessionInstance[];
