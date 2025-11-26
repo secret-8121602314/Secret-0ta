@@ -63,54 +63,70 @@ function findScreenshots() {
 
 /**
  * Generate icon entries using the PWA icon
+ * Note: We need separate entries for "any" and "maskable" purposes
+ * Using "any maskable" together can cause issues on some platforms
  */
 function generateIconEntries() {
   // Use the pwa-icon.png (zoomed out version with padding)
   // This is separate from the main logo used in the UI
   const logoPath = '/images/pwa-icon.png';
   
+  // Standard icons with "any" purpose (shows as-is)
   const icons = [
     {
       src: logoPath,
       sizes: '96x96',
       type: 'image/png',
-      purpose: 'any maskable'
+      purpose: 'any'
     },
     {
       src: logoPath,
       sizes: '128x128',
       type: 'image/png',
-      purpose: 'any maskable'
+      purpose: 'any'
     },
     {
       src: logoPath,
       sizes: '144x144',
       type: 'image/png',
-      purpose: 'any maskable'
+      purpose: 'any'
     },
     {
       src: logoPath,
       sizes: '192x192',
       type: 'image/png',
-      purpose: 'any maskable'
+      purpose: 'any'
     },
     {
       src: logoPath,
       sizes: '256x256',
       type: 'image/png',
-      purpose: 'any maskable'
+      purpose: 'any'
     },
     {
       src: logoPath,
       sizes: '384x384',
       type: 'image/png',
-      purpose: 'any maskable'
+      purpose: 'any'
     },
     {
       src: logoPath,
       sizes: '512x512',
       type: 'image/png',
-      purpose: 'any maskable'
+      purpose: 'any'
+    },
+    // Maskable icons (for adaptive icon support on Android)
+    {
+      src: logoPath,
+      sizes: '192x192',
+      type: 'image/png',
+      purpose: 'maskable'
+    },
+    {
+      src: logoPath,
+      sizes: '512x512',
+      type: 'image/png',
+      purpose: 'maskable'
     }
   ];
   

@@ -146,6 +146,10 @@ export class ConversationService {
     localStorage.removeItem('otakon_conversations');
     localStorage.removeItem('otakon_active_conversation');
     
+    // ✅ PWA FIX: Dispatch event to notify MainApp that caches are cleared
+    // This ensures MainApp resets its loading guards AFTER caches are cleared
+    window.dispatchEvent(new CustomEvent('otakon:caches-cleared'));
+    
     console.log('✅ [ConversationService] All caches cleared - ready for new user login');
   }
 
@@ -743,10 +747,17 @@ export class ConversationService {
   /**
    * Ensure Game Hub exists - creates it if missing
    * Returns the Game Hub conversation
+   * @param forceRefresh - If true, skip cache and query database directly
    */
-  static async ensureGameHubExists(): Promise<Conversation> {
+  static async ensureGameHubExists(forceRefresh = false): Promise<Conversation> {
     // ✅ FIX: Load from Supabase first to get the real Game Hub with messages
-        const conversations = await this.getConversations();
+    // ✅ PWA FIX: Force refresh on new user login to ensure we get correct user's data
+    if (forceRefresh) {
+      console.log('🔍 [ConversationService] ensureGameHubExists called with forceRefresh=true, clearing cache');
+      this.clearCache();
+    }
+    
+    const conversations = await this.getConversations(forceRefresh);
     const existingGameHub = Object.values(conversations).find(
       conv => conv.isGameHub || conv.id === GAME_HUB_ID || conv.title === DEFAULT_CONVERSATION_TITLE
     );

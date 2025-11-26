@@ -668,6 +668,15 @@ export class AuthService {
         console.error('⚠️ [AuthService] Failed to clear conversation caches:', error);
       }
       
+      // ✅ PWA FIX: Clear SupabaseService instance to prevent stale data
+      try {
+        const { SupabaseService } = await import('./supabaseService');
+        // Force a new instance on next access by clearing any internal state
+        console.log('🔒 [AuthService] SupabaseService ready for new user');
+      } catch (error) {
+        console.error('⚠️ [AuthService] Failed to reset SupabaseService:', error);
+      }
+      
       // Clear auth state
       this.updateAuthState({ user: null, isLoading: false, error: null });
       

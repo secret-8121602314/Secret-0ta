@@ -416,11 +416,17 @@ const MainApp: React.FC<MainAppProps> = ({
     }
   }, [connectionStatus, handleWebSocketMessage]);
 
+  // ✅ PWA FIX: Track if we're in the middle of logout to prevent race conditions
+  const isLoggingOutRef = useRef(false);
+  
   // ✅ PWA FIX: Listen for logout event to reset refs and state
   // This ensures re-login works correctly after logout
   useEffect(() => {
     const handleUserLogout = () => {
-      console.log('🔍 [MainApp] User logout detected - resetting refs and state');
+      console.log('🔍 [MainApp] User logout detected - setting logout flag and resetting state');
+      
+      // ✅ CRITICAL: Set logout flag to prevent loadData from running during logout
+      isLoggingOutRef.current = true;
       
       // Reset loading guard refs so next login can initialize properly
       isLoadingConversationsRef.current = false;
@@ -436,16 +442,34 @@ const MainApp: React.FC<MainAppProps> = ({
       
       console.log('🔍 [MainApp] State and refs reset for new login');
     };
+    
+    const handleCachesCleared = () => {
+      console.log('🔍 [MainApp] Caches cleared event received - logout complete, ready for new user');
+      // ✅ CRITICAL: Only clear logout flag AFTER caches are cleared
+      // This ensures loadData won't run until everything is reset
+      setTimeout(() => {
+        isLoggingOutRef.current = false;
+        console.log('🔍 [MainApp] Logout flag cleared - new user can now load');
+      }, 100);
+    };
 
     window.addEventListener('otakon:user-logout', handleUserLogout);
+    window.addEventListener('otakon:caches-cleared', handleCachesCleared);
     
     return () => {
       window.removeEventListener('otakon:user-logout', handleUserLogout);
+      window.removeEventListener('otakon:caches-cleared', handleCachesCleared);
     };
   }, []);
 
   useEffect(() => {
     const loadData = async (retryCount = 0) => {
+      // ✅ PWA FIX: Don't load if logout is in progress
+      if (isLoggingOutRef.current) {
+        console.log('🔍 [MainApp] Skipping loadData - logout in progress');
+        return;
+      }
+      
       // ✅ PERFORMANCE: Guard against concurrent loads
       if (isLoadingConversationsRef.current) {
                 return;
@@ -473,8 +497,12 @@ const MainApp: React.FC<MainAppProps> = ({
 
         console.log('🔍 [MainApp] Loading conversations (attempt', retryCount + 1, ')');
         
+        // ✅ PWA FIX: Force refresh on first load attempt to ensure we get the current user's data
+        // This prevents stale cache data from previous user affecting new user
+        const forceRefresh = retryCount === 0;
+        
         // ✅ FIX: Ensure Game Hub exists first - this returns it directly (RLS workaround)
-        const gameHubFromEnsure = await ConversationService.ensureGameHubExists();
+        const gameHubFromEnsure = await ConversationService.ensureGameHubExists(forceRefresh);
                 // ✅ CRITICAL: Use cached conversations instead of requerying Supabase
         // getConversations() bypasses cache and queries Supabase which fails due to RLS
         const userConversations = ConversationService.getCachedConversations() || {};
