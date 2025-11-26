@@ -696,9 +696,10 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
           </button>
         </div>
         
-        {/* PWA Install Banner - Always show on login screen */}
+        {/* PWA Install Banner - Show on login screen in browser mode only */}
+        {/* When running as installed PWA, this banner is hidden automatically */}
         <div className="mt-2 md:mt-3 lg:mt-4">
-          <PWAInstallBanner alwaysShow={true} />
+          <PWAInstallBanner alwaysShowInBrowser={true} />
         </div>
       </div>
 

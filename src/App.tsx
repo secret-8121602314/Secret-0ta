@@ -332,6 +332,11 @@ function App() {
     // Preserve welcome screen flag (user has seen it once, don't show again)
     const welcomeShown = localStorage.getItem('otakon_welcome_shown');
     
+    // ✅ PWA FIX: Dispatch a custom event BEFORE signOut to notify components to reset their refs
+    // This is critical for MainApp to reset hasLoadedConversationsRef
+    window.dispatchEvent(new CustomEvent('otakon:user-logout'));
+    console.log('🎯 [App] Dispatched otakon:user-logout event');
+    
     // Sign out (clears Supabase session and localStorage)
     await authService.signOut();
     

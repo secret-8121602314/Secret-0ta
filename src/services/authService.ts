@@ -637,11 +637,26 @@ export class AuthService {
       localStorage.removeItem('otakon_last_connection');
       localStorage.removeItem('otakonHasConnectedBefore');
       
+      // ✅ PWA FIX: Clear session-related localStorage items
+      localStorage.removeItem('otakon_session_refreshed');
+      localStorage.removeItem('otakon_last_session_check');
+      
       // Clear sessionStorage
       sessionStorage.clear();
       
       // ✅ SCALABILITY: Clear cache
       this.clearCache();
+      
+      // ✅ CRITICAL: Clear pending user loads to prevent stale data on re-login
+      this.pendingUserLoads.clear();
+      
+      // ✅ PWA FIX: Notify service worker to clear auth cache
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          type: 'CLEAR_AUTH_CACHE'
+        });
+        console.log('🔐 [AuthService] Notified service worker to clear auth cache');
+      }
       
       // ✅ CRITICAL SECURITY FIX: Clear conversation service caches to prevent data leakage
       // This ensures User B doesn't see User A's conversations after logout

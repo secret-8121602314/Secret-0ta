@@ -416,6 +416,34 @@ const MainApp: React.FC<MainAppProps> = ({
     }
   }, [connectionStatus, handleWebSocketMessage]);
 
+  // ✅ PWA FIX: Listen for logout event to reset refs and state
+  // This ensures re-login works correctly after logout
+  useEffect(() => {
+    const handleUserLogout = () => {
+      console.log('🔍 [MainApp] User logout detected - resetting refs and state');
+      
+      // Reset loading guard refs so next login can initialize properly
+      isLoadingConversationsRef.current = false;
+      hasLoadedConversationsRef.current = false;
+      
+      // Clear state to prevent showing stale data
+      setUser(null);
+      setConversations({});
+      setActiveConversation(null);
+      setIsInitializing(true);
+      setSuggestedPrompts([]);
+      setQueuedScreenshot(null);
+      
+      console.log('🔍 [MainApp] State and refs reset for new login');
+    };
+
+    window.addEventListener('otakon:user-logout', handleUserLogout);
+    
+    return () => {
+      window.removeEventListener('otakon:user-logout', handleUserLogout);
+    };
+  }, []);
+
   useEffect(() => {
     const loadData = async (retryCount = 0) => {
       // ✅ PERFORMANCE: Guard against concurrent loads

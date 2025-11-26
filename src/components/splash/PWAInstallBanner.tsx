@@ -4,7 +4,9 @@ import type { BeforeInstallPromptEvent } from '../../types/enhanced';
 
 interface PWAInstallBannerProps {
   className?: string;
-  alwaysShow?: boolean; // Keep banner visible on login screen even if installed
+  // Note: When running in PWA mode, the banner is always hidden regardless of this prop
+  // This prop only affects browser mode - when true, shows the banner even after install
+  alwaysShowInBrowser?: boolean;
 }
 
 const GLOBAL_PROMPT_KEY = '__otagon_beforeinstallprompt';
@@ -20,16 +22,26 @@ function setGlobalPrompt(prompt: BeforeInstallPromptEvent | null): void {
   (window as any)[GLOBAL_PROMPT_KEY] = prompt;
 }
 
-const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '', alwaysShow = false }) => {
+const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '', alwaysShowInBrowser = false }) => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [hasPrompt, setHasPrompt] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [isRunningAsPWA, setIsRunningAsPWA] = useState(false);
 
   useEffect(() => {
     console.log('🔍 [PWA Install Banner] Component mounted, checking installation status...');
     console.log('📍 Current URL:', window.location.href);
     console.log('🔐 Is HTTPS?', window.location.protocol === 'https:');
     console.log('💻 Is localhost?', window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    
+    // ✅ CRITICAL: Check if running as PWA FIRST - if so, never show the banner
+    if (isPWAMode()) {
+      console.log('✅ [PWA Install Banner] Running as PWA - hiding install banner completely');
+      setIsRunningAsPWA(true);
+      setIsInstalled(true);
+      markAppAsInstalled();
+      return; // Exit early - no need to set up event listeners
+    }
     
     // Check if app is already installed
     const checkIfInstalled = () => {
@@ -150,8 +162,15 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '', alw
     setDeferredPrompt(null);
   };
   
-  // If already installed, don't show the banner (unless alwaysShow is true for login screen)
-  if (isInstalled && !alwaysShow) {
+  // ✅ CRITICAL: ALWAYS hide the banner when running as PWA (installed app)
+  // This ensures no install prompt is shown in the installed app
+  if (isRunningAsPWA) {
+    console.log('🔍 [PWA Install Banner] Running as PWA - returning null');
+    return null;
+  }
+  
+  // If already installed in browser mode, hide unless alwaysShowInBrowser is true
+  if (isInstalled && !alwaysShowInBrowser) {
     return null;
   }
 
