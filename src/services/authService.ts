@@ -670,7 +670,7 @@ export class AuthService {
       
       // ✅ PWA FIX: Clear SupabaseService instance to prevent stale data
       try {
-        const { SupabaseService } = await import('./supabaseService');
+        await import('./supabaseService');
         // Force a new instance on next access by clearing any internal state
         console.log('🔒 [AuthService] SupabaseService ready for new user');
       } catch (error) {

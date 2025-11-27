@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import Logo from '../ui/Logo';
 import Button from '../ui/Button';
 import { authService } from '../../services/authService';
 import TermsModal from '../modals/TermsModal';

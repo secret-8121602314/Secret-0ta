@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ScreenshotIcon from '../ui/ScreenshotIcon';
 import HintIcon from '../ui/HintIcon';
-import DesktopIcon from '../ui/DesktopIcon';
 import BookmarkIcon from '../ui/BookmarkIcon';
 import { ConnectionStatus } from '../../types';
 

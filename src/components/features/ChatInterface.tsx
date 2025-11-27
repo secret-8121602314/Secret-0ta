@@ -16,6 +16,7 @@ import { ActiveSessionToggle } from '../ui/ActiveSessionToggle';
 import SubTabs from './SubTabs';
 import { gameTabService } from '../../services/gameTabService';
 import { tabManagementService } from '../../services/tabManagementService';
+import { ChatInterfaceSkeleton } from '../ui/Skeletons';
 
 // ============================================================================
 // ERROR FALLBACK COMPONENTS
@@ -496,30 +497,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
-  // Show loading state if no conversation yet
+  // Show loading state if no conversation yet - use skeleton for better UX
   if (!conversation) {
-    return (
-      <div className="h-full bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF4D4D] mx-auto mb-4"></div>
-          <p className="text-text-muted">Loading chat...</p>
-          <p className="text-text-muted text-sm mt-2">This may take a moment after completing onboarding</p>
-        </div>
-      </div>
-    );
+    return <ChatInterfaceSkeleton />;
   }
 
   // Safety check for conversation
   if (!conversation) {
-    return (
-      <div className="h-full bg-background flex flex-col overflow-hidden">
-        <div className="flex-1 p-6 flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-text-muted text-lg">Loading conversation...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <ChatInterfaceSkeleton />;
   }
 
   return (

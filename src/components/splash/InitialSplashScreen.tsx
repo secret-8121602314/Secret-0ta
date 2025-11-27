@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import Logo from '../ui/Logo';
 import PWAInstallBanner from './PWAInstallBanner';
 import { supabase } from '../../lib/supabase';
 import { User } from '../../types';

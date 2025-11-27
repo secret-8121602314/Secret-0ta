@@ -172,6 +172,87 @@ html, body {
   --color-text-muted: #A3A3A3;
 }
 
+/* ============================================================================
+   RESPONSIVE CONTAINER UTILITIES
+   Standardized containers for consistent spacing across breakpoints
+   ============================================================================ */
+
+/* Section container - max-width with responsive padding */
+.section-container {
+  @apply container mx-auto;
+  @apply px-4 sm:px-6 lg:px-8;
+  @apply max-w-6xl;
+}
+
+/* Section container - narrow variant for text-heavy content */
+.section-container-narrow {
+  @apply container mx-auto;
+  @apply px-4 sm:px-6 lg:px-8;
+  @apply max-w-4xl;
+}
+
+/* Section container - wide variant for full-width layouts */
+.section-container-wide {
+  @apply container mx-auto;
+  @apply px-4 sm:px-6 lg:px-8;
+  @apply max-w-7xl;
+}
+
+/* Section padding - consistent vertical spacing */
+.section-padding {
+  @apply py-12 sm:py-16 lg:py-20;
+}
+
+/* Section padding - compact variant */
+.section-padding-compact {
+  @apply py-8 sm:py-10 lg:py-14;
+}
+
+/* Content spacing - for text blocks and cards */
+.content-spacing {
+  @apply space-y-4 sm:space-y-6 lg:space-y-8;
+}
+
+/* Responsive text sizes */
+.text-hero {
+  @apply text-4xl sm:text-5xl md:text-6xl lg:text-7xl;
+  @apply font-bold tracking-tight leading-tight;
+}
+
+.text-section-title {
+  @apply text-3xl sm:text-4xl md:text-5xl lg:text-6xl;
+  @apply font-bold tracking-tight;
+}
+
+.text-card-title {
+  @apply text-xl sm:text-2xl lg:text-3xl;
+  @apply font-bold;
+}
+
+.text-body-large {
+  @apply text-base sm:text-lg md:text-xl;
+  @apply leading-relaxed;
+}
+
+/* Touch-safe button - ensures minimum touch target size */
+.btn-touch-safe {
+  @apply min-h-[44px] min-w-[44px];
+  @apply px-4 py-3;
+}
+
+/* Responsive grid utilities */
+.grid-responsive-2 {
+  @apply grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8;
+}
+
+.grid-responsive-3 {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8;
+}
+
+.grid-responsive-4 {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6;
+}
+
 /* Enhanced Card System */
 .card-elevated {
   @apply bg-gradient-to-br from-[#2E2E2E]/90 to-[#1C1C1C]/90;
