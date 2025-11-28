@@ -19,8 +19,8 @@ export default defineConfig(({ mode }) => ({
         manualChunks: (id) => {
           // Vendor chunks - Core libraries
           if (id.includes('node_modules')) {
-            // React ecosystem
-            if (id.includes('react') || id.includes('react-dom')) {
+            // React ecosystem (includes framer-motion which depends on React)
+            if (id.includes('react') || id.includes('react-dom') || id.includes('framer-motion')) {
               return 'react-vendor';
             }
             // Router
