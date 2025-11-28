@@ -35,12 +35,14 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
   const [trialExpiresAt, setTrialExpiresAt] = useState<number | null>(null);
   const [timeRemaining, setTimeRemaining] = useState('');
   const [isStartingTrial, setIsStartingTrial] = useState(false);
+  const [isLoadingTrialStatus, setIsLoadingTrialStatus] = useState(true); // Prevents flash
 
   // Check trial status when menu opens
   useEffect(() => {
     const checkTrialStatus = async () => {
       // Check trial status for both free and pro users (pro could be on trial)
       if (isOpen) {
+        setIsLoadingTrialStatus(true); // Start loading
         try {
           const currentUser = authService.getCurrentUser();
           if (currentUser) {
@@ -57,6 +59,8 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
           console.error('Error checking trial status:', error);
           setIsTrialEligible(userTier === 'free');
           setIsTrialActive(false);
+        } finally {
+          setIsLoadingTrialStatus(false); // Done loading
         }
       } else {
         // Reset when menu closes
@@ -64,6 +68,7 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
         setIsTrialActive(false);
         setTrialExpiresAt(null);
         setTimeRemaining('');
+        setIsLoadingTrialStatus(true); // Reset to loading for next open
       }
     };
 
@@ -270,8 +275,16 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
         </div>
       )}
 
-      {/* Start Free Trial - Only show for eligible users */}
-      {isTrialEligible && !isTrialActive && (
+      {/* Loading state for trial status - prevents flash */}
+      {isLoadingTrialStatus && userTier === 'free' && (
+        <div className="w-full px-4 py-2 text-left text-text-muted flex items-center space-x-3">
+          <div className="w-4 h-4 border-2 border-text-muted/30 border-t-text-muted rounded-full animate-spin" />
+          <span className="text-sm">Loading...</span>
+        </div>
+      )}
+
+      {/* Start Free Trial - Only show for eligible users after loading */}
+      {!isLoadingTrialStatus && isTrialEligible && !isTrialActive && (
         <button
           onClick={handleStartTrial}
           disabled={isStartingTrial}
@@ -284,8 +297,8 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
         </button>
       )}
 
-      {/* Upgrade to Pro - Show when trial expired */}
-      {!isTrialEligible && !isTrialActive && userTier === 'free' && (
+      {/* Upgrade to Pro - Show when trial expired and loading is done */}
+      {!isLoadingTrialStatus && !isTrialEligible && !isTrialActive && userTier === 'free' && (
         <button
           onClick={() => {
             if (onUpgradeClick) {
