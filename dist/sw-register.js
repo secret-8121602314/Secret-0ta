@@ -37,6 +37,17 @@ if ('serviceWorker' in navigator) {
         if (event.data.type === 'BACKGROUND_TTS_COMPLETE') {
           window.dispatchEvent(new CustomEvent('otakon:ttsBackgroundComplete'));
         }
+        
+        // Handle auth cache cleared - reload to login page
+        if (event.data.type === 'AUTH_CACHE_CLEARED') {
+          console.log('Auth cache cleared by service worker');
+          window.dispatchEvent(new CustomEvent('otakon:authCacheCleared'));
+        }
+        
+        // Handle keep-alive pings
+        if (event.data.type === 'KEEP_ALIVE_PING') {
+          console.log('Keep-alive ping received from SW');
+        }
       });
       
     } catch (error) {
