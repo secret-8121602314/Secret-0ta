@@ -878,7 +878,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                         </div>
 
           {submitMessage && (
-                            <div className={`mt-6 text-center text-lg ${submitMessage.includes('Thanks') ? 'text-green-400' : 'text-red-400'}`}>
+                            <div className={`mt-6 text-center text-lg ${submitMessage.includes('Thanks') || submitMessage.includes('already on our waitlist') ? 'text-green-400' : 'text-red-400'}`}>
               {submitMessage}
             </div>
           )}
