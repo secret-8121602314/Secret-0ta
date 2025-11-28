@@ -1993,6 +1993,116 @@ const MainApp: React.FC<MainAppProps> = ({
         });
       }
 
+      // ✅ NEW: Handle OTAKON_PROGRESS tag for automatic progress updates
+      if (response.otakonTags.has('PROGRESS')) {
+        const progress = response.otakonTags.get('PROGRESS') as number;
+        if (typeof progress === 'number' && progress >= 0 && progress <= 100) {
+          console.log(`📊 [MainApp] OTAKON_PROGRESS detected: ${progress}%`);
+          
+          // Only update if progress changed significantly (avoid micro-updates)
+          const currentProgress = activeConversation.gameProgress || 0;
+          if (Math.abs(progress - currentProgress) >= 2 || progress > currentProgress) {
+            const updatedConv = {
+              ...activeConversation,
+              gameProgress: progress,
+              updatedAt: Date.now()
+            };
+            
+            setConversations(prev => ({
+              ...prev,
+              [activeConversation.id]: updatedConv
+            }));
+            setActiveConversation(updatedConv);
+            
+            ConversationService.updateConversation(activeConversation.id, {
+              gameProgress: progress,
+              updatedAt: Date.now()
+            }).catch(error => console.error('Failed to update progress:', error));
+          }
+        }
+      }
+
+      // ✅ NEW: Handle OTAKON_OBJECTIVE tag for automatic objective updates
+      if (response.otakonTags.has('OBJECTIVE')) {
+        const objective = response.otakonTags.get('OBJECTIVE') as string;
+        if (objective && typeof objective === 'string' && objective.trim()) {
+          console.log(`🎯 [MainApp] OTAKON_OBJECTIVE detected: ${objective}`);
+          
+          // Only update if objective is different
+          if (objective !== activeConversation.activeObjective) {
+            const updatedConv = {
+              ...activeConversation,
+              activeObjective: objective,
+              updatedAt: Date.now()
+            };
+            
+            setConversations(prev => ({
+              ...prev,
+              [activeConversation.id]: updatedConv
+            }));
+            setActiveConversation(updatedConv);
+            
+            ConversationService.updateConversation(activeConversation.id, {
+              activeObjective: objective,
+              updatedAt: Date.now()
+            }).catch(error => console.error('Failed to update objective:', error));
+          }
+        }
+      }
+
+      // ✅ NEW: Handle OTAKON_SUBTAB_UPDATE for automatic subtab content updates
+      if (response.otakonTags.has('SUBTAB_UPDATE')) {
+        const subtabUpdates = response.otakonTags.get('SUBTAB_UPDATE') as Array<{tab: string; content: string}>;
+        if (Array.isArray(subtabUpdates) && subtabUpdates.length > 0) {
+          console.log(`📝 [MainApp] OTAKON_SUBTAB_UPDATE detected:`, subtabUpdates.length, 'updates');
+          
+          // Map tab names to subtab IDs and update
+          const currentSubtabs = activeConversation.subtabs || [];
+          const tabNameToId: Record<string, string> = {};
+          
+          // Build mapping from tab title/type to ID
+          currentSubtabs.forEach(subtab => {
+            const normalizedTitle = subtab.title.toLowerCase().replace(/\s+/g, '_');
+            tabNameToId[normalizedTitle] = subtab.id;
+            if (subtab.type) {
+              tabNameToId[subtab.type] = subtab.id;
+            }
+          });
+          
+          // Convert SUBTAB_UPDATE format to progressiveInsightUpdates format
+          const mappedUpdates = subtabUpdates
+            .map(update => {
+              const tabId = tabNameToId[update.tab] || tabNameToId[update.tab.toLowerCase().replace(/\s+/g, '_')];
+              if (tabId) {
+                return {
+                  tabId,
+                  title: update.tab.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+                  content: update.content
+                };
+              }
+              console.warn(`📝 [MainApp] Could not find subtab for: ${update.tab}`);
+              return null;
+            })
+            .filter(Boolean) as Array<{tabId: string; title: string; content: string}>;
+          
+          if (mappedUpdates.length > 0) {
+            gameTabService.updateSubTabsFromAIResponse(activeConversation.id, mappedUpdates)
+              .then(() => {
+                console.log(`📝 [MainApp] Successfully updated ${mappedUpdates.length} subtabs`);
+                ConversationService.getConversations().then(updatedConversations => {
+                  const freshConversations = deepCloneConversations(updatedConversations);
+                  setConversations(freshConversations);
+                  const refreshedConversation = freshConversations[activeConversation.id];
+                  if (refreshedConversation) {
+                    setActiveConversation(refreshedConversation);
+                  }
+                });
+              })
+              .catch(error => console.error('📝 [MainApp] Failed to update subtabs:', error));
+          }
+        }
+      }
+
       // Handle tab management commands (Command Centre)
       if (response.otakonTags.has('OTAKON_INSIGHT_UPDATE') || 
           response.otakonTags.has('OTAKON_INSIGHT_MODIFY_PENDING') || 

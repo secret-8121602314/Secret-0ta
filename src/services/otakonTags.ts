@@ -12,17 +12,32 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
     const tagName = match[1];
     let tagValue: unknown = match[2].trim();
 
-        // Parse JSON for complex tags
+    // Parse JSON for complex tags
     try {
       const strValue = tagValue as string;
       if (strValue.startsWith('{') && strValue.endsWith('}')) {
         tagValue = JSON.parse(strValue);
-              }
+      }
       if (strValue.startsWith('[') && strValue.endsWith(']')) {
         tagValue = JSON.parse(strValue.replace(/'/g, '"'));
-              }
+      }
     } catch (_e) {
-            // Keep as string if not valid JSON
+      // Keep as string if not valid JSON
+    }
+    
+    // Handle PROGRESS tag - ensure it's a number
+    if (tagName === 'PROGRESS') {
+      const numValue = parseInt(tagValue as string, 10);
+      if (!isNaN(numValue)) {
+        tagValue = Math.min(100, Math.max(0, numValue)); // Clamp 0-100
+      }
+    }
+    
+    // Handle SUBTAB_UPDATE - collect multiple updates into an array
+    if (tagName === 'SUBTAB_UPDATE') {
+      const existingUpdates = tags.get('SUBTAB_UPDATE') as Array<unknown> || [];
+      existingUpdates.push(tagValue);
+      tagValue = existingUpdates;
     }
 
     tags.set(tagName, tagValue);
