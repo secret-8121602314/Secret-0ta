@@ -16,8 +16,15 @@ const urlsToCache = [
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png',
-  // Precache critical mascot images for faster PWA loading
+  // Precache ALL mascot images for faster first-run loading
   '/images/mascot/1.png',
+  '/images/mascot/2.png',
+  '/images/mascot/4.png',
+  '/images/mascot/5.1.png',
+  '/images/mascot/5.2.png',
+  '/images/mascot/6.png',
+  '/images/mascot/8.png',
+  '/images/mascot/9.png',
   '/images/mascot/10.png',
   '/images/mascot/11.png',
   '/images/mascot/pro-user.png',
