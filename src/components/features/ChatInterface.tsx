@@ -75,9 +75,9 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
           {/* Avatar */}
           <div className="flex-shrink-0">
             {message.role === 'user' ? (
-              <UserAvatar className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 text-[#D98C1F]" />
+              <UserAvatar className="w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0 text-[#D98C1F]" />
             ) : (
-              <AIAvatar className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0" />
+              <AIAvatar className="w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0" />
             )}
           </div>
           
@@ -551,7 +551,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             <div className="flex items-start gap-3">
               {/* AI Avatar */}
               <div className="flex-shrink-0">
-                <AIAvatar className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0" />
+                <AIAvatar className="w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0" />
               </div>
               
               {/* Loading content */}

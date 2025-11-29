@@ -6,11 +6,11 @@ interface AIAvatarProps {
 }
 
 const AIAvatar: React.FC<AIAvatarProps> = ({ className }) => {
-  const [imgSrc, setImgSrc] = useState(getPublicPath('/images/mascot/11.png'));
+  const [imgSrc, setImgSrc] = useState(getPublicPath('/images/AvatarAI.png'));
 
   const handleError = () => {
-    // Fallback to original AvatarAI.png if mascot image fails
-    setImgSrc(getPublicPath('/images/AvatarAI.png'));
+    // Fallback to mascot if AvatarAI.png fails
+    setImgSrc(getPublicPath('/images/mascot/11.png'));
   };
 
   return (
