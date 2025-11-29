@@ -1963,7 +1963,18 @@ const MainApp: React.FC<MainAppProps> = ({
 
       // ✅ DEFERRED: Process suggested prompts AFTER tab migration (moved to after tab switch)
       // This ensures prompts are based on the FINAL active tab, not the intermediate Game Hub state
-                        const suggestionsToUse = response.followUpPrompts || response.suggestions;
+      
+      // 🚨 CRITICAL DEBUG - This should ALWAYS appear after AI response
+      console.warn('🚨🚨🚨 [MainApp] AI RESPONSE PROCESSING STARTED 🚨🚨🚨');
+      console.warn('🚨 Response object:', JSON.stringify({
+        hasContent: !!response.content,
+        contentLength: response.content?.length,
+        stateUpdateTags: response.stateUpdateTags,
+        hasOtakonTags: response.otakonTags?.size > 0,
+        otakonTagKeys: response.otakonTags ? Array.from(response.otakonTags.keys()) : []
+      }, null, 2));
+      
+      const suggestionsToUse = response.followUpPrompts || response.suggestions;
       console.log('🔍 [MainApp] suggestionsToUse (before processing):', suggestionsToUse);
       
       const processedSuggestions = suggestedPromptsService.processAISuggestions(suggestionsToUse);
@@ -1979,6 +1990,11 @@ const MainApp: React.FC<MainAppProps> = ({
       });
       
       // Handle state update tags (game progress, objectives, etc.)
+      // ✅ DEFERRED: Collect updates but DON'T apply yet - we need to wait until after
+      // migration decision to apply them to the CORRECT conversation (game tab, not Game Hub)
+      let progressUpdate: number | null = null;
+      let objectiveUpdate: string | null = null;
+      
       if (response.stateUpdateTags && response.stateUpdateTags.length > 0) {
         console.error('🎮 [MainApp] Processing state update tags:', response.stateUpdateTags);
         
@@ -1987,27 +2003,8 @@ const MainApp: React.FC<MainAppProps> = ({
           if (tag.startsWith('PROGRESS:')) {
             const progress = parseInt(tag.split(':')[1]?.trim() || '0', 10);
             if (!isNaN(progress) && progress >= 0 && progress <= 100) {
-              console.error(`🎮 [MainApp] Updating game progress to ${progress}%`);
-              
-              // Update conversation with new progress
-              const updatedConv = {
-                ...activeConversation,
-                gameProgress: progress,
-                updatedAt: Date.now()
-              };
-              
-              // Update local state immediately
-              setConversations(prev => ({
-                ...prev,
-                [activeConversation.id]: updatedConv
-              }));
-              setActiveConversation(updatedConv);
-              
-              // Persist to storage (non-blocking)
-              ConversationService.updateConversation(activeConversation.id, {
-                gameProgress: progress,
-                updatedAt: Date.now()
-              }).catch(error => console.error('Failed to update game progress:', error));
+              console.error(`🎮 [MainApp] Found progress in stateUpdateTags: ${progress}%`);
+              progressUpdate = progress;
             }
           }
           
@@ -2015,30 +2012,38 @@ const MainApp: React.FC<MainAppProps> = ({
           if (tag.startsWith('OBJECTIVE:')) {
             const objective = tag.split(':')[1]?.trim();
             if (objective) {
-              console.error(`🎮 [MainApp] Updating active objective: ${objective}`);
-              
-              // Update conversation with new objective
-              const updatedConv = {
-                ...activeConversation,
-                activeObjective: objective,
-                updatedAt: Date.now()
-              };
-              
-              // Update local state immediately
-              setConversations(prev => ({
-                ...prev,
-                [activeConversation.id]: updatedConv
-              }));
-              setActiveConversation(updatedConv);
-              
-              // Persist to storage (non-blocking)
-              ConversationService.updateConversation(activeConversation.id, {
-                activeObjective: objective,
-                updatedAt: Date.now()
-              }).catch(error => console.error('Failed to update objective:', error));
+              console.error(`🎮 [MainApp] Found objective in stateUpdateTags: ${objective}`);
+              objectiveUpdate = objective;
             }
           }
         }
+      }
+      
+      // Also check otakonTags for progress/objective (fallback/alternative source)
+      if (response.otakonTags?.has('PROGRESS') && progressUpdate === null) {
+        const progress = response.otakonTags.get('PROGRESS') as number;
+        if (typeof progress === 'number' && progress >= 0 && progress <= 100) {
+          console.error(`🎮 [MainApp] Found progress in otakonTags: ${progress}%`);
+          progressUpdate = progress;
+        }
+      }
+      
+      if (response.otakonTags?.has('OBJECTIVE') && objectiveUpdate === null) {
+        const objective = response.otakonTags.get('OBJECTIVE') as string;
+        if (objective && typeof objective === 'string' && objective.trim()) {
+          console.error(`🎮 [MainApp] Found objective in otakonTags: ${objective}`);
+          objectiveUpdate = objective;
+        }
+      }
+      
+      // ✅ DEFERRED: Progress/objective updates will be applied AFTER migration decision
+      // See the migration block below where we apply to the correct target conversation
+      const hasPendingProgressUpdates = progressUpdate !== null || objectiveUpdate !== null;
+      if (hasPendingProgressUpdates) {
+        console.error('🎮 [MainApp] 📌 Deferring progress/objective updates until after migration decision:', {
+          progressUpdate,
+          objectiveUpdate
+        });
       }
 
       // Handle progressive insight updates (if AI provided updates to existing subtabs)
@@ -2062,65 +2067,6 @@ const MainApp: React.FC<MainAppProps> = ({
         }).catch(error => {
           console.error('📝 [MainApp] Failed to update subtabs:', error);
         });
-      }
-
-      // ✅ NEW: Handle OTAKON_PROGRESS tag for automatic progress updates
-      console.log(`📊 [MainApp] Checking for PROGRESS tag. Tags available:`, Array.from(response.otakonTags.keys()));
-      if (response.otakonTags.has('PROGRESS')) {
-        const progress = response.otakonTags.get('PROGRESS') as number;
-        console.log(`📊 [MainApp] PROGRESS value from tags:`, progress, `(type: ${typeof progress})`);
-        if (typeof progress === 'number' && progress >= 0 && progress <= 100) {
-          console.log(`📊 [MainApp] OTAKON_PROGRESS detected: ${progress}%`);
-          
-          // Only update if progress changed significantly (avoid micro-updates)
-          const currentProgress = activeConversation.gameProgress || 0;
-          if (Math.abs(progress - currentProgress) >= 2 || progress > currentProgress) {
-            const updatedConv = {
-              ...activeConversation,
-              gameProgress: progress,
-              updatedAt: Date.now()
-            };
-            
-            setConversations(prev => ({
-              ...prev,
-              [activeConversation.id]: updatedConv
-            }));
-            setActiveConversation(updatedConv);
-            
-            ConversationService.updateConversation(activeConversation.id, {
-              gameProgress: progress,
-              updatedAt: Date.now()
-            }).catch(error => console.error('Failed to update progress:', error));
-          }
-        }
-      }
-
-      // ✅ NEW: Handle OTAKON_OBJECTIVE tag for automatic objective updates
-      if (response.otakonTags.has('OBJECTIVE')) {
-        const objective = response.otakonTags.get('OBJECTIVE') as string;
-        if (objective && typeof objective === 'string' && objective.trim()) {
-          console.log(`🎯 [MainApp] OTAKON_OBJECTIVE detected: ${objective}`);
-          
-          // Only update if objective is different
-          if (objective !== activeConversation.activeObjective) {
-            const updatedConv = {
-              ...activeConversation,
-              activeObjective: objective,
-              updatedAt: Date.now()
-            };
-            
-            setConversations(prev => ({
-              ...prev,
-              [activeConversation.id]: updatedConv
-            }));
-            setActiveConversation(updatedConv);
-            
-            ConversationService.updateConversation(activeConversation.id, {
-              activeObjective: objective,
-              updatedAt: Date.now()
-            }).catch(error => console.error('Failed to update objective:', error));
-          }
-        }
       }
 
       // ✅ NEW: Handle OTAKON_SUBTAB_UPDATE for automatic subtab content updates
@@ -2376,7 +2322,34 @@ const MainApp: React.FC<MainAppProps> = ({
             // Switch to the game tab
             const gameTab = updatedConversations[targetConversationId];
             if (gameTab) {
-                            await ConversationService.setActiveConversation(targetConversationId);
+              // ✅ APPLY DEFERRED PROGRESS UPDATES to the TARGET game tab (not Game Hub!)
+              if (progressUpdate !== null || objectiveUpdate !== null) {
+                const progressUpdates: Partial<Conversation> = { updatedAt: Date.now() };
+                
+                if (progressUpdate !== null) {
+                  progressUpdates.gameProgress = progressUpdate;
+                  console.error(`🎮 [MainApp] ✅ Applying progress ${progressUpdate}% to TARGET: ${gameTab.title} (${targetConversationId})`);
+                }
+                
+                if (objectiveUpdate !== null) {
+                  progressUpdates.activeObjective = objectiveUpdate;
+                  console.error(`🎮 [MainApp] ✅ Applying objective to TARGET: ${gameTab.title}`);
+                }
+                
+                // Update in database first
+                await ConversationService.updateConversation(targetConversationId, progressUpdates);
+                
+                // Merge into gameTab for immediate UI update
+                Object.assign(gameTab, progressUpdates);
+                
+                // Update state with progress included
+                setConversations(prev => ({
+                  ...prev,
+                  [targetConversationId]: { ...prev[targetConversationId], ...progressUpdates }
+                }));
+              }
+              
+              await ConversationService.setActiveConversation(targetConversationId);
               setActiveConversation(gameTab);
               // Auto-switch to Playing mode for new/existing game tabs
               setActiveSession(targetConversationId, true);
@@ -2411,7 +2384,35 @@ const MainApp: React.FC<MainAppProps> = ({
               }
             }
           } else {
-                        // ✅ No migration - set prompts for current tab (Game Hub or existing game tab)
+            // ✅ No migration - apply progress updates to CURRENT conversation
+            if (progressUpdate !== null || objectiveUpdate !== null) {
+              const progressUpdates: Partial<Conversation> = { updatedAt: Date.now() };
+              
+              if (progressUpdate !== null) {
+                progressUpdates.gameProgress = progressUpdate;
+                console.error(`🎮 [MainApp] ✅ Applying progress ${progressUpdate}% to CURRENT: ${activeConversation.title} (${activeConversation.id})`);
+              }
+              
+              if (objectiveUpdate !== null) {
+                progressUpdates.activeObjective = objectiveUpdate;
+                console.error(`🎮 [MainApp] ✅ Applying objective to CURRENT: ${activeConversation.title}`);
+              }
+              
+              // Update conversation with progress
+              const updatedConv = { ...activeConversation, ...progressUpdates };
+              
+              setConversations(prev => ({
+                ...prev,
+                [activeConversation.id]: updatedConv
+              }));
+              setActiveConversation(updatedConv);
+              
+              // Persist to database
+              ConversationService.updateConversation(activeConversation.id, progressUpdates)
+                .catch(error => console.error('Failed to update progress:', error));
+            }
+            
+            // ✅ No migration - set prompts for current tab (Game Hub or existing game tab)
             if (processedSuggestions.length > 0) {
               console.log('✅ [MainApp] Setting AI-provided suggestions (no migration):', processedSuggestions);
               setSuggestedPrompts(processedSuggestions);

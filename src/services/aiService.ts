@@ -755,15 +755,46 @@ In addition to your regular response, provide structured data in the following o
         }
 
         const rawContent = edgeResponse.response;
+        
+        // 🔍 DEBUG: Log raw AI response to see if progress tags are present
+        console.log('🤖 [AIService] Raw AI response (last 500 chars):', rawContent.slice(-500));
+        console.log('🤖 [AIService] Checking for PROGRESS in raw response:', 
+          rawContent.includes('PROGRESS') ? '✅ FOUND' : '❌ NOT FOUND',
+          rawContent.includes('OTAKON_PROGRESS') ? '(OTAKON_PROGRESS format)' : '(other format or missing)'
+        );
+        
         const { cleanContent, tags } = parseOtakonTags(rawContent);
+        
+        // 🔍 DEBUG: Log extracted tags
+        console.log('🏷️ [AIService] Extracted otakonTags:', {
+          tagCount: tags.size,
+          tagKeys: Array.from(tags.keys()),
+          progressValue: tags.get('PROGRESS'),
+          objectiveValue: tags.get('OBJECTIVE')
+        });
 
         const suggestions = (tags.get('SUGGESTIONS') as string[]) || [];
+        
+        // ✅ FIX: Build stateUpdateTags from otakonTags for consistency with JSON mode
+        const stateUpdateTags: string[] = [];
+        if (tags.has('PROGRESS')) {
+          const progress = tags.get('PROGRESS');
+          stateUpdateTags.push(`PROGRESS: ${progress}`);
+          console.log('📊 [AIService] Added PROGRESS to stateUpdateTags:', progress);
+        }
+        if (tags.has('OBJECTIVE')) {
+          const objective = tags.get('OBJECTIVE');
+          stateUpdateTags.push(`OBJECTIVE: ${objective}`);
+          console.log('🎯 [AIService] Added OBJECTIVE to stateUpdateTags:', objective);
+        }
+        
         const aiResponse: AIResponse = {
           content: cleanContent,
           suggestions: suggestions,
-          followUpPrompts: suggestions, // ? Match JSON mode - set followUpPrompts from SUGGESTIONS tag
+          followUpPrompts: suggestions, // ✅ Match JSON mode - set followUpPrompts from SUGGESTIONS tag
           otakonTags: tags,
           rawContent: rawContent,
+          stateUpdateTags: stateUpdateTags, // ✅ NEW: Include stateUpdateTags from parsed tags
           metadata: {
             model: modelName,
             timestamp: Date.now(),
@@ -771,6 +802,13 @@ In addition to your regular response, provide structured data in the following o
             tokens: 0,
           }
         };
+        
+        console.log('📤 [AIService] Final aiResponse:', {
+          hasContent: !!aiResponse.content,
+          contentLength: aiResponse.content?.length,
+          stateUpdateTags: aiResponse.stateUpdateTags,
+          otakonTagKeys: Array.from(aiResponse.otakonTags.keys())
+        });
 
         cacheService.set(cacheKey, aiResponse, 60 * 60 * 1000).catch(err => console.warn(err));
         return aiResponse;
