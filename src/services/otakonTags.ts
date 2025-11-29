@@ -48,9 +48,57 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
   const simpleTagRegex = /\[OTAKON_([A-Z_]+):\s*([^\[\]]+?)\]/g;
   let match;
 
+  // ✅ ROBUST PROGRESS DETECTION - Look for multiple formats
+  // Check for progress in various formats that AI might output
+  let progressValue: number | null = null;
+  
+  // Format 1: [OTAKON_PROGRESS: XX]
+  const progressMatch1 = rawContent.match(/\[OTAKON_PROGRESS[:\s]+(\d+)/i);
+  if (progressMatch1) {
+    progressValue = parseInt(progressMatch1[1], 10);
+    console.log(`📊 [otakonTags] Found OTAKON_PROGRESS format: ${progressMatch1[0]} → ${progressValue}%`);
+  }
+  
+  // Format 2: [PROGRESS: XX] or PROGRESS: XX
+  if (!progressValue) {
+    const progressMatch2 = rawContent.match(/\[?PROGRESS[:\s]+(\d+)/i);
+    if (progressMatch2) {
+      progressValue = parseInt(progressMatch2[1], 10);
+      console.log(`📊 [otakonTags] Found PROGRESS format: ${progressMatch2[0]} → ${progressValue}%`);
+    }
+  }
+  
+  // Format 3: Progress: XX% or progress is XX%
+  if (!progressValue) {
+    const progressMatch3 = rawContent.match(/(?:progress|completion|game progress)[:\s]+(?:approximately\s+)?(\d+)\s*%/i);
+    if (progressMatch3) {
+      progressValue = parseInt(progressMatch3[1], 10);
+      console.log(`📊 [otakonTags] Found inline progress format: ${progressMatch3[0]} → ${progressValue}%`);
+    }
+  }
+  
+  // Format 4: Look for structured progress in stateUpdateTags
+  if (!progressValue) {
+    const stateTagMatch = rawContent.match(/"stateUpdateTags"[^}]*"PROGRESS[:\s]+(\d+)/i);
+    if (stateTagMatch) {
+      progressValue = parseInt(stateTagMatch[1], 10);
+      console.log(`📊 [otakonTags] Found stateUpdateTags PROGRESS: ${stateTagMatch[0]} → ${progressValue}%`);
+    }
+  }
+  
+  // If we found a valid progress value, add it to tags
+  if (progressValue !== null && progressValue >= 0 && progressValue <= 100) {
+    tags.set('PROGRESS', progressValue);
+    console.log(`📊 [otakonTags] ✅ Set PROGRESS tag to: ${progressValue}%`);
+  } else {
+    console.log(`📊 [otakonTags] ⚠️ No valid progress found in response`);
+  }
+
   while ((match = simpleTagRegex.exec(rawContent)) !== null) {
     const tagName = match[1];
     let tagValue: unknown = match[2].trim();
+    
+    console.log(`🏷️ [otakonTags] Found tag: ${tagName} = ${match[2].substring(0, 50)}`);
 
     // Skip if already processed
     if (tagName === 'SUGGESTIONS' || tagName === 'SUBTAB_UPDATE') {
@@ -119,6 +167,16 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
     // ✅ Fix malformed bold markers (spaces between ** and text)
     .replace(/\*\*\s+([^*]+?)\s+\*\*/g, '**$1**') // Fix ** text ** → **text**
     .replace(/\*\*\s+([^*]+?):/g, '**$1:**') // Fix ** Header: → **Header:**
+    // ✅ FIX: Ensure numbered lists have proper line breaks
+    // Fix patterns like "...text. 2." or "...text.2." where number follows period without break
+    .replace(/\.\s*(\d+\.\*\*)/g, '.\n\n$1') // Period followed by numbered bold item
+    .replace(/\.\s*(\d+\.\s+)/g, '.\n\n$1') // Period followed by numbered item
+    // ✅ FIX: Ensure bold formatting is complete (no dangling **)
+    .replace(/\*\*([^*\n]+)(?!\*\*)/g, (match, content) => {
+      // If this bold section doesn't have a closing **, and ends with :, add closing
+      if (content.endsWith(':')) return `**${content}**`;
+      return match; // Otherwise leave as is
+    })
     // ✅ CRITICAL: Add line breaks BEFORE section headers that follow text directly
     // This fixes: "...some text.Hint:" -> "...some text.\n\n**Hint:**"
     .replace(/([.!?])(\s*)Hint:/gi, '$1\n\n**Hint:**')

@@ -972,8 +972,11 @@ const MainApp: React.FC<MainAppProps> = ({
       return updated;
     });
     
-    // Background delete with rollback on error
-    ConversationService.deleteConversation(id).catch(error => {
+    // ✅ FIX: Await the delete operation to ensure it completes before any refresh
+    try {
+      await ConversationService.deleteConversation(id);
+      console.log(`✅ [MainApp] Successfully deleted conversation: ${id}`);
+    } catch (error) {
       console.error('Failed to delete conversation:', error);
       
       // Rollback on error
@@ -984,7 +987,7 @@ const MainApp: React.FC<MainAppProps> = ({
       
       toastService.error('Failed to delete conversation.');
       return;
-    });
+    }
     
     if (wasActive) {
       // If we're deleting the current active conversation, switch to "Game Hub" tab
@@ -2052,8 +2055,10 @@ const MainApp: React.FC<MainAppProps> = ({
       }
 
       // ✅ NEW: Handle OTAKON_PROGRESS tag for automatic progress updates
+      console.log(`📊 [MainApp] Checking for PROGRESS tag. Tags available:`, Array.from(response.otakonTags.keys()));
       if (response.otakonTags.has('PROGRESS')) {
         const progress = response.otakonTags.get('PROGRESS') as number;
+        console.log(`📊 [MainApp] PROGRESS value from tags:`, progress, `(type: ${typeof progress})`);
         if (typeof progress === 'number' && progress >= 0 && progress <= 100) {
           console.log(`📊 [MainApp] OTAKON_PROGRESS detected: ${progress}%`);
           
@@ -2633,6 +2638,7 @@ const MainApp: React.FC<MainAppProps> = ({
                 <div className="flex-1">
                   <GameProgressBar 
                     progress={activeConversation.gameProgress || 0}
+                    gameTitle={activeConversation.gameTitle}
                     className="px-3 sm:px-4"
                   />
                 </div>
@@ -2670,7 +2676,16 @@ const MainApp: React.FC<MainAppProps> = ({
           {activeConversation && (
             <div className="lg:hidden px-3 sm:px-4 mb-3 sm:mb-4 flex-shrink-0">
               <div className="flex items-center gap-2">
-                {/* Game Info Button - Mobile (left of thread name) */}
+                {/* Thread name button */}
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  className="flex-1 bg-gradient-to-r from-surface/30 to-background/30 backdrop-blur-sm border border-surface-light/20 rounded-lg px-4 py-3 transition-all duration-200 hover:from-surface/40 hover:to-background/40 hover:border-surface-light/30 active:scale-[0.98]"
+                >
+                  <h2 className="text-sm sm:text-base font-semibold bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent text-center">
+                    {activeConversation.title}
+                  </h2>
+                </button>
+                {/* Game Info Button - Mobile (right of thread name) */}
                 {!activeConversation.isGameHub && activeConversation.gameTitle && currentGameIGDBData && (
                   <button
                     onClick={() => setGameInfoModalOpen(true)}
@@ -2687,15 +2702,6 @@ const MainApp: React.FC<MainAppProps> = ({
                     </svg>
                   </button>
                 )}
-                {/* Thread name button */}
-                <button
-                  onClick={() => setSidebarOpen(true)}
-                  className="flex-1 bg-gradient-to-r from-surface/30 to-background/30 backdrop-blur-sm border border-surface-light/20 rounded-lg px-4 py-3 transition-all duration-200 hover:from-surface/40 hover:to-background/40 hover:border-surface-light/30 active:scale-[0.98]"
-                >
-                  <h2 className="text-sm sm:text-base font-semibold bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent text-center">
-                    {activeConversation.title}
-                  </h2>
-                </button>
               </div>
             </div>
           )}

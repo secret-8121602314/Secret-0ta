@@ -659,15 +659,41 @@ In addition to your regular response, provide structured data in the following o
    - Example: If you explained a game's story, ask about specific characters or plot points from that game
    - DO NOT use generic gaming questions - tie them to what you just said`}
 2. **progressiveInsightUpdates** (array): If conversation provides new info, update existing subtabs (e.g., story_so_far, characters)
-3. **stateUpdateTags** (array): Track game state changes. Include these when applicable:
-   - "PROGRESS: XX" (0-100) - Estimate player's game completion percentage based on areas explored, bosses defeated, story progress
+3. **stateUpdateTags** (array of strings): Track game state changes. ALWAYS include these for game conversations:
+   - "PROGRESS: XX" (0-100) - **REQUIRED for game tabs**: Estimate player's game completion percentage
+     * Consider: story chapter/act, areas unlocked, bosses defeated, main quest progress, abilities obtained
+     * Early game (tutorial, first area): 5-15%
+     * Early-mid game (first major boss, new mechanics): 15-30%
+     * Mid game (multiple areas explored): 30-50%
+     * Late-mid game (most content accessible): 50-75%
+     * Late game (final areas, optional content): 75-90%
+     * End game (final boss, post-game): 90-100%
    - "OBJECTIVE: current goal" - Player's current main objective or quest
    - "OBJECTIVE_COMPLETE: true" - When player completes an objective
    - "TRIUMPH: Boss Name" - When player defeats a major boss
    ${!conversation.isGameHub ? `
+   **⚠️ MANDATORY PROGRESS TRACKING - NEVER SKIP THIS:**
    Current game: ${conversation.gameTitle}
-   Current progress: ${conversation.gameProgress || 0}%
-   If the user discusses progress through the game, adjust the PROGRESS value accordingly.` : ''}
+   Current tracked progress: ${conversation.gameProgress || 0}%
+   
+   You MUST include "PROGRESS: XX" in stateUpdateTags for EVERY response.
+   Based on the user's message or screenshot, estimate progress:
+   - Beating/defeating something (boss, level, area) → increase progress
+   - Being stuck or just starting an area → estimate progress for that area
+   - Story events or cutscenes → estimate story progress
+   - Screenshots showing game location/state → estimate from visual cues
+   - Questions about late-game content → they're likely far in the game
+   
+   Example stateUpdateTags: ["PROGRESS: 35", "OBJECTIVE: Defeat Margit the Fell Omen"]
+   
+   For Elden Ring locations → progress estimates:
+   - Limgrave/Church of Elleh → 5-10%
+   - Stormveil Castle → 15-20%
+   - Liurnia/Raya Lucaria → 25-35%
+   - Altus Plateau/Leyndell → 45-55%
+   - Mountaintops → 65-75%
+   - Farum Azula → 80-85%
+   - Elden Throne → 90%+` : ''}
 4. **gamePillData** (object): ${conversation.isGameHub ? 'Set shouldCreate: true if user asks about a specific game, and include game details with pre-filled wikiContent' : 'Set shouldCreate: false (already in game tab)'}
 
 **CRITICAL**: Only include the content field in your response. DO NOT add "Internal Data Structure" or any JSON after your main content. The system will extract the structured fields automatically.

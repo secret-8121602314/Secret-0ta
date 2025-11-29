@@ -30,7 +30,12 @@ You MUST use the following tags to structure your response. Do not put them in a
   **Important**: Use the EXACT genre names listed above. Choose the MOST SPECIFIC genre that fits the game.
 - [OTAKON_GAME_STATUS: unreleased]: ONLY include this tag if the game is NOT YET RELEASED. Verify the release date before including this tag.
 - [OTAKON_IS_FULLSCREEN: true|false]: Whether the screenshot shows fullscreen gameplay (not menus, launchers, or non-game screens).
-- [OTAKON_PROGRESS: 0-100]: Estimate the player's progress through the game (0-100%). Base this on story progression, area unlocked, bosses defeated, or visible quest/chapter indicators. Update this EVERY response when you can infer progress.
+- [OTAKON_PROGRESS: 0-100]: **MANDATORY** - You MUST include this tag in EVERY response. Estimate the player's game completion percentage (0-100) based on:
+  * Screenshot clues: area/zone names, quest markers, boss names, UI indicators, map position
+  * Story position: prologue (5-15%), early game (15-35%), mid-game (35-60%), late game (60-85%), endgame (85-100%)
+  * Equipment/level: starter gear = early, upgraded = mid, legendary = late
+  * Character unlocks, ability trees, quest log state
+  * If uncertain, make your best estimate - any progress is better than 0
 - [OTAKON_OBJECTIVE: "Current objective description"]: The player's current main objective or goal based on the screenshot or conversation.
 - [OTAKON_TRIUMPH: {"type": "boss_defeated", "name": "Boss Name"}]: When analyzing a victory screen.
 - [OTAKON_OBJECTIVE_SET: {"description": "New objective"}]: When a new player objective is identified.
@@ -185,7 +190,26 @@ ${recentMessages}
 3. **IMPORTANT: Adapt your response style based on the Player Profile above.**
 4. If the query provides new information, update relevant subtabs using [OTAKON_SUBTAB_UPDATE: {"tab": "appropriate_tab", "content": "new info"}].
 5. If the query implies progress, identify new objectives using [OTAKON_OBJECTIVE_SET].
-6. **ALWAYS include [OTAKON_PROGRESS: X]** where X is your estimate of game progress (0-100%) based on: story chapter, area unlocked, bosses defeated, or quest completion mentioned.
+6. **⚠️ MANDATORY PROGRESS TRACKING - You MUST include [OTAKON_PROGRESS: X] at the END of every response:**
+   * Current stored progress: ${conversation.gameProgress || 0}%
+   * ALWAYS update based on what the player tells you or what you see in screenshots
+   * Use these estimates:
+     - Tutorial/beginning area → [OTAKON_PROGRESS: 5]
+     - First dungeon/boss → [OTAKON_PROGRESS: 15]
+     - Exploring early regions → [OTAKON_PROGRESS: 25]
+     - Mid-game content → [OTAKON_PROGRESS: 40]
+     - Late-game areas → [OTAKON_PROGRESS: 65]
+     - Final areas/boss → [OTAKON_PROGRESS: 85]
+     - Post-game → [OTAKON_PROGRESS: 95]
+   * For Elden Ring specifically:
+     - Limgrave → [OTAKON_PROGRESS: 10]
+     - Liurnia of the Lakes → [OTAKON_PROGRESS: 25]
+     - Raya Lucaria Academy → [OTAKON_PROGRESS: 30]
+     - Altus Plateau → [OTAKON_PROGRESS: 45]
+     - Leyndell → [OTAKON_PROGRESS: 55]
+     - Mountaintops of the Giants → [OTAKON_PROGRESS: 70]
+     - Crumbling Farum Azula → [OTAKON_PROGRESS: 80]
+     - Elden Throne → [OTAKON_PROGRESS: 90]
 7. **ALWAYS include [OTAKON_OBJECTIVE: "description"]** with the current main objective the player is working on.
 8. ${isActiveSession ? 'Provide concise, actionable advice for immediate use.' : 'Provide more detailed, strategic advice for planning.'}
 9. Generate three SPECIFIC follow-up prompts using [OTAKON_SUGGESTIONS] - these MUST relate to what you just discussed, not generic questions.
@@ -247,20 +271,26 @@ ${profileContext}
 
 **Task:**
 1. Analyze the screenshot to identify the game
-2. **CRITICAL TAG REQUIREMENTS - Include ALL of these tags:**
+2. **CRITICAL TAG REQUIREMENTS - Include ALL of these tags AT THE END OF YOUR RESPONSE:**
    - [OTAKON_GAME_ID: Full Game Name] - The complete, official name of the game
    - [OTAKON_CONFIDENCE: high|low] - Your confidence in the identification
    - [OTAKON_GENRE: Genre] - The primary genre (e.g., Action RPG, FPS, Strategy)
    - [OTAKON_IS_FULLSCREEN: true|false] - Is this fullscreen gameplay? (For informational purposes)
    - [OTAKON_GAME_STATUS: unreleased] - ONLY include this if the game is NOT YET RELEASED (verify release date!)
+   - **[OTAKON_PROGRESS: XX]** - ⚠️ MANDATORY: Estimate player's game completion percentage (0-100)
+   - [OTAKON_OBJECTIVE: "current goal"] - What the player appears to be doing
 3. Answer: "${userMessage}" with focus on game lore, significance, and useful context
 4. Provide 3 contextual suggestions using [OTAKON_SUGGESTIONS: ["suggestion1", "suggestion2", "suggestion3"]]
 
+**⚠️ PROGRESS TAG IS MANDATORY - NEVER SKIP THIS:**
+Every response MUST include [OTAKON_PROGRESS: XX] where XX is 0-100.
+Example: [OTAKON_PROGRESS: 35] for a player in early-mid game
+
 **Tag Usage Examples:**
-✅ Gameplay screenshot (CREATES TAB): [OTAKON_GAME_ID: Elden Ring] [OTAKON_CONFIDENCE: high] [OTAKON_GENRE: Action RPG] [OTAKON_IS_FULLSCREEN: true]
-✅ In-game inventory menu (CREATES TAB): [OTAKON_GAME_ID: Elden Ring] [OTAKON_CONFIDENCE: high] [OTAKON_GENRE: Action RPG] [OTAKON_IS_FULLSCREEN: true]
-✅ Main menu before starting (STAYS IN GAME HUB): [OTAKON_GAME_ID: Elden Ring] [OTAKON_CONFIDENCE: high] [OTAKON_GENRE: Action RPG] [OTAKON_IS_FULLSCREEN: false]
-✅ Unreleased game: [OTAKON_GAME_ID: GTA VI] [OTAKON_CONFIDENCE: high] [OTAKON_GENRE: Action Adventure] [OTAKON_IS_FULLSCREEN: true] [OTAKON_GAME_STATUS: unreleased]
+✅ Gameplay screenshot (CREATES TAB): [OTAKON_GAME_ID: Elden Ring] [OTAKON_CONFIDENCE: high] [OTAKON_GENRE: Action RPG] [OTAKON_IS_FULLSCREEN: true] [OTAKON_PROGRESS: 25]
+✅ In-game inventory menu (CREATES TAB): [OTAKON_GAME_ID: Elden Ring] [OTAKON_CONFIDENCE: high] [OTAKON_GENRE: Action RPG] [OTAKON_IS_FULLSCREEN: true] [OTAKON_PROGRESS: 40]
+✅ Main menu before starting (STAYS IN GAME HUB): [OTAKON_GAME_ID: Elden Ring] [OTAKON_CONFIDENCE: high] [OTAKON_GENRE: Action RPG] [OTAKON_IS_FULLSCREEN: false] [OTAKON_PROGRESS: 0]
+✅ Unreleased game: [OTAKON_GAME_ID: GTA VI] [OTAKON_CONFIDENCE: high] [OTAKON_GENRE: Action Adventure] [OTAKON_IS_FULLSCREEN: true] [OTAKON_GAME_STATUS: unreleased] [OTAKON_PROGRESS: 0]
 
 **IMPORTANT - Game Tab Creation:**
 - Screenshots showing ACTIVE GAMEPLAY or IN-GAME MENUS will create a dedicated game tab
@@ -327,11 +357,36 @@ After providing your response, if there's ANY ambiguity about the genre classifi
 - Only include this if the genre could reasonably fit multiple categories
 - Keep it brief and natural - don't add it for obvious genre matches like "Call of Duty = First-Person Shooter"
 
-**CRITICAL - Progress & Objective Tracking (ALWAYS include for screenshots):**
-- **[OTAKON_PROGRESS: X]** - Estimate game progress 0-100% based on visible indicators (story chapter, area, bosses, quest stage)
-- **[OTAKON_OBJECTIVE: "description"]** - What the player appears to be working on based on the screenshot
-- Look for: quest markers, objectives on screen, story indicators, area names, boss health bars
-- Example: Player at tutorial = [OTAKON_PROGRESS: 5], Mid-game area = [OTAKON_PROGRESS: 40-60], Final boss = [OTAKON_PROGRESS: 90]
+**ABSOLUTELY MANDATORY - Progress Tracking (EVERY response MUST include this):**
+YOU MUST include [OTAKON_PROGRESS: X] in your response. This is NON-NEGOTIABLE.
+
+**How to estimate progress from screenshots:**
+1. **Area/Location Analysis:**
+   - Recognize starting areas, tutorial zones → 5-15%
+   - Early game zones, first dungeons → 15-30%
+   - Mid-game regions, story progression → 30-60%
+   - Late-game areas, advanced zones → 60-85%
+   - Final dungeon, endgame content → 85-100%
+
+2. **Visual Cues to Look For:**
+   - HUD elements: quest trackers, chapter indicators, completion percentages
+   - Map position: how much of the world is unlocked/explored
+   - Equipment quality: starter/common gear (early) vs rare/legendary (late)
+   - Character level if visible
+   - Boss health bars, enemy types
+   - UI unlocks: more abilities = more progress
+
+3. **Game-Specific Estimation Examples:**
+   - Souls-like: Area name recognition (Limgrave=10%, Altus=40%, Mountaintops=70%, Elden Throne=90%)
+   - RPG: Chapter/Act numbers, party size, spell/skill count
+   - Open-world: Map fog percentage, waypoints unlocked
+   - Linear games: Level/mission number
+
+**OUTPUT FORMAT (include at END of response):**
+[OTAKON_PROGRESS: XX]
+[OTAKON_OBJECTIVE: "What player is currently doing"]
+
+**If you cannot determine exact progress, estimate based on visual complexity - NEVER leave progress at 0 if you can see gameplay.**
 
 **CRITICAL - Subtab Updates (Include when providing valuable info):**
 - Use **[OTAKON_SUBTAB_UPDATE: {"tab": "tab_name", "content": "content"}]** to save important info to subtabs
