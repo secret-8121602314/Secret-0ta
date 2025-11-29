@@ -610,12 +610,20 @@ class GameTabService {
 
   /**
    * Update a specific sub-tab content
+   * @param userTier - User's tier. If 'free', updates are skipped to preserve existing subtabs without changes.
    */
   async updateSubTabContent(
     conversationId: string, 
     subTabId: string, 
-    content: string
+    content: string,
+    userTier?: string
   ): Promise<void> {
+    // 🔒 TIER GATE: Free tier users keep existing subtabs but don't get updates
+    if (userTier === 'free') {
+      console.log('📝 [GameTabService] Skipping subtab update - free tier (subtabs are preserved but not updated)');
+      return;
+    }
+
     console.error('📝 [GameTabService] Updating sub-tab content:', { conversationId, subTabId });
 
     try {
@@ -694,11 +702,19 @@ class GameTabService {
   /**
    * Update subtabs from AI response (progressive updates)
    * This allows AI to update existing subtabs based on new information
+   * @param userTier - User's tier. If 'free', updates are skipped to preserve existing subtabs without changes.
    */
   async updateSubTabsFromAIResponse(
     conversationId: string,
-    updates: Array<{ tabId: string; title: string; content: string }>
+    updates: Array<{ tabId: string; title: string; content: string }>,
+    userTier?: string
   ): Promise<void> {
+    // 🔒 TIER GATE: Free tier users keep existing subtabs but don't get updates
+    if (userTier === 'free') {
+      console.log(`📝 [GameTabService] [${conversationId}] Skipping subtab update - free tier (subtabs are preserved but not updated)`);
+      return;
+    }
+
     console.error(`📝 [GameTabService] [${conversationId}] Updating subtabs from AI response:`, updates.length);
 
     try {
@@ -760,6 +776,101 @@ class GameTabService {
     } catch (error) {
       console.error(`📝 [GameTabService] [${conversationId}] ❌ Failed to update subtabs:`, error);
       throw error;
+    }
+  }
+
+  /**
+   * Generate subtabs for existing game tabs when user upgrades tier
+   * This is called when user goes from free to pro/trial
+   * Processes tabs one by one to avoid overwhelming the AI service
+   */
+  async generateSubtabsForExistingTabs(
+    userId: string,
+    onProgress?: (current: number, total: number, gameTitle: string) => void
+  ): Promise<{ success: number; failed: number }> {
+    console.log('🔄 [GameTabService] Generating subtabs for existing game tabs after tier upgrade');
+    
+    let success = 0;
+    let failed = 0;
+    
+    try {
+      // Get all conversations
+      const conversations = await ConversationService.getConversations(true);
+      
+      // Filter to game tabs that don't have subtabs (or have empty/missing subtabs)
+      const gameTabs = Object.values(conversations).filter(conv => {
+        // Must be a game tab (has gameTitle, not Game Hub, not unreleased)
+        const isGameTab = conv.gameTitle && !conv.isGameHub && !conv.isUnreleased;
+        // Must not already have subtabs
+        const hasNoSubtabs = !conv.subtabs || conv.subtabs.length === 0;
+        return isGameTab && hasNoSubtabs;
+      });
+      
+      if (gameTabs.length === 0) {
+        console.log('🔄 [GameTabService] No game tabs need subtab generation');
+        return { success: 0, failed: 0 };
+      }
+      
+      console.log(`🔄 [GameTabService] Found ${gameTabs.length} game tabs that need subtabs`);
+      
+      // Process one by one to avoid rate limiting
+      for (let i = 0; i < gameTabs.length; i++) {
+        const conv = gameTabs[i];
+        const gameTitle = conv.gameTitle || conv.title;
+        
+        // Report progress
+        onProgress?.(i + 1, gameTabs.length, gameTitle);
+        
+        try {
+          console.log(`🔄 [GameTabService] [${i + 1}/${gameTabs.length}] Generating subtabs for: ${gameTitle}`);
+          
+          // Get genre-based subtab configuration
+          const genre = conv.genre || 'Action RPG';
+          const tabConfig = insightTabsConfig[genre] || insightTabsConfig['Action RPG'];
+          
+          // Create subtabs with loading state
+          const subTabs: SubTab[] = tabConfig.map((tab, index) => ({
+            id: generateUUID(),
+            conversationId: conv.id,
+            title: tab.title,
+            type: tab.type,
+            content: 'Loading...',
+            isNew: false,
+            status: 'loading' as const,
+            orderIndex: index
+          }));
+          
+          // Save subtabs to database
+          await subtabsService.setSubtabs(conv.id, subTabs);
+          
+          // Update conversation with subtabs
+          await ConversationService.updateConversation(conv.id, {
+            subtabs: subTabs,
+            updatedAt: Date.now()
+          });
+          
+          // Generate insights in background (don't await to keep moving)
+          this.generateInitialInsights({ ...conv, subtabs: subTabs }).catch(error => {
+            console.error(`❌ [GameTabService] Failed to generate insights for ${gameTitle}:`, error);
+          });
+          
+          success++;
+          
+          // Small delay between tabs to avoid rate limiting
+          if (i < gameTabs.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        } catch (error) {
+          console.error(`❌ [GameTabService] Failed to create subtabs for ${gameTitle}:`, error);
+          failed++;
+        }
+      }
+      
+      console.log(`🔄 [GameTabService] Subtab generation complete: ${success} success, ${failed} failed`);
+      return { success, failed };
+    } catch (error) {
+      console.error('❌ [GameTabService] Error in generateSubtabsForExistingTabs:', error);
+      return { success, failed };
     }
   }
 }
