@@ -854,7 +854,8 @@ In addition to your regular response, provide structured data in the following o
                 },
                 stateUpdateTags: {
                   type: SchemaType.ARRAY,
-                  items: { type: SchemaType.STRING }
+                  items: { type: SchemaType.STRING },
+                  description: "MANDATORY: Array of state updates. MUST include 'PROGRESS: XX' (0-100) to track game completion percentage."
                 },
                 gamePillData: {
                   type: SchemaType.OBJECT,
@@ -869,7 +870,7 @@ In addition to your regular response, provide structured data in the following o
                   }
                 }
               },
-              required: ["content", "followUpPrompts"]
+              required: ["content", "followUpPrompts", "stateUpdateTags"]
             }
           }
         });
@@ -885,8 +886,24 @@ In addition to your regular response, provide structured data in the following o
         const structuredData = JSON.parse(rawResponse);
         
         // ? DEBUG: Log what Gemini actually returns
-        console.log('?? [AIService] Gemini response keys:', Object.keys(structuredData));
-                                // ? Clean content: Remove any JSON-like structured data from the main content
+        console.log('🤖 [AIService] Gemini response keys:', Object.keys(structuredData));
+        console.log('🤖 [AIService] stateUpdateTags:', structuredData.stateUpdateTags);
+        
+        // ✅ FALLBACK: If stateUpdateTags is empty/missing, try to extract progress from content
+        let stateUpdateTags = structuredData.stateUpdateTags || [];
+        if (!stateUpdateTags.length || !stateUpdateTags.some((tag: string) => tag.includes('PROGRESS'))) {
+          // Look for progress mentions in the content
+          const progressMatch = (structuredData.content || '').match(/(?:\[OTAKON_)?PROGRESS[:\s]+(\d+)/i);
+          if (progressMatch) {
+            const progress = parseInt(progressMatch[1], 10);
+            if (progress >= 0 && progress <= 100) {
+              console.log(`🤖 [AIService] Extracted fallback progress from content: ${progress}%`);
+              stateUpdateTags = [...stateUpdateTags, `PROGRESS: ${progress}`];
+            }
+          }
+        }
+        
+        // ? Clean content: Remove any JSON-like structured data from the main content
         let cleanContent = structuredData.content || '';
         
                 console.log('?? [AIService] Last 200 chars:', cleanContent.slice(-200));
@@ -1001,7 +1018,7 @@ In addition to your regular response, provide structured data in the following o
           // Enhanced fields
           followUpPrompts: structuredData.followUpPrompts,
           progressiveInsightUpdates: structuredData.progressiveInsightUpdates,
-          stateUpdateTags: structuredData.stateUpdateTags,
+          stateUpdateTags: stateUpdateTags,
           gamePillData
         };
         

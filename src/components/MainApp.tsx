@@ -1968,7 +1968,17 @@ const MainApp: React.FC<MainAppProps> = ({
       
       const processedSuggestions = suggestedPromptsService.processAISuggestions(suggestionsToUse);
       console.log('🔍 [MainApp] processedSuggestions (after processing):', processedSuggestions);
-            // Handle state update tags (game progress, objectives, etc.)
+      
+      // ✅ DEBUG: Log all response fields for progress tracking
+      console.log('📊 [MainApp] AI Response received:', {
+        hasStateUpdateTags: !!response.stateUpdateTags,
+        stateUpdateTags: response.stateUpdateTags,
+        hasOtakonTags: response.otakonTags?.size > 0,
+        otakonTagKeys: response.otakonTags ? Array.from(response.otakonTags.keys()) : [],
+        contentPreview: response.content?.substring(0, 200)
+      });
+      
+      // Handle state update tags (game progress, objectives, etc.)
       if (response.stateUpdateTags && response.stateUpdateTags.length > 0) {
         console.error('🎮 [MainApp] Processing state update tags:', response.stateUpdateTags);
         
