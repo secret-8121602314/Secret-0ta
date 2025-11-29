@@ -2801,6 +2801,7 @@ const MainApp: React.FC<MainAppProps> = ({
                   onMessageChange={handleInputMessageChange}
                   queuedImage={queuedScreenshot}
                   onImageQueued={handleScreenshotQueued}
+                  isSidebarOpen={sidebarOpen}
                 />
               </ErrorBoundary>
             </div>

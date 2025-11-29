@@ -53,6 +53,99 @@ const pendingRequests = new Map<string, Promise<IGDBGameData | null>>();
 const sessionCache = new Map<string, { data: IGDBGameData; timestamp: number }>();
 const SESSION_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
+// ✅ NEW: localStorage cache for persistence across refreshes
+const LOCALSTORAGE_CACHE_KEY = 'otagon_igdb_cache';
+const LOCALSTORAGE_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+const LOCALSTORAGE_COVER_CACHE_KEY = 'otagon_cover_urls';
+
+interface LocalStorageCache {
+  version: number;
+  timestamp: number;
+  games: { [key: string]: { data: IGDBGameData; timestamp: number } };
+}
+
+interface CoverUrlCache {
+  version: number;
+  timestamp: number;
+  urls: { [key: string]: string };
+}
+
+// Load localStorage cache into memory on startup
+function loadLocalStorageCache(): void {
+  try {
+    const cached = localStorage.getItem(LOCALSTORAGE_CACHE_KEY);
+    if (cached) {
+      const parsed: LocalStorageCache = JSON.parse(cached);
+      if (parsed.version === 1 && Date.now() - parsed.timestamp < LOCALSTORAGE_CACHE_TTL) {
+        // Load valid entries into session cache
+        for (const [key, value] of Object.entries(parsed.games)) {
+          if (Date.now() - value.timestamp < LOCALSTORAGE_CACHE_TTL) {
+            sessionCache.set(key, value);
+          }
+        }
+        console.log('[IGDBService] Loaded', sessionCache.size, 'games from localStorage cache');
+      }
+    }
+  } catch (error) {
+    console.warn('[IGDBService] Error loading localStorage cache:', error);
+  }
+}
+
+// Save session cache to localStorage
+function saveLocalStorageCache(): void {
+  try {
+    const games: { [key: string]: { data: IGDBGameData; timestamp: number } } = {};
+    sessionCache.forEach((value, key) => {
+      games[key] = value;
+    });
+    const cache: LocalStorageCache = {
+      version: 1,
+      timestamp: Date.now(),
+      games
+    };
+    localStorage.setItem(LOCALSTORAGE_CACHE_KEY, JSON.stringify(cache));
+  } catch (error) {
+    console.warn('[IGDBService] Error saving localStorage cache:', error);
+  }
+}
+
+// Load cover URL cache from localStorage
+function loadCoverUrlCache(): Map<string, string> {
+  try {
+    const cached = localStorage.getItem(LOCALSTORAGE_COVER_CACHE_KEY);
+    if (cached) {
+      const parsed: CoverUrlCache = JSON.parse(cached);
+      if (parsed.version === 1 && Date.now() - parsed.timestamp < LOCALSTORAGE_CACHE_TTL) {
+        console.log('[IGDBService] Loaded', Object.keys(parsed.urls).length, 'cover URLs from localStorage');
+        return new Map(Object.entries(parsed.urls));
+      }
+    }
+  } catch (error) {
+    console.warn('[IGDBService] Error loading cover URL cache:', error);
+  }
+  return new Map();
+}
+
+// Save cover URL cache to localStorage
+function saveCoverUrlCache(urls: Map<string, string>): void {
+  try {
+    const cache: CoverUrlCache = {
+      version: 1,
+      timestamp: Date.now(),
+      urls: Object.fromEntries(urls)
+    };
+    localStorage.setItem(LOCALSTORAGE_COVER_CACHE_KEY, JSON.stringify(cache));
+  } catch (error) {
+    console.warn('[IGDBService] Error saving cover URL cache:', error);
+  }
+}
+
+// Initialize localStorage cache on module load
+loadLocalStorageCache();
+
+// Persistent cover URL cache
+const coverUrlMemoryCache = loadCoverUrlCache();
+
 /**
  * Convert IGDB cover URL to a specific size
  * Size options: 't_thumb' (90x90), 't_cover_small' (90x128), 't_cover_big' (264x374), 't_720p', 't_1080p'
@@ -168,6 +261,9 @@ export async function fetchIGDBGameData(gameName: string): Promise<IGDBGameData 
       
       // Update session cache
       sessionCache.set(cacheKey, { data: gameData, timestamp: Date.now() });
+      
+      // ✅ NEW: Persist to localStorage for faster reload
+      saveLocalStorageCache();
       
       console.log('[IGDBService] Successfully fetched:', gameData.name, result.cached ? '(cached)' : '(fresh)');
       return gameData;
@@ -329,6 +425,7 @@ interface SupabaseError {
 
 /**
  * Fetch cover URLs for multiple games from IGDB cache in a single batch query
+ * Uses localStorage cache first for instant display, then updates from Supabase
  * Returns a map of game name (lowercase) -> cover URL
  */
 export async function fetchCoverUrlsFromCache(gameNames: string[]): Promise<Map<string, string>> {
@@ -338,15 +435,33 @@ export async function fetchCoverUrlsFromCache(gameNames: string[]): Promise<Map<
     return coverUrls;
   }
   
+  // Normalize game names for cache lookup
+  const normalizedNames = gameNames.map(name => name.toLowerCase().trim());
+  
+  // ✅ NEW: Check localStorage cache first for instant display
+  const missingFromLocalCache: string[] = [];
+  for (const name of normalizedNames) {
+    const cached = coverUrlMemoryCache.get(name);
+    if (cached) {
+      coverUrls.set(name, cached);
+    } else {
+      missingFromLocalCache.push(name);
+    }
+  }
+  
+  // If all found in local cache, return immediately
+  if (missingFromLocalCache.length === 0) {
+    console.log('[IGDBService] All cover URLs from localStorage cache:', coverUrls.size);
+    return coverUrls;
+  }
+  
+  // Fetch missing ones from Supabase in background
   try {
-    // Normalize game names for cache lookup
-    const normalizedNames = gameNames.map(name => name.toLowerCase().trim());
-    
     // Use type assertion since igdb_game_cache may not be in generated types
     const { data, error } = await (supabase
       .from('igdb_game_cache' as never)
       .select('game_name_key, game_data')
-      .in('game_name_key', normalizedNames)
+      .in('game_name_key', missingFromLocalCache)
       .gt('expires_at', new Date().toISOString()) as unknown as Promise<{ data: IGDBCacheRow[] | null; error: SupabaseError | null }>);
     
     if (error) {
@@ -361,12 +476,18 @@ export async function fetchCoverUrlsFromCache(gameNames: string[]): Promise<Map<
           const coverUrl = getCoverUrl(gameData.cover.url, 'cover_small');
           if (coverUrl) {
             coverUrls.set(row.game_name_key, coverUrl);
+            // ✅ NEW: Update memory cache
+            coverUrlMemoryCache.set(row.game_name_key, coverUrl);
           }
         }
       }
+      // ✅ NEW: Persist updated cache to localStorage
+      saveCoverUrlCache(coverUrlMemoryCache);
     }
     
-    console.log('[IGDBService] Fetched cover URLs from cache:', coverUrls.size, 'of', gameNames.length);
+    console.log('[IGDBService] Fetched cover URLs:', coverUrls.size, 'of', gameNames.length, 
+      '(', coverUrls.size - missingFromLocalCache.length + data?.length, 'from localStorage,', 
+      data?.length || 0, 'from Supabase)');
   } catch (error) {
     console.warn('[IGDBService] Error in fetchCoverUrlsFromCache:', error);
   }

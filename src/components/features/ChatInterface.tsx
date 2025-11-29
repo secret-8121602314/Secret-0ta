@@ -278,6 +278,7 @@ interface ChatInterfaceProps {
   onMessageChange?: (message: string) => void;
   queuedImage?: string | null; // ✅ NEW: For WebSocket screenshot in manual mode
   onImageQueued?: () => void; // ✅ NEW: Callback when image is accepted
+  isSidebarOpen?: boolean; // ✅ NEW: To close quick actions when sidebar opens
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -298,6 +299,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onMessageChange,
   queuedImage = null, // ✅ NEW: Receive queued image from WebSocket
   onImageQueued, // ✅ NEW: Callback when image is set
+  isSidebarOpen = false, // ✅ NEW: Close quick actions when sidebar opens
 }) => {
   const [message, setMessage] = useState(initialMessage);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -461,6 +463,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     // ✅ FIX: Removed imagePreview from dependencies to prevent infinite loop
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queuedImage, isManualUploadMode, onImageQueued]);
+
+  // ✅ NEW: Close quick actions when sidebar opens to prevent overlap
+  useEffect(() => {
+    if (isSidebarOpen && isQuickActionsExpanded) {
+      setIsQuickActionsExpanded(false);
+    }
+  }, [isSidebarOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
