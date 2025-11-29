@@ -366,7 +366,7 @@ html, body {
   @apply border-2 border-neutral-700/60;
   @apply bg-gradient-to-r from-neutral-800/15 to-neutral-700/15;
   @apply p-6 rounded-2xl rounded-bl-none;
-  @apply max-w-[80%] text-left;
+  @apply text-left;
   @apply backdrop-blur-sm shadow-lg;
   @apply mr-auto;
 }

@@ -54,6 +54,43 @@ const sessionCache = new Map<string, { data: IGDBGameData; timestamp: number }>(
 const SESSION_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
 /**
+ * Convert IGDB cover URL to a specific size
+ * Size options: 't_thumb' (90x90), 't_cover_small' (90x128), 't_cover_big' (264x374), 't_720p', 't_1080p'
+ */
+export function getCoverUrl(url: string | undefined, size: 'thumb' | 'cover_small' | 'cover_big' | '720p' | '1080p' = 'cover_small'): string | undefined {
+  if (!url) {
+    return undefined;
+  }
+  // IGDB URLs may come in different formats:
+  // - //images.igdb.com/igdb/image/upload/t_thumb/xxx.jpg (raw from IGDB)
+  // - https://images.igdb.com/igdb/image/upload/t_cover_big/xxx.jpg (already processed by edge function)
+  // We need to handle both cases
+  let processedUrl = url;
+  
+  // Replace any existing size with the new size
+  processedUrl = processedUrl.replace(/t_(thumb|cover_small|cover_big|720p|1080p|screenshot_huge)/g, `t_${size}`);
+  
+  // Ensure https:// prefix
+  if (processedUrl.startsWith('//')) {
+    processedUrl = 'https:' + processedUrl;
+  } else if (!processedUrl.startsWith('http')) {
+    processedUrl = 'https://' + processedUrl;
+  }
+  
+  return processedUrl;
+}
+
+/**
+ * Extract cover URL from IGDB game data with appropriate size for sidebar
+ */
+export function getSidebarCoverUrl(gameData: IGDBGameData | null): string | undefined {
+  if (!gameData?.cover?.url) {
+    return undefined;
+  }
+  return getCoverUrl(gameData.cover.url, 'cover_small');
+}
+
+/**
  * Fetch game data from IGDB via Edge Function
  * Uses caching at multiple levels:
  * 1. Session memory cache (30 min)
@@ -276,4 +313,63 @@ export function getPublishers(companies?: IGDBGameData['involved_companies']): s
  */
 export function getCombinedRating(gameData: IGDBGameData): number | null {
   return gameData.total_rating ?? gameData.aggregated_rating ?? gameData.rating ?? null;
+}
+
+// Interface for IGDB cache table rows
+interface IGDBCacheRow {
+  game_name_key: string;
+  game_data: IGDBGameData;
+}
+
+// Interface for Supabase error response
+interface SupabaseError {
+  message: string;
+  code?: string;
+}
+
+/**
+ * Fetch cover URLs for multiple games from IGDB cache in a single batch query
+ * Returns a map of game name (lowercase) -> cover URL
+ */
+export async function fetchCoverUrlsFromCache(gameNames: string[]): Promise<Map<string, string>> {
+  const coverUrls = new Map<string, string>();
+  
+  if (gameNames.length === 0) {
+    return coverUrls;
+  }
+  
+  try {
+    // Normalize game names for cache lookup
+    const normalizedNames = gameNames.map(name => name.toLowerCase().trim());
+    
+    // Use type assertion since igdb_game_cache may not be in generated types
+    const { data, error } = await (supabase
+      .from('igdb_game_cache' as never)
+      .select('game_name_key, game_data')
+      .in('game_name_key', normalizedNames)
+      .gt('expires_at', new Date().toISOString()) as unknown as Promise<{ data: IGDBCacheRow[] | null; error: SupabaseError | null }>);
+    
+    if (error) {
+      console.warn('[IGDBService] Error fetching cover URLs from cache:', error.message);
+      return coverUrls;
+    }
+    
+    if (data) {
+      for (const row of data) {
+        const gameData = row.game_data;
+        if (gameData?.cover?.url) {
+          const coverUrl = getCoverUrl(gameData.cover.url, 'cover_small');
+          if (coverUrl) {
+            coverUrls.set(row.game_name_key, coverUrl);
+          }
+        }
+      }
+    }
+    
+    console.log('[IGDBService] Fetched cover URLs from cache:', coverUrls.size, 'of', gameNames.length);
+  } catch (error) {
+    console.warn('[IGDBService] Error in fetchCoverUrlsFromCache:', error);
+  }
+  
+  return coverUrls;
 }

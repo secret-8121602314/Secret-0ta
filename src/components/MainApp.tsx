@@ -17,7 +17,7 @@ import { ttsService } from '../services/ttsService';
 import { toastService } from '../services/toastService';
 import { MessageRoutingService } from '../services/messageRoutingService';
 import { sessionService } from '../services/sessionService';
-import { fetchIGDBGameData, IGDBGameData } from '../services/igdbService';
+import { fetchIGDBGameData, IGDBGameData, getSidebarCoverUrl } from '../services/igdbService';
 import Sidebar from './layout/Sidebar';
 import ChatInterface from './features/ChatInterface';
 import SettingsModal from './modals/SettingsModal';
@@ -784,6 +784,19 @@ const MainApp: React.FC<MainAppProps> = ({
         setCurrentGameIGDBData(igdbData);
         if (igdbData) {
           console.log('✅ [MainApp] IGDB data loaded:', igdbData.name);
+          
+          // Update conversation with cover URL for sidebar display
+          const coverUrl = getSidebarCoverUrl(igdbData);
+          console.log('🖼️ [MainApp] Cover URL for sidebar:', coverUrl, 'Original:', igdbData.cover?.url);
+          if (coverUrl && activeConversation) {
+            const updatedConversations = { ...conversations };
+            updatedConversations[activeConversation.id] = {
+              ...activeConversation,
+              coverUrl
+            };
+            setConversations(updatedConversations);
+            console.log('🖼️ [MainApp] Updated conversation with coverUrl:', activeConversation.id);
+          }
         } else {
           console.log('ℹ️ [MainApp] No IGDB data found for:', gameTitle);
         }

@@ -3,6 +3,7 @@ import { cacheService } from './cacheService';
 import { chatMemoryService } from './chatMemoryService';
 import { SupabaseService } from './supabaseService';
 import { toastService } from './toastService';
+import { fetchCoverUrlsFromCache } from './igdbService';
 import { Conversations, Conversation, ChatMessage, UserTier } from '../types';
 import { STORAGE_KEYS, DEFAULT_CONVERSATION_TITLE, GAME_HUB_ID, USER_TIERS, FEATURE_FLAGS } from '../constants';
 
@@ -207,6 +208,29 @@ export class ConversationService {
         }, {} as Conversations);
         
         console.log('🔍 [ConversationService] Loaded', Object.keys(conversations).length, 'conversations from Supabase');
+        
+        // ✅ Fetch cover URLs from IGDB cache for game tabs
+        const gameConvs = Object.values(conversations).filter(
+          conv => (conv.gameTitle && !conv.isGameHub) || conv.isUnreleased
+        );
+        if (gameConvs.length > 0) {
+          const gameNames = gameConvs
+            .map(conv => conv.gameTitle || conv.title)
+            .filter((name): name is string => !!name);
+          
+          if (gameNames.length > 0) {
+            const coverUrls = await fetchCoverUrlsFromCache(gameNames);
+            
+            // Attach cover URLs to conversations
+            for (const conv of gameConvs) {
+              const gameName = (conv.gameTitle || conv.title)?.toLowerCase().trim();
+              if (gameName && coverUrls.has(gameName)) {
+                conversations[conv.id].coverUrl = coverUrls.get(gameName);
+              }
+            }
+            console.log('🔍 [ConversationService] Attached cover URLs to', coverUrls.size, 'game conversations');
+          }
+        }
         
         // 🔍 DEBUG: Check messages before caching
         const gameHubBeforeCache = conversations['game-hub'];

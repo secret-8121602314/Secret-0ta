@@ -223,7 +223,21 @@ const Sidebar: React.FC<SidebarProps> = ({
                     onTouchEnd={handleLongPressEnd}
                     style={{ zIndex: 1 }}
                   >
-                    <div className="flex items-center justify-between p-4 min-h-[60px]">
+                    <div className="flex p-3">
+                      {/* Cover Art Thumbnail for game/unreleased tabs */}
+                      {(isRegularGame || isUnreleased) && conversation.coverUrl && (
+                        <div className="flex-shrink-0 mr-3">
+                          <img
+                            src={conversation.coverUrl}
+                            alt={conversation.title}
+                            className="w-14 h-[80px] object-cover rounded shadow-md"
+                            loading="lazy"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2">
                           <p className={`text-xs font-medium truncate ${titleClass}`}>
@@ -240,30 +254,43 @@ const Sidebar: React.FC<SidebarProps> = ({
                             </svg>
                           )}
                         </div>
-                        <p className="text-xs text-text-muted mt-2">
+                        {/* Progress bar for games with progress > 0 */}
+                        {isRegularGame && conversation.gameProgress !== undefined && conversation.gameProgress > 0 && (
+                          <div className="mt-1.5 flex items-center gap-1.5">
+                            <div className="flex-1 h-1.5 bg-surface-light/30 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-gradient-to-r from-[#D98C1F] to-[#FFB366] rounded-full transition-all duration-300"
+                                style={{ width: `${Math.min(100, conversation.gameProgress)}%` }}
+                              />
+                            </div>
+                            <span className="text-[10px] text-[#D98C1F] font-medium min-w-[28px] text-right">
+                              {conversation.gameProgress}%
+                            </span>
+                          </div>
+                        )}
+                        <p className="text-xs text-text-muted mt-1.5">
                           {conversation.messages.filter(m => m.role === 'assistant').length} messages
                         </p>
-                        <p className="text-xs text-text-muted mt-1">
+                        <p className="text-xs text-text-muted mt-0.5">
                           {new Date(conversation.updatedAt).toLocaleDateString()}
                         </p>
+                      </div>
+                      {/* Delete button - only show for non-Game Hub conversations */}
+                      {!isGameHub && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteConversation(conversation.id);
+                          }}
+                          className="flex-shrink-0 opacity-0 group-hover:opacity-100 p-2 text-text-muted hover:text-red-400 transition-all duration-200 rounded-lg hover:bg-red-500/10 active:scale-95 ml-2"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      )}
                     </div>
-                    
-                    {/* Delete button - only show for non-Game Hub conversations */}
-                    {!isGameHub && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDeleteConversation(conversation.id);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 p-3 text-text-muted hover:text-red-400 transition-all duration-200 rounded-lg hover:bg-red-500/10 active:scale-95 min-h-[44px] min-w-[44px] flex items-center justify-center"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    )}
                   </div>
-                </div>
                 );
               })}
               

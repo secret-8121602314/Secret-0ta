@@ -58,16 +58,56 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
   conversationId,
   onDownloadImage
 }) => {
+  const [expandedImage, setExpandedImage] = useState<string | null>(null);
+  
   return (
-    <div 
-      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-      data-message-id={message.id}
-    >
-      <div
-        className={`max-w-[80%] ${
-          message.role === 'user'
-            ? 'chat-message-user'
-            : 'chat-message-ai'
+    <>
+      {/* Image Modal */}
+      {expandedImage && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          onClick={() => setExpandedImage(null)}
+        >
+          <div className="relative max-w-[90vw] max-h-[90vh]">
+            <button
+              onClick={() => setExpandedImage(null)}
+              className="absolute -top-3 -right-3 z-10 w-8 h-8 flex items-center justify-center bg-[#1C1C1C] border border-[#424242] rounded-full text-white hover:bg-[#2C2C2C] transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <img
+              src={expandedImage}
+              alt="Full size"
+              className="max-w-full max-h-[85vh] rounded-lg shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <div className="flex justify-center mt-3">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDownloadImage(expandedImage, 0);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-[#FF4D4D] text-white text-sm font-medium rounded-lg hover:bg-[#E53A3A] transition-colors"
+              >
+                <DownloadIcon className="w-4 h-4" />
+                Download
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <div 
+        className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+        data-message-id={message.id}
+      >
+        <div
+          className={`${
+            message.role === 'user'
+              ? 'max-w-[80%] chat-message-user'
+              : 'max-w-[95%] sm:max-w-[85%] chat-message-ai'
         }`}
       >
         <div className="flex items-start gap-3">
@@ -82,20 +122,32 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
           <div className="flex-1 min-w-0">
             {message.imageUrl && (
               <div className="chat-image-container mb-3">
-                <img
-                  src={message.imageUrl}
-                  alt="Uploaded"
-                  className="w-full max-w-sm rounded-lg"
-                />
-                {/* Download button for single image */}
-                <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-[#424242]/30">
+                <div 
+                  className="relative inline-block cursor-pointer group"
+                  onClick={() => setExpandedImage(message.imageUrl || null)}
+                >
+                  <img
+                    src={message.imageUrl}
+                    alt="Uploaded"
+                    className="w-64 h-48 sm:w-80 sm:h-60 object-cover rounded-lg border border-[#424242]/50 hover:border-[#FF4D4D]/50 transition-colors"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 rounded-lg transition-colors">
+                    <svg className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 mt-2">
+                  <p className="text-[10px] text-[#A3A3A3]">Click to view full size</p>
                   <button
-                    onClick={() => onDownloadImage(message.imageUrl || '', 0)}
-                    className="flex items-center justify-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 border border-[#FF4D4D] text-[#FF4D4D] text-xs sm:text-sm font-medium rounded-lg hover:bg-[#FF4D4D] hover:text-white transition-all duration-300 hover:scale-105"
-                    title="Download this screenshot"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDownloadImage(message.imageUrl || '', 0);
+                    }}
+                    className="flex items-center gap-1.5 px-2 py-1 text-[10px] text-[#FF4D4D] border border-[#FF4D4D]/50 rounded hover:bg-[#FF4D4D]/10 transition-colors"
                   >
-                    <DownloadIcon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                    <span className="hidden sm:inline">Download</span>
+                    <DownloadIcon className="w-3 h-3" />
+                    Download
                   </button>
                 </div>
               </div>
@@ -184,7 +236,8 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

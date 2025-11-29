@@ -148,7 +148,7 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
             <img
               src={currentGameData.cover.url}
               alt={currentGameData.name}
-              className="w-24 h-32 sm:w-32 sm:h-44 object-cover rounded-lg shadow-lg flex-shrink-0"
+              className="w-48 h-64 sm:w-64 sm:h-80 object-cover rounded-lg shadow-lg flex-shrink-0"
             />
           )}
           <div className="flex-1 min-w-0">

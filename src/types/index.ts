@@ -201,6 +201,7 @@ export interface Conversation {
   isUnreleased?: boolean; // True for unreleased/upcoming games - no Playing mode, no subtabs
   contextSummary?: string; // AI-generated summary of conversation history (max 500 words, text-only)
   lastSummarizedAt?: number; // Unix timestamp (ms) of when context_summary was last updated
+  coverUrl?: string; // IGDB cover art URL for sidebar display
 }
 
 export interface Conversations {
