@@ -915,6 +915,16 @@ const MainApp: React.FC<MainAppProps> = ({
       };
       setConversations(mergedConversations);
       setActiveConversation(mergedConversations[id]);
+      
+      // Auto-enable Playing mode ONLY when switching to a DIFFERENT game tab
+      // Don't reset session if staying on the same tab
+      const targetConv = mergedConversations[id];
+      const isCurrentTab = session.currentGameId === id;
+      if (!isCurrentTab && targetConv && gameTabService.isGameTab(targetConv) && !targetConv.isGameHub && !targetConv.isUnreleased) {
+        setActiveSession(id, true);
+      } else if (!isCurrentTab && (!targetConv || targetConv.isGameHub)) {
+        setActiveSession('', false);
+      }
     } else {
       // ✅ PERFORMANCE FIX: Update UI immediately without waiting for database sync
       console.error('🔄 [MainApp] ⚡ Instant UI update for conversation:', id);
@@ -922,6 +932,15 @@ const MainApp: React.FC<MainAppProps> = ({
       // Update local state first (instant UI feedback)
       setActiveConversation(targetConversation);
       setSidebarOpen(false);
+      
+      // ✅ Auto-enable Playing mode ONLY when switching to a DIFFERENT game tab
+      // Don't reset session if staying on the same tab (preserves user's toggle choice)
+      const isCurrentTab = session.currentGameId === id;
+      if (!isCurrentTab && gameTabService.isGameTab(targetConversation) && !targetConversation.isGameHub && !targetConversation.isUnreleased) {
+        setActiveSession(id, true);
+      } else if (!isCurrentTab && (!targetConversation || targetConversation.isGameHub)) {
+        setActiveSession('', false);
+      }
       
       // ✅ CRITICAL FIX: Save current conversations state to DB BEFORE switching
       // This ensures the new tab is persisted even if user switches quickly
@@ -1354,7 +1373,8 @@ const MainApp: React.FC<MainAppProps> = ({
     // Create summary of current session before switching
     if (wasPlaying) {
       // Switching from Playing to Planning - create playing session summary
-            try {
+      toastService.info('Generating session summary...');
+      try {
         const playingSummary = await sessionSummaryService.generatePlayingSessionSummary(activeConversation);
         await sessionSummaryService.storeSessionSummary(activeConversation.id, playingSummary);
         
@@ -1366,6 +1386,7 @@ const MainApp: React.FC<MainAppProps> = ({
           timestamp: Date.now(),
         };
         
+        // Update conversations state
         setConversations(prev => {
           const updated = { ...prev };
           if (updated[activeConversation.id]) {
@@ -1378,14 +1399,28 @@ const MainApp: React.FC<MainAppProps> = ({
           return updated;
         });
         
+        // Also update activeConversation to ensure UI updates immediately
+        setActiveConversation(prev => {
+          if (prev && prev.id === activeConversation.id) {
+            return {
+              ...prev,
+              messages: [...prev.messages, summaryMessage],
+              updatedAt: Date.now()
+            };
+          }
+          return prev;
+        });
+        
         await ConversationService.addMessage(activeConversation.id, summaryMessage);
+        toastService.success('Switched to Planning Mode 📋');
       } catch (error) {
         console.error('Failed to create playing session summary:', error);
         toastService.error('Failed to create session summary.');
       }
     } else if (willBePlaying) {
       // Switching from Planning to Playing - create planning session summary
-            try {
+      toastService.info('Generating session summary...');
+      try {
         const planningSummary = await sessionSummaryService.generatePlanningSessionSummary(activeConversation);
         await sessionSummaryService.storeSessionSummary(activeConversation.id, planningSummary);
         
@@ -1397,6 +1432,7 @@ const MainApp: React.FC<MainAppProps> = ({
           timestamp: Date.now(),
         };
         
+        // Update conversations state
         setConversations(prev => {
           const updated = { ...prev };
           if (updated[activeConversation.id]) {
@@ -1409,7 +1445,20 @@ const MainApp: React.FC<MainAppProps> = ({
           return updated;
         });
         
+        // Also update activeConversation to ensure UI updates immediately
+        setActiveConversation(prev => {
+          if (prev && prev.id === activeConversation.id) {
+            return {
+              ...prev,
+              messages: [...prev.messages, summaryMessage],
+              updatedAt: Date.now()
+            };
+          }
+          return prev;
+        });
+        
         await ConversationService.addMessage(activeConversation.id, summaryMessage);
+        toastService.success('Switched to Playing Mode 🎮');
       } catch (error) {
         console.error('Failed to create planning session summary:', error);
         toastService.error('Failed to create session summary.');
@@ -2657,18 +2706,18 @@ const MainApp: React.FC<MainAppProps> = ({
                 {currentGameIGDBData && (
                   <button
                     onClick={() => setGameInfoModalOpen(true)}
-                    className="hidden lg:flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-[#1C1C1C]/80 to-[#0A0A0A]/80 backdrop-blur-sm border border-[#424242]/40 rounded-lg hover:border-[#FF4D4D]/40 hover:from-[#1C1C1C] hover:to-[#0A0A0A] transition-all duration-200 group"
+                    className="hidden lg:flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-[#E53A3A]/10 to-[#FF6B6B]/5 backdrop-blur-sm border border-[#E53A3A]/30 rounded-lg hover:border-[#E53A3A]/60 hover:from-[#E53A3A]/15 hover:to-[#FF6B6B]/10 transition-all duration-200 group"
                     title="View game information"
                   >
                     <svg 
-                      className="w-4 h-4 text-[#A3A3A3] group-hover:text-[#FF4D4D] transition-colors" 
+                      className="w-4 h-4 text-[#E53A3A] group-hover:text-[#FF6B6B] transition-colors" 
                       fill="none" 
                       stroke="currentColor" 
                       viewBox="0 0 24 24"
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span className="text-xs font-medium text-[#A3A3A3] group-hover:text-[#F5F5F5] transition-colors">
+                    <span className="text-xs font-medium text-[#E53A3A] group-hover:text-[#FF6B6B] transition-colors">
                       Game Info
                     </span>
                   </button>
@@ -2700,11 +2749,11 @@ const MainApp: React.FC<MainAppProps> = ({
                 {!activeConversation.isGameHub && activeConversation.gameTitle && currentGameIGDBData && (
                   <button
                     onClick={() => setGameInfoModalOpen(true)}
-                    className="flex-shrink-0 p-3 bg-gradient-to-r from-surface/30 to-background/30 backdrop-blur-sm border border-surface-light/20 rounded-lg hover:border-[#FF4D4D]/40 transition-all duration-200"
+                    className="flex-shrink-0 p-3 bg-gradient-to-r from-[#E53A3A]/10 to-[#FF6B6B]/5 backdrop-blur-sm border border-[#E53A3A]/30 rounded-lg hover:border-[#E53A3A]/60 hover:from-[#E53A3A]/15 hover:to-[#FF6B6B]/10 transition-all duration-200 group"
                     title="View game information"
                   >
                     <svg 
-                      className="w-5 h-5 text-[#A3A3A3]" 
+                      className="w-5 h-5 text-[#E53A3A] group-hover:text-[#FF6B6B] transition-colors" 
                       fill="none" 
                       stroke="currentColor" 
                       viewBox="0 0 24 24"

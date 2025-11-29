@@ -5,7 +5,6 @@ import { Conversation, ActiveSessionState, ChatMessage } from '../../types';
 import ManualUploadToggle from '../ui/ManualUploadToggle';
 import ScreenshotButton from '../ui/ScreenshotButton';
 import DownloadIcon from '../ui/DownloadIcon';
-import UserAvatar from '../ui/UserAvatar';
 import AIAvatar from '../ui/AIAvatar';
 import TypingIndicator from '../ui/TypingIndicator';
 import SendIcon from '../ui/SendIcon';
@@ -72,14 +71,12 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
         }`}
       >
         <div className="flex items-start gap-3">
-          {/* Avatar */}
-          <div className="flex-shrink-0">
-            {message.role === 'user' ? (
-              <UserAvatar className="w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0 text-[#D98C1F]" />
-            ) : (
+          {/* Avatar - Only show for AI messages */}
+          {message.role === 'assistant' && (
+            <div className="flex-shrink-0">
               <AIAvatar className="w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0" />
-            )}
-          </div>
+            </div>
+          )}
           
           {/* Message content */}
           <div className="flex-1 min-w-0">

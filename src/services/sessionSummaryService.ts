@@ -36,7 +36,6 @@ ${objectives.length > 0 ? objectives.map(obj => `• ${obj}`).join('\n') : '• 
 **Recent Activity:**
 ${this.extractRecentActivity(recentMessages, 3)}
 
----
 *Switching to Planning Mode - Your progress has been saved.*`;
 
     return {
@@ -70,7 +69,6 @@ ${keyPoints.length > 0 ? keyPoints.map(point => `• ${point}`).join('\n') : '�
 ${objectives.length > 0 ? objectives.map(obj => `• ${obj}`).join('\n') : '• Continue exploration and progression'}
 
 ${strategicNotes ? `**Strategic Notes:**\n${strategicNotes}\n` : ''}
----
 *Switching to Playing Mode - Good luck with your session!*`;
 
     return {
