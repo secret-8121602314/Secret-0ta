@@ -163,8 +163,9 @@ const MainApp: React.FC<MainAppProps> = ({
   const lastRequestTimeRef = useRef<number>(0);
   const RATE_LIMIT_DELAY_MS = 500; // Minimum 500ms between requests (prevents duplicate clicks)
   
-  // ✅ Track previous tier for detecting upgrades
+  // ✅ TIER UPGRADE: Track previous tier to detect upgrades
   const previousTierRef = useRef<string | null>(null);
+  const [isGeneratingSubtabs, setIsGeneratingSubtabs] = useState(false);
   
   // ✅ PERFORMANCE: Memoize currentUser to prevent re-creating object on every render
   const currentUser = useMemo(() => user || { tier: 'free' } as User, [user]);
@@ -689,50 +690,97 @@ const MainApp: React.FC<MainAppProps> = ({
     return () => clearTimeout(timeout);
   }, [isInitializing, conversations, activeConversation]);
 
-  // ✅ NEW: Detect tier upgrades and generate subtabs for existing game tabs
+  // ✅ TIER UPGRADE: Detect tier changes and generate subtabs for existing game tabs
   useEffect(() => {
-    if (!currentUser || !currentUser.tier) return;
-    
-    const currentTier = currentUser.tier;
+    const currentTier = currentUser?.tier || 'free';
     const previousTier = previousTierRef.current;
     
-    // Update the ref for next comparison
+    // Update ref for next comparison
     previousTierRef.current = currentTier;
     
-    // Skip if this is the first load (no previous tier to compare)
-    if (previousTier === null) return;
+    // Skip on initial mount (no previous tier)
+    if (previousTier === null) {
+      console.log('🔄 [TierChange] Initial tier set:', currentTier);
+      return;
+    }
     
-    // Check if this is an upgrade from free to a paid tier
-    // Note: 'trial' is not a valid tier - when trial starts, tier becomes 'pro'
-    const wasFreeTier = previousTier === 'free';
-    const isNowPaidTier = currentTier === 'pro' || currentTier === 'vanguard_pro';
+    // Skip if tier hasn't changed
+    if (previousTier === currentTier) {
+      return;
+    }
     
-    if (wasFreeTier && isNowPaidTier) {
-      console.log(`🔄 [MainApp] Tier upgrade detected: ${previousTier} -> ${currentTier}`);
+    console.log('🔄 [TierChange] Tier changed from', previousTier, 'to', currentTier);
+    
+    // Check if upgrading from free to paid tier
+    const wasFree = previousTier === 'free';
+    const isPaidNow = currentTier === 'pro' || currentTier === 'vanguard_pro';
+    
+    if (wasFree && isPaidNow) {
+      console.log('🔄 [TierChange] User upgraded from free to', currentTier, '- generating subtabs for existing game tabs');
       
-      // Generate subtabs for existing game tabs
-      toastService.info('Generating game insights for your existing games...');
-      gameTabService.generateSubtabsForExistingTabs(
-        currentUser.authUserId,
-        (current, total, gameTitle) => {
-          console.log(`🔄 Processing ${current}/${total}: ${gameTitle}`);
+      // Show toast notification
+      toastService.show({
+        title: 'Upgrade Complete! 🎉',
+        message: 'Generating game insights for your existing games...',
+        type: 'success',
+        duration: 5000
+      });
+      
+      setIsGeneratingSubtabs(true);
+      
+      // Generate subtabs in background
+      gameTabService.generateSubtabsForExistingGameTabs(
+        conversations,
+        undefined, // playerProfile - could get from profileService if needed
+        (completed, total, currentGame) => {
+          console.log(`🔄 [TierChange] Progress: ${completed}/${total} - ${currentGame}`);
+          
+          // Show progress toast for each game
+          if (completed < total) {
+            toastService.show({
+              title: `Generating insights (${completed + 1}/${total})`,
+              message: `Processing: ${currentGame}`,
+              type: 'info',
+              duration: 2000
+            });
+          } else {
+            toastService.show({
+              title: 'All insights generated! ✨',
+              message: `Created insights for ${total} games`,
+              type: 'success',
+              duration: 4000
+            });
+            setIsGeneratingSubtabs(false);
+            
+            // Refresh conversations to get the updated subtabs
+            ConversationService.getConversations(true).then(updatedConvs => {
+              setConversations(updatedConvs);
+            }).catch(err => {
+              console.error('Failed to refresh conversations:', err);
+            });
+          }
         }
-      ).then(({ success, failed }) => {
-        if (success > 0) {
-          toastService.success(`Generated insights for ${success} game${success > 1 ? 's' : ''}!`);
-          // Refresh conversations to show new subtabs
-          ConversationService.getConversations(true).then(convs => {
-            setConversations(convs);
-          });
-        }
-        if (failed > 0) {
-          console.warn(`Failed to generate insights for ${failed} games`);
-        }
-      }).catch(error => {
-        console.error('Error generating subtabs after tier upgrade:', error);
+      ).catch(error => {
+        console.error('🔄 [TierChange] Failed to generate subtabs:', error);
+        setIsGeneratingSubtabs(false);
+        toastService.show({
+          title: 'Error generating insights',
+          message: 'Some game insights may not have been created',
+          type: 'error',
+          duration: 4000
+        });
+      });
+    } else if (!wasFree && currentTier === 'free') {
+      // Downgrading to free - just log, subtabs are preserved but won't update
+      console.log('🔄 [TierChange] User downgraded to free tier - subtabs preserved but will not update');
+      toastService.show({
+        title: 'Subscription ended',
+        message: 'Your game insights are preserved but won\'t update until you resubscribe',
+        type: 'info',
+        duration: 5000
       });
     }
-  }, [currentUser?.tier, currentUser?.authUserId]);
+  }, [currentUser?.tier, conversations]);
 
   // ✅ PHASE 2 FIX: Real-time subscription for subtab updates
   useEffect(() => {
@@ -2161,8 +2209,7 @@ const MainApp: React.FC<MainAppProps> = ({
                 // Update subtabs in background (non-blocking)
         gameTabService.updateSubTabsFromAIResponse(
           activeConversation.id,
-          response.progressiveInsightUpdates,
-          user?.tier  // 🔒 Pass user tier for tier-gating (free tier skips updates)
+          response.progressiveInsightUpdates
         ).then(() => {
                     // Refresh conversations to show updated subtabs
           ConversationService.getConversations().then(updatedConversations => {
@@ -2216,7 +2263,7 @@ const MainApp: React.FC<MainAppProps> = ({
             .filter(Boolean) as Array<{tabId: string; title: string; content: string}>;
           
           if (mappedUpdates.length > 0) {
-            gameTabService.updateSubTabsFromAIResponse(activeConversation.id, mappedUpdates, user?.tier)
+            gameTabService.updateSubTabsFromAIResponse(activeConversation.id, mappedUpdates)
               .then(() => {
                 console.log(`📝 [MainApp] Successfully updated ${mappedUpdates.length} subtabs`);
                 ConversationService.getConversations().then(updatedConversations => {
@@ -2247,8 +2294,7 @@ const MainApp: React.FC<MainAppProps> = ({
               if (parsed.id && parsed.content) {
                 gameTabService.updateSubTabsFromAIResponse(
                   activeConversation.id,
-                  [{ tabId: parsed.id, title: '', content: parsed.content }],
-                  user?.tier  // 🔒 Pass user tier for tier-gating
+                  [{ tabId: parsed.id, title: '', content: parsed.content }]
                 ).then(() => {
                                     // Refresh UI
                   ConversationService.getConversations().then(updatedConversations => {
@@ -2276,8 +2322,7 @@ const MainApp: React.FC<MainAppProps> = ({
               if (parsed.id && (parsed.title || parsed.content)) {
                 gameTabService.updateSubTabsFromAIResponse(
                   activeConversation.id,
-                  [{ tabId: parsed.id, title: parsed.title || '', content: parsed.content || '' }],
-                  user?.tier  // 🔒 Pass user tier for tier-gating
+                  [{ tabId: parsed.id, title: parsed.title || '', content: parsed.content || '' }]
                 ).then(() => {
                                     // Refresh UI
                   ConversationService.getConversations().then(updatedConversations => {
@@ -2926,28 +2971,6 @@ const MainApp: React.FC<MainAppProps> = ({
           const refreshedUser = authService.getCurrentUser();
           if (refreshedUser) {
             setUser(refreshedUser);
-            
-            // ✅ Generate subtabs for existing game tabs after tier upgrade
-            toastService.info('Generating game insights for your existing games...');
-            gameTabService.generateSubtabsForExistingTabs(
-              refreshedUser.authUserId,
-              (current, total, gameTitle) => {
-                console.log(`🔄 Processing ${current}/${total}: ${gameTitle}`);
-              }
-            ).then(({ success, failed }) => {
-              if (success > 0) {
-                toastService.success(`Generated insights for ${success} game${success > 1 ? 's' : ''}!`);
-                // Refresh conversations to show new subtabs
-                ConversationService.getConversations(true).then(convs => {
-                  setConversations(convs);
-                });
-              }
-              if (failed > 0) {
-                console.warn(`Failed to generate insights for ${failed} games`);
-              }
-            }).catch(error => {
-              console.error('Error generating subtabs after tier upgrade:', error);
-            });
           }
         }}
         onUpgradeClick={() => {
