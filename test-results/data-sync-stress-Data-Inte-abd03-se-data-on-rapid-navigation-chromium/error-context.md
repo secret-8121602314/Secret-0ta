@@ -1,0 +1,86 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - generic [ref=e5]:
+    - heading "Conversations" [level=2] [ref=e8]
+    - button "Add Game" [ref=e10] [cursor=pointer]:
+      - img [ref=e11]
+      - generic [ref=e13]: Add Game
+    - generic [ref=e18] [cursor=pointer]:
+      - paragraph [ref=e20]: Game Hub
+      - paragraph [ref=e21]: 2 messages
+      - paragraph [ref=e22]: 11/28/2025
+  - generic [ref=e23]:
+    - banner [ref=e24]:
+      - img "Otagon Logo" [ref=e26]
+      - generic [ref=e27]:
+        - button "View query credits" [ref=e30] [cursor=pointer]:
+          - img [ref=e32]
+        - button "Connect to PC" [ref=e35] [cursor=pointer]:
+          - img [ref=e36]
+        - button [ref=e38] [cursor=pointer]:
+          - img [ref=e39]
+    - generic [ref=e42]:
+      - generic [ref=e46]:
+        - generic [ref=e47]:
+          - img [ref=e49]
+          - generic [ref=e51]:
+            - heading "Personalize Your Experience" [level=3] [ref=e52]
+            - paragraph [ref=e53]: Set up your gaming preferences for better AI responses
+        - generic [ref=e54]:
+          - button "Set Up" [ref=e55] [cursor=pointer]
+          - button "Dismiss banner" [ref=e56] [cursor=pointer]:
+            - img [ref=e57]
+      - insertion [ref=e62]
+      - generic [ref=e64]:
+        - generic [ref=e65]:
+          - generic [ref=e68]:
+            - img "User Avatar" [ref=e70]
+            - generic [ref=e72]:
+              - paragraph [ref=e74]: I'm playing Rapid Nav Test. Tell me about this game
+              - paragraph [ref=e75]: 11:22:45 PM
+          - generic [ref=e78]:
+            - img "AI Avatar" [ref=e80]
+            - generic [ref=e81]:
+              - paragraph [ref=e83]: AI service is temporarily unavailable. Please try again later.
+              - generic [ref=e86]:
+                - button "What's the latest gaming news?" [ref=e87] [cursor=pointer]:
+                  - paragraph [ref=e89]: What's the latest gaming news?
+                - button "Which games are releasing soon?" [ref=e90] [cursor=pointer]:
+                  - paragraph [ref=e92]: Which games are releasing soon?
+                - button "What are the latest game reviews?" [ref=e93] [cursor=pointer]:
+                  - paragraph [ref=e95]: What are the latest game reviews?
+                - button "Show me the hottest new game trailers." [ref=e96] [cursor=pointer]:
+                  - paragraph [ref=e98]: Show me the hottest new game trailers.
+              - paragraph [ref=e99]: 11:22:51 PM
+          - generic [ref=e102]:
+            - img "User Avatar" [ref=e104]
+            - generic [ref=e106]:
+              - paragraph [ref=e108]: Test message for rapid nav
+              - paragraph [ref=e109]: 11:22:54 PM
+          - generic [ref=e112]:
+            - img "AI Avatar" [ref=e114]
+            - generic [ref=e115]:
+              - paragraph [ref=e117]: AI service is temporarily unavailable. Please try again later.
+              - generic [ref=e120]:
+                - button "What's the latest gaming news?" [ref=e121] [cursor=pointer]:
+                  - paragraph [ref=e123]: What's the latest gaming news?
+                - button "Which games are releasing soon?" [ref=e124] [cursor=pointer]:
+                  - paragraph [ref=e126]: Which games are releasing soon?
+                - button "What are the latest game reviews?" [ref=e127] [cursor=pointer]:
+                  - paragraph [ref=e129]: What are the latest game reviews?
+                - button "Show me the hottest new game trailers." [ref=e130] [cursor=pointer]:
+                  - paragraph [ref=e132]: Show me the hottest new game trailers.
+              - paragraph [ref=e133]: 11:23:00 PM
+        - button "Latest Gaming News" [ref=e135] [cursor=pointer]:
+          - generic [ref=e136]: Latest Gaming News
+          - img [ref=e137]
+        - generic [ref=e141]:
+          - textbox "Type your message..." [ref=e143]
+          - generic [ref=e144]:
+            - button [ref=e146] [cursor=pointer]:
+              - img [ref=e147]
+            - button "Send message" [disabled] [ref=e149]:
+              - img [ref=e150]
+```

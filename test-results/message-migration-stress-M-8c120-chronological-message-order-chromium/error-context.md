@@ -1,0 +1,88 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - generic [ref=e5]:
+    - heading "Conversations" [level=2] [ref=e8]
+    - button "Add Game" [ref=e10] [cursor=pointer]:
+      - img [ref=e11]
+      - generic [ref=e13]: Add Game
+    - generic [ref=e18] [cursor=pointer]:
+      - paragraph [ref=e20]: Game Hub
+      - paragraph [ref=e21]: 4 messages
+      - paragraph [ref=e22]: 11/28/2025
+  - generic [ref=e23]:
+    - banner [ref=e24]:
+      - img "Otagon Logo" [ref=e26]
+      - generic [ref=e27]:
+        - button "View query credits" [ref=e30] [cursor=pointer]:
+          - img [ref=e32]
+        - button "Connect to PC" [ref=e35] [cursor=pointer]:
+          - img [ref=e36]
+        - button [ref=e38] [cursor=pointer]:
+          - img [ref=e39]
+    - generic [ref=e42]:
+      - generic [ref=e46]:
+        - generic [ref=e47]:
+          - img [ref=e49]
+          - generic [ref=e51]:
+            - heading "Personalize Your Experience" [level=3] [ref=e52]
+            - paragraph [ref=e53]: Set up your gaming preferences for better AI responses
+        - generic [ref=e54]:
+          - button "Set Up" [ref=e55] [cursor=pointer]
+          - button "Dismiss banner" [ref=e56] [cursor=pointer]:
+            - img [ref=e57]
+      - insertion [ref=e62]
+      - generic [ref=e64]:
+        - generic [ref=e65]:
+          - generic [ref=e68]:
+            - img "User Avatar" [ref=e70]
+            - generic [ref=e72]:
+              - paragraph [ref=e74]: I'm playing Message Order Test. Tell me about this game
+              - paragraph [ref=e75]: 11:30:31 PM
+          - generic [ref=e78]:
+            - img "AI Avatar" [ref=e80]
+            - generic [ref=e81]:
+              - paragraph [ref=e83]: AI service is temporarily unavailable. Please try again later.
+              - paragraph [ref=e84]: 11:30:37 PM
+          - generic [ref=e87]:
+            - img "User Avatar" [ref=e89]
+            - generic [ref=e91]:
+              - paragraph [ref=e93]: Message number 1
+              - paragraph [ref=e94]: 11:30:41 PM
+          - generic [ref=e97]:
+            - img "User Avatar" [ref=e99]
+            - generic [ref=e101]:
+              - paragraph [ref=e103]: Message number 2
+              - paragraph [ref=e104]: 11:30:43 PM
+          - generic [ref=e107]:
+            - img "AI Avatar" [ref=e109]
+            - generic [ref=e110]:
+              - paragraph [ref=e112]: AI service is temporarily unavailable. Please try again later.
+              - paragraph [ref=e113]: 11:30:47 PM
+          - generic [ref=e116]:
+            - img "AI Avatar" [ref=e118]
+            - generic [ref=e119]:
+              - paragraph [ref=e121]: AI service is temporarily unavailable. Please try again later.
+              - paragraph [ref=e122]: 11:30:49 PM
+          - generic [ref=e125]:
+            - img "User Avatar" [ref=e127]
+            - generic [ref=e129]:
+              - paragraph [ref=e131]: Message number 3
+              - paragraph [ref=e132]: 11:30:51 PM
+          - generic [ref=e135]:
+            - img "AI Avatar" [ref=e137]
+            - generic [ref=e138]:
+              - paragraph [ref=e140]: AI service is temporarily unavailable. Please try again later.
+              - paragraph [ref=e141]: 11:30:58 PM
+        - button "Latest Gaming News" [ref=e143] [cursor=pointer]:
+          - generic [ref=e144]: Latest Gaming News
+          - img [ref=e145]
+        - generic [ref=e149]:
+          - textbox "Type your message..." [ref=e151]
+          - generic [ref=e152]:
+            - button [ref=e154] [cursor=pointer]:
+              - img [ref=e155]
+            - button "Send message" [disabled] [ref=e157]:
+              - img [ref=e158]
+```

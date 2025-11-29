@@ -659,7 +659,15 @@ In addition to your regular response, provide structured data in the following o
    - Example: If you explained a game's story, ask about specific characters or plot points from that game
    - DO NOT use generic gaming questions - tie them to what you just said`}
 2. **progressiveInsightUpdates** (array): If conversation provides new info, update existing subtabs (e.g., story_so_far, characters)
-3. **stateUpdateTags** (array): Detect game events (e.g., "OBJECTIVE_COMPLETE: true", "TRIUMPH: Boss Name")
+3. **stateUpdateTags** (array): Track game state changes. Include these when applicable:
+   - "PROGRESS: XX" (0-100) - Estimate player's game completion percentage based on areas explored, bosses defeated, story progress
+   - "OBJECTIVE: current goal" - Player's current main objective or quest
+   - "OBJECTIVE_COMPLETE: true" - When player completes an objective
+   - "TRIUMPH: Boss Name" - When player defeats a major boss
+   ${!conversation.isGameHub ? `
+   Current game: ${conversation.gameTitle}
+   Current progress: ${conversation.gameProgress || 0}%
+   If the user discusses progress through the game, adjust the PROGRESS value accordingly.` : ''}
 4. **gamePillData** (object): ${conversation.isGameHub ? 'Set shouldCreate: true if user asks about a specific game, and include game details with pre-filled wikiContent' : 'Set shouldCreate: false (already in game tab)'}
 
 **CRITICAL**: Only include the content field in your response. DO NOT add "Internal Data Structure" or any JSON after your main content. The system will extract the structured fields automatically.
@@ -895,6 +903,13 @@ In addition to your regular response, provide structured data in the following o
           // ? Fix malformed bold markers (spaces between ** and text)
           .replace(/\*\*\s+([^*]+?)\s+\*\*/g, '**$1**') // Fix ** text ** ? **text**
           .replace(/\*\*\s+([^*]+?):/g, '**$1:**') // Fix ** Header: ? **Header:**
+          // ? CRITICAL: Add line breaks BEFORE section headers that follow text directly (no preceding newline)
+          // This fixes: "...some text.Hint:" -> "...some text.\n\n**Hint:**"
+          .replace(/([.!?])(\s*)Hint:/gi, '$1\n\n**Hint:**')
+          .replace(/([.!?])(\s*)Lore:/gi, '$1\n\n**Lore:**')
+          .replace(/([.!?])(\s*)Places of Interest:/gi, '$1\n\n**Places of Interest:**')
+          .replace(/([.!?])(\s*)Strategy:/gi, '$1\n\n**Strategy:**')
+          .replace(/([.!?])(\s*)What to focus on:/gi, '$1\n\n**What to focus on:**')
           // ? Format section headers with proper spacing and bold
           // First, ensure headers are properly closed with ** and add line breaks (handles trailing space)
           .replace(/\*\*Hint:\*\*\s*/gi, '**Hint:**\n') // Add line break after Hint

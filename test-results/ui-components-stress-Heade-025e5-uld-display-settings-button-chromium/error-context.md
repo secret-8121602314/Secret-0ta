@@ -1,0 +1,69 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - generic [ref=e5]:
+    - heading "Conversations" [level=2] [ref=e8]
+    - button "Add Game" [ref=e10] [cursor=pointer]:
+      - img [ref=e11]
+      - generic [ref=e13]: Add Game
+    - generic [ref=e18] [cursor=pointer]:
+      - paragraph [ref=e20]: Game Hub
+      - paragraph [ref=e21]: 0 messages
+      - paragraph [ref=e22]: 11/28/2025
+  - generic [ref=e23]:
+    - banner [ref=e24]:
+      - img "Otagon Logo" [ref=e26]
+      - generic [ref=e27]:
+        - button "View query credits" [ref=e30] [cursor=pointer]:
+          - img [ref=e32]
+        - button "Connect to PC" [ref=e35] [cursor=pointer]:
+          - img [ref=e36]
+        - button [ref=e38] [cursor=pointer]:
+          - img [ref=e39]
+    - generic [ref=e42]:
+      - generic [ref=e46]:
+        - generic [ref=e47]:
+          - img [ref=e49]
+          - generic [ref=e51]:
+            - heading "Personalize Your Experience" [level=3] [ref=e52]
+            - paragraph [ref=e53]: Set up your gaming preferences for better AI responses
+        - generic [ref=e54]:
+          - button "Set Up" [ref=e55] [cursor=pointer]
+          - button "Dismiss banner" [ref=e56] [cursor=pointer]:
+            - img [ref=e57]
+      - insertion [ref=e62]
+      - generic [ref=e64]:
+        - generic [ref=e67]:
+          - img "Otagon Mascot" [ref=e68]
+          - paragraph [ref=e69]: Start a conversation with Otagon
+          - paragraph [ref=e70]: Ask me anything about gaming, strategies, or tips. You can also start uploading gameplay screenshots for help!
+        - generic [ref=e71]:
+          - button "Latest Gaming News" [ref=e72] [cursor=pointer]:
+            - generic [ref=e73]: Latest Gaming News
+            - img [ref=e74]
+          - generic [ref=e77]:
+            - button "✕ What's the latest gaming news?" [ref=e78] [cursor=pointer]:
+              - generic [ref=e80]:
+                - generic [ref=e81]: ✕
+                - generic [ref=e82]: What's the latest gaming news?
+            - button "■ Which games are releasing soon?" [ref=e83] [cursor=pointer]:
+              - generic [ref=e85]:
+                - generic [ref=e86]: ■
+                - generic [ref=e87]: Which games are releasing soon?
+            - button "▲ What are the latest game reviews?" [ref=e88] [cursor=pointer]:
+              - generic [ref=e90]:
+                - generic [ref=e91]: ▲
+                - generic [ref=e92]: What are the latest game reviews?
+            - button "◯ Show me the hottest new game trailers." [ref=e93] [cursor=pointer]:
+              - generic [ref=e95]:
+                - generic [ref=e96]: ◯
+                - generic [ref=e97]: Show me the hottest new game trailers.
+        - generic [ref=e100]:
+          - textbox "Type your message..." [ref=e102]
+          - generic [ref=e103]:
+            - button [ref=e105] [cursor=pointer]:
+              - img [ref=e106]
+            - button "Send message" [disabled] [ref=e108]:
+              - img [ref=e109]
+```

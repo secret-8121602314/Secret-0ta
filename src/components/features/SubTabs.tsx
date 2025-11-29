@@ -3,6 +3,65 @@ import { SubTab } from '../../types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+// Type-based styling configuration for each subtab type
+const subtabStyles: Record<string, { accent: string; accentHover: string; bgTint: string; borderTint: string; icon: string }> = {
+  story: {
+    accent: '#A855F7',      // Purple - narrative/lore
+    accentHover: '#C084FC',
+    bgTint: 'rgba(168, 85, 247, 0.05)',
+    borderTint: 'rgba(168, 85, 247, 0.2)',
+    icon: '📖'
+  },
+  strategies: {
+    accent: '#3B82F6',      // Blue - tactical/planning
+    accentHover: '#60A5FA',
+    bgTint: 'rgba(59, 130, 246, 0.05)',
+    borderTint: 'rgba(59, 130, 246, 0.2)',
+    icon: '🎯'
+  },
+  tips: {
+    accent: '#22C55E',      // Green - helpful hints
+    accentHover: '#4ADE80',
+    bgTint: 'rgba(34, 197, 94, 0.05)',
+    borderTint: 'rgba(34, 197, 94, 0.2)',
+    icon: '💡'
+  },
+  walkthrough: {
+    accent: '#F97316',      // Orange - step-by-step guides
+    accentHover: '#FB923C',
+    bgTint: 'rgba(249, 115, 22, 0.05)',
+    borderTint: 'rgba(249, 115, 22, 0.2)',
+    icon: '🗺️'
+  },
+  items: {
+    accent: '#EAB308',      // Yellow - collectibles/items
+    accentHover: '#FACC15',
+    bgTint: 'rgba(234, 179, 8, 0.05)',
+    borderTint: 'rgba(234, 179, 8, 0.2)',
+    icon: '🎒'
+  },
+  characters: {
+    accent: '#EF4444',      // Red - characters/NPCs
+    accentHover: '#F87171',
+    bgTint: 'rgba(239, 68, 68, 0.05)',
+    borderTint: 'rgba(239, 68, 68, 0.2)',
+    icon: '👤'
+  },
+  chat: {
+    accent: '#6B7280',      // Gray - general chat
+    accentHover: '#9CA3AF',
+    bgTint: 'rgba(107, 114, 128, 0.05)',
+    borderTint: 'rgba(107, 114, 128, 0.2)',
+    icon: '💬'
+  }
+};
+
+// Helper to get subtab style, with fallback
+const getSubtabStyle = (tabType: string | undefined) => {
+  const type = tabType?.toLowerCase() || 'chat';
+  return subtabStyles[type] || subtabStyles.chat;
+};
+
 interface SubTabsProps {
   subtabs: SubTab[];
   activeTabId?: string;
@@ -159,13 +218,22 @@ const SubTabs: React.FC<SubTabsProps> = ({
             </div>
           </div>
 
-          {/* Tab Content */}
+          {/* Tab Content - Type-based styling */}
           {activeTab && (
-            <div className="p-4 max-h-64 overflow-y-auto transition-all duration-300">
+            <div 
+              className="p-4 max-h-64 overflow-y-auto transition-all duration-300 rounded-b-xl"
+              style={{
+                backgroundColor: getSubtabStyle(activeTab.type).bgTint,
+                borderTop: `1px solid ${getSubtabStyle(activeTab.type).borderTint}`
+              }}
+            >
               {activeTab.status === 'loading' || (!activeTab.content && isLoading) ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="flex items-center gap-3 text-[#A3A3A3]">
-                    <div className="w-5 h-5 border-2 border-[#FF4D4D] border-t-transparent rounded-full animate-spin" />
+                    <div 
+                      className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin"
+                      style={{ borderColor: getSubtabStyle(activeTab.type).accent, borderTopColor: 'transparent' }}
+                    />
                     <span>Loading {activeTab.title}...</span>
                   </div>
                 </div>
@@ -208,7 +276,13 @@ const SubTabs: React.FC<SubTabsProps> = ({
                         <em className="italic text-[#E0E0E0]">{children}</em>
                       ),
                       code: ({ children }) => (
-                        <code className="bg-[#2E2E2E] text-[#FF4D4D] px-1 py-0.5 rounded text-xs font-mono">
+                        <code 
+                          className="px-1 py-0.5 rounded text-xs font-mono"
+                          style={{ 
+                            backgroundColor: '#2E2E2E', 
+                            color: getSubtabStyle(activeTab.type).accent 
+                          }}
+                        >
                           {children}
                         </code>
                       ),
@@ -218,7 +292,10 @@ const SubTabs: React.FC<SubTabsProps> = ({
                         </pre>
                       ),
                       blockquote: ({ children }) => (
-                        <blockquote className="border-l-4 border-[#FF4D4D] pl-4 italic text-[#B0B0B0] my-2">
+                        <blockquote 
+                          className="pl-4 italic text-[#B0B0B0] my-2"
+                          style={{ borderLeft: `4px solid ${getSubtabStyle(activeTab.type).accent}` }}
+                        >
                           {children}
                         </blockquote>
                       ),
@@ -227,7 +304,10 @@ const SubTabs: React.FC<SubTabsProps> = ({
                           href={href} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="text-[#FF4D4D] hover:text-[#FF6B6B] underline"
+                          className="underline transition-colors"
+                          style={{ color: getSubtabStyle(activeTab.type).accent }}
+                          onMouseEnter={(e) => e.currentTarget.style.color = getSubtabStyle(activeTab.type).accentHover}
+                          onMouseLeave={(e) => e.currentTarget.style.color = getSubtabStyle(activeTab.type).accent}
                         >
                           {children}
                         </a>

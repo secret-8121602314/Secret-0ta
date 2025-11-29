@@ -1,0 +1,113 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - generic [ref=e5]:
+    - heading "Conversations" [level=2] [ref=e8]
+    - button "Add Game" [ref=e10] [cursor=pointer]:
+      - img [ref=e11]
+      - generic [ref=e13]: Add Game
+    - generic [ref=e18] [cursor=pointer]:
+      - paragraph [ref=e20]: Game Hub
+      - paragraph [ref=e21]: 4 messages
+      - paragraph [ref=e22]: 11/28/2025
+  - generic [ref=e23]:
+    - banner [ref=e24]:
+      - img "Otagon Logo" [ref=e26]
+      - generic [ref=e27]:
+        - button "View query credits" [ref=e30] [cursor=pointer]:
+          - img [ref=e32]
+        - button "Connect to PC" [ref=e35] [cursor=pointer]:
+          - img [ref=e36]
+        - button [ref=e38] [cursor=pointer]:
+          - img [ref=e39]
+    - generic [ref=e42]:
+      - generic [ref=e46]:
+        - generic [ref=e47]:
+          - img [ref=e49]
+          - generic [ref=e51]:
+            - heading "Personalize Your Experience" [level=3] [ref=e52]
+            - paragraph [ref=e53]: Set up your gaming preferences for better AI responses
+        - generic [ref=e54]:
+          - button "Set Up" [ref=e55] [cursor=pointer]
+          - button "Dismiss banner" [ref=e56] [cursor=pointer]:
+            - img [ref=e57]
+      - insertion [ref=e62]
+      - generic [ref=e64]:
+        - generic [ref=e65]:
+          - generic [ref=e68]:
+            - img "User Avatar" [ref=e70]
+            - generic [ref=e72]:
+              - paragraph [ref=e74]: I'm playing Load Test Game 1. Tell me about this game
+              - paragraph [ref=e75]: 11:31:51 PM
+          - generic [ref=e78]:
+            - img "AI Avatar" [ref=e80]
+            - generic [ref=e81]:
+              - paragraph [ref=e83]: AI service is temporarily unavailable. Please try again later.
+              - paragraph [ref=e84]: 11:31:57 PM
+          - generic [ref=e87]:
+            - img "User Avatar" [ref=e89]
+            - generic [ref=e91]:
+              - paragraph [ref=e93]: I'm playing Load Test Game 2. Tell me about this game
+              - paragraph [ref=e94]: 11:32:02 PM
+          - generic [ref=e97]:
+            - img "AI Avatar" [ref=e99]
+            - generic [ref=e100]:
+              - paragraph [ref=e102]: AI service is temporarily unavailable. Please try again later.
+              - paragraph [ref=e103]: 11:32:08 PM
+          - generic [ref=e106]:
+            - img "User Avatar" [ref=e108]
+            - generic [ref=e110]:
+              - paragraph [ref=e112]: I'm playing Load Test Game 3. Tell me about this game
+              - paragraph [ref=e113]: 11:32:13 PM
+          - generic [ref=e116]:
+            - img "AI Avatar" [ref=e118]
+            - generic [ref=e119]:
+              - paragraph [ref=e121]: AI service is temporarily unavailable. Please try again later.
+              - paragraph [ref=e122]: 11:32:19 PM
+          - generic [ref=e125]:
+            - img "User Avatar" [ref=e127]
+            - generic [ref=e129]:
+              - paragraph [ref=e131]: I'm playing Load Test Game 4. Tell me about this game
+              - paragraph [ref=e132]: 11:32:24 PM
+          - generic [ref=e135]:
+            - img "AI Avatar" [ref=e137]
+            - generic [ref=e138]:
+              - paragraph [ref=e140]: AI service is temporarily unavailable. Please try again later.
+              - paragraph [ref=e141]: 11:32:30 PM
+          - generic [ref=e144]:
+            - img "User Avatar" [ref=e146]
+            - generic [ref=e148]:
+              - paragraph [ref=e150]: I'm playing Load Test Game 5. Tell me about this game
+              - paragraph [ref=e151]: 11:32:35 PM
+          - generic [ref=e153]:
+            - img "AI Avatar" [ref=e155]
+            - button "Stop generating response" [ref=e163] [cursor=pointer]: Stop
+        - generic [ref=e164]:
+          - button "Latest Gaming News" [ref=e165] [cursor=pointer]:
+            - generic [ref=e166]: Latest Gaming News
+            - img [ref=e167]
+          - generic [ref=e170]:
+            - button "✕ What's the latest gaming news?" [disabled] [ref=e171]:
+              - generic [ref=e173]:
+                - generic [ref=e174]: ✕
+                - generic [ref=e175]: What's the latest gaming news?
+            - button "■ Which games are releasing soon?" [disabled] [ref=e176]:
+              - generic [ref=e178]:
+                - generic [ref=e179]: ■
+                - generic [ref=e180]: Which games are releasing soon?
+            - button "▲ What are the latest game reviews?" [disabled] [ref=e181]:
+              - generic [ref=e183]:
+                - generic [ref=e184]: ▲
+                - generic [ref=e185]: What are the latest game reviews?
+            - button "◯ Show me the hottest new game trailers." [disabled] [ref=e186]:
+              - generic [ref=e188]:
+                - generic [ref=e189]: ◯
+                - generic [ref=e190]: Show me the hottest new game trailers.
+        - generic [ref=e193]:
+          - textbox "Type your message..." [disabled] [ref=e195]
+          - generic [ref=e196]:
+            - button [ref=e198] [cursor=pointer]:
+              - img [ref=e199]
+            - button "Send message" [disabled] [ref=e201]
+```

@@ -1,0 +1,321 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - main [ref=e83]:
+    - generic [ref=e85]:
+      - generic [ref=e86]:
+        - img "Otagon Logo" [ref=e87]
+        - heading "Otagon" [level=1] [ref=e88]
+      - heading "Never Get Stuck Again" [level=2] [ref=e89]
+      - paragraph [ref=e90]: Get instant, spoiler-free hints without leaving your game
+      - generic [ref=e91]:
+        - generic [ref=e92]:
+          - generic [ref=e93]:
+            - img "Gamer 1" [ref=e95]
+            - img "Gamer 2" [ref=e97]
+            - img "Gamer 3" [ref=e99]
+            - img "Gamer 4" [ref=e101]
+            - img "Gamer 5" [ref=e103]
+          - generic [ref=e104]: 1000+ gamers waiting
+        - generic [ref=e106]:
+          - img [ref=e107]
+          - generic [ref=e109]: Trusted by 50+ beta testers
+      - generic [ref=e111]:
+        - paragraph [ref=e113]: What should I do here?
+        - generic [ref=e115]:
+          - paragraph [ref=e116]: "Hint:"
+          - paragraph [ref=e117]: The contraption on the far wall seems to be missing a gear. Perhaps there's one nearby?
+      - paragraph [ref=e118]: Otagon sees your screen and gives you the perfect nudge to keep you playing—without ruining the surprise. The fastest way to snap a screenshot, share with friends, and get gaming hints in seconds. Stop searching, start playing.
+      - generic [ref=e119]:
+        - generic [ref=e120]:
+          - textbox "Email for waitlist" [ref=e122]:
+            - /placeholder: Enter your email address
+          - button "Join the Waitlist" [ref=e123] [cursor=pointer]: Join the Waitlist
+        - generic [ref=e125]:
+          - generic [ref=e126]:
+            - img [ref=e127]
+            - generic [ref=e129]: No spam, ever
+          - generic [ref=e130]:
+            - img [ref=e131]
+            - generic [ref=e133]: Free to join
+          - generic [ref=e134]:
+            - img [ref=e135]
+            - generic [ref=e137]: Early access
+      - paragraph [ref=e138]: Join thousands of gamers on the waitlist!
+    - generic [ref=e140]:
+      - generic [ref=e141]:
+        - heading "How It Works" [level=2] [ref=e142]
+        - paragraph [ref=e143]: Get unstuck, get smart, get back to gaming—all without leaving your game.
+      - generic [ref=e144]:
+        - generic [ref=e145]:
+          - img [ref=e147]
+          - heading "Press a Hotkey on Your PC" [level=3] [ref=e149]
+          - paragraph [ref=e150]: Instantly capture and analyze PC screenshots
+        - generic [ref=e151]:
+          - img [ref=e153]
+          - heading "Get an Instant Hint and Gameplay Screenshot on Your Phone" [level=3] [ref=e155]
+          - paragraph [ref=e156]: AI analyzes your situation and delivers spoiler-free hints to your mobile or second monitor
+        - generic [ref=e157]:
+          - img [ref=e159]
+          - heading "Keep Playing" [level=3] [ref=e161]
+          - paragraph [ref=e162]: Get the nudge you need and dive back into action without alt-tabbing or overlays
+    - generic [ref=e164]:
+      - generic [ref=e165]:
+        - heading "Your Journey From First Moment to Victory" [level=2] [ref=e166]
+        - paragraph [ref=e167]: Features built to match your gaming style, not slow you down
+      - generic [ref=e168]:
+        - generic [ref=e170]:
+          - generic [ref=e172]:
+            - generic [ref=e173]:
+              - img "Powered by Google Gemini" [ref=e176]
+              - generic [ref=e177]:
+                - heading "Powered by Google Gemini" [level=3] [ref=e178]
+                - paragraph [ref=e179]: Experience cutting-edge AI assistance powered by Google's advanced Gemini technology for accurate, context-aware gaming help.
+            - generic [ref=e180]:
+              - img "From First Screenshot to Victory" [ref=e182]
+              - generic [ref=e183]:
+                - heading "From First Screenshot to Victory" [level=3] [ref=e184]
+                - paragraph [ref=e185]: Upload a screenshot. Otagon identifies your game and becomes your personal guide—no spoilers, full context.
+          - generic [ref=e187]:
+            - generic [ref=e188]:
+              - img "Play Your Way" [ref=e190]
+              - generic [ref=e191]:
+                - heading "Play Your Way" [level=3] [ref=e192]
+                - paragraph [ref=e193]: Story-driven explorer? Completionist? Speedrunner? Tell us once, and every hint, strategy, and insight matches your playstyle.
+            - generic [ref=e194]:
+              - img "Feature image" [ref=e196]
+              - generic [ref=e197]:
+                - heading "Stay Focused, Stay AheadPRO" [level=3] [ref=e198]
+                - paragraph [ref=e199]: Skip the wiki-hunting. Otagon provides quest tips, secret locations, build optimization—all without spoiling your discovery.
+          - generic [ref=e201]:
+            - generic [ref=e202]:
+              - img "Play From Anywhere" [ref=e204]
+              - generic [ref=e205]:
+                - heading "Play From Anywhere" [level=3] [ref=e206]
+                - paragraph [ref=e207]: Gaming on console? Manually upload screenshots from your phone. Help arrives instantly in the same conversation.
+            - generic [ref=e208]:
+              - img "Feature image" [ref=e210]
+              - generic [ref=e211]:
+                - heading "Hands-Free & AI Mode TogglePRO" [level=3] [ref=e212]
+                - paragraph [ref=e213]: Pro users can enable hands-free mode to get hints read aloud, and toggle AI analysis on/off to save screenshots for social sharing without using credits.
+          - generic [ref=e216]:
+            - img "Build Your Game Library" [ref=e218]
+            - generic [ref=e219]:
+              - heading "Build Your Game Library" [level=3] [ref=e220]
+              - paragraph [ref=e221]: Track multiple games at once. Each has its own conversation, progress bar, and AI-generated insight tabs tailored to that game's genre.
+        - button "Previous feature" [ref=e222] [cursor=pointer]:
+          - img [ref=e223]
+        - button "Next feature" [ref=e225] [cursor=pointer]:
+          - img [ref=e226]
+    - generic [ref=e229]:
+      - generic [ref=e230]:
+        - heading "Install Otagon Everywhere" [level=2] [ref=e231]
+        - paragraph [ref=e232]: Access on mobile, sync with PC for seamless gaming
+      - generic [ref=e233]:
+        - generic [ref=e235]:
+          - button "Windows" [ref=e236] [cursor=pointer]:
+            - img [ref=e237]
+            - generic [ref=e239]: Windows
+          - button "iOS" [ref=e240] [cursor=pointer]:
+            - img [ref=e241]
+            - generic [ref=e243]: iOS
+          - button "Android" [ref=e244] [cursor=pointer]:
+            - img [ref=e245]
+            - generic [ref=e247]: Android
+        - generic [ref=e251]:
+          - img "Otagon Connector for Windows" [ref=e255]
+          - generic [ref=e256]:
+            - generic [ref=e257]:
+              - heading "Otagon Connector for Windows" [level=3] [ref=e258]
+              - paragraph [ref=e259]: Get help while gaming! This handy PC tool captures your game screen and sends it to Otagon so you can get hints without leaving your game.
+            - generic [ref=e260]:
+              - generic [ref=e264]:
+                - heading "Download & Install" [level=4] [ref=e265]
+                - paragraph [ref=e266]: Download the Otagon Connector app and install it on your PC (just like any other program)
+              - generic [ref=e270]:
+                - heading "Connect to Otagon" [level=4] [ref=e271]
+                - paragraph [ref=e272]: Open the Connector app to see your 6-digit code, then type that code into Otagon (on your web browser or phone)
+            - button "Coming Soon" [disabled] [ref=e274]:
+              - img [ref=e275]
+              - generic [ref=e277]: Coming Soon
+    - generic [ref=e279]:
+      - heading "For Every Challenge, In Every World" [level=2] [ref=e281]
+      - generic [ref=e282]:
+        - generic [ref=e283]:
+          - img [ref=e285]
+          - heading "Souls-likes & Action RPGs" [level=3] [ref=e289]
+          - paragraph [ref=e290]: Master tough bosses and find hidden paths without rage-quitting. We'll give you a hint, not the easy way out.
+        - generic [ref=e291]:
+          - img [ref=e293]
+          - heading "RPGs" [level=3] [ref=e324]
+          - paragraph [ref=e325]: Uncover deep lore and track complex quests without accidentally reading major story spoilers.
+        - generic [ref=e326]:
+          - img [ref=e328]
+          - heading "Puzzle Games" [level=3] [ref=e335]
+          - paragraph [ref=e336]: Get a clue for that brain-bending puzzle, not the entire solution. Preserve your "aha!" moment.
+        - generic [ref=e337]:
+          - img "Open World Adventures" [ref=e339]
+          - heading "Open-World Adventures" [level=3] [ref=e340]
+          - paragraph [ref=e341]: Hunt down every last collectible and conquer secret challenges with a gentle nudge in the right direction.
+        - generic [ref=e342]:
+          - img [ref=e344]
+          - heading "Metroidvanias" [level=3] [ref=e398]
+          - paragraph [ref=e399]: Lost after finding a new power? Discover which hidden path just opened up without checking a full map.
+        - generic [ref=e400]:
+          - img [ref=e402]
+          - heading "Survival & Crafting" [level=3] [ref=e416]
+          - paragraph [ref=e417]: Need a specific resource? Learn where to find it or what recipe you're missing to build your ultimate base.
+    - generic [ref=e419]:
+      - generic [ref=e420]:
+        - heading "Choose Your Plan" [level=2] [ref=e421]
+        - paragraph [ref=e422]: Start for free. Upgrade when you're ready.
+      - generic [ref=e423]:
+        - generic [ref=e424] [cursor=pointer]:
+          - heading "Free" [level=3] [ref=e425]
+          - paragraph [ref=e426]: For the Casual Player
+          - generic [ref=e427]: $0/month
+          - list [ref=e428]:
+            - listitem [ref=e429]:
+              - img [ref=e430]
+              - generic [ref=e432]: 55 Text | 25 Image Queries/month
+            - listitem [ref=e433]:
+              - img [ref=e434]
+              - generic [ref=e436]: Knowledge till January 2025
+            - listitem [ref=e437]:
+              - img [ref=e438]
+              - generic [ref=e440]: Standard AI Model
+            - listitem [ref=e441]:
+              - img [ref=e442]
+              - generic [ref=e444]: PC-to-Mobile Sync
+            - listitem [ref=e445]:
+              - img [ref=e446]
+              - generic [ref=e448]: Progress Tracking
+            - listitem [ref=e449]:
+              - img [ref=e450]
+              - generic [ref=e452]: 7 day free trial for Pro
+          - button "Coming Soon" [disabled] [ref=e454]
+        - generic [ref=e455] [cursor=pointer]:
+          - generic [ref=e456]: Limited Offer
+          - heading "Pro Vanguard" [level=3] [ref=e457]
+          - paragraph [ref=e458]: Become a Founding Member
+          - generic [ref=e459]:
+            - text: $20/year
+            - paragraph [ref=e460]: Lifetime Price Guarantee!
+          - list [ref=e461]:
+            - listitem [ref=e462]:
+              - img [ref=e463]
+              - generic [ref=e465]: "Everything in Free, plus:"
+            - listitem [ref=e466]:
+              - img [ref=e467]
+              - generic [ref=e469]: 1,583 Text | 328 Image Queries/month
+            - listitem [ref=e470]:
+              - img [ref=e471]
+              - generic [ref=e473]: Up-to-date knowledge using web search
+            - listitem [ref=e474]:
+              - img [ref=e475]
+              - generic [ref=e477]: Advanced AI Model
+            - listitem [ref=e478]:
+              - img [ref=e479]
+              - generic [ref=e481]: Build Your Game Library
+            - listitem [ref=e482]:
+              - img [ref=e483]
+              - generic [ref=e485]: Hands-Free & AI Mode Toggle
+            - listitem [ref=e486]:
+              - img [ref=e487]
+              - generic [ref=e489]: Batch Screenshot Capture
+            - listitem [ref=e490]:
+              - img [ref=e491]
+              - generic [ref=e493]: Priority Support & No Ads
+          - button "Coming Soon" [disabled] [ref=e495]
+        - generic [ref=e496] [cursor=pointer]:
+          - heading "Pro" [level=3] [ref=e497]
+          - paragraph [ref=e498]: For the Serious Gamer
+          - generic [ref=e499]: $3.99/month
+          - list [ref=e500]:
+            - listitem [ref=e501]:
+              - img [ref=e502]
+              - generic [ref=e504]: "Everything in Free, plus:"
+            - listitem [ref=e505]:
+              - img [ref=e506]
+              - generic [ref=e508]: 1,583 Text + 328 Image Queries per month
+            - listitem [ref=e509]:
+              - img [ref=e510]
+              - generic [ref=e512]: Real-time web search for latest info
+            - listitem [ref=e513]:
+              - img [ref=e514]
+              - generic [ref=e516]: Advanced AI model for deeper insights
+            - listitem [ref=e517]:
+              - img [ref=e518]
+              - generic [ref=e520]: Build Your Game Library with insight tabs
+            - listitem [ref=e521]:
+              - img [ref=e522]
+              - generic [ref=e524]: Hands-Free mode & AI toggle for screenshots
+            - listitem [ref=e525]:
+              - img [ref=e526]
+              - generic [ref=e528]: Batch screenshot capture (F2 hotkey)
+            - listitem [ref=e529]:
+              - img [ref=e530]
+              - generic [ref=e532]: Priority support & ad-free experience
+          - button "Coming Soon" [disabled] [ref=e534]
+    - generic [ref=e536]:
+      - heading "What Gamers Are Saying" [level=2] [ref=e538]
+      - generic [ref=e539]:
+        - generic [ref=e541]:
+          - generic [ref=e542]:
+            - img [ref=e543]
+            - paragraph [ref=e545]: "\"Finally, a gaming assistant that doesn't spoil the story! I was stuck on a puzzle in Elden Ring for hours, and Otagon gave me just the right hint to figure it out myself.\""
+          - generic [ref=e546]:
+            - paragraph [ref=e547]: Sarah Chen
+            - paragraph [ref=e548]: Souls-like Enthusiast
+        - generic [ref=e550]:
+          - generic [ref=e551]:
+            - img [ref=e552]
+            - paragraph [ref=e554]: "\"The PC-to-mobile sync is a game-changer. I can get help without alt-tabbing and losing my immersion. It's like having a gaming buddy who knows exactly when to chime in.\""
+          - generic [ref=e555]:
+            - paragraph [ref=e556]: Marcus Rodriguez
+            - paragraph [ref=e557]: RPG Completionist
+        - generic [ref=e559]:
+          - generic [ref=e560]:
+            - img [ref=e561]
+            - paragraph [ref=e563]: "\"Pro's hands-free mode is incredible! During intense boss fights, I get AI hints spoken aloud without pausing. The AI toggle lets me save screenshots for later too.\""
+          - generic [ref=e564]:
+            - paragraph [ref=e565]: Safi Rahman
+            - paragraph [ref=e566]: Pro Subscriber
+    - generic [ref=e568]:
+      - generic [ref=e569]:
+        - heading "Meet the Founder" [level=2] [ref=e570]
+        - paragraph [ref=e571]: Hey, I'm Amaan—a passionate gamer from Hyderabad who spent my early days printing cheat codes at internet cafes. After years of thinking about how people interact with technology, I'm building the future of gaming assistance.
+      - generic [ref=e572]:
+        - img "Otagon Founder - AI Gaming Visionary" [ref=e576]
+        - generic [ref=e578]:
+          - heading "Amaan" [level=3] [ref=e579]
+          - paragraph [ref=e580]: Service Designer
+        - paragraph [ref=e583]: "\"Like you, I've spent my life passionate about games. From getting lost in the deep lore of modern RPGs to the frustration of needing a small hint and getting a massive spoiler in return. That's why I built Otagon - to preserve the magic of discovery while giving you just the nudge you need.\""
+        - generic [ref=e584]:
+          - link "Connect on LinkedIn" [ref=e585] [cursor=pointer]:
+            - /url: https://www.linkedin.com/in/readmetxt/
+            - img [ref=e586]
+            - generic [ref=e590]: Connect on LinkedIn
+          - link "Email Amaan" [ref=e591] [cursor=pointer]:
+            - /url: mailto:support@otagon.app
+            - img [ref=e592]
+            - generic [ref=e594]: Email Amaan
+  - contentinfo [ref=e595]:
+    - generic [ref=e597]:
+      - generic [ref=e598]:
+        - generic [ref=e599]:
+          - link "Pricing" [ref=e600] [cursor=pointer]:
+            - /url: "#pricing"
+          - button "About" [ref=e601] [cursor=pointer]
+          - button "Terms" [ref=e602] [cursor=pointer]
+        - generic [ref=e603]:
+          - button "Privacy" [ref=e604] [cursor=pointer]
+          - button "Refund Policy" [ref=e605] [cursor=pointer]
+          - button "Contact Us" [ref=e606] [cursor=pointer]
+      - generic [ref=e607]:
+        - generic [ref=e608]:
+          - img "Otagon Logo" [ref=e609]
+          - generic [ref=e610]: Otagon
+        - paragraph [ref=e611]: © 2025 Otagon. All rights reserved.
+```

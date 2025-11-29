@@ -1,0 +1,60 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - generic [ref=e5]:
+    - heading "Conversations" [level=2] [ref=e8]
+    - button "Add Game" [ref=e10] [cursor=pointer]:
+      - img [ref=e11]
+      - generic [ref=e13]: Add Game
+    - generic [ref=e18] [cursor=pointer]:
+      - paragraph [ref=e20]: Game Hub
+      - paragraph [ref=e21]: 1 messages
+      - paragraph [ref=e22]: 11/28/2025
+  - generic [ref=e23]:
+    - banner [ref=e24]:
+      - img "Otagon Logo" [ref=e26]
+      - generic [ref=e27]:
+        - button "View query credits" [ref=e30] [cursor=pointer]:
+          - img [ref=e32]
+        - button "Connect to PC" [ref=e35] [cursor=pointer]:
+          - img [ref=e36]
+        - button [ref=e38] [cursor=pointer]:
+          - img [ref=e39]
+    - generic [ref=e42]:
+      - generic [ref=e46]:
+        - generic [ref=e47]:
+          - img [ref=e49]
+          - generic [ref=e51]:
+            - heading "Personalize Your Experience" [level=3] [ref=e52]
+            - paragraph [ref=e53]: Set up your gaming preferences for better AI responses
+        - generic [ref=e54]:
+          - button "Set Up" [ref=e55] [cursor=pointer]
+          - button "Dismiss banner" [ref=e56] [cursor=pointer]:
+            - img [ref=e57]
+      - insertion [ref=e62]
+      - generic [ref=e64]:
+        - generic [ref=e65]:
+          - generic [ref=e68]:
+            - img "User Avatar" [ref=e70]
+            - generic [ref=e72]:
+              - paragraph [ref=e74]: Tell me about @#$% game!!!
+              - paragraph [ref=e75]: 11:25:14 PM
+          - generic [ref=e78]:
+            - img "AI Avatar" [ref=e80]
+            - generic [ref=e81]:
+              - paragraph [ref=e83]: AI service is temporarily unavailable. Please try again later.
+              - paragraph [ref=e84]: 11:25:22 PM
+          - generic [ref=e86]:
+            - img "AI Avatar" [ref=e88]
+            - button "Stop generating response" [ref=e96] [cursor=pointer]: Stop
+        - button "Latest Gaming News" [ref=e98] [cursor=pointer]:
+          - generic [ref=e99]: Latest Gaming News
+          - img [ref=e100]
+        - generic [ref=e104]:
+          - textbox "Type your message..." [disabled] [ref=e106]
+          - generic [ref=e107]:
+            - button [ref=e109] [cursor=pointer]:
+              - img [ref=e110]
+            - button "Send message" [disabled] [ref=e112]
+```

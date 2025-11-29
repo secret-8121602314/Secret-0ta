@@ -17,6 +17,7 @@ import { ttsService } from '../services/ttsService';
 import { toastService } from '../services/toastService';
 import { MessageRoutingService } from '../services/messageRoutingService';
 import { sessionService } from '../services/sessionService';
+import { fetchIGDBGameData, IGDBGameData } from '../services/igdbService';
 import Sidebar from './layout/Sidebar';
 import ChatInterface from './features/ChatInterface';
 import SettingsModal from './modals/SettingsModal';
@@ -24,6 +25,7 @@ import CreditModal from './modals/CreditModal';
 import ConnectionModal from './modals/ConnectionModal';
 import HandsFreeModal from './modals/HandsFreeModal';
 import AddGameModal from './modals/AddGameModal';
+import GameInfoModal from './modals/GameInfoModal';
 import Logo from './ui/Logo';
 import CreditIndicator from './ui/CreditIndicator';
 import HandsFreeToggle from './ui/HandsFreeToggle';
@@ -166,6 +168,12 @@ const MainApp: React.FC<MainAppProps> = ({
   
   // Add Game modal state
   const [addGameModalOpen, setAddGameModalOpen] = useState(false);
+  
+  // Game Info Modal state (IGDB integration)
+  const [gameInfoModalOpen, setGameInfoModalOpen] = useState(false);
+  const [currentGameIGDBData, setCurrentGameIGDBData] = useState<IGDBGameData | null>(null);
+  const [isLoadingIGDBData, setIsLoadingIGDBData] = useState(false);
+  const igdbFetchedForRef = useRef<string | null>(null); // Track which game we've fetched for
   
   // Helper function to deep clone conversations to force React re-renders
   const deepCloneConversations = (conversations: Conversations): Conversations => {
@@ -739,6 +747,56 @@ const MainApp: React.FC<MainAppProps> = ({
             subscription.unsubscribe();
     };
   }, [activeConversation?.id]);
+
+  // ✅ IGDB Integration: Fetch game data when switching to a game tab (parallel loading)
+  useEffect(() => {
+    const fetchGameData = async () => {
+      console.log('🎮 [IGDB] Effect triggered:', {
+        hasActiveConv: !!activeConversation,
+        gameTitle: activeConversation?.gameTitle,
+        isGameHub: activeConversation?.isGameHub,
+        convId: activeConversation?.id,
+        prevFetched: igdbFetchedForRef.current
+      });
+
+      // Only fetch for game tabs (not Game Hub)
+      if (!activeConversation?.gameTitle || activeConversation.isGameHub) {
+        console.log('🎮 [IGDB] Skipping fetch - no gameTitle or is Game Hub');
+        setCurrentGameIGDBData(null);
+        igdbFetchedForRef.current = null;
+        return;
+      }
+
+      const gameTitle = activeConversation.gameTitle;
+      
+      // Avoid re-fetching for the same game
+      if (igdbFetchedForRef.current === gameTitle) {
+        console.log('🎮 [IGDB] Already fetched for this game, skipping');
+        return;
+      }
+
+      console.log('🎮 [MainApp] Fetching IGDB data for:', gameTitle);
+      setIsLoadingIGDBData(true);
+      igdbFetchedForRef.current = gameTitle;
+
+      try {
+        const igdbData = await fetchIGDBGameData(gameTitle);
+        setCurrentGameIGDBData(igdbData);
+        if (igdbData) {
+          console.log('✅ [MainApp] IGDB data loaded:', igdbData.name);
+        } else {
+          console.log('ℹ️ [MainApp] No IGDB data found for:', gameTitle);
+        }
+      } catch (error) {
+        console.error('❌ [MainApp] Failed to fetch IGDB data:', error);
+        setCurrentGameIGDBData(null);
+      } finally {
+        setIsLoadingIGDBData(false);
+      }
+    };
+
+    fetchGameData();
+  }, [activeConversation?.gameTitle, activeConversation?.isGameHub]);
 
   // Function to refresh user data (for credit updates)
   const refreshUserData = async () => {
@@ -2245,8 +2303,48 @@ const MainApp: React.FC<MainAppProps> = ({
           // Allow migration from Game Hub OR from a different game tab
           const shouldMigrateMessages = targetConversationId && targetConversationId !== activeConversation.id;
                               if (shouldMigrateMessages) {
-                        // ✅ CRITICAL: Wait for conversation to fully persist before migrating
-            // This ensures auth_user_id is set on the destination conversation
+            // ✅ FIX: Update local state IMMEDIATELY so messages appear in the new tab right away
+            // This prevents the visual gap where messages disappear during migration
+            const messagesToMigrate = [newMessage, aiMessage];
+            
+            // Get fresh conversations state for immediate update
+            const currentConversations = await ConversationService.getConversations();
+            const sourceConv = currentConversations[activeConversation.id];
+            const destConv = currentConversations[targetConversationId];
+            
+            if (sourceConv && destConv) {
+              // Optimistically update state BEFORE database operations
+              const updatedSourceMessages = sourceConv.messages.filter(
+                m => m.id !== newMessage.id && m.id !== aiMessage.id
+              );
+              const updatedDestMessages = [...destConv.messages, ...messagesToMigrate];
+              
+              setConversations(prev => ({
+                ...prev,
+                [activeConversation.id]: {
+                  ...prev[activeConversation.id],
+                  messages: updatedSourceMessages,
+                  updatedAt: Date.now()
+                },
+                [targetConversationId]: {
+                  ...prev[targetConversationId],
+                  messages: updatedDestMessages,
+                  updatedAt: Date.now()
+                }
+              }));
+              
+              // Set active conversation to dest WITH messages already included
+              setActiveConversation({
+                ...destConv,
+                messages: updatedDestMessages,
+                updatedAt: Date.now()
+              });
+              
+              console.log('📦 [MainApp] Optimistically updated UI with migrated messages');
+            }
+            
+            // ✅ Now do database migration in background (non-blocking for UI)
+            // Wait for conversation to fully persist before migrating
             await new Promise(resolve => setTimeout(resolve, 500));
 
             // ✅ Use atomic migration service to prevent race conditions
@@ -2256,7 +2354,7 @@ const MainApp: React.FC<MainAppProps> = ({
               activeConversation.id,
               targetConversationId
             );
-                        // Update state to reflect the changes
+                        // Update state to reflect the final changes from database
             const updatedConversations = await ConversationService.getConversations();
             setConversations(updatedConversations);
             
@@ -2528,27 +2626,77 @@ const MainApp: React.FC<MainAppProps> = ({
             </div>
           )}
 
-          {/* Game Progress Bar - Show for game conversations (not Game Hub) */}
+          {/* Game Progress Bar with Game Info Button - Show for game conversations (not Game Hub) */}
           {activeConversation && !activeConversation.isGameHub && activeConversation.gameTitle && (
             <div className="px-3 sm:px-4 lg:px-6 pb-3 sm:pb-4 flex-shrink-0">
-              <GameProgressBar 
-                progress={activeConversation.gameProgress || 0}
-                className="px-3 sm:px-4"
-              />
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="flex-1">
+                  <GameProgressBar 
+                    progress={activeConversation.gameProgress || 0}
+                    className="px-3 sm:px-4"
+                  />
+                </div>
+                {/* Game Info Button - Only show when IGDB data is available (desktop) */}
+                {currentGameIGDBData && (
+                  <button
+                    onClick={() => setGameInfoModalOpen(true)}
+                    className="hidden lg:flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-[#1C1C1C]/80 to-[#0A0A0A]/80 backdrop-blur-sm border border-[#424242]/40 rounded-lg hover:border-[#FF4D4D]/40 hover:from-[#1C1C1C] hover:to-[#0A0A0A] transition-all duration-200 group"
+                    title="View game information"
+                  >
+                    <svg 
+                      className="w-4 h-4 text-[#A3A3A3] group-hover:text-[#FF4D4D] transition-colors" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-xs font-medium text-[#A3A3A3] group-hover:text-[#F5F5F5] transition-colors">
+                      Game Info
+                    </span>
+                  </button>
+                )}
+                {/* Loading indicator for IGDB (desktop) */}
+                {isLoadingIGDBData && (
+                  <div className="hidden lg:flex items-center gap-2 px-3 py-2 text-xs text-[#A3A3A3]">
+                    <div className="w-3 h-3 border border-[#FF4D4D] border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
           {/* Chat Thread Name - Show on mobile when sidebar is collapsed */}
           {activeConversation && (
             <div className="lg:hidden px-3 sm:px-4 mb-3 sm:mb-4 flex-shrink-0">
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="w-full bg-gradient-to-r from-surface/30 to-background/30 backdrop-blur-sm border border-surface-light/20 rounded-lg px-4 py-3 transition-all duration-200 hover:from-surface/40 hover:to-background/40 hover:border-surface-light/30 active:scale-[0.98]"
-              >
-                <h2 className="text-sm sm:text-base font-semibold bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent text-center">
-                  {activeConversation.title}
-                </h2>
-              </button>
+              <div className="flex items-center gap-2">
+                {/* Game Info Button - Mobile (left of thread name) */}
+                {!activeConversation.isGameHub && activeConversation.gameTitle && currentGameIGDBData && (
+                  <button
+                    onClick={() => setGameInfoModalOpen(true)}
+                    className="flex-shrink-0 p-3 bg-gradient-to-r from-surface/30 to-background/30 backdrop-blur-sm border border-surface-light/20 rounded-lg hover:border-[#FF4D4D]/40 transition-all duration-200"
+                    title="View game information"
+                  >
+                    <svg 
+                      className="w-5 h-5 text-[#A3A3A3]" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+                )}
+                {/* Thread name button */}
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  className="flex-1 bg-gradient-to-r from-surface/30 to-background/30 backdrop-blur-sm border border-surface-light/20 rounded-lg px-4 py-3 transition-all duration-200 hover:from-surface/40 hover:to-background/40 hover:border-surface-light/30 active:scale-[0.98]"
+                >
+                  <h2 className="text-sm sm:text-base font-semibold bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent text-center">
+                    {activeConversation.title}
+                  </h2>
+                </button>
+              </div>
             </div>
           )}
 
@@ -2621,6 +2769,14 @@ const MainApp: React.FC<MainAppProps> = ({
         isOpen={addGameModalOpen}
         onClose={() => setAddGameModalOpen(false)}
         onCreateGame={handleCreateGame}
+      />
+
+      {/* Game Info Modal - IGDB Integration */}
+      <GameInfoModal
+        isOpen={gameInfoModalOpen}
+        onClose={() => setGameInfoModalOpen(false)}
+        gameData={currentGameIGDBData}
+        gameName={activeConversation?.gameTitle || ''}
       />
 
       {/* Settings Context Menu */}

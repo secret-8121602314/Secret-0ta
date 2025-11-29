@@ -1,0 +1,57 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - generic [ref=e5]:
+    - generic [ref=e7]:
+      - heading "Conversations" [level=2] [ref=e8]
+      - button [ref=e9] [cursor=pointer]:
+        - img [ref=e10]
+    - button "Add Game" [ref=e13] [cursor=pointer]:
+      - img [ref=e14]
+      - generic [ref=e16]: Add Game
+    - generic [ref=e21] [cursor=pointer]:
+      - paragraph [ref=e23]: Game Hub
+      - paragraph [ref=e24]: 0 messages
+      - paragraph [ref=e25]: 11/28/2025
+  - generic [ref=e26]:
+    - banner [ref=e27]:
+      - generic [ref=e28]:
+        - button [ref=e29] [cursor=pointer]:
+          - img [ref=e30]
+        - img "Otagon Logo" [ref=e32]
+      - generic [ref=e33]:
+        - button "View query credits" [ref=e36] [cursor=pointer]:
+          - img [ref=e38]
+        - button "Connect to PC" [ref=e41] [cursor=pointer]:
+          - img [ref=e42]
+        - button [ref=e44] [cursor=pointer]:
+          - img [ref=e45]
+    - generic [ref=e48]:
+      - generic [ref=e52]:
+        - generic [ref=e53]:
+          - img [ref=e55]
+          - heading "Personalize Your Experience" [level=3] [ref=e58]
+        - generic [ref=e59]:
+          - button "Set Up" [ref=e60] [cursor=pointer]
+          - button "Dismiss banner" [ref=e61] [cursor=pointer]:
+            - img [ref=e62]
+      - insertion [ref=e67]
+      - button "Game Hub" [ref=e70] [cursor=pointer]:
+        - heading "Game Hub" [level=2] [ref=e71]
+      - generic [ref=e73]:
+        - generic [ref=e76]:
+          - img "Otagon Mascot" [ref=e77]
+          - paragraph [ref=e78]: Start a conversation with Otagon
+          - paragraph [ref=e79]: Ask me anything about gaming, strategies, or tips. You can also start uploading gameplay screenshots for help!
+        - button "Latest Gaming News" [ref=e81] [cursor=pointer]:
+          - generic [ref=e82]: Latest Gaming News
+          - img [ref=e83]
+        - generic [ref=e87]:
+          - textbox "Type your message..." [ref=e89]
+          - generic [ref=e90]:
+            - button [ref=e92] [cursor=pointer]:
+              - img [ref=e93]
+            - button "Send message" [disabled] [ref=e95]:
+              - img [ref=e96]
+```
