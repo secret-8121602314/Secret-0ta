@@ -764,44 +764,38 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                             Get instant, spoiler-free hints without leaving your game
                         </p>
                         
-                        {/* Social Proof */}
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-8">
-                            <div className="flex items-center gap-2 text-lg text-neutral-300">
-                                <div className="flex -space-x-2">
-                                    {[...Array(5)].map((_, i) => (
-                                        <div key={i} className="w-8 h-8 rounded-full overflow-hidden">
-                                            <img 
-                                                src={`/images/landing/${i + 1}.png`}
-                                                alt={`Gamer ${i + 1}`}
-                                                className="w-full h-full rounded-full object-cover"
-                                            />
-                                        </div>
-                                    ))}
+                        {/* Social Proof - HIDDEN FOR NOW */}
+                        <div className="hidden">
+                            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-8">
+                                <div className="flex items-center gap-2 text-lg text-neutral-300">
+                                    <div className="flex -space-x-2">
+                                        {[...Array(5)].map((_, i) => (
+                                            <div key={i} className="w-8 h-8 rounded-full overflow-hidden">
+                                                <img 
+                                                    src={`/images/landing/${i + 1}.png`}
+                                                    alt={`Gamer ${i + 1}`}
+                                                    className="w-full h-full rounded-full object-cover"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <span className="ml-2">
+                                        <span className="font-bold text-white">1000+</span> gamers waiting
+                                    </span>
                                 </div>
-                                <span className="ml-2">
-                                    <span className="font-bold text-white">1000+</span> gamers waiting
-                                </span>
-                            </div>
-                            <div className="hidden sm:block w-px h-6 bg-neutral-600"></div>
-                            <div className="flex items-center gap-2 text-lg text-neutral-300">
-                                <svg className="w-5 h-5 text-[#FFAB40]" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
-                                </svg>
-                                <span>Trusted by <span className="font-bold text-white">50+</span> beta testers</span>
+                                <div className="hidden sm:block w-px h-6 bg-neutral-600"></div>
+                                <div className="flex items-center gap-2 text-lg text-neutral-300">
+                                    <svg className="w-5 h-5 text-[#FFAB40]" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
+                                    </svg>
+                                    <span>Trusted by <span className="font-bold text-white">50+</span> beta testers</span>
+                                </div>
                             </div>
                         </div>
 
                         <div 
                             ref={chatHintRef}
-                            className={`relative mx-auto my-16 w-full max-w-2xl h-auto rounded-3xl bg-black/60 backdrop-blur-xl p-2 shadow-2xl border-2 transition-all duration-500 ${
-                                chatHintVisible 
-                                    ? 'border-[#E53A3A]/60 shadow-2xl shadow-[#E53A3A]/25 scale-105' 
-                                    : 'border-[#424242]/40'
-                            } md:group md:hover:border-[#E53A3A]/60 md:hover:shadow-2xl md:hover:shadow-[#E53A3A]/25 md:hover:scale-105`}
-                            style={{
-                                animation: 'glow 2s ease-in-out infinite alternate',
-                                boxShadow: chatHintVisible ? '0 0 20px rgba(229, 58, 58, 0.5), 0 0 40px rgba(229, 58, 58, 0.3), 0 0 60px rgba(229, 58, 58, 0.2)' : '0 0 20px rgba(229, 58, 58, 0.3), 0 0 40px rgba(229, 58, 58, 0.1), 0 0 60px rgba(229, 58, 58, 0.1)'
-                            }}
+                            className={`relative mx-auto my-16 w-full max-w-2xl h-auto rounded-3xl bg-black/60 backdrop-blur-xl p-2 shadow-2xl animate-glow-pulse`}
                         >
                             <div className="bg-transparent rounded-2xl p-6 space-y-6">
                                 {/* User Prompt */}
@@ -837,7 +831,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
               placeholder="Enter your email address"
               required
               disabled={isSubmitting}
-                                        className="w-full bg-gradient-to-r from-[#1C1C1C] to-[#0A0A0A] border-2 border-neutral-800/60 rounded-xl py-4 sm:py-5 px-4 sm:px-6 text-white placeholder-neutral-400 focus:outline-none focus:ring-4 focus:ring-[#FFAB40]/30 focus:border-[#FFAB40] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-base sm:text-lg backdrop-blur-sm hover:border-neutral-700/80 text-center sm:text-left"
+                                        className="w-full bg-[#0A0A0A]/80 border-2 border-neutral-700/60 rounded-xl py-4 sm:py-5 px-4 sm:px-6 text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#E53A3A]/50 focus:border-[#E53A3A]/80 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-base sm:text-lg backdrop-blur-sm hover:border-neutral-600/80 hover:bg-[#0A0A0A] text-center sm:text-left"
               aria-label="Email for waitlist"
             />
                                 </div>
