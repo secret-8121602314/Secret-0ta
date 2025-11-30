@@ -18,6 +18,7 @@ import { toastService } from '../services/toastService';
 import { MessageRoutingService } from '../services/messageRoutingService';
 import { sessionService } from '../services/sessionService';
 import { fetchIGDBGameData, IGDBGameData, getSidebarCoverUrl } from '../services/igdbService';
+import { offlineQueueService } from '../services/indexedDBService';
 import Sidebar from './layout/Sidebar';
 import ChatInterface from './features/ChatInterface';
 import SettingsModal from './modals/SettingsModal';
@@ -26,6 +27,7 @@ import ConnectionModal from './modals/ConnectionModal';
 import HandsFreeModal from './modals/HandsFreeModal';
 import AddGameModal from './modals/AddGameModal';
 import GameInfoModal from './modals/GameInfoModal';
+import FeedbackModal from './modals/FeedbackModal';
 import Logo from './ui/Logo';
 import CreditIndicator from './ui/CreditIndicator';
 import HandsFreeToggle from './ui/HandsFreeToggle';
@@ -431,6 +433,10 @@ const MainApp: React.FC<MainAppProps> = ({
   // ✅ PWA FIX: Track if we're in the middle of logout to prevent race conditions
   const isLoggingOutRef = useRef(false);
   
+  // ✅ FIX: Track user ID to detect new user login after logout
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const previousUserIdRef = useRef<string | null>(null);
+  
   // ✅ PWA FIX: Listen for logout event to reset refs and state
   // This ensures re-login works correctly after logout
   useEffect(() => {
@@ -451,6 +457,10 @@ const MainApp: React.FC<MainAppProps> = ({
       setIsInitializing(true);
       setSuggestedPrompts([]);
       setQueuedScreenshot(null);
+      
+      // ✅ FIX: Reset current user ID to allow new user detection
+      setCurrentUserId(null);
+      previousUserIdRef.current = null;
       
       console.log('🔍 [MainApp] State and refs reset for new login');
     };
@@ -474,6 +484,31 @@ const MainApp: React.FC<MainAppProps> = ({
     };
   }, []);
 
+  // ✅ FIX: Subscribe to auth state changes to detect new user login after logout
+  useEffect(() => {
+    const unsubscribe = authService.subscribe((authState) => {
+      const newUserId = authState.user?.authUserId || null;
+      
+      // Only update if user ID changed and we're not logging out
+      if (newUserId !== currentUserId && !isLoggingOutRef.current) {
+        console.log('🔍 [MainApp] Auth state change detected:', {
+          previousUserId: currentUserId,
+          newUserId,
+          isLoading: authState.isLoading
+        });
+        
+        // Update current user ID
+        if (newUserId) {
+          setCurrentUserId(newUserId);
+        }
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [currentUserId]);
+
   useEffect(() => {
     const loadData = async (retryCount = 0) => {
       // ✅ PWA FIX: Don't load if logout is in progress
@@ -487,9 +522,22 @@ const MainApp: React.FC<MainAppProps> = ({
                 return;
       }
       
-      // ✅ PERFORMANCE: Skip if already loaded (unless retry)
-      if (hasLoadedConversationsRef.current && retryCount === 0) {
+      // ✅ FIX: Check if this is a new user login (different from previous user)
+      const isNewUserLogin = currentUserId && previousUserIdRef.current !== currentUserId;
+      
+      // ✅ PERFORMANCE: Skip if already loaded (unless retry or new user)
+      if (hasLoadedConversationsRef.current && retryCount === 0 && !isNewUserLogin) {
                 return;
+      }
+      
+      // ✅ FIX: If new user login, reset the loaded flag and force refresh
+      if (isNewUserLogin) {
+        console.log('🔍 [MainApp] New user detected, resetting for fresh load:', {
+          previousUser: previousUserIdRef.current,
+          newUser: currentUserId
+        });
+        hasLoadedConversationsRef.current = false;
+        previousUserIdRef.current = currentUserId;
       }
       
       isLoadingConversationsRef.current = true;
@@ -501,6 +549,12 @@ const MainApp: React.FC<MainAppProps> = ({
           setUser(currentUser);
           // Also sync to UserService for compatibility
           UserService.setCurrentUser(currentUser);
+          
+          // ✅ FIX: Update currentUserId if not set (initial mount case)
+          if (!currentUserId) {
+            setCurrentUserId(currentUser.authUserId);
+            previousUserIdRef.current = currentUser.authUserId;
+          }
         } else if (retryCount === 0) {
           // If no user on first attempt, wait a bit for auth state to settle after onboarding
                     setTimeout(() => loadData(1), 500);
@@ -510,8 +564,9 @@ const MainApp: React.FC<MainAppProps> = ({
         console.log('🔍 [MainApp] Loading conversations (attempt', retryCount + 1, ')');
         
         // ✅ PWA FIX: Force refresh on first load attempt to ensure we get the current user's data
+        // ✅ FIX: Also force refresh if this is a new user login
         // This prevents stale cache data from previous user affecting new user
-        const forceRefresh = retryCount === 0;
+        const forceRefresh = retryCount === 0 || isNewUserLogin;
         
         // ✅ FIX: Ensure Game Hub exists first - this returns it directly (RLS workaround)
         const gameHubFromEnsure = await ConversationService.ensureGameHubExists(forceRefresh);
@@ -666,7 +721,7 @@ const MainApp: React.FC<MainAppProps> = ({
     };
 
     loadData();
-  }, []);
+  }, [currentUserId]); // ✅ FIX: Re-run when currentUserId changes (new user login)
 
   // Safety timeout: Force initialization complete after 3 seconds to prevent infinite loading
   useEffect(() => {
@@ -1737,6 +1792,162 @@ const MainApp: React.FC<MainAppProps> = ({
     }
   };
 
+  // ✅ DELETE QUEUED MESSAGE: Remove a message from the offline queue
+  const handleDeleteQueuedMessage = useCallback(async (messageId: string) => {
+    console.log('🗑️ [MainApp] Deleting queued message:', messageId);
+    
+    // Find the message to get its queueId
+    const allMessages = Object.values(conversations).flatMap(conv => conv.messages);
+    const targetMessage = allMessages.find(m => m.id === messageId);
+    
+    // Remove from IndexedDB queue if we have a queueId
+    if (targetMessage && (targetMessage as { queueId?: string }).queueId) {
+      await offlineQueueService.removePendingMessage((targetMessage as { queueId?: string }).queueId!);
+    } else {
+      // Fallback: clear all messages (shouldn't happen normally)
+      console.warn('[MainApp] No queueId found, clearing all pending messages');
+      await offlineQueueService.clearAllMessages();
+    }
+    
+    // Remove from UI state
+    setConversations(prev => {
+      const updated = { ...prev };
+      Object.keys(updated).forEach(convId => {
+        updated[convId] = {
+          ...updated[convId],
+          messages: updated[convId].messages.filter(m => m.id !== messageId),
+          updatedAt: Date.now()
+        };
+      });
+      return updated;
+    });
+    
+    // Update activeConversation if needed
+    if (activeConversation) {
+      setActiveConversation(prev => prev ? {
+        ...prev,
+        messages: prev.messages.filter(m => m.id !== messageId),
+        updatedAt: Date.now()
+      } : null);
+    }
+    
+    toastService.success('Queued message removed');
+  }, [conversations, activeConversation]);
+
+  // ✅ EDIT MESSAGE: Allow user to edit and resubmit a query
+  const handleEditMessage = useCallback((messageId: string, content: string) => {
+    console.log('✏️ [MainApp] Editing message:', messageId);
+    
+    if (!activeConversation) return;
+    
+    // Find the message index
+    const messageIndex = activeConversation.messages.findIndex(m => m.id === messageId);
+    if (messageIndex === -1) return;
+    
+    // Remove the user message and all subsequent messages (including AI response)
+    const messagesToRemove = activeConversation.messages.slice(messageIndex);
+    const messagesToKeep = activeConversation.messages.slice(0, messageIndex);
+    
+    // Update conversations state
+    setConversations(prev => {
+      const updated = { ...prev };
+      if (updated[activeConversation.id]) {
+        updated[activeConversation.id] = {
+          ...updated[activeConversation.id],
+          messages: messagesToKeep,
+          updatedAt: Date.now()
+        };
+        setActiveConversation(updated[activeConversation.id]);
+      }
+      return updated;
+    });
+    
+    // Remove messages from database (fire and forget)
+    messagesToRemove.forEach(msg => {
+      ConversationService.deleteMessage(activeConversation.id, msg.id)
+        .catch(err => console.warn('Failed to delete message from DB:', err));
+    });
+    
+    // Clear subtabs for the conversation (they'll regenerate with new response)
+    if (activeConversation.subTabs && activeConversation.subTabs.length > 0) {
+      setConversations(prev => {
+        const updated = { ...prev };
+        if (updated[activeConversation.id]) {
+          updated[activeConversation.id] = {
+            ...updated[activeConversation.id],
+            subTabs: [],
+            updatedAt: Date.now()
+          };
+        }
+        return updated;
+      });
+    }
+    
+    // Set the message in the input field
+    setCurrentInputMessage(content);
+    
+    toastService.info('Message removed - edit and resend');
+  }, [activeConversation]);
+
+  // ✅ FEEDBACK: Handle thumbs up/down on AI responses
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [feedbackMessageId, setFeedbackMessageId] = useState<string | null>(null);
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+  
+  const handleFeedback = useCallback(async (messageId: string, type: 'up' | 'down') => {
+    console.log('📊 [MainApp] Feedback:', { messageId, type });
+    
+    if (!activeConversation) return;
+    
+    if (type === 'up') {
+      // Quick positive feedback - submit immediately
+      const { feedbackService } = await import('../services/feedbackService');
+      const result = await feedbackService.submitPositiveFeedback(
+        messageId,
+        activeConversation.id,
+        'message'
+      );
+      
+      if (result.success) {
+        toastService.success('Thanks for your feedback! 👍');
+      }
+    } else {
+      // Negative feedback - open modal for details
+      setFeedbackMessageId(messageId);
+      setFeedbackModalOpen(true);
+    }
+  }, [activeConversation]);
+  
+  const handleSubmitNegativeFeedback = useCallback(async (category: string, comment: string) => {
+    if (!feedbackMessageId || !activeConversation) return;
+    
+    setIsSubmittingFeedback(true);
+    
+    try {
+      const { feedbackService, FeedbackCategory } = await import('../services/feedbackService');
+      const result = await feedbackService.submitNegativeFeedback(
+        feedbackMessageId,
+        activeConversation.id,
+        category as FeedbackCategory,
+        comment,
+        'message'
+      );
+      
+      if (result.success) {
+        toastService.success('Thanks for helping us improve! 🙏');
+      } else {
+        toastService.error('Failed to submit feedback');
+      }
+    } catch (error) {
+      console.error('[MainApp] Error submitting feedback:', error);
+      toastService.error('Failed to submit feedback');
+    } finally {
+      setIsSubmittingFeedback(false);
+      setFeedbackModalOpen(false);
+      setFeedbackMessageId(null);
+    }
+  }, [feedbackMessageId, activeConversation]);
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleSendMessage = async (message: string, imageUrl?: string) => {
     // ✅ RATE LIMITING: Prevent rapid-fire duplicate requests
@@ -1749,6 +1960,65 @@ const MainApp: React.FC<MainAppProps> = ({
     }
     
     lastRequestTimeRef.current = now;
+    
+    // ✅ OFFLINE QUEUE: Queue message when offline instead of failing
+    if (!navigator.onLine) {
+      console.log('📴 [MainApp] User is offline, attempting to queue message...');
+      
+      if (!activeConversation) {
+        toastService.error('Cannot queue message: no active conversation');
+        return;
+      }
+      
+      // Check if we can still queue (max 10 messages)
+      const canQueue = await offlineQueueService.canQueueMessage();
+      if (!canQueue) {
+        toastService.error('Offline queue is full (max 10 messages). Please wait for network to restore.');
+        return;
+      }
+      
+      // Queue the message for later
+      const queuedId = await offlineQueueService.queueMessage({
+        conversationId: activeConversation.id,
+        content: message,
+        imageUrl: imageUrl,
+        timestamp: Date.now()
+      });
+      
+      if (queuedId) {
+        // Add message to local state with pending indicator
+        // Store queueId so we can delete it later
+        const pendingMessage = {
+          id: `msg_pending_${Date.now()}`,
+          content: message + '\n\n_⏳ Queued - will send when online_',
+          role: 'user' as const,
+          timestamp: Date.now(),
+          imageUrl,
+          queueId: queuedId, // Track the IndexedDB queue ID
+        };
+        
+        setConversations(prev => {
+          const updated = { ...prev };
+          if (updated[activeConversation.id]) {
+            updated[activeConversation.id] = {
+              ...updated[activeConversation.id],
+              messages: [...updated[activeConversation.id].messages, pendingMessage],
+              updatedAt: Date.now()
+            };
+            setActiveConversation(updated[activeConversation.id]);
+          }
+          return updated;
+        });
+        
+        // Simple toast - user can delete from the chat UI
+        toastService.info('Message queued - will send when online');
+        console.log('✅ [MainApp] Message queued for offline sending:', queuedId);
+      } else {
+        toastService.error('Failed to queue message for offline sending');
+      }
+      
+      return; // Exit early - don't try to send while offline
+    }
     
     // Track user activity
     sessionService.trackActivity('send_message');
@@ -2643,6 +2913,86 @@ const MainApp: React.FC<MainAppProps> = ({
     handleSendMessageRef.current = handleSendMessage;
   }, [handleSendMessage]);
 
+  // ✅ OFFLINE QUEUE: Flush queued messages when network is restored
+  useEffect(() => {
+    const handleNetworkRestored = async () => {
+      console.log('🌐 [MainApp] Network restored - checking for queued messages...');
+      
+      try {
+        const pendingMessages = await offlineQueueService.getPendingMessages();
+        
+        if (pendingMessages.length === 0) {
+          console.log('✅ [MainApp] No queued messages to send');
+          return;
+        }
+        
+        console.log(`📤 [MainApp] Flushing ${pendingMessages.length} queued messages...`);
+        toastService.info(`Sending ${pendingMessages.length} queued message(s)...`);
+        
+        // Process messages in order
+        for (const pending of pendingMessages) {
+          try {
+            // Wait a bit between messages to avoid rate limiting
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Switch to the conversation if needed
+            if (activeConversation?.id !== pending.conversationId) {
+              console.log(`📝 [MainApp] Queued message for different conversation: ${pending.conversationId}`);
+              // Just log for now - user may have changed conversations
+            }
+            
+            // Send the message (only if we're in the right conversation)
+            if (handleSendMessageRef.current && activeConversation?.id === pending.conversationId) {
+              // Remove the pending message from state first (the one with "⏳ Queued" marker)
+              setConversations(prev => {
+                const updated = { ...prev };
+                if (updated[pending.conversationId]) {
+                  updated[pending.conversationId] = {
+                    ...updated[pending.conversationId],
+                    messages: updated[pending.conversationId].messages.filter(
+                      m => !m.content.includes('⏳ Queued') || m.content.replace('\n\n_⏳ Queued - will send when online_', '') !== pending.content
+                    ),
+                    updatedAt: Date.now()
+                  };
+                }
+                return updated;
+              });
+              
+              // Re-send the actual message
+              await handleSendMessageRef.current(pending.content, pending.imageUrl);
+              
+              // Remove from queue after successful send
+              await offlineQueueService.removePendingMessage(pending.id);
+              console.log(`✅ [MainApp] Sent queued message: ${pending.content.substring(0, 30)}...`);
+            } else {
+              console.log(`⏭️ [MainApp] Skipping queued message (different conversation): ${pending.conversationId}`);
+              // Keep in queue for now - user might switch back
+            }
+          } catch (error) {
+            console.error(`❌ [MainApp] Failed to send queued message:`, error);
+            // Keep the message in queue for retry
+          }
+        }
+        
+        // Check how many remain
+        const remaining = await offlineQueueService.getPendingMessages();
+        if (remaining.length === 0) {
+          toastService.success('All queued messages sent!');
+        } else {
+          toastService.info(`${remaining.length} message(s) still queued for other conversations`);
+        }
+      } catch (error) {
+        console.error('❌ [MainApp] Failed to flush offline queue:', error);
+      }
+    };
+    
+    window.addEventListener('otakon:network-restored', handleNetworkRestored);
+    
+    return () => {
+      window.removeEventListener('otakon:network-restored', handleNetworkRestored);
+    };
+  }, [activeConversation]);
+
   if (isInitializing && (!user || Object.keys(conversations).length === 0)) {
     return (
       <div className="h-screen bg-background flex items-center justify-center">
@@ -2898,6 +3248,9 @@ const MainApp: React.FC<MainAppProps> = ({
                   queuedImage={queuedScreenshot}
                   onImageQueued={handleScreenshotQueued}
                   isSidebarOpen={sidebarOpen}
+                  onDeleteQueuedMessage={handleDeleteQueuedMessage}
+                  onEditMessage={handleEditMessage}
+                  onFeedback={handleFeedback}
                 />
               </ErrorBoundary>
             </div>
@@ -2953,6 +3306,17 @@ const MainApp: React.FC<MainAppProps> = ({
         onClose={() => setGameInfoModalOpen(false)}
         gameData={currentGameIGDBData}
         gameName={activeConversation?.gameTitle || ''}
+      />
+
+      {/* Feedback Modal - AI Response Feedback */}
+      <FeedbackModal
+        isOpen={feedbackModalOpen}
+        onClose={() => {
+          setFeedbackModalOpen(false);
+          setFeedbackMessageId(null);
+        }}
+        onSubmit={handleSubmitNegativeFeedback}
+        isSubmitting={isSubmittingFeedback}
       />
 
       {/* Settings Context Menu */}

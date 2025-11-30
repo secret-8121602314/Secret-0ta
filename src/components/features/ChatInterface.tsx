@@ -48,6 +48,9 @@ interface ChatMessageComponentProps {
   isLoading: boolean;
   conversationId?: string;
   onDownloadImage: (url: string, index: number) => void;
+  onDeleteQueuedMessage?: (messageId: string) => void;
+  onEditMessage?: (messageId: string, content: string) => void;
+  onFeedback?: (messageId: string, type: 'up' | 'down') => void;
 }
 
 const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
@@ -56,7 +59,10 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
   onSuggestedPromptClick,
   isLoading,
   conversationId,
-  onDownloadImage
+  onDownloadImage,
+  onDeleteQueuedMessage,
+  onEditMessage,
+  onFeedback
 }) => {
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
   
@@ -218,6 +224,31 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
             {/* TTS Controls for AI messages */}
             {message.role === 'assistant' && <TTSControls />}
             
+            {/* Feedback buttons for AI messages */}
+            {message.role === 'assistant' && onFeedback && !isLoading && (
+              <div className="flex items-center gap-2 mt-2">
+                <span className="text-xs text-[#A3A3A3]">Was this helpful?</span>
+                <button
+                  onClick={() => onFeedback(message.id, 'up')}
+                  className="p-1.5 text-[#A3A3A3] hover:text-green-500 hover:bg-green-500/10 rounded transition-colors"
+                  title="Good response"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => onFeedback(message.id, 'down')}
+                  className="p-1.5 text-[#A3A3A3] hover:text-red-500 hover:bg-red-500/10 rounded transition-colors"
+                  title="Poor response"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018c.163 0 .326.02.485.06L17 4m-7 10v2a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
+                  </svg>
+                </button>
+              </div>
+            )}
+            
             {/* Show suggested prompts after AI response */}
             {message.role === 'assistant' && suggestedPrompts.length > 0 && onSuggestedPromptClick && !isLoading && (
               <div className="mt-4">
@@ -230,9 +261,41 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
               </div>
             )}
             
-            <p className="text-xs text-[#A3A3A3] mt-3">
-              {new Date(message.timestamp).toLocaleTimeString()}
-            </p>
+            <div className="flex items-center gap-2 mt-3">
+              <p className="text-xs text-[#A3A3A3]">
+                {new Date(message.timestamp).toLocaleTimeString()}
+              </p>
+              {/* Edit button for user messages (not pending) */}
+              {message.role === 'user' && !message.id.startsWith('msg_pending_') && onEditMessage && (
+                <button
+                  onClick={() => {
+                    // Extract clean content (remove queued indicator if present)
+                    const cleanContent = message.content.replace(/\n\n_⏳ Queued.*_$/, '');
+                    onEditMessage(message.id, cleanContent);
+                  }}
+                  className="flex items-center gap-1 px-2 py-0.5 text-xs text-[#A3A3A3] hover:text-[#FF4D4D] border border-[#424242] hover:border-[#FF4D4D]/50 rounded transition-colors"
+                  title="Edit and resubmit"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Edit
+                </button>
+              )}
+              {/* Delete button for queued messages */}
+              {message.id.startsWith('msg_pending_') && onDeleteQueuedMessage && (
+                <button
+                  onClick={() => onDeleteQueuedMessage(message.id)}
+                  className="flex items-center gap-1 px-2 py-0.5 text-xs text-[#FF4D4D] border border-[#FF4D4D]/50 rounded hover:bg-[#FF4D4D]/10 transition-colors"
+                  title="Remove from queue"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Remove
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -244,13 +307,16 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
 // Memoize the component to prevent unnecessary re-renders
 // Only re-renders if message props actually change
 const MemoizedChatMessage = memo(ChatMessageComponent, (prevProps, nextProps) => {
-  // Custom comparison: only re-render if message content, suggested prompts, or loading state changes
+  // Custom comparison: only re-render if message props actually change
   return (
     prevProps.message.id === nextProps.message.id &&
     prevProps.message.content === nextProps.message.content &&
     prevProps.message.timestamp === nextProps.message.timestamp &&
     prevProps.isLoading === nextProps.isLoading &&
-    prevProps.suggestedPrompts.length === nextProps.suggestedPrompts.length
+    prevProps.suggestedPrompts.length === nextProps.suggestedPrompts.length &&
+    prevProps.onDeleteQueuedMessage === nextProps.onDeleteQueuedMessage &&
+    prevProps.onEditMessage === nextProps.onEditMessage &&
+    prevProps.onFeedback === nextProps.onFeedback
   );
 });
 
@@ -276,9 +342,12 @@ interface ChatInterfaceProps {
   onToggleActiveSession?: () => void;
   initialMessage?: string;
   onMessageChange?: (message: string) => void;
-  queuedImage?: string | null; // ✅ NEW: For WebSocket screenshot in manual mode
-  onImageQueued?: () => void; // ✅ NEW: Callback when image is accepted
-  isSidebarOpen?: boolean; // ✅ NEW: To close quick actions when sidebar opens
+  queuedImage?: string | null;
+  onImageQueued?: () => void;
+  isSidebarOpen?: boolean;
+  onDeleteQueuedMessage?: (messageId: string) => void;
+  onEditMessage?: (messageId: string, content: string) => void;
+  onFeedback?: (messageId: string, type: 'up' | 'down') => void;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -297,9 +366,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onToggleActiveSession,
   initialMessage = '',
   onMessageChange,
-  queuedImage = null, // ✅ NEW: Receive queued image from WebSocket
-  onImageQueued, // ✅ NEW: Callback when image is set
-  isSidebarOpen = false, // ✅ NEW: Close quick actions when sidebar opens
+  queuedImage = null,
+  onImageQueued,
+  isSidebarOpen = false,
+  onDeleteQueuedMessage,
+  onEditMessage,
+  onFeedback,
 }) => {
   const [message, setMessage] = useState(initialMessage);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -601,6 +673,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               isLoading={isLoading}
               conversationId={conversation?.id}
               onDownloadImage={downloadImage}
+              onDeleteQueuedMessage={onDeleteQueuedMessage}
+              onEditMessage={onEditMessage}
+              onFeedback={onFeedback}
             />
           ))
         )}
@@ -646,6 +721,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               key={`subtabs-${conversation.id}`}
               subtabs={conversation.subtabs}
               isLoading={isLoading}
+              onFeedback={onFeedback}
             />
           </ErrorBoundary>
         </div>

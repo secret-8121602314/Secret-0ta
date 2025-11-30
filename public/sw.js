@@ -626,29 +626,265 @@ async function incrementRetryCount(syncTag) {
   }
 }
 
-// Stub functions for IndexedDB integration
+// ✅ IndexedDB integration for offline data persistence
+const OFFLINE_DB_NAME = 'otagon-offline-db';
+const OFFLINE_DB_VERSION = 1;
+
+// Helper to open IndexedDB connection
+async function openOfflineDB() {
+  return new Promise((resolve, reject) => {
+    try {
+      const request = indexedDB.open(OFFLINE_DB_NAME, OFFLINE_DB_VERSION);
+      
+      request.onerror = () => {
+        console.error('[SW] Failed to open IndexedDB:', request.error);
+        resolve(null);
+      };
+      
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+      
+      request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        
+        // Create stores if they don't exist
+        if (!db.objectStoreNames.contains('pending-messages')) {
+          const messageStore = db.createObjectStore('pending-messages', { keyPath: 'id' });
+          messageStore.createIndex('conversationId', 'conversationId', { unique: false });
+          messageStore.createIndex('timestamp', 'timestamp', { unique: false });
+        }
+        
+        if (!db.objectStoreNames.contains('pending-voice')) {
+          db.createObjectStore('pending-voice', { keyPath: 'id' });
+        }
+        
+        if (!db.objectStoreNames.contains('pending-images')) {
+          const imageStore = db.createObjectStore('pending-images', { keyPath: 'id' });
+          imageStore.createIndex('conversationId', 'conversationId', { unique: false });
+        }
+        
+        console.log('[SW] IndexedDB schema created/upgraded');
+      };
+    } catch (error) {
+      console.error('[SW] IndexedDB open error:', error);
+      resolve(null);
+    }
+  });
+}
+
+// Get all pending chat messages from IndexedDB
 async function getOfflineChatData() {
-  return { conversations: [], offline: true };
+  try {
+    const db = await openOfflineDB();
+    if (!db) {
+      console.log('[SW] IndexedDB not available, returning empty data');
+      return { conversations: [], offline: true };
+    }
+    
+    return new Promise((resolve) => {
+      try {
+        const transaction = db.transaction(['pending-messages'], 'readonly');
+        const store = transaction.objectStore('pending-messages');
+        const request = store.getAll();
+        
+        request.onsuccess = () => {
+          const messages = request.result || [];
+          console.log('[SW] Retrieved', messages.length, 'pending messages from IndexedDB');
+          
+          // Group messages by conversationId for sync
+          const conversations = {};
+          messages.forEach(msg => {
+            if (!conversations[msg.conversationId]) {
+              conversations[msg.conversationId] = [];
+            }
+            conversations[msg.conversationId].push(msg);
+          });
+          
+          resolve({ 
+            conversations: Object.entries(conversations).map(([id, msgs]) => ({
+              conversationId: id,
+              messages: msgs
+            })),
+            offline: true 
+          });
+        };
+        
+        request.onerror = () => {
+          console.error('[SW] Failed to get messages from IndexedDB:', request.error);
+          resolve({ conversations: [], offline: true });
+        };
+        
+        transaction.oncomplete = () => {
+          db.close();
+        };
+      } catch (error) {
+        console.error('[SW] Error reading messages:', error);
+        resolve({ conversations: [], offline: true });
+      }
+    });
+  } catch (error) {
+    console.error('[SW] getOfflineChatData error:', error);
+    return { conversations: [], offline: true };
+  }
 }
 
+// Get pending voice data from IndexedDB
 async function getOfflineVoiceData() {
-  return [];
+  try {
+    const db = await openOfflineDB();
+    if (!db) return [];
+    
+    return new Promise((resolve) => {
+      try {
+        const transaction = db.transaction(['pending-voice'], 'readonly');
+        const store = transaction.objectStore('pending-voice');
+        const request = store.getAll();
+        
+        request.onsuccess = () => {
+          const data = request.result || [];
+          console.log('[SW] Retrieved', data.length, 'pending voice items from IndexedDB');
+          resolve(data);
+        };
+        
+        request.onerror = () => {
+          resolve([]);
+        };
+        
+        transaction.oncomplete = () => {
+          db.close();
+        };
+      } catch {
+        resolve([]);
+      }
+    });
+  } catch {
+    return [];
+  }
 }
 
+// Get pending image data from IndexedDB
 async function getOfflineImageData() {
-  return [];
+  try {
+    const db = await openOfflineDB();
+    if (!db) return [];
+    
+    return new Promise((resolve) => {
+      try {
+        const transaction = db.transaction(['pending-images'], 'readonly');
+        const store = transaction.objectStore('pending-images');
+        const request = store.getAll();
+        
+        request.onsuccess = () => {
+          const data = request.result || [];
+          console.log('[SW] Retrieved', data.length, 'pending images from IndexedDB');
+          resolve(data);
+        };
+        
+        request.onerror = () => {
+          resolve([]);
+        };
+        
+        transaction.oncomplete = () => {
+          db.close();
+        };
+      } catch {
+        resolve([]);
+      }
+    });
+  } catch {
+    return [];
+  }
 }
 
+// Clear all pending chat messages from IndexedDB
 async function clearOfflineData() {
-  console.log('[SW] Offline data cleared');
+  try {
+    const db = await openOfflineDB();
+    if (!db) {
+      console.log('[SW] IndexedDB not available for clearing');
+      return;
+    }
+    
+    return new Promise((resolve) => {
+      try {
+        const transaction = db.transaction(['pending-messages'], 'readwrite');
+        const store = transaction.objectStore('pending-messages');
+        const request = store.clear();
+        
+        request.onsuccess = () => {
+          console.log('[SW] Offline chat data cleared from IndexedDB');
+          resolve();
+        };
+        
+        request.onerror = () => {
+          console.error('[SW] Failed to clear offline data:', request.error);
+          resolve();
+        };
+        
+        transaction.oncomplete = () => {
+          db.close();
+        };
+      } catch (error) {
+        console.error('[SW] Error clearing offline data:', error);
+        resolve();
+      }
+    });
+  } catch (error) {
+    console.error('[SW] clearOfflineData error:', error);
+  }
 }
 
+// Clear pending voice data from IndexedDB
 async function clearOfflineVoiceData() {
-  console.log('[SW] Voice data cleared');
+  try {
+    const db = await openOfflineDB();
+    if (!db) return;
+    
+    return new Promise((resolve) => {
+      try {
+        const transaction = db.transaction(['pending-voice'], 'readwrite');
+        const store = transaction.objectStore('pending-voice');
+        store.clear();
+        console.log('[SW] Voice data cleared from IndexedDB');
+        
+        transaction.oncomplete = () => {
+          db.close();
+          resolve();
+        };
+      } catch {
+        resolve();
+      }
+    });
+  } catch {
+    console.log('[SW] Voice data clear skipped');
+  }
 }
 
+// Clear pending image data from IndexedDB
 async function clearOfflineImageData() {
-  console.log('[SW] Image data cleared');
+  try {
+    const db = await openOfflineDB();
+    if (!db) return;
+    
+    return new Promise((resolve) => {
+      try {
+        const transaction = db.transaction(['pending-images'], 'readwrite');
+        const store = transaction.objectStore('pending-images');
+        store.clear();
+        console.log('[SW] Image data cleared from IndexedDB');
+        
+        transaction.oncomplete = () => {
+          db.close();
+          resolve();
+        };
+      } catch {
+        resolve();
+      }
+    });
+  } catch {
+    console.log('[SW] Image data clear skipped');
+  }
 }
 
 console.log('[SW] Service worker script loaded:', CACHE_VERSION);

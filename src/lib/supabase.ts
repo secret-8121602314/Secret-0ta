@@ -33,7 +33,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
 // Global auth state listener for PWA session management
 if (typeof window !== 'undefined') {
   supabase.auth.onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+    if (event === 'SIGNED_IN') {
       if (session?.access_token) {
         // Store session timestamp for PWA mode
         localStorage.setItem('otakon_session_refreshed', Date.now().toString());
@@ -43,8 +43,30 @@ if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('otakon:session-refreshed', {
           detail: { event, session }
         }));
+      }
+    } else if (event === 'TOKEN_REFRESHED') {
+      if (session?.access_token) {
+        // Token successfully refreshed
+        localStorage.setItem('otakon_session_refreshed', Date.now().toString());
+        localStorage.setItem('otakon_last_session_check', Date.now().toString());
         
-              }
+        window.dispatchEvent(new CustomEvent('otakon:session-refreshed', {
+          detail: { event, session }
+        }));
+      } else {
+        // ✅ FIX: Token refresh was attempted but failed (no valid session)
+        // This happens when the refresh token is expired or revoked
+        console.error('🔐 [Supabase] Token refresh failed - session expired');
+        
+        // Clear stale session data
+        localStorage.removeItem('otakon_session_refreshed');
+        localStorage.removeItem('otakon_last_session_check');
+        
+        // Notify app of session expiry so it can prompt re-login
+        window.dispatchEvent(new CustomEvent('otakon:session-expired', {
+          detail: { reason: 'token_refresh_failed', timestamp: Date.now() }
+        }));
+      }
     } else if (event === 'SIGNED_OUT') {
       // Clear all session data
       localStorage.removeItem('otakon_session_refreshed');
@@ -52,14 +74,42 @@ if (typeof window !== 'undefined') {
       
       // Notify app of signout
       window.dispatchEvent(new CustomEvent('otakon:signed-out'));
-      
-          } else if (event === 'USER_UPDATED') {
-            // Notify app of user update
+    } else if (event === 'USER_UPDATED') {
+      // Notify app of user update
       window.dispatchEvent(new CustomEvent('otakon:user-updated', {
         detail: { session }
       }));
     }
   });
+  
+  // ✅ FIX: Periodic session health check for long-running sessions
+  // Validates session every 5 minutes to catch expired tokens proactively
+  const SESSION_CHECK_INTERVAL = 5 * 60 * 1000; // 5 minutes
+  
+  setInterval(async () => {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error || !session) {
+        // Session is invalid or expired
+        const lastCheck = localStorage.getItem('otakon_last_session_check');
+        const hadSession = lastCheck && (Date.now() - parseInt(lastCheck)) < SESSION_CHECK_INTERVAL * 2;
+        
+        if (hadSession) {
+          // User had a valid session recently but it's now gone
+          console.warn('🔐 [Supabase] Session expired during health check');
+          window.dispatchEvent(new CustomEvent('otakon:session-expired', {
+            detail: { reason: 'health_check_failed', timestamp: Date.now() }
+          }));
+        }
+      } else {
+        // Session is valid, update timestamp
+        localStorage.setItem('otakon_last_session_check', Date.now().toString());
+      }
+    } catch (error) {
+      console.error('🔐 [Supabase] Session health check error:', error);
+    }
+  }, SESSION_CHECK_INTERVAL);
 }
 
 // Re-export Database type for convenience

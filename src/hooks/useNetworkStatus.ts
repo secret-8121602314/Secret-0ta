@@ -128,10 +128,50 @@ export const useNetworkStatus = () => {
       }
     }, 30000); // Check every 30 seconds
 
+    // ✅ FIX: Validate session when app resumes from background (visibility change)
+    // This catches cases where session expired while user was away
+    const handleVisibilityChange = async () => {
+      if (!document.hidden && navigator.onLine) {
+        console.log('👁️ [NetworkStatus] App resumed - validating session');
+        
+        try {
+          const { data: { session }, error } = await supabase.auth.getSession();
+          
+          if (error) {
+            console.error('👁️ [NetworkStatus] Session validation error:', error);
+            // Don't immediately log out - let the session-expired event handler deal with it
+            return;
+          }
+          
+          if (!session) {
+            // Check if we previously had a session
+            const lastRefresh = localStorage.getItem('otakon_session_refreshed');
+            if (lastRefresh) {
+              console.warn('👁️ [NetworkStatus] Session lost while app was in background');
+              window.dispatchEvent(new CustomEvent('otakon:session-expired', {
+                detail: { reason: 'visibility_check_failed', timestamp: Date.now() }
+              }));
+            }
+          } else {
+            // Session is valid - attempt refresh to extend it
+            const { error: refreshError } = await supabase.auth.refreshSession();
+            if (!refreshError) {
+              console.log('👁️ [NetworkStatus] Session refreshed on resume');
+            }
+          }
+        } catch (err) {
+          console.error('👁️ [NetworkStatus] Error validating session on resume:', err);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     // Cleanup
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (connection) {
         connection.removeEventListener('change', updateConnectionType);
       }
