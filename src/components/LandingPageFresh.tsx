@@ -372,11 +372,11 @@ const QuoteIcon = () => (
 
 const Testimonial = React.memo(({ quote, author, title, index, isVisible }: { quote: string, author: string, title: string, index: number, isVisible: boolean }) => (
     <div 
-        className={`bg-gradient-to-r from-[#1C1C1C]/60 to-[#0A0A0A]/60 backdrop-blur-xl border-0 md:border-2 rounded-3xl p-6 md:p-8 flex flex-col justify-between h-full animate-fade-slide-up transition-all duration-500 ${
+        className={`bg-[#0F0F0F] border border-neutral-800/60 md:border-2 rounded-2xl md:rounded-3xl p-6 md:p-8 flex flex-col justify-between h-full animate-fade-slide-up transition-all duration-500 ${
             isVisible 
-                ? 'from-[#1C1C1C]/80 to-[#0A0A0A]/80 md:border-neutral-700/80 scale-105 shadow-2xl shadow-[#E53A3A]/10' 
+                ? 'md:border-neutral-700/80 md:scale-105 md:shadow-2xl md:shadow-[#E53A3A]/10' 
                 : 'md:border-neutral-800/60'
-        } md:hover:bg-gradient-to-r md:hover:from-[#1C1C1C]/80 md:hover:to-[#0A0A0A]/80 md:hover:border-neutral-700/80 md:hover:scale-105 md:hover:shadow-2xl md:hover:shadow-[#E53A3A]/10`}
+        } md:hover:bg-[#141414] md:hover:border-neutral-700/80 md:hover:scale-105 md:hover:shadow-2xl md:hover:shadow-[#E53A3A]/10`}
         style={{ transitionDelay: isVisible ? `${index * 150}ms` : '0ms' }}
     >
         <div className="mb-6">
@@ -448,14 +448,14 @@ const TestimonialsCarousel = ({ testimonials }: { testimonials: Array<{ quote: s
     }, [emblaApi, onSelect]);
 
     return (
-        <div className="relative">
+        <div className="relative overflow-hidden">
             {/* Carousel Container */}
             <div className="overflow-hidden" ref={emblaRef}>
-                <div className="flex touch-pan-y touch-pinch-zoom">
+                <div className="flex touch-pan-y touch-pinch-zoom -ml-4">
                     {testimonials.map((testimonial, index) => (
                         <div 
                             key={index}
-                            className="flex-[0_0_100%] min-w-0 px-4"
+                            className="flex-[0_0_100%] min-w-0 pl-4"
                         >
                             <Testimonial
                                 quote={testimonial.quote}
