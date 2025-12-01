@@ -738,14 +738,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                 <section className="relative pt-20 pb-6 md:pb-8 text-center">
                     
                     <div className="container mx-auto px-6 relative overflow-visible">
-                        <div className="flex flex-col items-center justify-center gap-4 mb-10 overflow-visible">
+                        <div className="flex flex-col items-center justify-center gap-1 md:gap-4 mb-4 md:mb-10 overflow-visible">
                             <Logo className="h-32 w-32" spinOnce={true} />
                             <h1 
                                 className="text-6xl md:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] leading-none py-2"
                                 style={{
                                     lineHeight: '1.3',
-                                    paddingTop: '1rem',
-                                    paddingBottom: '1rem',
+                                    paddingTop: '0.25rem',
+                                    paddingBottom: '0.25rem',
                                     display: 'block',
                                     overflow: 'visible',
                                     minHeight: '1.3em',
@@ -756,11 +756,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
             </h1>
           </div>
           
-                        <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 text-white leading-tight">
+                        <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-3 md:mb-6 text-white leading-tight">
                             Never Get Stuck Again
                         </h2>
                         
-                        <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-neutral-300 mb-8 font-medium px-4">
+                        <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-neutral-300 mb-6 md:mb-8 font-medium px-4">
                             Get instant, spoiler-free hints without leaving your game
                         </p>
                         
