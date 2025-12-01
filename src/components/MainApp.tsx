@@ -1874,10 +1874,14 @@ const MainApp: React.FC<MainAppProps> = ({
     });
     
     // Remove messages from database (fire and forget)
-    messagesToRemove.forEach(msg => {
-      ConversationService.deleteMessage(activeConversation.id, msg.id)
-        .catch(err => console.warn('Failed to delete message from DB:', err));
-    });
+    // Use MessageService which has the deleteMessage method
+    import('../services/messageService').then(({ MessageService }) => {
+      const messageService = MessageService.getInstance();
+      messagesToRemove.forEach(msg => {
+        messageService.deleteMessage(activeConversation.id, msg.id)
+          .catch(err => console.warn('Failed to delete message from DB:', err));
+      });
+    }).catch(err => console.warn('Failed to import MessageService:', err));
     
     // Set the message in the input field
     setCurrentInputMessage(content);
