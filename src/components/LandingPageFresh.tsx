@@ -534,7 +534,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
   const backgroundRef = useRef<HTMLDivElement>(null);
 
   // Scroll animation states for mobile
-  const [chatHintVisible, setChatHintVisible] = useState(false);
+  const [_chatHintVisible, setChatHintVisible] = useState(false);
   const [testimonialsVisible, setTestimonialsVisible] = useState<Record<number, boolean>>({});
   
   // Refs for IntersectionObserver

@@ -257,25 +257,18 @@ function App() {
       const customEvent = event as CustomEvent<{ reason: string; timestamp: number }>;
       console.warn('🔐 [App] Session expired:', customEvent.detail?.reason);
       
-      // Show non-blocking toast first with action button
-      toastService.show({
-        title: 'Session Expired',
-        message: 'Your session has expired. Please log in again to continue.',
-        type: 'warning',
-        duration: 0, // Don't auto-dismiss
-        action: {
-          label: 'Log In',
-          onClick: () => {
-            // Clear state and redirect to login
-            setAuthState({ user: null, isLoading: false, error: null });
-            setAppState((prev: AppState) => ({
-              ...prev,
-              view: 'app',
-              onboardingStatus: 'login'
-            }));
-          }
-        }
-      });
+      // Show warning toast - session expired
+      toastService.warning('Your session has expired. Please log in again to continue.');
+      
+      // Clear state and redirect to login after a short delay
+      setTimeout(() => {
+        setAuthState({ user: null, isLoading: false, error: null });
+        setAppState((prev: AppState) => ({
+          ...prev,
+          view: 'app',
+          onboardingStatus: 'login'
+        }));
+      }, 1500);
     };
 
     window.addEventListener('otakon:session-refreshed', handleSessionRefreshed);

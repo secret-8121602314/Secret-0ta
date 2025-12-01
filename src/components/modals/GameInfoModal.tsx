@@ -107,25 +107,22 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
     <Modal 
       isOpen={isOpen} 
       onClose={onClose} 
-      title={
-        <div className="flex items-center gap-2">
-          {gameHistory.length > 0 && (
-            <button
-              onClick={handleBack}
-              className="p-1 hover:bg-white/10 rounded-lg transition-colors"
-              title="Back to previous game"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-          )}
-          <span>{currentGameData.name || gameName}</span>
-        </div>
-      }
+      title={gameName || 'Game Info'}
+      maxWidth="lg"
     >
-      <div className="space-y-4 max-h-[70vh] overflow-hidden flex flex-col">
-        {/* Loading overlay for similar games */}
+      {/* Back button if we have history */}
+      {gameHistory.length > 0 && (
+        <button
+          onClick={handleBack}
+          className="absolute top-4 left-4 p-1 hover:bg-white/10 rounded-lg transition-colors z-10"
+          title="Back to previous game"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+      )}
+      <div className="space-y-4 max-h-[70vh] overflow-hidden flex flex-col">\n        {/* Loading overlay for similar games */}
         <AnimatePresence>
           {isLoadingSimilar && (
             <motion.div

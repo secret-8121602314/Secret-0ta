@@ -486,7 +486,7 @@ export async function fetchCoverUrlsFromCache(gameNames: string[]): Promise<Map<
     }
     
     console.log('[IGDBService] Fetched cover URLs:', coverUrls.size, 'of', gameNames.length, 
-      '(', coverUrls.size - missingFromLocalCache.length + data?.length, 'from localStorage,', 
+      '(', coverUrls.size - missingFromLocalCache.length + (data?.length ?? 0), 'from localStorage,', 
       data?.length || 0, 'from Supabase)');
   } catch (error) {
     console.warn('[IGDBService] Error in fetchCoverUrlsFromCache:', error);

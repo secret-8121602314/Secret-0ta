@@ -167,7 +167,7 @@ const MainApp: React.FC<MainAppProps> = ({
   
   // ✅ TIER UPGRADE: Track previous tier to detect upgrades
   const previousTierRef = useRef<string | null>(null);
-  const [isGeneratingSubtabs, setIsGeneratingSubtabs] = useState(false);
+  const [_isGeneratingSubtabs, setIsGeneratingSubtabs] = useState(false);
   
   // ✅ PERFORMANCE: Memoize currentUser to prevent re-creating object on every render
   const currentUser = useMemo(() => user || { tier: 'free' } as User, [user]);
@@ -566,7 +566,7 @@ const MainApp: React.FC<MainAppProps> = ({
         // ✅ PWA FIX: Force refresh on first load attempt to ensure we get the current user's data
         // ✅ FIX: Also force refresh if this is a new user login
         // This prevents stale cache data from previous user affecting new user
-        const forceRefresh = retryCount === 0 || isNewUserLogin;
+        const forceRefresh = retryCount === 0 || !!isNewUserLogin;
         
         // ✅ FIX: Ensure Game Hub exists first - this returns it directly (RLS workaround)
         const gameHubFromEnsure = await ConversationService.ensureGameHubExists(forceRefresh);
@@ -774,12 +774,7 @@ const MainApp: React.FC<MainAppProps> = ({
       console.log('🔄 [TierChange] User upgraded from free to', currentTier, '- generating subtabs for existing game tabs');
       
       // Show toast notification
-      toastService.show({
-        title: 'Upgrade Complete! 🎉',
-        message: 'Generating game insights for your existing games...',
-        type: 'success',
-        duration: 5000
-      });
+      toastService.success('Upgrade Complete! 🎉 Generating game insights...');
       
       setIsGeneratingSubtabs(true);
       
@@ -792,19 +787,9 @@ const MainApp: React.FC<MainAppProps> = ({
           
           // Show progress toast for each game
           if (completed < total) {
-            toastService.show({
-              title: `Generating insights (${completed + 1}/${total})`,
-              message: `Processing: ${currentGame}`,
-              type: 'info',
-              duration: 2000
-            });
+            toastService.info(`Generating insights (${completed + 1}/${total}): ${currentGame}`);
           } else {
-            toastService.show({
-              title: 'All insights generated! ✨',
-              message: `Created insights for ${total} games`,
-              type: 'success',
-              duration: 4000
-            });
+            toastService.success(`All insights generated! ✨ Created insights for ${total} games`);
             setIsGeneratingSubtabs(false);
             
             // Refresh conversations to get the updated subtabs
@@ -818,22 +803,12 @@ const MainApp: React.FC<MainAppProps> = ({
       ).catch(error => {
         console.error('🔄 [TierChange] Failed to generate subtabs:', error);
         setIsGeneratingSubtabs(false);
-        toastService.show({
-          title: 'Error generating insights',
-          message: 'Some game insights may not have been created',
-          type: 'error',
-          duration: 4000
-        });
+        toastService.error('Error generating insights. Some game insights may not have been created.');
       });
     } else if (!wasFree && currentTier === 'free') {
       // Downgrading to free - just log, subtabs are preserved but won't update
       console.log('🔄 [TierChange] User downgraded to free tier - subtabs preserved but will not update');
-      toastService.show({
-        title: 'Subscription ended',
-        message: 'Your game insights are preserved but won\'t update until you resubscribe',
-        type: 'info',
-        duration: 5000
-      });
+      toastService.info('Subscription ended. Your game insights are preserved but won\'t update until you resubscribe.');
     }
   }, [currentUser?.tier, conversations]);
 
@@ -1855,7 +1830,7 @@ const MainApp: React.FC<MainAppProps> = ({
         updated[activeConversation.id] = {
           ...updated[activeConversation.id],
           messages: messagesToKeep,
-          subTabs: [], // Clear subtabs - they'll regenerate with new response
+          subtabs: [], // Clear subtabs - they'll regenerate with new response
           updatedAt: Date.now()
         };
       }
@@ -1868,7 +1843,7 @@ const MainApp: React.FC<MainAppProps> = ({
       return {
         ...prev,
         messages: messagesToKeep,
-        subTabs: [],
+        subtabs: [],
         updatedAt: Date.now()
       };
     });
@@ -1932,11 +1907,12 @@ const MainApp: React.FC<MainAppProps> = ({
     setIsSubmittingFeedback(true);
     
     try {
-      const { feedbackService, FeedbackCategory } = await import('../services/feedbackService');
+      const { feedbackService } = await import('../services/feedbackService');
+      type FeedbackCategoryType = 'not_helpful' | 'incorrect' | 'off_topic' | 'inappropriate' | 'other';
       const result = await feedbackService.submitNegativeFeedback(
         feedbackMessageId,
         activeConversation.id,
-        category as FeedbackCategory,
+        category as FeedbackCategoryType,
         comment,
         contentType
       );
@@ -1989,8 +1965,7 @@ const MainApp: React.FC<MainAppProps> = ({
       const queuedId = await offlineQueueService.queueMessage({
         conversationId: activeConversation.id,
         content: message,
-        imageUrl: imageUrl,
-        timestamp: Date.now()
+        imageUrl: imageUrl
       });
       
       if (queuedId) {
