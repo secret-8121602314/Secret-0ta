@@ -5,10 +5,24 @@
 export const parseOtakonTags = (rawContent: string): { cleanContent: string; tags: Map<string, unknown> } => {
   const tags = new Map<string, unknown>();
   
-  // ? FIX: Normalize escaped asterisks FIRST so all regex patterns can match
-  // AI models often send "\*\* Lore:\*\*" instead of "** Lore:**"
-  // This must happen before ANY other processing
+  // ---------------------------------------------------------
+  // 🚨 CRITICAL FIX: AGGRESSIVE PRE-CLEANING
+  // ---------------------------------------------------------
+
+  // 1. Unescape asterisks (Fixes \*\* issues)
   let cleanContent = rawContent.replace(/\\\*/g, '*');
+
+  // 2. Fix the "Space inside Bold" issue GLOBALLY first
+  // Turns "** Lore:**" -> "**Lore:**"
+  // Turns "** Places of Interest:**" -> "**Places of Interest:**"
+  cleanContent = cleanContent.replace(/\*\*\s+([^*]+?)\*\*/g, '**$1**');
+  cleanContent = cleanContent.replace(/\*\*([^*]+?)\s+\*\*/g, '**$1**');
+
+  // 3. Fix "Header inside Bold" specific patterns
+  // Sometimes AI does "** Lore :**" (space before colon). This fixes that.
+  cleanContent = cleanContent.replace(/\*\*\s*([A-Za-z ]+?)\s*:\s*\*\*/g, '**$1:**');
+
+  // ---------------------------------------------------------
 
   console.log(`🏷️ [otakonTags] Parsing response (${rawContent.length} chars)...`);
   

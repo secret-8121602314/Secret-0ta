@@ -944,9 +944,24 @@ In addition to your regular response, provide structured data in the following o
         // ? Clean content: Remove any JSON-like structured data from the main content
         let cleanContent = structuredData.content || '';
         
-        // ? FIX: Normalize escaped asterisks FIRST so all regex patterns can match
-        // AI models often send "\*\* Lore:\*\*" instead of "** Lore:**"
+        // ---------------------------------------------------------
+        // 🚨 CRITICAL FIX: AGGRESSIVE PRE-CLEANING
+        // ---------------------------------------------------------
+
+        // 1. Unescape asterisks (Fixes \*\* issues)
         cleanContent = cleanContent.replace(/\\\*/g, '*');
+
+        // 2. Fix the "Space inside Bold" issue GLOBALLY first
+        // Turns "** Lore:**" -> "**Lore:**"
+        // Turns "** Places of Interest:**" -> "**Places of Interest:**"
+        cleanContent = cleanContent.replace(/\*\*\s+([^*]+?)\*\*/g, '**$1**');
+        cleanContent = cleanContent.replace(/\*\*([^*]+?)\s+\*\*/g, '**$1**');
+
+        // 3. Fix "Header inside Bold" specific patterns
+        // Sometimes AI does "** Lore :**" (space before colon). This fixes that.
+        cleanContent = cleanContent.replace(/\*\*\s*([A-Za-z ]+?)\s*:\s*\*\*/g, '**$1:**');
+
+        // ---------------------------------------------------------
         
                 console.log('?? [AIService] Last 200 chars:', cleanContent.slice(-200));
         
