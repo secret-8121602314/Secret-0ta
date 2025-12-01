@@ -877,7 +877,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
             </div>
           )}
 
-                        <p className="text-sm text-neutral-400 mt-4">
+                        <p className="text-sm text-neutral-400 mt-4 hidden">
                             Join thousands of gamers on the waitlist!
                         </p>
                     </div>
