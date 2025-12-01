@@ -3061,7 +3061,7 @@ const MainApp: React.FC<MainAppProps> = ({
             </button>
             
             <Logo 
-              size="sm" 
+              size="md" 
               bounce={false} 
               userTier={currentUser.tier} 
               isOnTrial={Boolean(currentUser.trialExpiresAt && currentUser.trialExpiresAt > Date.now())}

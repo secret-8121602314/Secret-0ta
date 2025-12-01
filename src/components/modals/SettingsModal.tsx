@@ -3,6 +3,7 @@ import Modal from '../ui/Modal';
 import { User, UserTier } from '../../types';
 import { authService } from '../../services/authService';
 import TrialBanner from '../trial/TrialBanner';
+import Logo from '../ui/Logo';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -116,6 +117,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         {/* Account Tab */}
         {activeTab === 'account' && (
           <div className="space-y-4">
+            {/* Tier Logo */}
+            <div className="flex justify-center">
+              <Logo 
+                size="xl" 
+                userTier={user.tier}
+                isOnTrial={Boolean(user.trialExpiresAt && user.trialExpiresAt > Date.now())}
+              />
+            </div>
+            
             <div className="bg-surface/50 rounded-lg p-4">
               <h3 className="text-lg font-semibold text-text-primary mb-4">Account Information</h3>
               
@@ -176,6 +186,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         {/* Tier Tab */}
         {activeTab === 'tier' && (
           <div className="space-y-4">
+            {/* Tier Logo */}
+            <div className="flex flex-col items-center gap-2">
+              <Logo 
+                size="xl" 
+                userTier={user.tier}
+                isOnTrial={Boolean(user.trialExpiresAt && user.trialExpiresAt > Date.now())}
+              />
+              <span className={`text-lg font-semibold ${getTierColor(user.tier)}`}>
+                {getTierDisplayName(user.tier)}
+              </span>
+            </div>
+            
             {/* Trial Banner */}
             <div className="overflow-x-auto">
               <TrialBanner
