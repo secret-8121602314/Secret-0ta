@@ -76,11 +76,25 @@ const ProUpgradeSplashScreen: React.FC<ProUpgradeSplashScreenProps> = ({
         <div className="relative mb-6">
           {/* Glow effect */}
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className={`w-32 h-32 ${isVanguard ? 'bg-purple-500/30' : 'bg-blue-500/30'} rounded-full blur-3xl animate-pulse`}></div>
+            <div className={`w-40 h-40 ${isVanguard ? 'bg-purple-500/30' : 'bg-blue-500/30'} rounded-full blur-3xl animate-pulse`}></div>
           </div>
           
-          {/* Crown/Star icon */}
-          <div className="relative text-6xl sm:text-7xl animate-bounce" style={{ animationDuration: '1s' }}>
+          {/* Pro mascot image */}
+          <img
+            src="/images/mascot/pro-user.png"
+            alt="Pro User"
+            className="relative w-36 h-36 sm:w-44 sm:h-44 md:w-52 md:h-52 object-contain mx-auto animate-bounce"
+            style={{ animationDuration: '1s' }}
+            onError={(e) => {
+              // Fallback to emoji if image fails to load
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              const fallback = target.nextElementSibling as HTMLElement;
+              if (fallback) fallback.style.display = 'block';
+            }}
+          />
+          {/* Fallback emoji (hidden by default) */}
+          <div className="text-6xl sm:text-7xl" style={{ display: 'none' }}>
             {isVanguard ? '👑' : '⭐'}
           </div>
         </div>
