@@ -4,7 +4,11 @@
  */
 export const parseOtakonTags = (rawContent: string): { cleanContent: string; tags: Map<string, unknown> } => {
   const tags = new Map<string, unknown>();
-  let cleanContent = rawContent;
+  
+  // ? FIX: Normalize escaped asterisks FIRST so all regex patterns can match
+  // AI models often send "\*\* Lore:\*\*" instead of "** Lore:**"
+  // This must happen before ANY other processing
+  let cleanContent = rawContent.replace(/\\\*/g, '*');
 
   console.log(`🏷️ [otakonTags] Parsing response (${rawContent.length} chars)...`);
   
@@ -165,55 +169,33 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
     .replace(/^(?:["'][^"']*["']\s*,?\s*)+\]/g, '');
 
   // ============================================
-  // PHASE 1: Normalize section headers FIRST (before fixing inline bold)
+  // PHASE 1: Normalize section headers (Consolidated & Robust)
   // This must happen before inline bold fixing to prevent headers being corrupted
+  // Now that escaped asterisks are normalized, these patterns will match correctly
   // ============================================
   const headers = ['Hint', 'Lore', 'Places of Interest', 'Strategy', 'What to focus on'];
   
   for (const header of headers) {
     const h = header.replace(/ /g, '\\s+'); // "Places of Interest" → "Places\s+of\s+Interest"
     
-    // Pattern -1: ** Header:** (EXACT pattern from AI: "** Lore:**" with space after ** and colon BEFORE closing **)
-    // This handles: "** Lore:**" → "\n\nLore:\n"
-    cleanContent = cleanContent.replace(
-      new RegExp(`\\*\\*\\s*${h}\\s*:\\*\\*\\s*`, 'gi'),
-      `\n\n${header}:\n`
+    // CONSOLIDATED REGEX: Catches all variations in one pass
+    // Matches: **Lore:**, ** Lore:**, **Lore**, ** Lore **, *Lore*, Lore:, etc.
+    // Handles any combination of asterisks, spaces, and colons around the header
+    const broadRegex = new RegExp(
+      `\\*+\\s*${h}(?:\\s*[:\\*]+\\s*:?|\\s*:)\\s*\\**|` + // **Header:** variations
+      `\\*\\*\\s*${h}\\s*\\*\\*|` +                        // **Header** (no colon)
+      `\\*\\*\\s+${h}(?![:\\w*])`,                         // ** Header (incomplete)
+      'gi'
     );
     
-    // Pattern 0: ** Header:** (space after **, colon directly before closing **)
-    // This is the EXACT pattern from AI: "** Lore:**"
     cleanContent = cleanContent.replace(
-      new RegExp(`\\*\\*\\s+${h}:\\*\\*\\s*`, 'gi'),
-      `\n\n${header}:\n`
+      broadRegex,
+      `\n\n${header}:\n` // Strip all decoration, Phase 3 will re-bold it correctly
     );
     
-    // Pattern 1: ** Header:** : (with closing ** and extra colon)
+    // Fallback: Plain header with colon (no asterisks)
     cleanContent = cleanContent.replace(
-      new RegExp(`\\*\\*\\s*${h}\\s*:\\s*\\*\\*\\s*:?\\s*`, 'gi'),
-      `\n\n${header}:\n`
-    );
-    
-    // Pattern 2: ** Header: (space after **, with colon, no closing **)
-    cleanContent = cleanContent.replace(
-      new RegExp(`\\*\\*\\s+${h}\\s*:\\s*`, 'gi'),
-      `\n\n${header}:\n`
-    );
-    
-    // Pattern 3: **Header: (no space, with colon, no closing **)
-    cleanContent = cleanContent.replace(
-      new RegExp(`\\*\\*${h}:\\s*`, 'gi'),
-      `\n\n${header}:\n`
-    );
-    
-    // Pattern 4: **Header** (with closing **, no colon)
-    cleanContent = cleanContent.replace(
-      new RegExp(`\\*\\*${h}\\*\\*\\s*`, 'gi'),
-      `\n\n${header}:\n`
-    );
-    
-    // Pattern 5: ** Header (space after **, no colon, no closing)
-    cleanContent = cleanContent.replace(
-      new RegExp(`\\*\\*\\s+${h}(?![:\\w*])`, 'gi'),
+      new RegExp(`(?:^|\\n)\\s*${h}:\\s*`, 'gi'),
       `\n\n${header}:\n`
     );
   }

@@ -944,6 +944,10 @@ In addition to your regular response, provide structured data in the following o
         // ? Clean content: Remove any JSON-like structured data from the main content
         let cleanContent = structuredData.content || '';
         
+        // ? FIX: Normalize escaped asterisks FIRST so all regex patterns can match
+        // AI models often send "\*\* Lore:\*\*" instead of "** Lore:**"
+        cleanContent = cleanContent.replace(/\\\*/g, '*');
+        
                 console.log('?? [AIService] Last 200 chars:', cleanContent.slice(-200));
         
         // Remove structured fields if AI accidentally includes them in content
