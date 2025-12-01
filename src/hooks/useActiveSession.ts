@@ -5,7 +5,7 @@ export interface ActiveSessionState {
   currentGameId?: string; // Corresponds to conversation.id
 }
 
-export const useActiveSession = (initialState: ActiveSessionState = { isActive: false }) => {
+export const useActiveSession = (initialState: ActiveSessionState = { isActive: true }) => {
   const [session, setSession] = useState<ActiveSessionState>(initialState);
 
   const toggleSession = useCallback((conversationId: string) => {

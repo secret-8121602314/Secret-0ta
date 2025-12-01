@@ -152,73 +152,119 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
     // Remove any remaining suggestion array fragments at the very beginning
     .replace(/^(?:["'][^"']*["']\s*,?\s*)+\]/g, '');
 
-  // Clean up extra whitespace and empty lines
+  // ============================================
+  // PHASE 1: Fix inline bold text (not section headers)
+  // ============================================
   cleanContent = cleanContent
-    .replace(/^Hint:\s*\n\s*Hint:\s*/gm, 'Hint: ') // Fix duplicate Hint headers
-    .replace(/^Hint:\s*\n\s*Hint:\s*/gm, 'Hint: ') // Fix multiple duplicate Hint headers
-    // Remove ALL stray brackets (global replacement)
-    .replace(/\]\s*$/gm, '') // Remove trailing ] at end of any line
-    .replace(/^\s*\]/gm, '') // Remove ] at start of any line
-    .replace(/\[\s*$/gm, '') // Remove trailing [ at end of any line  
-    .replace(/^\s*\[/gm, '') // Remove [ at start of any line
-    // Remove isolated brackets with whitespace around them
-    .replace(/\s+\]\s+/g, ' ') // Replace ] surrounded by spaces with single space
-    .replace(/\s+\[\s+/g, ' ') // Replace [ surrounded by spaces with single space
-    // ✅ Fix malformed bold markers (spaces between ** and text)
-    .replace(/\*\*\s+([^*]+?)\s+\*\*/g, '**$1**') // Fix ** text ** → **text**
-    .replace(/\*\*\s+([^*]+?):/g, '**$1:**') // Fix ** Header: → **Header:**
-    // ✅ FIX: Ensure numbered lists have proper line breaks
-    // Fix patterns like "...text. 2." or "...text.2." where number follows period without break
-    .replace(/\.\s*(\d+\.\*\*)/g, '.\n\n$1') // Period followed by numbered bold item
-    .replace(/\.\s*(\d+\.\s+)/g, '.\n\n$1') // Period followed by numbered item
-    // ✅ FIX: Add space after numbered list items (1.Text → 1. Text)
-    .replace(/^(\d+)\.([A-Z])/gm, '$1. $2') // 1.Ripperdocs → 1. Ripperdocs
-    .replace(/^(\d+)\.\*\*([^*]+)\*\*([A-Z])/gm, '$1. **$2** $3') // 1.**Bold**Text → 1. **Bold** Text
-    // ✅ FIX: Add space after colons when followed by capital letter
-    .replace(/:([A-Z])/g, ': $1') // :There → : There
-    // ✅ FIX: Add space after ** when followed by capital letter (end of bold)
-    .replace(/\*\*([A-Z])/g, '** $1') // **Look → ** Look  
-    // ✅ FIX: Add space before bold text when preceded by lowercase letter
-    .replace(/([a-z])\*\*([A-Z])/g, '$1 **$2') // your**Operating → your **Operating
-    // ✅ FIX: Add space after bold text when followed by lowercase letter
-    .replace(/\*\*([a-z])/g, '** $1') // System**or → System** or
-    // ✅ FIX: Add space before capitalized word when preceded by lowercase (camelCase breaks)
-    .replace(/([a-z])([A-Z][a-z])/g, '$1 $2') // yourOperating → your Operating, betterSubdermal → better Subdermal
-    // ✅ FIX: Fix "like" followed by capital (likeContagion → like Contagion)
-    .replace(/\b(like|or|and|the|a|an|for|with|from|to|in|on|at|by|as)([A-Z])/g, '$1 $2')
-    // ✅ FIX: Fix dangling ** at end of line (upgrades:** → upgrades:)
-    .replace(/:\*\*\s*$/gm, ':')
-    .replace(/:\*\*\n/g, ':\n')
-    // ✅ FIX: Ensure bold formatting is complete (no dangling **)
-    .replace(/\*\*([^*\n]+)(?!\*\*)/g, (match, content) => {
-      // If this bold section doesn't have a closing **, and ends with :, add closing
-      if (content.endsWith(':')) return `**${content}**`;
-      return match; // Otherwise leave as is
+    // Fix ** with space after opening: ** Text** → **Text**
+    .replace(/\*\*\s+([^*\n]+?)\*\*/g, '**$1**')
+    // Fix ** with space before closing: **Text ** → **Text**
+    .replace(/\*\*([^*\n]+?)\s+\*\*/g, '**$1**');
+
+  // ============================================
+  // PHASE 2: Direct replacement of ALL malformed header patterns
+  // Replace directly with properly formatted bold headers
+  // ============================================
+  const headers = ['Hint', 'Lore', 'Places of Interest', 'Strategy', 'What to focus on'];
+  
+  for (const header of headers) {
+    const h = header.replace(/ /g, '\\s+'); // "Places of Interest" → "Places\s+of\s+Interest"
+    
+    // Pattern: **Header: or ** Header: (with/without space, with colon, no closing **)
+    // This is the most common malformed pattern from AI
+    cleanContent = cleanContent.replace(
+      new RegExp(`\\*\\*\\s*${h}\\s*:`, 'gi'),
+      `\n\n**${header}:**`
+    );
+    
+    // Pattern: ** Header:** : (with closing ** and extra colon)
+    cleanContent = cleanContent.replace(
+      new RegExp(`\\*\\*\\s*${h}\\s*:\\s*\\*\\*\\s*:?`, 'gi'),
+      `\n\n**${header}:**`
+    );
+    
+    // Pattern: **Header** (with closing **, no colon)
+    cleanContent = cleanContent.replace(
+      new RegExp(`\\*\\*\\s*${h}\\s*\\*\\*`, 'gi'),
+      `\n\n**${header}:**`
+    );
+  }
+  
+  // Fix double/triple colons
+  cleanContent = cleanContent.replace(/:{2,}/g, ':');
+
+  // ============================================
+  // PHASE 3: Handle plain headers (no ** at all) - add bold
+  // ============================================
+  for (const header of headers) {
+    const h = header.replace(/ /g, '\\s+');
+    
+    // Match plain Header: after newlines (not already bold)
+    // Use negative lookbehind to avoid matching already-bolded headers
+    cleanContent = cleanContent.replace(
+      new RegExp(`(?<!\\*)\\n\\s*${h}:\\s*(?!\\*)`, 'gi'),
+      `\n\n**${header}:**\n`
+    );
+    
+    // Match plain Header: at very start of content
+    cleanContent = cleanContent.replace(
+      new RegExp(`^\\s*${h}:\\s*(?!\\*)`, 'i'),
+      `**${header}:**\n`
+    );
+  }
+
+  // ============================================
+  // PHASE 4: Fix remaining formatting issues
+  // ============================================
+  cleanContent = cleanContent
+    // Remove standalone ** on its own line (but not **Header:**)
+    .replace(/^\s*\*\*\s*$/gm, '')
+    // Remove orphaned ** NOT part of a header (only ** followed by just whitespace and newline)
+    .replace(/(?<![:\w])\*\*\s*\n(?![A-Z])/g, '\n')
+    // Fix duplicate Hint headers
+    .replace(/^Hint:\s*\n\s*Hint:\s*/gm, '**Hint:**\n\n')
+    // Remove ALL stray brackets
+    .replace(/\]\s*$/gm, '')
+    .replace(/^\s*\]/gm, '')
+    .replace(/\[\s*$/gm, '')
+    .replace(/^\s*\[/gm, '')
+    .replace(/\s+\]\s+/g, ' ')
+    .replace(/\s+\[\s+/g, ' ')
+    // Ensure numbered lists have proper line breaks
+    .replace(/\.\s*(\d+\.\s*\*\*)/g, '.\n\n$1')
+    .replace(/\.\s*(\d+\.\s+[A-Z])/g, '.\n\n$1')
+    // Add space after numbered list items (1.Text → 1. Text)
+    .replace(/^(\d+)\.([A-Z])/gm, '$1. $2')
+    // Add space after colons when followed by capital letter (but not in URLs or after **)
+    .replace(/([^htfps*]):([A-Z])/g, '$1: $2');
+
+  // ============================================
+  // PHASE 5: Fix word spacing issues
+  // ============================================
+  cleanContent = cleanContent
+    // Add space after closing ** when followed directly by a letter
+    .replace(/\*\*([^*]+)\*\*([A-Za-z])/g, '**$1** $2')
+    // Add space before opening ** when preceded by a lowercase letter
+    .replace(/([a-z])\*\*([A-Z])/g, '$1 **$2')
+    // Fix common camelCase issues (but preserve gaming terms)
+    .replace(/([a-z])([A-Z][a-z]{2,})/g, (match, lower, upper) => {
+      const preserveTerms = ['PlayStation', 'GamePass', 'GameStop', 'YouTube', 'OpenWorld'];
+      if (preserveTerms.some(term => (lower + upper).includes(term))) return match;
+      return lower + ' ' + upper;
     })
-    // ✅ CRITICAL: Add line breaks BEFORE section headers that follow text directly
-    // This fixes: "...some text.Hint:" -> "...some text.\n\n**Hint:**"
-    .replace(/([.!?])(\s*)Hint:/gi, '$1\n\n**Hint:**')
-    .replace(/([.!?])(\s*)Lore:/gi, '$1\n\n**Lore:**')
-    .replace(/([.!?])(\s*)Places of Interest:/gi, '$1\n\n**Places of Interest:**')
-    .replace(/([.!?])(\s*)Strategy:/gi, '$1\n\n**Strategy:**')
-    .replace(/([.!?])(\s*)What to focus on:/gi, '$1\n\n**What to focus on:**')
-    // ✅ Format section headers with proper spacing and bold
-    // First, ensure headers are properly closed with ** and add line breaks
-    .replace(/\*\*Hint:\*\*\s*/gi, '**Hint:**\n') // Add line break after Hint (handles trailing space)
-    .replace(/\*\*Lore:\*\*\s*/gi, '\n\n**Lore:**\n') // Add line breaks around Lore
-    .replace(/\*\*Places of Interest:\*\*\s*/gi, '\n\n**Places of Interest:**\n') // Add line breaks around Places
-    .replace(/\*\*Strategy:\*\*\s*/gi, '\n\n**Strategy:**\n') // Add line breaks around Strategy
-    .replace(/\*\*What to focus on:\*\*\s*/gi, '\n\n**What to focus on:**\n') // Add line breaks around What to focus
-    // Handle headers without existing bold (with or without trailing space)
-    .replace(/^Hint:\s*/i, '**Hint:**\n') // First Hint at very start
-    .replace(/\nHint:\s*/gi, '\n\n**Hint:**\n') // Subsequent Hints after newline
-    .replace(/\nLore:\s*/gi, '\n\n**Lore:**\n') // Lore after newline
-    .replace(/\nPlaces of Interest:\s*/gi, '\n\n**Places of Interest:**\n') // Places after newline
-    .replace(/\nStrategy:\s*/gi, '\n\n**Strategy:**\n') // Strategy after newline  
-    .replace(/\nWhat to focus on:\s*/gi, '\n\n**What to focus on:**\n') // What to focus after newline
-    // Clean up spacing
-    .replace(/\n{3,}/g, '\n\n') // Remove excessive line breaks (3+ newlines → 2)
-    .replace(/^\s+|\s+$/g, '') // Trim start and end
+    // Fix common preposition + capital (likeContagion → like Contagion)
+    .replace(/\b(like|or|and|the|a|an|for|with|from|to|in|on|at|by|as)([A-Z])/g, '$1 $2');
+
+  // ============================================
+  // PHASE 6: Final cleanup
+  // ============================================
+  cleanContent = cleanContent
+    // Remove any remaining empty ** pairs
+    .replace(/\*\*\s*\*\*/g, '')
+    // Remove excessive line breaks (3+ newlines → 2)
+    .replace(/\n{3,}/g, '\n\n')
+    // Trim whitespace
+    .replace(/^\s+|\s+$/g, '')
     .trim();
 
   // Log extracted tags summary
