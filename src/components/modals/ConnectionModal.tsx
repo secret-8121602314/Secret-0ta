@@ -13,6 +13,7 @@ interface ConnectionModalProps {
   lastSuccessfulConnection: Date | null;
   onShowHowToUse?: () => void;
   onClearError?: () => void;
+  onShowConnectionSplash?: () => void;
 }
 
 const ConnectionModal: React.FC<ConnectionModalProps> = ({
@@ -25,7 +26,8 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
   connectionCode,
   lastSuccessfulConnection,
   onShowHowToUse,
-  onClearError
+  onClearError,
+  onShowConnectionSplash
 }) => {
   const [code, setCode] = useState(connectionCode || '');
   // Track if modal was opened while already connected (to prevent auto-close)
@@ -68,13 +70,29 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
           }
         }, 2000); // Show success message for 2 seconds
       } else {
-        // Returning user - auto-close modal and show chat screen
-        setTimeout(() => {
-          onClose();
-        }, 2000); // Show success message for 2 seconds then close
+        // Returning user connecting from chat screen
+        // Check if we've shown the connection splash before in this session
+        const hasShownConnectionSplash = sessionStorage.getItem('otakon_connection_splash_shown') === 'true';
+        
+        if (!hasShownConnectionSplash && onShowConnectionSplash) {
+          // First connection in this session - close modal then show splash
+          sessionStorage.setItem('otakon_connection_splash_shown', 'true');
+          setTimeout(() => {
+            onClose();
+            // Small delay to let modal close animation complete, then show splash
+            setTimeout(() => {
+              onShowConnectionSplash();
+            }, 100);
+          }, 2000); // Show success message for 2 seconds then close
+        } else {
+          // Already shown splash this session - just close normally
+          setTimeout(() => {
+            onClose();
+          }, 2000); // Show success message for 2 seconds then close
+        }
       }
     }
-  }, [isConnected, onClose, onShowHowToUse]);
+  }, [isConnected, onClose, onShowHowToUse, onShowConnectionSplash]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

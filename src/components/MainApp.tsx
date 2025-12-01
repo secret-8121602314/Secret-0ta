@@ -38,6 +38,8 @@ import ProfileSetupBanner from './ui/ProfileSetupBanner';
 import GameProgressBar from './features/GameProgressBar';
 import ErrorBoundary from './ErrorBoundary';
 import WelcomeScreen from './welcome/WelcomeScreen';
+import ConnectionSplashScreen from './splash/ConnectionSplashScreen';
+import ProUpgradeSplashScreen from './splash/ProUpgradeSplashScreen';
 import { connect, disconnect, setHandlers } from '../services/websocketService';
 import { validateScreenshotDataUrl, getDataUrlSizeMB } from '../utils/imageValidation';
 
@@ -125,6 +127,9 @@ const MainApp: React.FC<MainAppProps> = ({
   const [creditModalOpen, setCreditModalOpen] = useState(false);
   const [welcomeScreenOpen, setWelcomeScreenOpen] = useState(false);
   const [connectionModalOpen, setConnectionModalOpen] = useState(false);
+  const [connectionSplashOpen, setConnectionSplashOpen] = useState(false);
+  const [proUpgradeSplashOpen, setProUpgradeSplashOpen] = useState(false);
+  const [upgradedTier, setUpgradedTier] = useState<'pro' | 'vanguard_pro'>('pro');
   const [localConnectionCode, setLocalConnectionCode] = useState<string | null>(null);
   const [lastSuccessfulConnection, setLastSuccessfulConnection] = useState<Date | null>(null);
   
@@ -773,8 +778,20 @@ const MainApp: React.FC<MainAppProps> = ({
     if (wasFree && isPaidNow) {
       console.log('🔄 [TierChange] User upgraded from free to', currentTier, '- generating subtabs for existing game tabs');
       
-      // Show toast notification
-      toastService.success('Upgrade Complete! 🎉 Generating game insights...');
+      // Check if we've shown the upgrade splash for this tier before
+      const shownUpgradeSplashKey = `otakon_upgrade_splash_shown_${currentTier}`;
+      const hasShownUpgradeSplash = localStorage.getItem(shownUpgradeSplashKey) === 'true';
+      
+      if (!hasShownUpgradeSplash) {
+        // First time upgrading to this tier - show splash screen
+        console.log('🔄 [TierChange] Showing upgrade splash for first-time', currentTier, 'user');
+        setUpgradedTier(currentTier as 'pro' | 'vanguard_pro');
+        setProUpgradeSplashOpen(true);
+        localStorage.setItem(shownUpgradeSplashKey, 'true');
+      } else {
+        // Already shown before - just show toast
+        toastService.success('Upgrade Complete! 🎉 Generating game insights...');
+      }
       
       setIsGeneratingSubtabs(true);
       
@@ -3266,6 +3283,20 @@ const MainApp: React.FC<MainAppProps> = ({
         error={connectionError}
         connectionCode={connectionCode}
         lastSuccessfulConnection={lastSuccessfulConnection}
+        onShowConnectionSplash={() => setConnectionSplashOpen(true)}
+      />
+
+      {/* Connection Success Splash Screen */}
+      <ConnectionSplashScreen
+        isOpen={connectionSplashOpen}
+        onClose={() => setConnectionSplashOpen(false)}
+      />
+
+      {/* Pro Upgrade Splash Screen */}
+      <ProUpgradeSplashScreen
+        isOpen={proUpgradeSplashOpen}
+        onClose={() => setProUpgradeSplashOpen(false)}
+        tierName={upgradedTier}
       />
 
       {/* Hands-Free Modal */}
