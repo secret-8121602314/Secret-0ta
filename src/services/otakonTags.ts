@@ -165,22 +165,20 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
     .replace(/^(?:["'][^"']*["']\s*,?\s*)+\]/g, '');
 
   // ============================================
-  // PHASE 1: Fix inline bold text (not section headers)
-  // ============================================
-  cleanContent = cleanContent
-    // Fix ** with space after opening: ** Text** → **Text**
-    .replace(/\*\*\s+([^*\n]+?)\*\*/g, '**$1**')
-    // Fix ** with space before closing: **Text ** → **Text**
-    .replace(/\*\*([^*\n]+?)\s+\*\*/g, '**$1**');
-
-  // ============================================
-  // PHASE 2: Normalize ALL section headers to consistent format
-  // Handle every possible malformed pattern
+  // PHASE 1: Normalize section headers FIRST (before fixing inline bold)
+  // This must happen before inline bold fixing to prevent headers being corrupted
   // ============================================
   const headers = ['Hint', 'Lore', 'Places of Interest', 'Strategy', 'What to focus on'];
   
   for (const header of headers) {
     const h = header.replace(/ /g, '\\s+'); // "Places of Interest" → "Places\s+of\s+Interest"
+    
+    // Pattern 0: ** Header:** (space after **, colon directly before closing **)
+    // This is the EXACT pattern from AI: "** Lore:**"
+    cleanContent = cleanContent.replace(
+      new RegExp(`\\*\\*\\s+${h}:\\*\\*\\s*`, 'gi'),
+      `\n\n${header}:\n`
+    );
     
     // Pattern 1: ** Header:** : (with closing ** and extra colon)
     cleanContent = cleanContent.replace(
@@ -189,14 +187,12 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
     );
     
     // Pattern 2: ** Header: (space after **, with colon, no closing **)
-    // Consume any trailing whitespace after the colon
     cleanContent = cleanContent.replace(
       new RegExp(`\\*\\*\\s+${h}\\s*:\\s*`, 'gi'),
       `\n\n${header}:\n`
     );
     
     // Pattern 3: **Header: (no space, with colon, no closing **)
-    // Consume any trailing whitespace after the colon
     cleanContent = cleanContent.replace(
       new RegExp(`\\*\\*${h}:\\s*`, 'gi'),
       `\n\n${header}:\n`
@@ -217,6 +213,15 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
   
   // Fix double/triple colons
   cleanContent = cleanContent.replace(/:{2,}/g, ':');
+
+  // ============================================
+  // PHASE 2: Fix inline bold text (AFTER headers are normalized)
+  // ============================================
+  cleanContent = cleanContent
+    // Fix ** with space after opening: ** Text** → **Text**
+    .replace(/\*\*\s+([^*\n]+?)\*\*/g, '**$1**')
+    // Fix ** with space before closing: **Text ** → **Text**
+    .replace(/\*\*([^*\n]+?)\s+\*\*/g, '**$1**');
 
   // ============================================
   // PHASE 3: Add bold formatting to section headers
