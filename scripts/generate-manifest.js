@@ -153,7 +153,7 @@ function generateManifest() {
     short_name: 'Otagon',
     description: 'Get spoiler-free gaming hints and help with AI-powered assistance',
     start_url: '/earlyaccess',
-    scope: '/',
+    scope: '/earlyaccess',
     display: 'standalone',
     background_color: '#111111',
     theme_color: '#111111',
@@ -167,21 +167,21 @@ function generateManifest() {
         name: 'New Chat',
         short_name: 'Chat',
         description: 'Start a new conversation',
-        url: '/?shortcut=new-chat',
+        url: '/earlyaccess?shortcut=new-chat',
         icons: icons.filter(i => i.sizes === '192x192').slice(0, 1)
       },
       {
         name: 'Voice Commands',
         short_name: 'Voice',
         description: 'Use hands-free voice commands',
-        url: '/?shortcut=voice',
+        url: '/earlyaccess?shortcut=voice',
         icons: icons.filter(i => i.sizes === '192x192').slice(0, 1)
       },
       {
         name: 'Settings',
         short_name: 'Settings',
         description: 'Manage your preferences',
-        url: '/?shortcut=settings',
+        url: '/earlyaccess?shortcut=settings',
         icons: icons.filter(i => i.sizes === '192x192').slice(0, 1)
       }
     ],
