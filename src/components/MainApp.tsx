@@ -2162,6 +2162,21 @@ const MainApp: React.FC<MainAppProps> = ({
     // Increment usage count
     UserService.incrementUsage(queryType);
     
+    // ✅ IMMEDIATE UI UPDATE: Update React state for credit indicator
+    if (user) {
+      const updatedUser = {
+        ...user,
+        usage: {
+          ...user.usage,
+          textCount: queryType === 'text' ? user.usage.textCount + 1 : user.usage.textCount,
+          imageCount: queryType === 'image' ? user.usage.imageCount + 1 : user.usage.imageCount,
+          totalRequests: user.usage.totalRequests + 1,
+        },
+        updatedAt: Date.now(),
+      };
+      setUser(updatedUser);
+    }
+    
     // Update in Supabase (non-blocking - fire and forget)
     if (user?.authUserId) {
       const supabaseService = new SupabaseService();

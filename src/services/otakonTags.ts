@@ -11,12 +11,6 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
 
   // 1. Unescape asterisks (Fixes \*\* issues)
   let cleanContent = rawContent.replace(/\\\*/g, '*');
-  
-  // DEBUG: Log what we're starting with
-  if (cleanContent.includes('Lore') || cleanContent.includes('Places')) {
-    console.log('🔍 [otakonTags] BEFORE cleaning - Lore pattern:', cleanContent.match(/\*{1,2}\s*Lore[^\n]{0,15}/)?.[0]);
-    console.log('🔍 [otakonTags] BEFORE cleaning - Places pattern:', cleanContent.match(/\*{1,2}\s*Places[^\n]{0,35}/)?.[0]);
-  }
 
   // 2. Fix headers with MISSING closing ** (AI sends "** Lore:**" without closing **)
   // This is the ACTUAL pattern from the AI: "** Lore:**" where there's NO closing **
@@ -48,12 +42,6 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
 
   // 6. Fix "Header inside Bold" with space before colon
   cleanContent = cleanContent.replace(/\*\*\s*([A-Za-z ]+?)\s*:\s*\*\*/g, '**$1:**');
-
-  // DEBUG: Log after cleaning
-  if (cleanContent.includes('Lore') || cleanContent.includes('Places')) {
-    console.log('🔍 [otakonTags] AFTER cleaning - Lore pattern:', cleanContent.match(/\*{1,2}\s*Lore[^\n]{0,15}/)?.[0]);
-    console.log('🔍 [otakonTags] AFTER cleaning - Places pattern:', cleanContent.match(/\*{1,2}\s*Places[^\n]{0,35}/)?.[0]);
-  }
 
   // ---------------------------------------------------------
 
