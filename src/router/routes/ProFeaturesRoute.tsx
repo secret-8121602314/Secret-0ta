@@ -40,7 +40,7 @@ const ProFeaturesRoute: React.FC = () => {
     }
     
     // Navigate after DB update to prevent race condition
-    navigate('/earlyaccess/app');
+    navigate('/app');
   };
 
   const handleUpgrade = () => {

@@ -165,11 +165,11 @@ const routes: RouteObject[] = [
     element: <LoginRoute />,
   },
   {
-    path: '/earlyaccess/auth/callback',
+    path: '/auth/callback',
     element: <AuthCallbackRoute />,
   },
   {
-    path: '/earlyaccess/onboarding',
+    path: '/onboarding',
     loader: onboardingLoader,
     children: [
       {
@@ -200,31 +200,14 @@ const routes: RouteObject[] = [
     ],
   },
   {
-    path: '/earlyaccess/app',
-    loader: appLoader,
-    element: <MainAppRoute />,
-  },
-  {
-    path: '/earlyaccess/app/*',
-    loader: appLoader,
-    element: <MainAppRoute />,
-  },
-  // Legacy routes - redirect to new paths
-  {
-    path: '/auth/callback',
-    loader: () => redirect('/earlyaccess/auth/callback'),
-  },
-  {
-    path: '/onboarding/*',
-    loader: () => redirect('/earlyaccess/onboarding'),
-  },
-  {
     path: '/app',
-    loader: () => redirect('/earlyaccess/app'),
+    loader: appLoader,
+    element: <MainAppRoute />,
   },
   {
     path: '/app/*',
-    loader: () => redirect('/earlyaccess/app'),
+    loader: appLoader,
+    element: <MainAppRoute />,
   },
   // Catch-all: redirect to home
   {

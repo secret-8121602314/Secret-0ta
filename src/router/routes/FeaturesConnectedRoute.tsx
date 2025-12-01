@@ -15,7 +15,7 @@ const FeaturesConnectedRoute: React.FC = () => {
 
   const handleComplete = async () => {
         // Navigate immediately for smooth UX
-    navigate('/earlyaccess/onboarding/pro-features');
+    navigate('/onboarding/pro-features');
     
     // Update database in background (optimistic navigation)
     if (user) {

@@ -25,9 +25,9 @@ const LandingPageRoute: React.FC = () => {
       const { onboardingStatus } = loaderData;
             // Only redirect if onboarding status is valid
       if (onboardingStatus === 'complete') {
-                navigate('/earlyaccess/app', { replace: true });
+                navigate('/app', { replace: true });
       } else if (onboardingStatus !== 'login') {
-                navigate('/earlyaccess/onboarding', { replace: true });
+                navigate('/onboarding', { replace: true });
       }
     }
   }, [loaderData, navigate]);

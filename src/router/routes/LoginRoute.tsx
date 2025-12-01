@@ -17,16 +17,16 @@ const LoginRoute: React.FC = () => {
     if (loaderData?.user) {
       const { onboardingStatus } = loaderData;
             if (onboardingStatus === 'complete') {
-                navigate('/earlyaccess/app', { replace: true });
+                navigate('/app', { replace: true });
       } else {
-                navigate('/earlyaccess/onboarding', { replace: true });
+                navigate('/onboarding', { replace: true });
       }
     }
   }, [loaderData, navigate]);
 
   const handleComplete = () => {
     // After login, navigate to onboarding (loader will determine correct step)
-    navigate('/earlyaccess/onboarding');
+    navigate('/onboarding');
   };
 
   const handleBackToLanding = () => {

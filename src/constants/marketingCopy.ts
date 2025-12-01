@@ -240,13 +240,13 @@ export const TESTIMONIALS_COPY = {
     {
       quote:
         "Finally, a gaming assistant that doesn't spoil the story! I was stuck on a puzzle in Elden Ring for hours, and Otagon gave me just the right hint to figure it out myself.",
-      author: 'Omer',
+      author: 'Sarah Chen',
       title: 'Souls-like Enthusiast',
     },
     {
       quote:
         "The PC-to-mobile sync is a game-changer. I can get help without alt-tabbing and losing my immersion. It's like having a gaming buddy who knows exactly when to chime in.",
-      author: 'Shanwaz Mohammed',
+      author: 'Marcus Rodriguez',
       title: 'RPG Completionist',
     },
     {

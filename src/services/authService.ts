@@ -37,7 +37,7 @@ export class AuthService {
     // Check if running in PWA mode
     const isPWA = isPWAMode();
     
-    const callback = '/earlyaccess/auth/callback';
+    const callback = '/auth/callback';
     
     // For PWA, ensure we use the full URL with proper scheme
     // This helps with OAuth redirects in standalone mode
@@ -136,8 +136,7 @@ export class AuthService {
       // Handle OAuth callback if we're on the callback URL
       // Note: AuthCallback component handles OAuth callbacks, so we skip this
       // to avoid conflicts
-      const isAuthCallback = window.location.pathname === '/auth/callback' || 
-                             window.location.pathname === '/earlyaccess/auth/callback';
+      const isAuthCallback = window.location.pathname === '/auth/callback';
       if (isAuthCallback) {
                 return;
       }
@@ -402,8 +401,7 @@ export class AuthService {
             // Construct the redirect URL properly using current origin
       const redirectUrl = this.getCallbackUrl();
                                     // Check if we're already on the callback page
-      const isAuthCallback = window.location.pathname === '/auth/callback' || 
-                             window.location.pathname === '/earlyaccess/auth/callback';
+      const isAuthCallback = window.location.pathname === '/auth/callback';
       if (isAuthCallback) {
                 this.updateAuthState({ isLoading: false, error: null });
         return { success: false, error: 'Already on callback page' };
@@ -777,7 +775,7 @@ export class AuthService {
       // This will be determined by the actual OAuth attempt
       
       // Test redirect URL construction
-      const redirectUrl = `${window.location.origin}/earlyaccess/auth/callback`;
+      const redirectUrl = `${window.location.origin}/auth/callback`;
             return {
         isValid: true,
         message: 'Discord OAuth configuration appears to be valid',

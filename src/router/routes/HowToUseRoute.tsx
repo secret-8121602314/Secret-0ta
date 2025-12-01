@@ -77,7 +77,7 @@ const HowToUseRoute: React.FC = () => {
     }
     
     // Skip users go directly to Pro Features screen
-    navigate('/earlyaccess/onboarding/pro-features');
+    navigate('/onboarding/pro-features');
   };
 
   const handleConnect = (code: string) => {
@@ -220,7 +220,7 @@ const HowToUseRoute: React.FC = () => {
 
   const handleConnectionSuccess = async () => {
         // Navigate immediately for smooth UX
-    navigate('/earlyaccess/onboarding/features');
+    navigate('/onboarding/features');
     
     // Update database in background (optimistic navigation)
     if (user) {

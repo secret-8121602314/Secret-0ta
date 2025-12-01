@@ -402,8 +402,8 @@
           sessionStorage.removeItem('oauth_callback');
           sessionStorage.removeItem('oauth_hash');
           
-          // Update URL to /earlyaccess/auth/callback with hash params
-          history.replaceState(null, null, '/earlyaccess/auth/callback' + oauthHash);
+          // Update URL to /auth/callback with hash params
+          history.replaceState(null, null, '/auth/callback' + oauthHash);
         } else {
           // Handle regular SPA redirects
           var redirect = sessionStorage.getItem('spa_redirect');
