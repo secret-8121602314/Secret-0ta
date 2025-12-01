@@ -1848,18 +1848,29 @@ const MainApp: React.FC<MainAppProps> = ({
     const messagesToRemove = activeConversation.messages.slice(messageIndex);
     const messagesToKeep = activeConversation.messages.slice(0, messageIndex);
     
-    // Update conversations state
+    // Update conversations state - combine message removal and subtab clearing in single update
     setConversations(prev => {
       const updated = { ...prev };
       if (updated[activeConversation.id]) {
         updated[activeConversation.id] = {
           ...updated[activeConversation.id],
           messages: messagesToKeep,
+          subTabs: [], // Clear subtabs - they'll regenerate with new response
           updatedAt: Date.now()
         };
-        setActiveConversation(updated[activeConversation.id]);
       }
       return updated;
+    });
+    
+    // Update active conversation separately (after state update is queued)
+    setActiveConversation(prev => {
+      if (!prev || prev.id !== activeConversation.id) return prev;
+      return {
+        ...prev,
+        messages: messagesToKeep,
+        subTabs: [],
+        updatedAt: Date.now()
+      };
     });
     
     // Remove messages from database (fire and forget)
@@ -1867,21 +1878,6 @@ const MainApp: React.FC<MainAppProps> = ({
       ConversationService.deleteMessage(activeConversation.id, msg.id)
         .catch(err => console.warn('Failed to delete message from DB:', err));
     });
-    
-    // Clear subtabs for the conversation (they'll regenerate with new response)
-    if (activeConversation.subTabs && activeConversation.subTabs.length > 0) {
-      setConversations(prev => {
-        const updated = { ...prev };
-        if (updated[activeConversation.id]) {
-          updated[activeConversation.id] = {
-            ...updated[activeConversation.id],
-            subTabs: [],
-            updatedAt: Date.now()
-          };
-        }
-        return updated;
-      });
-    }
     
     // Set the message in the input field
     setCurrentInputMessage(content);
@@ -1895,7 +1891,12 @@ const MainApp: React.FC<MainAppProps> = ({
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   
   const handleFeedback = useCallback(async (messageId: string, type: 'up' | 'down') => {
-    console.log('📊 [MainApp] Feedback:', { messageId, type });
+    // Determine content type based on ID format:
+    // - Message IDs start with 'msg_' (e.g., 'msg_1732836123456')
+    // - Subtab IDs are snake_case identifiers (e.g., 'story_so_far', 'missed_items')
+    const contentType = messageId.startsWith('msg_') ? 'message' : 'subtab';
+    
+    console.log('📊 [MainApp] Feedback:', { messageId, type, contentType });
     
     if (!activeConversation) return;
     
@@ -1905,7 +1906,7 @@ const MainApp: React.FC<MainAppProps> = ({
       const result = await feedbackService.submitPositiveFeedback(
         messageId,
         activeConversation.id,
-        'message'
+        contentType
       );
       
       if (result.success) {
@@ -1921,6 +1922,9 @@ const MainApp: React.FC<MainAppProps> = ({
   const handleSubmitNegativeFeedback = useCallback(async (category: string, comment: string) => {
     if (!feedbackMessageId || !activeConversation) return;
     
+    // Determine content type based on ID format (same logic as handleFeedback)
+    const contentType = feedbackMessageId.startsWith('msg_') ? 'message' : 'subtab';
+    
     setIsSubmittingFeedback(true);
     
     try {
@@ -1930,7 +1934,7 @@ const MainApp: React.FC<MainAppProps> = ({
         activeConversation.id,
         category as FeedbackCategory,
         comment,
-        'message'
+        contentType
       );
       
       if (result.success) {
