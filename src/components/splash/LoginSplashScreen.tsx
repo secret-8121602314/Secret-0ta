@@ -347,27 +347,24 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-[#0F0F0F] to-background text-text-primary flex flex-col items-center justify-between md:justify-center px-4 py-6 md:py-4 lg:py-6 relative overflow-hidden">
+    <div className="h-[100dvh] bg-gradient-to-br from-background via-[#0F0F0F] to-background text-text-primary flex flex-col items-center justify-between px-4 py-3 md:py-4 lg:py-6 relative overflow-hidden">
       
-      {/* Spacer for mobile top */}
-      <div className="md:hidden flex-shrink-0" />
-      
-      <div className={`w-full max-w-md lg:max-w-lg xl:max-w-xl relative z-10 transition-all duration-500 ${isAnimating ? 'scale-105' : 'scale-100'} mx-auto`}>
+      <div className={`w-full max-w-md lg:max-w-lg xl:max-w-xl relative z-10 transition-all duration-500 ${isAnimating ? 'scale-105' : 'scale-100'} mx-auto flex-1 flex flex-col justify-center`}>
         {/* Logo and Title */}
-        <div className="text-center mb-6 md:mb-5 lg:mb-6">
+        <div className="text-center mb-3 md:mb-5 lg:mb-6">
           <img
             src="/images/otagon-logo.png"
             alt="Otagon Logo"
-            className="mx-auto mb-3 md:mb-3 lg:mb-4 w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 object-contain aspect-square"
+            className="mx-auto mb-2 md:mb-3 lg:mb-4 w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 object-contain aspect-square"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';
             }}
           />
-          <h1 className="text-2xl md:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-1 md:mb-2">
             Welcome to Otagon
           </h1>
-          <p className="text-sm md:text-sm lg:text-base text-text-secondary px-4 mb-6 md:mb-5 lg:mb-6">
+          <p className="text-xs md:text-sm lg:text-base text-text-secondary px-4 mb-3 md:mb-5 lg:mb-6">
             {emailMode === 'options' 
               ? 'Sign in to start your gaming adventure' 
               : emailMode === 'signin' 
@@ -381,22 +378,22 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
 
         {/* Error Message */}
         {errorMessage && (
-          <div className="mb-2.5 md:mb-3 lg:mb-4 p-2 md:p-2.5 lg:p-3 bg-red-500/10 border border-red-500/20 rounded-lg md:rounded-xl text-red-400 text-center text-xs md:text-sm">
+          <div className="mb-2 md:mb-3 lg:mb-4 p-1.5 md:p-2.5 lg:p-3 bg-red-500/10 border border-red-500/20 rounded-lg md:rounded-xl text-red-400 text-center text-xs md:text-sm">
             {errorMessage}
           </div>
         )}
 
         {/* Success Message */}
         {successMessage && (
-          <div className="mb-2.5 md:mb-3 lg:mb-4 p-2 md:p-2.5 lg:p-3 bg-green-500/10 border border-green-500/20 rounded-lg md:rounded-xl text-green-400 text-center text-xs md:text-sm">
+          <div className="mb-2 md:mb-3 lg:mb-4 p-1.5 md:p-2.5 lg:p-3 bg-green-500/10 border border-green-500/20 rounded-lg md:rounded-xl text-green-400 text-center text-xs md:text-sm">
             {successMessage}
           </div>
         )}
 
         {/* Email Form */}
         {(emailMode === 'signin' || emailMode === 'signup') && (
-          <form onSubmit={handleEmailAuth} className="space-y-3 md:space-y-4 lg:space-y-5 mb-3 md:mb-4" role="form" aria-label={`${emailMode === 'signin' ? 'Sign in' : 'Sign up'} form`}>
-            <div className="space-y-3 md:space-y-4 lg:space-y-5">
+          <form onSubmit={handleEmailAuth} className="space-y-2 md:space-y-4 lg:space-y-5 mb-2 md:mb-4" role="form" aria-label={`${emailMode === 'signin' ? 'Sign in' : 'Sign up'} form`}>
+            <div className="space-y-2 md:space-y-4 lg:space-y-5">
               <div>
                 <label htmlFor="email-input" className="sr-only">
                   Email address
@@ -635,7 +632,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
 
         {/* Auth Options */}
         {emailMode === 'options' && (
-          <div className="space-y-2.5 md:space-y-3 lg:space-y-3.5">
+          <div className="space-y-2 md:space-y-3 lg:space-y-3.5">
             <button
               onClick={() => handleAuth('google')}
               disabled={isLoading}
@@ -684,12 +681,12 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
 
         {/* PWA Install Banner - Show on login screen in browser mode only */}
         {/* When running as installed PWA, this banner is hidden automatically */}
-        <div className="mt-6 md:mt-4 lg:mt-5">
+        <div className="mt-3 md:mt-4 lg:mt-5">
           <PWAInstallBanner alwaysShowInBrowser={true} />
         </div>
         
         {/* Back to Landing */}
-        <div className="text-center mt-4 md:mt-4 lg:mt-6">
+        <div className="text-center mt-2 md:mt-4 lg:mt-6">
           <button
             onClick={() => {
                             onBackToLanding();
@@ -706,8 +703,8 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
       </div>
 
       {/* Footer */}
-      <div className="w-full p-3 md:p-4 lg:p-5 text-center flex-shrink-0 md:absolute md:bottom-3 lg:md:bottom-4 md:left-0 md:right-0">
-        <p className="text-xs md:text-sm lg:text-base text-text-muted">
+      <div className="w-full py-2 pb-[max(8px,env(safe-area-inset-bottom))] md:p-4 lg:p-5 text-center flex-shrink-0">
+        <p className="text-[10px] md:text-sm lg:text-base text-text-muted">
           By continuing, you agree to our{' '}
           <button
             onClick={() => setShowTermsModal(true)}
