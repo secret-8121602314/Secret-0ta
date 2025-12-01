@@ -265,6 +265,16 @@ export async function fetchIGDBGameData(gameName: string): Promise<IGDBGameData 
       // ✅ NEW: Persist to localStorage for faster reload
       saveLocalStorageCache();
       
+      // ✅ FIX: Also save cover URL to cover URL cache for sidebar display
+      if (gameData.cover?.url) {
+        const coverUrl = getCoverUrl(gameData.cover.url, 'cover_small');
+        if (coverUrl) {
+          coverUrlMemoryCache.set(cacheKey, coverUrl);
+          saveCoverUrlCache(coverUrlMemoryCache);
+          console.log('[IGDBService] Saved cover URL to cache:', cacheKey);
+        }
+      }
+      
       console.log('[IGDBService] Successfully fetched:', gameData.name, result.cached ? '(cached)' : '(fresh)');
       return gameData;
 

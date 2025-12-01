@@ -173,6 +173,13 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
   for (const header of headers) {
     const h = header.replace(/ /g, '\\s+'); // "Places of Interest" → "Places\s+of\s+Interest"
     
+    // Pattern -1: ** Header:** (EXACT pattern from AI: "** Lore:**" with space after ** and colon BEFORE closing **)
+    // This handles: "** Lore:**" → "\n\nLore:\n"
+    cleanContent = cleanContent.replace(
+      new RegExp(`\\*\\*\\s*${h}\\s*:\\*\\*\\s*`, 'gi'),
+      `\n\n${header}:\n`
+    );
+    
     // Pattern 0: ** Header:** (space after **, colon directly before closing **)
     // This is the EXACT pattern from AI: "** Lore:**"
     cleanContent = cleanContent.replace(

@@ -187,6 +187,11 @@ const Sidebar: React.FC<SidebarProps> = ({
                 const isUnreleased = conversation.isUnreleased || false;
                 const isRegularGame = !isGameHub && !isUnreleased && conversation.gameTitle;
                 
+                // Debug: Log cover URL status for game tabs
+                if ((isRegularGame || isUnreleased) && !conversation.coverUrl) {
+                  console.log('🖼️ [Sidebar] Missing coverUrl for:', conversation.title, 'gameTitle:', conversation.gameTitle, 'isUnreleased:', isUnreleased);
+                }
+                
                 // Determine border color based on tab type
                 let borderClass = '';
                 let titleClass = 'text-text-primary';

@@ -981,48 +981,46 @@ In addition to your regular response, provide structured data in the following o
           .replace(/\s*[\]}\s]*$/g, '')
           // Clean up any remaining JSON artifacts
           .replace(/\{[\s\S]*?"OTAKON_[A-Z_]+":[\s\S]*?\}/g, '')
-          // ? Fix malformed bold markers (spaces between ** and text)
-          .replace(/\*\*\s+([^*]+?)\s+\*\*/g, '**$1**') // Fix ** text ** ? **text**
-          .replace(/\*\*\s+([^*]+?):/g, '**$1:**') // Fix ** Header: ? **Header:**
-          // ? CRITICAL: Add line breaks BEFORE section headers that follow text directly (no preceding newline)
-          // This fixes: "...some text.Hint:" -> "...some text.\n\n**Hint:**"
-          .replace(/([.!?])(\s*)Hint:/gi, '$1\n\n**Hint:**')
-          .replace(/([.!?])(\s*)Lore:/gi, '$1\n\n**Lore:**')
-          .replace(/([.!?])(\s*)Places of Interest:/gi, '$1\n\n**Places of Interest:**')
-          .replace(/([.!?])(\s*)Strategy:/gi, '$1\n\n**Strategy:**')
-          .replace(/([.!?])(\s*)What to focus on:/gi, '$1\n\n**What to focus on:**')
-          // ? Format section headers with proper spacing and bold
-          // First, ensure headers are properly closed with ** and add line breaks (handles trailing space)
-          .replace(/\*\*Hint:\*\*\s*/gi, '**Hint:**\n') // Add line break after Hint
-          .replace(/\*\*Lore:\*\*\s*/gi, '\n\n**Lore:**\n') // Add line breaks around Lore
-          .replace(/\*\*Places of Interest:\*\*\s*/gi, '\n\n**Places of Interest:**\n') // Add line breaks around Places
-          .replace(/\*\*Strategy:\*\*\s*/gi, '\n\n**Strategy:**\n') // Add line breaks around Strategy
-          .replace(/\*\*What to focus on:\*\*\s*/gi, '\n\n**What to focus on:**\n') // Add line breaks around What to focus
-          // Handle headers without existing bold (with or without trailing space)
-          .replace(/^Hint:\s*/i, '**Hint:**\n') // First Hint at very start
-          .replace(/\nHint:\s*/gi, '\n\n**Hint:**\n') // Subsequent Hints after newline
-          .replace(/\nLore:\s*/gi, '\n\n**Lore:**\n') // Lore after newline
-          .replace(/\nPlaces of Interest:\s*/gi, '\n\n**Places of Interest:**\n') // Places after newline
-          .replace(/\nStrategy:\s*/gi, '\n\n**Strategy:**\n') // Strategy after newline
-          // ? STEP 10: Fix malformed bold markers
-          .replace(/\*\*\s+([^*]+?)\s+\*\*/g, '**$1**') // ** text ** ? **text**
-          .replace(/\*\*\s+([^*]+?):/g, '**$1:**') // ** Header: ? **Header:**
-          // ? STEP 11: Format section headers with spacing
-          .replace(/\*\*Hint:\*\*\s*/gi, '**Hint:**\n')
-          .replace(/\*\*Lore:\*\*\s*/gi, '\n\n**Lore:**\n')
-          .replace(/\*\*Places of Interest:\*\*\s*/gi, '\n\n**Places of Interest:**\n')
-          .replace(/\*\*Strategy:\*\*\s*/gi, '\n\n**Strategy:**\n')
-          .replace(/\*\*What to focus on:\*\*\s*/gi, '\n\n**What to focus on:**\n')
-          .replace(/^Hint:\s*/i, '**Hint:**\n')
-          .replace(/\nHint:\s*/gi, '\n\n**Hint:**\n')
-          .replace(/\nLore:\s*/gi, '\n\n**Lore:**\n')
-          .replace(/\nPlaces of Interest:\s*/gi, '\n\n**Places of Interest:**\n')
-          .replace(/\nStrategy:\s*/gi, '\n\n**Strategy:**\n')
-          // ? STEP 12: Fix paragraph formatting
-          .replace(/(\*\*[^*]+\*\*:?)([A-Z])/g, '$1\n\n$2') // Break after bold headers
+          // ? STEP 9b: Fix orphaned ** after game title headers (e.g., "Game - Location** You stand")
+          .replace(/^([^*\n]*?\s-\s[^*\n]*?)\*\*\s+/gm, '$1\n\n')
+          // ? STEP 10: UNIFIED HEADER CLEANUP
+          // First normalize all header variations to a standard form without newlines
+          // Handle "** Lore:**" (space after **) and "** Lore :**" (spaces around colon)
+          .replace(/\*\*\s*Hint\s*:\s*\*\*/gi, '##HINT##')
+          .replace(/\*\*\s*Lore\s*:\s*\*\*/gi, '##LORE##')
+          .replace(/\*\*\s*Places\s+of\s+Interest\s*:\s*\*\*/gi, '##POI##')
+          .replace(/\*\*\s*Strategy\s*:\s*\*\*/gi, '##STRATEGY##')
+          .replace(/\*\*\s*What\s+to\s+focus\s+on\s*:\s*\*\*/gi, '##FOCUS##')
+          // Handle plain headers without bold
+          .replace(/^Hint:\s*/im, '##HINT##')
+          .replace(/\nHint:\s*/gi, '##HINT##')
+          .replace(/\nLore:\s*/gi, '##LORE##')
+          .replace(/\nPlaces of Interest:\s*/gi, '##POI##')
+          .replace(/\nStrategy:\s*/gi, '##STRATEGY##')
+          .replace(/\nWhat to focus on:\s*/gi, '##FOCUS##')
+          // Handle headers after punctuation
+          .replace(/([.!?])\s*Hint:/gi, '$1##HINT##')
+          .replace(/([.!?])\s*Lore:/gi, '$1##LORE##')
+          .replace(/([.!?])\s*Places of Interest:/gi, '$1##POI##')
+          .replace(/([.!?])\s*Strategy:/gi, '$1##STRATEGY##')
+          .replace(/([.!?])\s*What to focus on:/gi, '$1##FOCUS##')
+          // ? STEP 11: Fix malformed generic bold markers (spaces between ** and text)
+          .replace(/\*\*\s+([^*#]+?)\s+\*\*/g, '**$1**')
+          .replace(/\*\*\s+([^*#:]+?):\s*(?!\*)/g, '**$1:** ')
+          // ? STEP 12: Replace placeholder tokens with properly formatted headers
+          .replace(/##HINT##\s*/g, '\n\n**Hint:**\n')
+          .replace(/##LORE##\s*/g, '\n\n**Lore:**\n')
+          .replace(/##POI##\s*/g, '\n\n**Places of Interest:**\n')
+          .replace(/##STRATEGY##\s*/g, '\n\n**Strategy:**\n')
+          .replace(/##FOCUS##\s*/g, '\n\n**What to focus on:**\n')
+          // ? STEP 13: Clean up any stray **** (four asterisks from double-processing)
+          .replace(/\*{4,}/g, '**')
+          // ? STEP 14: Fix paragraph formatting (use [^*\n]+ to prevent matching across newlines!)
+          .replace(/(\*\*[^*\n]+\*\*:?)([A-Z])/g, '$1\n\n$2') // Break after bold headers on same line
           .replace(/\.([A-Z][a-z])/g, '.\n\n$1') // Period + Capital = new paragraph
           .replace(/\.(\*\*[A-Z])/g, '.\n\n$1') // Period + Bold = new paragraph
-          // ? STEP 13: Final cleanup
+          // ? STEP 15: Final cleanup
+          .replace(/^\n+/, '') // Remove leading newlines
           .replace(/\n{3,}/g, '\n\n') // Remove excessive newlines
           .trim();
         
