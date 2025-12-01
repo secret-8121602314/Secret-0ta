@@ -171,6 +171,24 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
     // Fix patterns like "...text. 2." or "...text.2." where number follows period without break
     .replace(/\.\s*(\d+\.\*\*)/g, '.\n\n$1') // Period followed by numbered bold item
     .replace(/\.\s*(\d+\.\s+)/g, '.\n\n$1') // Period followed by numbered item
+    // ✅ FIX: Add space after numbered list items (1.Text → 1. Text)
+    .replace(/^(\d+)\.([A-Z])/gm, '$1. $2') // 1.Ripperdocs → 1. Ripperdocs
+    .replace(/^(\d+)\.\*\*([^*]+)\*\*([A-Z])/gm, '$1. **$2** $3') // 1.**Bold**Text → 1. **Bold** Text
+    // ✅ FIX: Add space after colons when followed by capital letter
+    .replace(/:([A-Z])/g, ': $1') // :There → : There
+    // ✅ FIX: Add space after ** when followed by capital letter (end of bold)
+    .replace(/\*\*([A-Z])/g, '** $1') // **Look → ** Look  
+    // ✅ FIX: Add space before bold text when preceded by lowercase letter
+    .replace(/([a-z])\*\*([A-Z])/g, '$1 **$2') // your**Operating → your **Operating
+    // ✅ FIX: Add space after bold text when followed by lowercase letter
+    .replace(/\*\*([a-z])/g, '** $1') // System**or → System** or
+    // ✅ FIX: Add space before capitalized word when preceded by lowercase (camelCase breaks)
+    .replace(/([a-z])([A-Z][a-z])/g, '$1 $2') // yourOperating → your Operating, betterSubdermal → better Subdermal
+    // ✅ FIX: Fix "like" followed by capital (likeContagion → like Contagion)
+    .replace(/\b(like|or|and|the|a|an|for|with|from|to|in|on|at|by|as)([A-Z])/g, '$1 $2')
+    // ✅ FIX: Fix dangling ** at end of line (upgrades:** → upgrades:)
+    .replace(/:\*\*\s*$/gm, ':')
+    .replace(/:\*\*\n/g, ':\n')
     // ✅ FIX: Ensure bold formatting is complete (no dangling **)
     .replace(/\*\*([^*\n]+)(?!\*\*)/g, (match, content) => {
       // If this bold section doesn't have a closing **, and ends with :, add closing

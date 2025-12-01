@@ -265,10 +265,10 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
               const cleanContent = message.content.replace(/\n\n_⏳ Queued.*_$/, '');
               onEditMessage(message.id, cleanContent);
             }}
-            className="mt-1.5 p-1.5 text-[#666] hover:text-[#FF4D4D] hover:bg-[#FF4D4D]/10 rounded-md transition-colors"
+            className="mt-1 p-1 text-[#555] hover:text-[#FF4D4D] hover:bg-[#FF4D4D]/10 rounded transition-colors"
             title="Edit and resubmit"
           >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
           </button>
@@ -276,22 +276,22 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
         
         {/* Feedback buttons for AI messages - OUTSIDE the bubble, consistent size, middle-aligned */}
         {message.role === 'assistant' && onFeedback && !isLoading && (
-          <div className="flex items-center justify-center gap-1 mt-1.5 ml-11">
+          <div className="flex items-center justify-start gap-1 mt-1 ml-11">
             <button
               onClick={() => onFeedback(message.id, 'up')}
-              className="p-1.5 text-[#666] hover:text-green-500 hover:bg-green-500/10 rounded-md transition-colors"
+              className="p-1 text-[#555] hover:text-green-500 hover:bg-green-500/10 rounded transition-colors"
               title="Good response"
             >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
               </svg>
             </button>
             <button
               onClick={() => onFeedback(message.id, 'down')}
-              className="p-1.5 text-[#666] hover:text-red-500 hover:bg-red-500/10 rounded-md transition-colors"
+              className="p-1 text-[#555] hover:text-red-500 hover:bg-red-500/10 rounded transition-colors"
               title="Poor response"
             >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018c.163 0 .326.02.485.06L17 4m-7 10v2a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
               </svg>
             </button>
