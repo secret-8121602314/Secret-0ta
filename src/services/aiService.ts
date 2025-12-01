@@ -951,21 +951,32 @@ In addition to your regular response, provide structured data in the following o
         // 1. Unescape asterisks (Fixes \*\* issues)
         cleanContent = cleanContent.replace(/\\\*/g, '*');
 
-        // 2. Fix SPECIFIC header patterns with spaces (most common AI outputs)
-        // Pattern: "** Lore:**" or "** Lore: **" → "**Lore:**"
-        cleanContent = cleanContent.replace(/\*\*\s+Hint\s*:\s*\*\*/gi, '**Hint:**');
-        cleanContent = cleanContent.replace(/\*\*\s+Lore\s*:\s*\*\*/gi, '**Lore:**');
-        cleanContent = cleanContent.replace(/\*\*\s+Places\s+of\s+Interest\s*:\s*\*\*/gi, '**Places of Interest:**');
-        cleanContent = cleanContent.replace(/\*\*\s+Strategy\s*:\s*\*\*/gi, '**Strategy:**');
-        cleanContent = cleanContent.replace(/\*\*\s+What\s+to\s+focus\s+on\s*:\s*\*\*/gi, '**What to focus on:**');
+        // 2. Fix headers with MISSING closing ** (AI sends "** Lore:**" without closing **)
+        cleanContent = cleanContent.replace(/\*\*\s*Hint\s*:\*\*\s*/gi, '\n\n**Hint:**\n');
+        cleanContent = cleanContent.replace(/\*\*\s*Lore\s*:\*\*\s*/gi, '\n\n**Lore:**\n');
+        cleanContent = cleanContent.replace(/\*\*\s*Places\s+of\s+Interest\s*:\*\*\s*/gi, '\n\n**Places of Interest:**\n');
+        cleanContent = cleanContent.replace(/\*\*\s*Strategy\s*:\*\*\s*/gi, '\n\n**Strategy:**\n');
+        cleanContent = cleanContent.replace(/\*\*\s*What\s+to\s+focus\s+on\s*:\*\*\s*/gi, '\n\n**What to focus on:**\n');
 
-        // 3. Fix the "Space inside Bold" issue GLOBALLY
-        // Turns "** Text**" -> "**Text**" and "**Text **" -> "**Text**"
+        // 3. Fix headers WITHOUT any closing ** (AI sends "** Lore:" with no ** at end)
+        cleanContent = cleanContent.replace(/\n\*\*\s*Hint\s*:\s*\n/gi, '\n\n**Hint:**\n');
+        cleanContent = cleanContent.replace(/\n\*\*\s*Lore\s*:\s*\n/gi, '\n\n**Lore:**\n');
+        cleanContent = cleanContent.replace(/\n\*\*\s*Places\s+of\s+Interest\s*:\s*\n/gi, '\n\n**Places of Interest:**\n');
+        cleanContent = cleanContent.replace(/\n\*\*\s*Strategy\s*:\s*\n/gi, '\n\n**Strategy:**\n');
+        cleanContent = cleanContent.replace(/\n\*\*\s*What\s+to\s+focus\s+on\s*:\s*\n/gi, '\n\n**What to focus on:**\n');
+
+        // 4. Fix standalone headers on their own line
+        cleanContent = cleanContent.replace(/^\*\*\s*Hint\s*:\s*\**\s*$/gim, '**Hint:**');
+        cleanContent = cleanContent.replace(/^\*\*\s*Lore\s*:\s*\**\s*$/gim, '**Lore:**');
+        cleanContent = cleanContent.replace(/^\*\*\s*Places\s+of\s+Interest\s*:\s*\**\s*$/gim, '**Places of Interest:**');
+        cleanContent = cleanContent.replace(/^\*\*\s*Strategy\s*:\s*\**\s*$/gim, '**Strategy:**');
+        cleanContent = cleanContent.replace(/^\*\*\s*What\s+to\s+focus\s+on\s*:\s*\**\s*$/gim, '**What to focus on:**');
+
+        // 5. Fix the "Space inside Bold" issue GLOBALLY
         cleanContent = cleanContent.replace(/\*\*\s+([^*]+?)\*\*/g, '**$1**');
         cleanContent = cleanContent.replace(/\*\*([^*]+?)\s+\*\*/g, '**$1**');
 
-        // 4. Fix "Header inside Bold" with space before colon
-        // "** Lore :**" -> "**Lore:**"
+        // 6. Fix "Header inside Bold" with space before colon
         cleanContent = cleanContent.replace(/\*\*\s*([A-Za-z ]+?)\s*:\s*\*\*/g, '**$1:**');
 
         // ---------------------------------------------------------
