@@ -951,14 +951,21 @@ In addition to your regular response, provide structured data in the following o
         // 1. Unescape asterisks (Fixes \*\* issues)
         cleanContent = cleanContent.replace(/\\\*/g, '*');
 
-        // 2. Fix the "Space inside Bold" issue GLOBALLY first
-        // Turns "** Lore:**" -> "**Lore:**"
-        // Turns "** Places of Interest:**" -> "**Places of Interest:**"
+        // 2. Fix SPECIFIC header patterns with spaces (most common AI outputs)
+        // Pattern: "** Lore:**" or "** Lore: **" → "**Lore:**"
+        cleanContent = cleanContent.replace(/\*\*\s+Hint\s*:\s*\*\*/gi, '**Hint:**');
+        cleanContent = cleanContent.replace(/\*\*\s+Lore\s*:\s*\*\*/gi, '**Lore:**');
+        cleanContent = cleanContent.replace(/\*\*\s+Places\s+of\s+Interest\s*:\s*\*\*/gi, '**Places of Interest:**');
+        cleanContent = cleanContent.replace(/\*\*\s+Strategy\s*:\s*\*\*/gi, '**Strategy:**');
+        cleanContent = cleanContent.replace(/\*\*\s+What\s+to\s+focus\s+on\s*:\s*\*\*/gi, '**What to focus on:**');
+
+        // 3. Fix the "Space inside Bold" issue GLOBALLY
+        // Turns "** Text**" -> "**Text**" and "**Text **" -> "**Text**"
         cleanContent = cleanContent.replace(/\*\*\s+([^*]+?)\*\*/g, '**$1**');
         cleanContent = cleanContent.replace(/\*\*([^*]+?)\s+\*\*/g, '**$1**');
 
-        // 3. Fix "Header inside Bold" specific patterns
-        // Sometimes AI does "** Lore :**" (space before colon). This fixes that.
+        // 4. Fix "Header inside Bold" with space before colon
+        // "** Lore :**" -> "**Lore:**"
         cleanContent = cleanContent.replace(/\*\*\s*([A-Za-z ]+?)\s*:\s*\*\*/g, '**$1:**');
 
         // ---------------------------------------------------------
