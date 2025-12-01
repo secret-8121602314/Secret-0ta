@@ -12,7 +12,7 @@ const AuthCallbackRoute: React.FC = () => {
   const handleAuthSuccess = () => {
         // After successful OAuth, navigate to onboarding
     // The onboarding loader will determine the correct step
-    navigate('/onboarding');
+    navigate('/earlyaccess/onboarding');
   };
 
   const handleAuthError = (error: string) => {

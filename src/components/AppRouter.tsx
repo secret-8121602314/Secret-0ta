@@ -84,7 +84,7 @@ const AppRouter: React.FC<AppRouterProps> = ({
 }) => {
   // Check for auth callback route (works for both dev and production)
   const isAuthCallback = window.location.pathname === '/auth/callback' || 
-                         window.location.pathname === '/auth/callback';
+                         window.location.pathname === '/earlyaccess/auth/callback';
   
   if (isAuthCallback) {
     return (

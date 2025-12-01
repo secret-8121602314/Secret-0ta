@@ -13,7 +13,7 @@ const InitialOnboardingRoute: React.FC = () => {
 
   const handleComplete = () => {
     // After initial splash, navigate to how-to-use screen
-    navigate('/onboarding/how-to-use');
+    navigate('/earlyaccess/onboarding/how-to-use');
   };
 
   return (

@@ -261,7 +261,7 @@ const MainAppRoute: React.FC = () => {
               await authService.refreshUser();
               
               // Force re-render by navigating to same route
-              navigate('/app', { replace: true });
+              navigate('/earlyaccess/app', { replace: true });
             }
           } catch (error) {
             console.error('Error completing profile setup:', error);
@@ -282,7 +282,7 @@ const MainAppRoute: React.FC = () => {
               await authService.refreshUser();
               
               // Force re-render by navigating to same route
-              navigate('/app', { replace: true });
+              navigate('/earlyaccess/app', { replace: true });
             }
           } catch (error) {
             console.error('Error dismissing profile setup:', error);

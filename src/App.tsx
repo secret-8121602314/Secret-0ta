@@ -203,7 +203,7 @@ function App() {
 
   useEffect(() => {
     const isAuthCallback = window.location.pathname === '/auth/callback' || 
-                           window.location.pathname === '/auth/callback';
+                           window.location.pathname === '/earlyaccess/auth/callback';
     if (isAuthCallback) {
       // The AuthCallback component will handle the authentication
     }
