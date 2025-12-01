@@ -528,6 +528,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState('');
+  const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
   const [scrollY, setScrollY] = useState(0);
   const backgroundRef = useRef<HTMLDivElement>(null);
@@ -1416,6 +1417,138 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                         Coming when we reach 10,000 pro subs
                                     </button>
                                     <p className="text-xs text-neutral-500 mt-3 text-center">Join the waitlist to be notified when this feature goes live!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* FAQ Section */}
+                <section id="faq" className="py-10 md:py-14 bg-transparent">
+                    <div className="container mx-auto px-6 md:px-10 max-w-5xl">
+                        {/* Section Header */}
+                        <div className="text-center mb-8 md:mb-12 animate-fade-slide-up">
+                            <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white mb-6">
+                                Frequently Asked Questions
+                            </h2>
+                            <p className="text-lg md:text-xl text-neutral-300 max-w-3xl mx-auto leading-relaxed">
+                                Got questions? We've got answers. Here's everything you need to know about Otagon.
+                            </p>
+                        </div>
+
+                        {/* FAQ Accordion */}
+                        <div className="flex flex-col gap-4 max-w-3xl mx-auto animate-fade-slide-up">
+                            {/* FAQ Item 1 */}
+                            <div 
+                                className="group p-[1px] bg-gradient-to-br from-[#E53A3A]/30 to-[#D98C1F]/30 hover:from-[#E53A3A]/50 hover:to-[#D98C1F]/50 rounded-xl transition-all duration-300 cursor-pointer"
+                                onClick={() => setExpandedFaq(expandedFaq === 0 ? null : 0)}
+                            >
+                                <div className="bg-[#111111] rounded-[11px] p-5 md:p-6">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-lg md:text-xl font-semibold text-white pr-4">
+                                            How does Otagon work?
+                                        </h3>
+                                        <svg 
+                                            className={`w-5 h-5 text-neutral-400 transition-transform duration-300 flex-shrink-0 ${expandedFaq === 0 ? 'rotate-180' : ''}`}
+                                            fill="none" 
+                                            stroke="currentColor" 
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </div>
+                                    <div className={`overflow-hidden transition-all duration-300 ${expandedFaq === 0 ? 'max-h-40 mt-4' : 'max-h-0'}`}>
+                                        <p className="text-neutral-400 leading-relaxed">
+                                            Press a hotkey while gaming, and Otagon instantly captures your screen. Our AI analyzes 
+                                            the context using Google Gemini and sends spoiler-free hints to your phone or second monitor, 
+                                            so you never have to leave your game.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* FAQ Item 2 */}
+                            <div 
+                                className="group p-[1px] bg-gradient-to-br from-[#E53A3A]/30 to-[#D98C1F]/30 hover:from-[#E53A3A]/50 hover:to-[#D98C1F]/50 rounded-xl transition-all duration-300 cursor-pointer"
+                                onClick={() => setExpandedFaq(expandedFaq === 1 ? null : 1)}
+                            >
+                                <div className="bg-[#111111] rounded-[11px] p-5 md:p-6">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-lg md:text-xl font-semibold text-white pr-4">
+                                            Is it really spoiler-free?
+                                        </h3>
+                                        <svg 
+                                            className={`w-5 h-5 text-neutral-400 transition-transform duration-300 flex-shrink-0 ${expandedFaq === 1 ? 'rotate-180' : ''}`}
+                                            fill="none" 
+                                            stroke="currentColor" 
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </div>
+                                    <div className={`overflow-hidden transition-all duration-300 ${expandedFaq === 1 ? 'max-h-40 mt-4' : 'max-h-0'}`}>
+                                        <p className="text-neutral-400 leading-relaxed">
+                                            Absolutely! Our AI is trained to understand context and provide hints that guide you 
+                                            without revealing plot points, solutions, or surprises. We give you just enough to get unstuck.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* FAQ Item 3 */}
+                            <div 
+                                className="group p-[1px] bg-gradient-to-br from-[#E53A3A]/30 to-[#D98C1F]/30 hover:from-[#E53A3A]/50 hover:to-[#D98C1F]/50 rounded-xl transition-all duration-300 cursor-pointer"
+                                onClick={() => setExpandedFaq(expandedFaq === 2 ? null : 2)}
+                            >
+                                <div className="bg-[#111111] rounded-[11px] p-5 md:p-6">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-lg md:text-xl font-semibold text-white pr-4">
+                                            What games does it support?
+                                        </h3>
+                                        <svg 
+                                            className={`w-5 h-5 text-neutral-400 transition-transform duration-300 flex-shrink-0 ${expandedFaq === 2 ? 'rotate-180' : ''}`}
+                                            fill="none" 
+                                            stroke="currentColor" 
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </div>
+                                    <div className={`overflow-hidden transition-all duration-300 ${expandedFaq === 2 ? 'max-h-40 mt-4' : 'max-h-0'}`}>
+                                        <p className="text-neutral-400 leading-relaxed">
+                                            Otagon works with any game! Our AI can understand visual context from any game genre - 
+                                            RPGs, puzzles, platformers, strategy games, and more. If you can see it on screen, we can help.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* FAQ Item 4 */}
+                            <div 
+                                className="group p-[1px] bg-gradient-to-br from-[#E53A3A]/30 to-[#D98C1F]/30 hover:from-[#E53A3A]/50 hover:to-[#D98C1F]/50 rounded-xl transition-all duration-300 cursor-pointer"
+                                onClick={() => setExpandedFaq(expandedFaq === 3 ? null : 3)}
+                            >
+                                <div className="bg-[#111111] rounded-[11px] p-5 md:p-6">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-lg md:text-xl font-semibold text-white pr-4">
+                                            Is my data safe?
+                                        </h3>
+                                        <svg 
+                                            className={`w-5 h-5 text-neutral-400 transition-transform duration-300 flex-shrink-0 ${expandedFaq === 3 ? 'rotate-180' : ''}`}
+                                            fill="none" 
+                                            stroke="currentColor" 
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </div>
+                                    <div className={`overflow-hidden transition-all duration-300 ${expandedFaq === 3 ? 'max-h-40 mt-4' : 'max-h-0'}`}>
+                                        <p className="text-neutral-400 leading-relaxed">
+                                            Yes. We take data security seriously. Your screenshots and conversations are processed 
+                                            securely, and we do not sell your personal data to third parties. Please review our 
+                                            Privacy Policy for complete details.
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
