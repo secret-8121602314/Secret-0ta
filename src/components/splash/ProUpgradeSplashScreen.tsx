@@ -6,35 +6,84 @@ interface ProUpgradeSplashScreenProps {
   tierName?: 'pro' | 'vanguard_pro';
 }
 
+// SVG Icons for features - responsive sizing
+const TextIcon = () => (
+  <svg className="w-5 h-5 sm:w-6 sm:h-6 text-[#FFAB40]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+  </svg>
+);
+
+const ImageIcon = () => (
+  <svg className="w-5 h-5 sm:w-6 sm:h-6 text-[#FFAB40]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+  </svg>
+);
+
+const BatchIcon = () => (
+  <svg className="w-5 h-5 sm:w-6 sm:h-6 text-[#FFAB40]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+  </svg>
+);
+
+const InsightsIcon = () => (
+  <svg className="w-5 h-5 sm:w-6 sm:h-6 text-[#FFAB40]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+  </svg>
+);
+
+const SearchIcon = () => (
+  <svg className="w-5 h-5 sm:w-6 sm:h-6 text-[#FFAB40]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+  </svg>
+);
+
+const HandsFreeIcon = () => (
+  <svg className="w-5 h-5 sm:w-6 sm:h-6 text-[#FFAB40]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+  </svg>
+);
+
+const VIPIcon = () => (
+  <svg className="w-5 h-5 sm:w-6 sm:h-6 text-[#FFAB40]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+  </svg>
+);
+
+const EarlyAccessIcon = () => (
+  <svg className="w-5 h-5 sm:w-6 sm:h-6 text-[#FFAB40]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+  </svg>
+);
+
 // Pro features to highlight
 const PRO_FEATURES = [
   {
-    icon: '🚀',
+    icon: <TextIcon />,
     title: '1,583 Text Queries',
     description: 'Get answers to all your gaming questions'
   },
   {
-    icon: '📸',
+    icon: <ImageIcon />,
     title: '328 Image Queries',
     description: 'Analyze screenshots for instant help'
   },
   {
-    icon: '⚡',
-    title: 'Batch Screenshots (F2)',
+    icon: <BatchIcon />,
+    title: 'Batch Screenshots',
     description: 'Capture multiple screenshots at once'
   },
   {
-    icon: '🎮',
+    icon: <InsightsIcon />,
     title: 'Auto Game Insights',
-    description: 'Get builds, tips & strategies for each game'
+    description: 'Builds, tips & strategies for each game'
   },
   {
-    icon: '🔍',
+    icon: <SearchIcon />,
     title: 'Grounding Search',
     description: 'Real-time info from the web'
   },
   {
-    icon: '🎤',
+    icon: <HandsFreeIcon />,
     title: 'Hands-Free Mode',
     description: 'AI reads responses while you play'
   }
@@ -42,12 +91,12 @@ const PRO_FEATURES = [
 
 const VANGUARD_EXTRAS = [
   {
-    icon: '👑',
+    icon: <VIPIcon />,
     title: 'VIP Support',
     description: 'Priority access to our team'
   },
   {
-    icon: '🌟',
+    icon: <EarlyAccessIcon />,
     title: 'Early Access',
     description: 'Try new features before anyone else'
   }
@@ -70,85 +119,97 @@ const ProUpgradeSplashScreen: React.FC<ProUpgradeSplashScreenProps> = ({
   const features = isVanguard ? [...PRO_FEATURES, ...VANGUARD_EXTRAS] : PRO_FEATURES;
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-black/95 to-[#0A0A0A]/95 backdrop-blur-xl flex items-center justify-center p-4 z-50 animate-fade-in overflow-y-auto">
-      <div className="text-center max-w-2xl w-full animate-scale-in my-8">
-        {/* Celebration header */}
-        <div className="relative mb-6">
-          {/* Glow effect */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className={`w-40 h-40 ${isVanguard ? 'bg-purple-500/30' : 'bg-blue-500/30'} rounded-full blur-3xl animate-pulse`}></div>
+    <div className="fixed inset-0 bg-gradient-to-br from-black/95 to-[#0A0A0A]/95 backdrop-blur-xl flex items-start sm:items-center justify-center p-3 sm:p-4 md:p-6 z-50 animate-fade-in overflow-y-auto">
+      <div className="w-full max-w-lg mx-auto animate-scale-in my-4 sm:my-6">
+        {/* Card container */}
+        <div className="bg-gradient-to-b from-[#1A1A1A]/90 to-[#0D0D0D]/90 border border-[#2A2A2A] rounded-2xl sm:rounded-3xl p-4 sm:p-5 md:p-6 shadow-2xl">
+          
+          {/* Mascot with glow */}
+          <div className="relative flex justify-center mb-3 sm:mb-4">
+            {/* Glow effect */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className={`w-28 h-28 sm:w-36 sm:h-36 ${isVanguard ? 'bg-purple-500/25' : 'bg-blue-500/25'} rounded-full blur-3xl animate-pulse`}></div>
+            </div>
+            
+            {/* Pro mascot image */}
+            <img
+              src="/images/mascot/pro-user.png"
+              alt="Pro User"
+              className="relative w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 object-contain animate-bounce"
+              style={{ animationDuration: '1.5s' }}
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+              }}
+            />
           </div>
           
-          {/* Pro mascot image */}
-          <img
-            src="/images/mascot/pro-user.png"
-            alt="Pro User"
-            className="relative w-36 h-36 sm:w-44 sm:h-44 md:w-52 md:h-52 object-contain mx-auto animate-bounce"
-            style={{ animationDuration: '1s' }}
-            onError={(e) => {
-              // Fallback to emoji if image fails to load
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-              const fallback = target.nextElementSibling as HTMLElement;
-              if (fallback) fallback.style.display = 'block';
-            }}
-          />
-          {/* Fallback emoji (hidden by default) */}
-          <div className="text-6xl sm:text-7xl" style={{ display: 'none' }}>
-            {isVanguard ? '👑' : '⭐'}
+          {/* Title */}
+          <h1 className={`text-xl sm:text-2xl md:text-3xl font-bold text-center mb-1 sm:mb-2 ${isVanguard ? 'text-purple-400' : 'text-blue-400'}`}>
+            Welcome to {isVanguard ? 'Vanguard Pro' : 'Pro'}!
+          </h1>
+          <p className="text-xs sm:text-sm md:text-base text-[#CFCFCF] text-center mb-4 sm:mb-5">
+            You've unlocked the full Otagon experience
+          </p>
+
+          {/* Features grid */}
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4 sm:mb-5">
+            {features.map((feature) => (
+              <div 
+                key={feature.title}
+                className="bg-[#1E1E1E]/60 border border-[#333333]/60 rounded-lg sm:rounded-xl p-2.5 sm:p-3"
+              >
+                <div className="flex items-start gap-2 sm:gap-2.5">
+                  <div className="flex-shrink-0 mt-0.5">{feature.icon}</div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-xs sm:text-sm font-semibold text-[#F5F5F5] leading-tight mb-0.5">{feature.title}</h3>
+                    <p className="text-[10px] sm:text-xs text-[#A3A3A3] leading-tight">{feature.description}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
-        
-        {/* Title */}
-        <h1 className={`text-3xl sm:text-4xl font-bold mb-2 ${isVanguard ? 'text-purple-400' : 'text-blue-400'}`}>
-          Welcome to {isVanguard ? 'Vanguard Pro' : 'Pro'}!
-        </h1>
-        <p className="text-lg text-[#CFCFCF] mb-6">
-          You've unlocked the full Otagon experience
-        </p>
 
-        {/* Features grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
-          {features.map((feature, index) => (
-            <div 
-              key={feature.title}
-              className="bg-gradient-to-r from-[#1C1C1C]/80 to-[#0A0A0A]/80 border border-[#424242]/40 rounded-xl p-3 text-left hover:border-[#5A5A5A]/60 transition-all duration-300"
-              style={{ animationDelay: `${index * 50}ms` }}
-            >
-              <div className="text-2xl mb-2">{feature.icon}</div>
-              <h3 className="text-sm font-semibold text-[#F5F5F5] mb-1">{feature.title}</h3>
-              <p className="text-xs text-[#A3A3A3] leading-tight">{feature.description}</p>
-            </div>
-          ))}
-        </div>
+          {/* Pro tips */}
+          <div className="bg-[#1E1E1E]/60 border border-[#333333]/60 rounded-lg sm:rounded-xl p-3 sm:p-4 mb-4 sm:mb-5">
+            <h3 className="text-xs sm:text-sm font-semibold text-[#FFAB40] mb-2 flex items-center gap-2">
+              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+              Pro Tips
+            </h3>
+            <ul className="text-[10px] sm:text-xs text-[#CFCFCF] space-y-1">
+              <li className="flex items-start gap-1.5">
+                <span className="text-[#FFAB40] mt-0.5">•</span>
+                <span>Press <span className="font-mono bg-[#2E2E2E] px-1 py-0.5 rounded text-[#FFAB40]">F2</span> on PC for batch screenshots</span>
+              </li>
+              <li className="flex items-start gap-1.5">
+                <span className="text-[#FFAB40] mt-0.5">•</span>
+                <span>Game insights are auto-generated for each game tab</span>
+              </li>
+              <li className="flex items-start gap-1.5">
+                <span className="text-[#FFAB40] mt-0.5">•</span>
+                <span>Toggle Hands-Free mode for voice responses</span>
+              </li>
+            </ul>
+          </div>
 
-        {/* Pro tips */}
-        <div className="bg-gradient-to-r from-[#2E2E2E]/60 to-[#1A1A1A]/60 border border-[#424242]/40 rounded-xl p-4 mb-6 text-left">
-          <h3 className="text-sm font-semibold text-[#FFAB40] mb-2 flex items-center gap-2">
-            <span>💡</span> Pro Tips
-          </h3>
-          <ul className="text-xs text-[#CFCFCF] space-y-1">
-            <li>• Press <span className="font-mono bg-[#2E2E2E] px-1 rounded">F2</span> on PC for batch screenshots</li>
-            <li>• Game insights are auto-generated for each game tab</li>
-            <li>• Toggle Hands-Free mode for voice responses while gaming</li>
-          </ul>
-        </div>
+          {/* Status indicator */}
+          <div className="flex items-center justify-center gap-2 mb-4 sm:mb-5">
+            <div className={`w-2 h-2 sm:w-2.5 sm:h-2.5 ${isVanguard ? 'bg-purple-400' : 'bg-blue-400'} rounded-full animate-pulse`}></div>
+            <span className={`text-xs sm:text-sm font-medium ${isVanguard ? 'text-purple-400' : 'text-blue-400'}`}>
+              {isVanguard ? 'Vanguard Pro' : 'Pro'} Active
+            </span>
+          </div>
 
-        {/* Status indicator */}
-        <div className="flex items-center justify-center gap-2 mb-6">
-          <div className={`w-3 h-3 ${isVanguard ? 'bg-purple-400' : 'bg-blue-400'} rounded-full animate-pulse`}></div>
-          <span className={`text-sm ${isVanguard ? 'text-purple-400' : 'text-blue-400'}`}>
-            {isVanguard ? 'Vanguard Pro' : 'Pro'} Active
-          </span>
+          {/* CTA Button */}
+          <button
+            onClick={onClose}
+            className="w-full bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-bold py-3 sm:py-4 px-6 rounded-xl text-sm sm:text-base transition-all duration-300 active:scale-[0.98] hover:shadow-lg hover:shadow-[#E53A3A]/25"
+          >
+            Let's Go!
+          </button>
         </div>
-
-        {/* CTA Button */}
-        <button
-          onClick={onClose}
-          className="bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-bold py-4 px-12 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#E53A3A]/25"
-        >
-          Let's Game! 🎮
-        </button>
       </div>
     </div>
   );
