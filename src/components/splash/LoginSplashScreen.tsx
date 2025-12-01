@@ -367,7 +367,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
           <h1 className="text-2xl md:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">
             Welcome to Otagon
           </h1>
-          <p className="text-sm md:text-sm lg:text-base text-text-secondary px-4">
+          <p className="text-sm md:text-sm lg:text-base text-text-secondary px-4 mb-6 md:mb-5 lg:mb-6">
             {emailMode === 'options' 
               ? 'Sign in to start your gaming adventure' 
               : emailMode === 'signin' 
@@ -682,6 +682,12 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
           </div>
         )}
 
+        {/* PWA Install Banner - Show on login screen in browser mode only */}
+        {/* When running as installed PWA, this banner is hidden automatically */}
+        <div className="mt-6 md:mt-4 lg:mt-5">
+          <PWAInstallBanner alwaysShowInBrowser={true} />
+        </div>
+        
         {/* Back to Landing */}
         <div className="text-center mt-4 md:mt-4 lg:mt-6">
           <button
@@ -696,12 +702,6 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
             </svg>
             <span>Back to Landing Page</span>
           </button>
-        </div>
-        
-        {/* PWA Install Banner - Show on login screen in browser mode only */}
-        {/* When running as installed PWA, this banner is hidden automatically */}
-        <div className="mt-4 md:mt-3 lg:mt-4">
-          <PWAInstallBanner alwaysShowInBrowser={true} />
         </div>
       </div>
 
