@@ -13,31 +13,44 @@ const parseOtakonTags = (rawContent) => {
     .replace(/\*\*([^*\n]+?)\s+\*\*/g, '**$1**');
 
   // ============================================
-  // PHASE 2: Direct replacement of ALL malformed header patterns
-  // Replace directly with properly formatted bold headers
+  // PHASE 2: Normalize ALL section headers to consistent format
+  // Handle every possible malformed pattern
   // ============================================
   const headers = ['Hint', 'Lore', 'Places of Interest', 'Strategy', 'What to focus on'];
   
   for (const header of headers) {
     const h = header.replace(/ /g, '\\s+'); // "Places of Interest" → "Places\s+of\s+Interest"
     
-    // Pattern: **Header: or ** Header: (with/without space, with colon, no closing **)
-    // This is the most common malformed pattern from AI
+    // Pattern 1: ** Header:** : (with closing ** and extra colon)
     cleanContent = cleanContent.replace(
-      new RegExp(`\\*\\*\\s*${h}\\s*:`, 'gi'),
-      `\n\n**${header}:**`
+      new RegExp(`\\*\\*\\s*${h}\\s*:\\s*\\*\\*\\s*:?\\s*`, 'gi'),
+      `\n\n${header}:\n`
     );
     
-    // Pattern: ** Header:** : (with closing ** and extra colon)
+    // Pattern 2: ** Header: (space after **, with colon, no closing **)
+    // Consume any trailing whitespace after the colon
     cleanContent = cleanContent.replace(
-      new RegExp(`\\*\\*\\s*${h}\\s*:\\s*\\*\\*\\s*:?`, 'gi'),
-      `\n\n**${header}:**`
+      new RegExp(`\\*\\*\\s+${h}\\s*:\\s*`, 'gi'),
+      `\n\n${header}:\n`
     );
     
-    // Pattern: **Header** (with closing **, no colon)
+    // Pattern 3: **Header: (no space, with colon, no closing **)
+    // Consume any trailing whitespace after the colon
     cleanContent = cleanContent.replace(
-      new RegExp(`\\*\\*\\s*${h}\\s*\\*\\*`, 'gi'),
-      `\n\n**${header}:**`
+      new RegExp(`\\*\\*${h}:\\s*`, 'gi'),
+      `\n\n${header}:\n`
+    );
+    
+    // Pattern 4: **Header** (with closing **, no colon)
+    cleanContent = cleanContent.replace(
+      new RegExp(`\\*\\*${h}\\*\\*\\s*`, 'gi'),
+      `\n\n${header}:\n`
+    );
+    
+    // Pattern 5: ** Header (space after **, no colon, no closing)
+    cleanContent = cleanContent.replace(
+      new RegExp(`\\*\\*\\s+${h}(?![:\\w*])`, 'gi'),
+      `\n\n${header}:\n`
     );
   }
   
@@ -45,55 +58,30 @@ const parseOtakonTags = (rawContent) => {
   cleanContent = cleanContent.replace(/:{2,}/g, ':');
 
   // ============================================
-  // PHASE 3: Handle plain headers (no ** at all) - add bold
+  // PHASE 3: Add bold formatting to section headers
+  // Now all headers are normalized as plain "Header:" with newlines
   // ============================================
   for (const header of headers) {
     const h = header.replace(/ /g, '\\s+');
     
-    // Match plain Header: after newlines (not already bold)
+    // Match Header: after punctuation or word character (with optional newlines between)
     cleanContent = cleanContent.replace(
-      new RegExp(`(?<!\\*)\\n\\s*${h}:\\s*(?!\\*)`, 'gi'),
-      `\n\n**${header}:**\n`
+      new RegExp(`([.!?\\w])([\\s\\n]*)${h}:\\s*`, 'gi'),
+      `$1$2\n\n**${header}:**\n`
     );
     
-    // Match plain Header: at very start of content
+    // Match Header: at very start of content
     cleanContent = cleanContent.replace(
-      new RegExp(`^\\s*${h}:\\s*(?!\\*)`, 'i'),
+      new RegExp(`^\\s*${h}:\\s*`, 'i'),
       `**${header}:**\n`
     );
+    
+    // Match Header: after newlines (not already bold)
+    cleanContent = cleanContent.replace(
+      new RegExp(`\\n\\s*${h}:\\s*`, 'gi'),
+      `\n\n**${header}:**\n`
+    );
   }
-
-  // ============================================
-  // PHASE 4: Fix remaining formatting issues
-  // ============================================
-  cleanContent = cleanContent
-    // Remove standalone ** on its own line (but not **Header:**)
-    .replace(/^\s*\*\*\s*$/gm, '')
-    // Remove orphaned ** NOT part of a header (only ** followed by just whitespace and newline)
-    .replace(/(?<![:\w])\*\*\s*\n(?![A-Z])/g, '\n')
-    // Fix duplicate Hint headers
-    .replace(/^Hint:\s*\n\s*Hint:\s*/gm, '**Hint:**\n\n')
-    // Remove ALL stray brackets
-    .replace(/\]\s*$/gm, '')
-    .replace(/^\s*\]/gm, '')
-    .replace(/\[\s*$/gm, '')
-    .replace(/^\s*\[/gm, '')
-    .replace(/\s+\]\s+/g, ' ')
-    .replace(/\s+\[\s+/g, ' ')
-    // Ensure numbered lists have proper line breaks
-    .replace(/\.\s*(\d+\.\s*\*\*)/g, '.\n\n$1')
-    .replace(/\.\s*(\d+\.\s+[A-Z])/g, '.\n\n$1')
-    // Add space after numbered list items (1.Text → 1. Text)
-    .replace(/^(\d+)\.([A-Z])/gm, '$1. $2')
-    // Add space after colons when followed by capital letter (but not in URLs or after **)
-    .replace(/([^htfps*]):([A-Z])/g, '$1: $2');
-
-  // PHASE 5 & 6...
-  cleanContent = cleanContent
-    .replace(/\*\*\s*\*\*/g, '')
-    .replace(/\n{3,}/g, '\n\n')
-    .replace(/^\s+|\s+$/g, '')
-    .trim();
 
   return cleanContent;
 };
