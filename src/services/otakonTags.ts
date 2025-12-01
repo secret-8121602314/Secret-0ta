@@ -7,6 +7,18 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
   let cleanContent = rawContent;
 
   console.log(`🏷️ [otakonTags] Parsing response (${rawContent.length} chars)...`);
+  
+  // DEBUG: Log if content contains any header patterns
+  const headerPatterns = ['Hint', 'Lore', 'Places of Interest'];
+  headerPatterns.forEach(h => {
+    if (rawContent.includes(h)) {
+      const snippet = rawContent.substring(
+        Math.max(0, rawContent.indexOf(h) - 10),
+        rawContent.indexOf(h) + h.length + 20
+      );
+      console.log(`🔍 [otakonTags] Found "${h}" pattern: "${snippet}"`);
+    }
+  });
 
   // First pass: Handle SUGGESTIONS tag with JSON array (special case - spans multiple brackets)
   // Matches: [OTAKON_SUGGESTIONS: ["item1", "item2", "item3"]]
@@ -231,6 +243,9 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
       `\n\n**${header}:**\n\n`
     );
   }
+  
+  // DEBUG: Log after Phase 3
+  console.log(`🔍 [otakonTags] After Phase 3 - Hint bold: ${cleanContent.includes('**Hint:**')}, Lore bold: ${cleanContent.includes('**Lore:**')}, Places bold: ${cleanContent.includes('**Places of Interest:**')}`);
 
   // ============================================
   // PHASE 4: Fix remaining formatting issues
