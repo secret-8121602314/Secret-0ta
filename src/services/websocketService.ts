@@ -53,7 +53,11 @@ const connect = (
     // Connection established
     console.log('🔗 [WebSocket] Connection opened successfully to', fullUrl);
     reconnectAttempts = 0;
-    onOpen();
+    
+    // ✅ FIX: Use handlers object instead of closure to get fresh handler
+    if (handlers && typeof handlers.onOpen === 'function') {
+      handlers.onOpen();
+    }
     
     // Immediately send connection request to speed up handshake
     try {
@@ -174,11 +178,17 @@ const connect = (
       } else if (event.reason) {
         errorMessage = `Connection closed: ${event.reason}`;
       }
-      onError(errorMessage);
+      // ✅ FIX: Use handlers object instead of closure
+      if (handlers && typeof handlers.onError === 'function') {
+        handlers.onError(errorMessage);
+      }
     }
 
     ws = null;
-    onClose();
+    // ✅ FIX: Use handlers object instead of closure
+    if (handlers && typeof handlers.onClose === 'function') {
+      handlers.onClose();
+    }
 
     // Stop heartbeat
     if (heartbeatTimer) {
