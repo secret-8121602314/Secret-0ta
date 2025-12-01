@@ -347,11 +347,14 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-[#0F0F0F] to-background text-text-primary flex flex-col items-center justify-center px-4 py-2 md:py-4 lg:py-6 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-background via-[#0F0F0F] to-background text-text-primary flex flex-col items-center justify-between md:justify-center px-4 py-6 md:py-4 lg:py-6 relative overflow-hidden">
+      
+      {/* Spacer for mobile top */}
+      <div className="md:hidden flex-shrink-0" />
       
       <div className={`w-full max-w-md lg:max-w-lg xl:max-w-xl relative z-10 transition-all duration-500 ${isAnimating ? 'scale-105' : 'scale-100'} mx-auto`}>
         {/* Logo and Title */}
-        <div className="text-center mb-4 md:mb-5 lg:mb-6">
+        <div className="text-center mb-6 md:mb-5 lg:mb-6">
           <img
             src="/images/otagon-logo.png"
             alt="Otagon Logo"
@@ -680,7 +683,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
         )}
 
         {/* Back to Landing */}
-        <div className="text-center mt-2.5 md:mt-4 lg:mt-6">
+        <div className="text-center mt-4 md:mt-4 lg:mt-6">
           <button
             onClick={() => {
                             onBackToLanding();
@@ -697,13 +700,13 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
         
         {/* PWA Install Banner - Show on login screen in browser mode only */}
         {/* When running as installed PWA, this banner is hidden automatically */}
-        <div className="mt-2 md:mt-3 lg:mt-4">
+        <div className="mt-4 md:mt-3 lg:mt-4">
           <PWAInstallBanner alwaysShowInBrowser={true} />
         </div>
       </div>
 
       {/* Footer */}
-      <div className="absolute bottom-2 md:bottom-3 lg:bottom-4 left-0 right-0 p-3 md:p-4 lg:p-5 text-center">
+      <div className="w-full p-3 md:p-4 lg:p-5 text-center flex-shrink-0 md:absolute md:bottom-3 lg:md:bottom-4 md:left-0 md:right-0">
         <p className="text-xs md:text-sm lg:text-base text-text-muted">
           By continuing, you agree to our{' '}
           <button
