@@ -3060,7 +3060,12 @@ const MainApp: React.FC<MainAppProps> = ({
               </svg>
             </button>
             
-            <Logo size="sm" bounce={false} />
+            <Logo 
+              size="sm" 
+              bounce={false} 
+              userTier={currentUser.tier} 
+              isOnTrial={Boolean(currentUser.trialExpiresAt && currentUser.trialExpiresAt > Date.now())}
+            />
           </div>
 
           <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4">
