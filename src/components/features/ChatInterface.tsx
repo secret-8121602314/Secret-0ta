@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, memo } from 'react';
 import { Conversation, ActiveSessionState, ChatMessage } from '../../types';
 import { MarkdownRenderer } from './MarkdownRenderer';
+import SessionSummaryCard, { parseSessionSummaryMessage } from './SessionSummaryCard';
 import ManualUploadToggle from '../ui/ManualUploadToggle';
 import ScreenshotButton from '../ui/ScreenshotButton';
 import DownloadIcon from '../ui/DownloadIcon';
@@ -67,11 +68,28 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const [feedbackGiven, setFeedbackGiven] = useState<'up' | 'down' | null>(null);
   
+  // Check if this is a session summary message
+  const sessionSummaryData = message.role === 'assistant' 
+    ? parseSessionSummaryMessage(message.content) 
+    : null;
+  
   // Handle feedback with local state tracking
   const handleFeedback = (type: 'up' | 'down') => {
     setFeedbackGiven(type);
     onFeedback?.(message.id, type);
   };
+  
+  // Render session summary card if this is a summary message
+  if (sessionSummaryData) {
+    return (
+      <div 
+        className="flex flex-col items-start w-full"
+        data-message-id={message.id}
+      >
+        <SessionSummaryCard key={message.id} {...sessionSummaryData} />
+      </div>
+    );
+  }
   
   return (
     <>
@@ -354,6 +372,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const autocompleteRef = useRef<HTMLDivElement>(null);
   const lastMessageCountRef = useRef(0);
+  const lastMessageIdRef = useRef<string | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -366,10 +385,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     const messages = conversation.messages;
     const messageCount = messages.length;
     
-    // Only scroll if a new message was added
-    if (messageCount > lastMessageCountRef.current) {
-      const lastMessage = messages[messageCount - 1];
-      
+    if (messageCount === 0) return;
+    
+    const lastMessage = messages[messageCount - 1];
+    
+    // Always scroll for new messages (compare message count OR id changed)
+    const shouldScroll = messageCount > lastMessageCountRef.current || 
+      (messageCount > 0 && lastMessage.id !== lastMessageIdRef.current);
+    
+    if (shouldScroll) {
       // If it's an AI message (assistant), scroll to show the START of the message
       if (lastMessage.role === 'assistant') {
         // Find the last message element in the DOM
@@ -386,6 +410,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       }
       
       lastMessageCountRef.current = messageCount;
+      lastMessageIdRef.current = lastMessage.id;
     }
   };
 
@@ -468,8 +493,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   useEffect(() => {
-    scrollToLatestMessage();
-  }, [conversation?.messages]);
+    // Add delay to ensure DOM is updated before scrolling (longer for session summaries)
+    const timeoutId = setTimeout(() => {
+      scrollToLatestMessage();
+    }, 200);
+    return () => clearTimeout(timeoutId);
+  }, [conversation?.messages?.length, conversation?.messages?.[conversation?.messages?.length - 1]?.id]);
 
   // Adjust textarea height when message changes
   useEffect(() => {
