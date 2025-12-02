@@ -243,7 +243,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                           />
                         </div>
                       )}
-                      <div className="flex-1 min-w-0">
+                      <div className={`flex-1 min-w-0 flex flex-col ${(isRegularGame || isUnreleased) && conversation.coverUrl ? 'justify-center' : ''}`}>
                         <div className="flex items-center space-x-2">
                           <p className={`text-xs font-medium truncate ${titleClass}`}>
                             {conversation.title}
