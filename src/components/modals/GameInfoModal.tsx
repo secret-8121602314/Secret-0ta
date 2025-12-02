@@ -136,7 +136,8 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
           </svg>
         </button>
       )}
-      <div className="space-y-4 max-h-[70vh] overflow-hidden flex flex-col">\n        {/* Loading overlay for similar games */}
+      <div className="space-y-2 max-h-[70vh] overflow-hidden flex flex-col">
+        {/* Loading overlay for similar games */}
         <AnimatePresence>
           {isLoadingSimilar && (
             <motion.div
