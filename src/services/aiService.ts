@@ -945,39 +945,24 @@ In addition to your regular response, provide structured data in the following o
         let cleanContent = structuredData.content || '';
         
         // ---------------------------------------------------------
-        // 🚨 CRITICAL FIX: AGGRESSIVE PRE-CLEANING
+        // 🚨 CRITICAL FIX: SIMPLIFIED CLEANING APPROACH
+        // Strategy: Remove ALL bold markers first, then add back ONLY for section headers
+        // This avoids all the malformed bold issues from AI responses
         // ---------------------------------------------------------
 
         // 1. Unescape asterisks (Fixes \*\* issues)
         cleanContent = cleanContent.replace(/\\\*/g, '*');
 
-        // 2. Fix headers with MISSING closing ** (AI sends "** Lore:**" without closing **)
-        cleanContent = cleanContent.replace(/\*\*\s*Hint\s*:\*\*\s*/gi, '\n\nHint:\n');
-        cleanContent = cleanContent.replace(/\*\*\s*Lore\s*:\*\*\s*/gi, '\n\nLore:\n');
-        cleanContent = cleanContent.replace(/\*\*\s*Places\s+of\s+Interest\s*:\*\*\s*/gi, '\n\nPlaces of Interest:\n');
-        cleanContent = cleanContent.replace(/\*\*\s*Strategy\s*:\*\*\s*/gi, '\n\nStrategy:\n');
-        cleanContent = cleanContent.replace(/\*\*\s*What\s+to\s+focus\s+on\s*:\*\*\s*/gi, '\n\nWhat to focus on:\n');
+        // 2. Normalize section headers to plain text (will be re-bolded in STEP 12)
+        cleanContent = cleanContent.replace(/\*\*\s*Hint\s*:\s*\**/gi, '\n\nHint:\n');
+        cleanContent = cleanContent.replace(/\*\*\s*Lore\s*:\s*\**/gi, '\n\nLore:\n');
+        cleanContent = cleanContent.replace(/\*\*\s*Places\s+of\s+Interest\s*:\s*\**/gi, '\n\nPlaces of Interest:\n');
+        cleanContent = cleanContent.replace(/\*\*\s*Strategy\s*:\s*\**/gi, '\n\nStrategy:\n');
+        cleanContent = cleanContent.replace(/\*\*\s*What\s+to\s+focus\s+on\s*:\s*\**/gi, '\n\nWhat to focus on:\n');
 
-        // 3. Fix headers WITHOUT any closing ** (AI sends "** Lore:" with no ** at end)
-        cleanContent = cleanContent.replace(/\n\*\*\s*Hint\s*:\s*\n/gi, '\n\nHint:\n');
-        cleanContent = cleanContent.replace(/\n\*\*\s*Lore\s*:\s*\n/gi, '\n\nLore:\n');
-        cleanContent = cleanContent.replace(/\n\*\*\s*Places\s+of\s+Interest\s*:\s*\n/gi, '\n\nPlaces of Interest:\n');
-        cleanContent = cleanContent.replace(/\n\*\*\s*Strategy\s*:\s*\n/gi, '\n\nStrategy:\n');
-        cleanContent = cleanContent.replace(/\n\*\*\s*What\s+to\s+focus\s+on\s*:\s*\n/gi, '\n\nWhat to focus on:\n');
-
-        // 4. Fix standalone headers on their own line
-        cleanContent = cleanContent.replace(/^\*\*\s*Hint\s*:\s*\**\s*$/gim, 'Hint:');
-        cleanContent = cleanContent.replace(/^\*\*\s*Lore\s*:\s*\**\s*$/gim, 'Lore:');
-        cleanContent = cleanContent.replace(/^\*\*\s*Places\s+of\s+Interest\s*:\s*\**\s*$/gim, 'Places of Interest:');
-        cleanContent = cleanContent.replace(/^\*\*\s*Strategy\s*:\s*\**\s*$/gim, 'Strategy:');
-        cleanContent = cleanContent.replace(/^\*\*\s*What\s+to\s+focus\s+on\s*:\s*\**\s*$/gim, 'What to focus on:');
-
-        // 5. Fix the "Space inside Bold" issue GLOBALLY
-        cleanContent = cleanContent.replace(/\*\*\s+([^*]+?)\*\*/g, '**$1**');
-        cleanContent = cleanContent.replace(/\*\*([^*]+?)\s+\*\*/g, '**$1**');
-
-        // 6. Fix "Header inside Bold" with space before colon
-        cleanContent = cleanContent.replace(/\*\*\s*([A-Za-z ]+?)\s*:\s*\*\*/g, '**$1:**');
+        // 3. REMOVE ALL REMAINING BOLD MARKERS - inline bold causes too many formatting issues
+        // This strips "**text**", "** text**", "**text **", orphaned "**", etc.
+        cleanContent = cleanContent.replace(/\*\*/g, '');
 
         // ---------------------------------------------------------
         
@@ -1001,7 +986,6 @@ In addition to your regular response, provide structured data in the following o
           .replace(/```\s*\{[\s\S]*?```/gi, '')
           // ? STEP 4: Remove "Enhanced Response Data" sections
           .replace(/Enhanced Response Data[\s\S]*$/gi, '')
-          .replace(/\*\*Enhanced Response Data\*\*[\s\S]*$/gi, '')
           // ? STEP 5: Remove standalone artifacts at end
           .replace(/\*+\s*\]\s*$/g, '') // ***]
           .replace(/\]\s*$/g, '') // ]
@@ -1018,17 +1002,7 @@ In addition to your regular response, provide structured data in the following o
           .replace(/\s*[\]}\s]*$/g, '')
           // Clean up any remaining JSON artifacts
           .replace(/\{[\s\S]*?"OTAKON_[A-Z_]+":[\s\S]*?\}/g, '')
-          // ? STEP 9b: Fix orphaned ** after game title headers (e.g., "Game - Location** You stand")
-          .replace(/^([^*\n]*?\s-\s[^*\n]*?)\*\*\s+/gm, '$1\n\n')
-          // ? STEP 10: UNIFIED HEADER CLEANUP
-          // First normalize all header variations to a standard form without newlines
-          // Handle "** Lore:**" (space after **) and "** Lore :**" (spaces around colon)
-          .replace(/\*\*\s*Hint\s*:\s*\*\*/gi, '##HINT##')
-          .replace(/\*\*\s*Lore\s*:\s*\*\*/gi, '##LORE##')
-          .replace(/\*\*\s*Places\s+of\s+Interest\s*:\s*\*\*/gi, '##POI##')
-          .replace(/\*\*\s*Strategy\s*:\s*\*\*/gi, '##STRATEGY##')
-          .replace(/\*\*\s*What\s+to\s+focus\s+on\s*:\s*\*\*/gi, '##FOCUS##')
-          // Handle plain headers without bold
+          // ? STEP 10: UNIFIED HEADER CLEANUP - Convert plain headers to placeholder tokens
           .replace(/^Hint:\s*/im, '##HINT##')
           .replace(/\nHint:\s*/gi, '##HINT##')
           .replace(/\nLore:\s*/gi, '##LORE##')
@@ -1041,30 +1015,18 @@ In addition to your regular response, provide structured data in the following o
           .replace(/([.!?])\s*Places of Interest:/gi, '$1##POI##')
           .replace(/([.!?])\s*Strategy:/gi, '$1##STRATEGY##')
           .replace(/([.!?])\s*What to focus on:/gi, '$1##FOCUS##')
-          // ? STEP 11: Fix malformed generic bold markers (spaces between ** and text)
-          .replace(/\*\*\s+([^*#]+?)\s+\*\*/g, '**$1**')
-          .replace(/\*\*\s+([^*#:]+?):\s*(?!\*)/g, '**$1:** ')
-          // ? STEP 12: Replace placeholder tokens with properly formatted headers
+          // ? STEP 11: Replace placeholder tokens with properly formatted bold headers
           .replace(/##HINT##\s*/g, '\n\n**Hint:**\n')
           .replace(/##LORE##\s*/g, '\n\n**Lore:**\n')
           .replace(/##POI##\s*/g, '\n\n**Places of Interest:**\n')
           .replace(/##STRATEGY##\s*/g, '\n\n**Strategy:**\n')
           .replace(/##FOCUS##\s*/g, '\n\n**What to focus on:**\n')
-          // ? STEP 13: Clean up any stray **** (four asterisks from double-processing)
-          .replace(/\*{4,}/g, '**')
-          // Remove orphaned ** in middle of text (e.g., "text** More text")
-          .replace(/([a-z])\*\*\s+([A-Z])/g, '$1 $2')
-          // ? STEP 14: Fix paragraph formatting (use [^*\n]+ to prevent matching across newlines!)
+          // ? STEP 12: Fix paragraph formatting
           .replace(/(\*\*[^*\n]+\*\*:?)([A-Z])/g, '$1\n\n$2') // Break after bold headers on same line
           .replace(/\.([A-Z][a-z])/g, '.\n\n$1') // Period + Capital = new paragraph
-          .replace(/\.(\*\*[A-Z])/g, '.\n\n$1') // Period + Bold = new paragraph
-          // ? STEP 15: Final cleanup
+          // ? STEP 13: Final cleanup
           .replace(/^\n+/, '') // Remove leading newlines
           .replace(/\n{3,}/g, '\n\n') // Remove excessive newlines
-          // ? FINAL SAFETY NET: Catch any remaining malformed headers with spaces
-          .replace(/\*\*\s+(Hint|Lore|Strategy):\*\*/gi, '**$1:**')
-          .replace(/\*\*\s+Places\s+of\s+Interest:\*\*/gi, '**Places of Interest:**')
-          .replace(/\*\*\s+What\s+to\s+focus\s+on:\*\*/gi, '**What to focus on:**')
           .trim();
         
                 console.log('?? [AIService] Last 200 chars after cleaning:', cleanContent.slice(-200));

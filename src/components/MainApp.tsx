@@ -794,6 +794,9 @@ const MainApp: React.FC<MainAppProps> = ({
   }, [isInitializing, conversations, activeConversation]);
 
   // ✅ TIER UPGRADE: Detect tier changes and generate subtabs for existing game tabs
+  // ✅ FIX: Track if we've finished initial user load to avoid false upgrade detection
+  const hasInitializedTierRef = useRef(false);
+  
   useEffect(() => {
     const currentTier = currentUser?.tier || 'free';
     const previousTier = previousTierRef.current;
@@ -801,9 +804,23 @@ const MainApp: React.FC<MainAppProps> = ({
     // Update ref for next comparison
     previousTierRef.current = currentTier;
     
-    // Skip on initial mount (no previous tier)
+    // Skip on initial mount (no previous tier set yet)
     if (previousTier === null) {
       console.log('🔄 [TierChange] Initial tier set:', currentTier);
+      return;
+    }
+    
+    // ✅ FIX: Skip if we're still in the initial loading phase
+    // This prevents false upgrade detection when user data loads with actual tier
+    if (isInitializing) {
+      console.log('🔄 [TierChange] Skipping tier change during initialization');
+      return;
+    }
+    
+    // ✅ FIX: Mark as initialized after first proper load, skip first "real" tier set
+    if (!hasInitializedTierRef.current && user?.id) {
+      hasInitializedTierRef.current = true;
+      console.log('🔄 [TierChange] First user load - tier initialized to:', currentTier);
       return;
     }
     
@@ -870,7 +887,7 @@ const MainApp: React.FC<MainAppProps> = ({
       console.log('🔄 [TierChange] User downgraded to free tier - subtabs preserved but will not update');
       toastService.info('Subscription ended. Your game insights are preserved but won\'t update until you resubscribe.');
     }
-  }, [currentUser?.tier, conversations]);
+  }, [currentUser?.tier, conversations, isInitializing, user?.id]);
 
   // ✅ PHASE 2 FIX: Real-time subscription for subtab updates
   useEffect(() => {
@@ -1786,6 +1803,47 @@ const MainApp: React.FC<MainAppProps> = ({
     }
   };
 
+  // ✅ FIX: Monitor active conversation for loading subtabs and start polling
+  // This ensures subtabs load even when switching to a tab that was created earlier
+  const pollingConversationRef = useRef<string | null>(null);
+  
+  useEffect(() => {
+    // Only check if we have an active conversation with subtabs
+    if (!activeConversation?.subtabs || activeConversation.subtabs.length === 0) {
+      return;
+    }
+    
+    // Don't poll for Game Hub or unreleased games
+    if (activeConversation.isGameHub || activeConversation.isUnreleased) {
+      return;
+    }
+    
+    // Check if any subtabs are in loading state
+    const hasLoadingSubtabs = activeConversation.subtabs.some(tab => tab.status === 'loading');
+    
+    // Only start polling if:
+    // 1. There are loading subtabs
+    // 2. We're not already polling for this conversation
+    if (hasLoadingSubtabs && pollingConversationRef.current !== activeConversation.id) {
+      console.error(`🎮 [MainApp] 🔄 Detected loading subtabs on tab switch for "${activeConversation.title}"`);
+      console.error(`🎮 [MainApp] 📊 Subtab statuses:`, activeConversation.subtabs.map(s => ({ title: s.title, status: s.status })));
+      
+      // Mark that we're polling for this conversation
+      pollingConversationRef.current = activeConversation.id;
+      
+      // Start polling after a short delay to allow background AI to work
+      setTimeout(() => {
+        // Verify we're still on the same conversation before polling
+        if (pollingConversationRef.current === activeConversation.id) {
+          pollForSubtabUpdates(activeConversation.id);
+        }
+      }, 2000); // 2 second delay before starting poll
+    } else if (!hasLoadingSubtabs && pollingConversationRef.current === activeConversation.id) {
+      // Clear polling ref when subtabs are no longer loading
+      pollingConversationRef.current = null;
+    }
+  }, [activeConversation?.id, activeConversation?.subtabs]);
+
   // Placeholder for game tab creation - will be implemented in Week 3
   const handleCreateGameTab = async (gameInfo: { gameTitle: string; genre?: string; aiResponse?: Record<string, unknown>; isUnreleased?: boolean }): Promise<Conversation | null> => {
         try {
@@ -1986,15 +2044,20 @@ const MainApp: React.FC<MainAppProps> = ({
           : subtab
       ) || [];
       
+      const updatedConversation = {
+        ...activeConversation,
+        subtabs: updatedSubtabs,
+        updatedAt: Date.now()
+      };
+      
       // Update conversation with loading state
       setConversations(prev => ({
         ...prev,
-        [activeConversation.id]: {
-          ...activeConversation,
-          subtabs: updatedSubtabs,
-          updatedAt: Date.now()
-        }
+        [activeConversation.id]: updatedConversation
       }));
+      
+      // ✅ FIX: Also update activeConversation to trigger re-render
+      setActiveConversation(updatedConversation);
       
       // 2. Create a special prompt that instructs the AI to regenerate the subtab
       const regeneratePrompt = `[SYSTEM: Regenerate the "${tabTitle}" insight tab based on user feedback]
@@ -2038,15 +2101,20 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
       // 2. Update local state
       const updatedSubtabs = activeConversation.subtabs?.filter(s => s.id !== tabId) || [];
       
+      const updatedConversation = {
+        ...activeConversation,
+        subtabs: updatedSubtabs,
+        subtabsOrder: updatedSubtabs.map(s => s.id),
+        updatedAt: Date.now()
+      };
+      
       setConversations(prev => ({
         ...prev,
-        [activeConversation.id]: {
-          ...activeConversation,
-          subtabs: updatedSubtabs,
-          subtabsOrder: updatedSubtabs.map(s => s.id),
-          updatedAt: Date.now()
-        }
+        [activeConversation.id]: updatedConversation
       }));
+      
+      // ✅ FIX: Also update activeConversation to trigger re-render
+      setActiveConversation(updatedConversation);
       
       toastService.success(`"${subtabToDelete.title}" deleted`);
     } catch (error) {
@@ -2461,33 +2529,51 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
       //  Hands-Free Mode: Read AI response aloud if enabled
       if (isHandsFreeMode && response.content) {
         try {
-          // Extract only the Hint section for TTS - more precise matching
-          const hintMatch = response.content.match(/Hint:\s*\n*\s*([\s\S]*?)(?=\n\s*(?:Lore:|Places of Interest:|Strategy:)|$)/i);
+          // Extract only the Hint section for TTS - stop at any section header
           let textToSpeak = '';
           
-          if (hintMatch && hintMatch[1]) {
-            // Found a hint section, extract only that part
-            textToSpeak = hintMatch[1]
-              .trim()
-              // Stop at first occurrence of section headers (case insensitive)
-              .split(/\n\s*(?:Lore:|Places of Interest:|Strategy:)/i)[0]
-              .trim();
-          } else if (!response.content.includes('Lore:') && !response.content.includes('Places of Interest:')) {
-            // No structured sections detected, read the entire content
-            textToSpeak = response.content;
+          // Check if content has a Hint section
+          const hintStartMatch = response.content.match(/\*?\*?Hint:?\*?\*?\s*/i);
+          
+          if (hintStartMatch) {
+            // Get the index where Hint content starts
+            const hintStartIndex = (hintStartMatch.index || 0) + hintStartMatch[0].length;
+            const contentAfterHint = response.content.substring(hintStartIndex);
+            
+            // Find where the next section starts (Lore, Strategy, Places of Interest, etc.)
+            const nextSectionMatch = contentAfterHint.match(/\n\s*\*?\*?(?:Lore|Places of Interest|Strategy|Characters|Items|Walkthrough|Tips):?\*?\*?/i);
+            
+            if (nextSectionMatch && nextSectionMatch.index !== undefined) {
+              // Extract only the Hint content up to the next section
+              textToSpeak = contentAfterHint.substring(0, nextSectionMatch.index).trim();
+            } else {
+              // No next section found, but limit to first paragraph or reasonable length
+              const paragraphs = contentAfterHint.split(/\n\n/);
+              textToSpeak = paragraphs[0].trim();
+            }
+          } else if (!response.content.match(/\*?\*?(?:Lore|Places of Interest|Strategy):?\*?\*?/i)) {
+            // No structured sections detected at all, read the first paragraph only
+            const paragraphs = response.content.split(/\n\n/);
+            textToSpeak = paragraphs[0].trim();
           }
+          // If there's Lore but no Hint, don't read anything
           
           if (textToSpeak) {
             // Strip markdown and special formatting for better TTS
             const cleanText = textToSpeak
-              .replace(/[*_~`]/g, '') // Remove markdown formatting
+              .replace(/\*\*([^*]+)\*\*/g, '$1') // Remove bold
+              .replace(/\*([^*]+)\*/g, '$1') // Remove italics
+              .replace(/[_~`]/g, '') // Remove other markdown formatting
               .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Convert [text](url) to text
               .replace(/#{1,6}\s/g, '') // Remove heading markers
               .replace(/```[\s\S]*?```/g, '') // Remove code blocks
               .replace(/`([^`]+)`/g, '$1') // Remove inline code markers
+              .replace(/\n+/g, ' ') // Replace newlines with spaces
+              .replace(/\s+/g, ' ') // Collapse multiple spaces
               .trim();
             
-            if (cleanText) {
+            if (cleanText && cleanText.length > 10) {
+              console.log('🔊 [TTS] Speaking hint only:', cleanText.substring(0, 100) + '...');
               // Don't await - let TTS run in background without blocking chat flow
               ttsService.speak(cleanText).catch(err => console.error('TTS Error:', err));
             }
@@ -2502,27 +2588,43 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
           const { showAINotification, isScreenLockedOrHidden } = await import('../services/toastService');
           
           if (isScreenLockedOrHidden()) {
-            // Extract hint for notification
-            const hintMatch = response.content.match(/Hint:\s*\n*\s*([\s\S]*?)(?=\n\s*(?:Lore:|Places of Interest:|Strategy:)|$)/i);
+            // Extract only hint for notification - same logic as TTS
             let notificationText = '';
             
-            if (hintMatch && hintMatch[1]) {
-              notificationText = hintMatch[1].trim().split(/\n\s*(?:Lore:|Places of Interest:|Strategy:)/i)[0].trim();
-            } else if (!response.content.includes('Lore:') && !response.content.includes('Places of Interest:')) {
-              notificationText = response.content;
+            const hintStartMatch = response.content.match(/\*?\*?Hint:?\*?\*?\s*/i);
+            
+            if (hintStartMatch) {
+              const hintStartIndex = (hintStartMatch.index || 0) + hintStartMatch[0].length;
+              const contentAfterHint = response.content.substring(hintStartIndex);
+              
+              const nextSectionMatch = contentAfterHint.match(/\n\s*\*?\*?(?:Lore|Places of Interest|Strategy|Characters|Items|Walkthrough|Tips):?\*?\*?/i);
+              
+              if (nextSectionMatch && nextSectionMatch.index !== undefined) {
+                notificationText = contentAfterHint.substring(0, nextSectionMatch.index).trim();
+              } else {
+                const paragraphs = contentAfterHint.split(/\n\n/);
+                notificationText = paragraphs[0].trim();
+              }
+            } else if (!response.content.match(/\*?\*?(?:Lore|Places of Interest|Strategy):?\*?\*?/i)) {
+              const paragraphs = response.content.split(/\n\n/);
+              notificationText = paragraphs[0].trim();
             }
             
             if (notificationText) {
               // Clean markdown for notification
               const cleanText = notificationText
-                .replace(/[*_~`]/g, '')
+                .replace(/\*\*([^*]+)\*\*/g, '$1')
+                .replace(/\*([^*]+)\*/g, '$1')
+                .replace(/[_~`]/g, '')
                 .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
                 .replace(/#{1,6}\s/g, '')
                 .replace(/```[\s\S]*?```/g, '')
                 .replace(/`([^`]+)`/g, '$1')
+                .replace(/\n+/g, ' ')
+                .replace(/\s+/g, ' ')
                 .trim();
               
-              if (cleanText) {
+              if (cleanText && cleanText.length > 10) {
                 showAINotification(
                   cleanText,
                   activeConversation.title || 'Otagon AI'

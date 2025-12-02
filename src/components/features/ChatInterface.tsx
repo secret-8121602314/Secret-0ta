@@ -52,6 +52,7 @@ interface ChatMessageComponentProps {
   onDeleteQueuedMessage?: (messageId: string) => void;
   onEditMessage?: (messageId: string, content: string) => void;
   onFeedback?: (messageId: string, type: 'up' | 'down') => void;
+  isLatestAIMessage?: boolean;
 }
 
 const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
@@ -63,7 +64,8 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
   onDownloadImage,
   onDeleteQueuedMessage,
   onEditMessage,
-  onFeedback
+  onFeedback,
+  isLatestAIMessage = false
 }) => {
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const [feedbackGiven, setFeedbackGiven] = useState<'up' | 'down' | null>(null);
@@ -190,7 +192,7 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
             />
             
             {/* TTS Controls for AI messages */}
-            {message.role === 'assistant' && <TTSControls />}
+            {message.role === 'assistant' && <TTSControls isLatestMessage={isLatestAIMessage} />}
             
             {/* Show suggested prompts after AI response */}
             {message.role === 'assistant' && suggestedPrompts.length > 0 && onSuggestedPromptClick && !isLoading && (
@@ -298,7 +300,8 @@ const MemoizedChatMessage = memo(ChatMessageComponent, (prevProps, nextProps) =>
     prevProps.suggestedPrompts.length === nextProps.suggestedPrompts.length &&
     prevProps.onDeleteQueuedMessage === nextProps.onDeleteQueuedMessage &&
     prevProps.onEditMessage === nextProps.onEditMessage &&
-    prevProps.onFeedback === nextProps.onFeedback
+    prevProps.onFeedback === nextProps.onFeedback &&
+    prevProps.isLatestAIMessage === nextProps.isLatestAIMessage
   );
 });
 
@@ -373,6 +376,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [isQuickActionsExpanded, setIsQuickActionsExpanded] = useState(() => {
     return window.innerWidth > 640; // Collapsed on mobile (<=640px), expanded on desktop
   });
+  // Track if subtabs are expanded to control chat scrollbar visibility
+  const [isSubtabsExpanded, setIsSubtabsExpanded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -726,10 +731,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   return (
     <div className="h-full bg-background flex flex-col overflow-hidden">
-      {/* Messages Area - Only this should scroll */}
+      {/* Messages Area - Only this should scroll, hide scrollbar when subtabs expanded */}
       <div 
         ref={messagesContainerRef}
-        className={`flex-1 p-3 sm:p-5 space-y-3 sm:space-y-5 min-h-0 ${conversation.messages.length > 0 ? 'overflow-y-auto custom-scrollbar' : 'overflow-y-hidden'}`}
+        className={`flex-1 p-3 sm:p-5 space-y-3 sm:space-y-5 min-h-0 ${
+          conversation.messages.length > 0 
+            ? isSubtabsExpanded 
+              ? 'overflow-hidden' // Hide scrollbar when subtabs are expanded
+              : 'overflow-y-auto custom-scrollbar' 
+            : 'overflow-y-hidden'
+        }`}
       >
         {conversation.messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
@@ -750,20 +761,26 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             </div>
           </div>
         ) : (
-          conversation.messages.map((msg) => (
-            <MemoizedChatMessage
-              key={msg.id}
-              message={msg}
-              suggestedPrompts={msg.role === 'assistant' ? suggestedPrompts : []}
-              onSuggestedPromptClick={onSuggestedPromptClick}
-              isLoading={isLoading}
-              conversationId={conversation?.id}
-              onDownloadImage={downloadImage}
-              onDeleteQueuedMessage={onDeleteQueuedMessage}
-              onEditMessage={onEditMessage}
-              onFeedback={onFeedback}
-            />
-          ))
+          (() => {
+            // Find the last AI message ID for TTS controls
+            const lastAIMessageId = [...conversation.messages].reverse().find(m => m.role === 'assistant')?.id;
+            
+            return conversation.messages.map((msg) => (
+              <MemoizedChatMessage
+                key={msg.id}
+                message={msg}
+                suggestedPrompts={msg.role === 'assistant' ? suggestedPrompts : []}
+                onSuggestedPromptClick={onSuggestedPromptClick}
+                isLoading={isLoading}
+                conversationId={conversation?.id}
+                onDownloadImage={downloadImage}
+                onDeleteQueuedMessage={onDeleteQueuedMessage}
+                onEditMessage={onEditMessage}
+                onFeedback={onFeedback}
+                isLatestAIMessage={msg.id === lastAIMessageId}
+              />
+            ));
+          })()
         )}
         
         {isLoading && (
@@ -793,6 +810,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               onFeedback={onFeedback}
               onModifyTab={onModifySubtab}
               onDeleteTab={onDeleteSubtab}
+              onExpandedChange={setIsSubtabsExpanded}
             />
           </ErrorBoundary>
         </div>

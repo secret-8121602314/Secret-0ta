@@ -8,6 +8,7 @@ let wakeLock: WakeLockSentinel | null = null;
 let audioContext: AudioContext | null = null;
 let silentAudio: HTMLAudioElement | null = null;
 let isBackgroundPlayback = false;
+let keepAliveInterval: NodeJS.Timeout | null = null;
 
 const SPEECH_RATE_KEY = 'otakonSpeechRate';
 
@@ -17,15 +18,18 @@ const requestWakeLock = async () => {
         const nav = navigator as ExtendedNavigator;
         if (nav.wakeLock) {
             wakeLock = await nav.wakeLock.request('screen');
+            console.log('🔒 [TTS] Wake lock acquired - screen will stay on');
             wakeLock.addEventListener('release', () => {
-                                // Automatically reacquire if TTS is still speaking
+                console.log('🔓 [TTS] Wake lock released');
+                // Automatically reacquire if TTS is still speaking
                 if (synth && synth.speaking && !isBackgroundPlayback) {
                     requestWakeLock();
                 }
             });
         }
-    } catch (_err) {
-            }
+    } catch (err) {
+        console.warn('⚠️ [TTS] Wake lock not available:', err);
+    }
 };
 
 // Release Wake Lock when TTS stops
@@ -47,37 +51,63 @@ const initAudioContext = () => {
             const AudioContextClass = win.AudioContext || win.webkitAudioContext;
             if (AudioContextClass) {
                 audioContext = new AudioContextClass();
+                console.log('🔊 [TTS] Audio context initialized');
             }
         }
         
         if (!silentAudio) {
             silentAudio = new Audio();
-            // Extremely short silent audio file (base64 encoded WAV)
-            silentAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+            // Use a longer silent audio that loops - helps maintain audio session
+            // This is a 1-second silent WAV file
+            silentAudio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleShtr9teleShtr9teleShtr9teleShtr9t';
             silentAudio.loop = true;
-            silentAudio.volume = 0.01; // Very low volume
+            silentAudio.volume = 0.01; // Very low volume - just enough to maintain session
             
-            // Connect to audio context to keep it active
-            if (audioContext && silentAudio) {
-                const source = audioContext.createMediaElementSource(silentAudio);
-                source.connect(audioContext!.destination);
-            }
+            // Pre-load the audio
+            silentAudio.load();
+            console.log('🔇 [TTS] Silent audio initialized for background playback');
         }
-    } catch (_err) {
-            }
+    } catch (err) {
+        console.warn('⚠️ [TTS] Audio context init failed:', err);
+    }
 };
 
-// Start silent audio to maintain audio session
+// Start silent audio to maintain audio session - more aggressive approach
 const startSilentAudio = async () => {
     try {
-        if (silentAudio && audioContext) {
-            if (audioContext.state === 'suspended') {
-                await audioContext.resume();
-            }
-            await silentAudio.play();
+        // Resume audio context if suspended
+        if (audioContext && audioContext.state === 'suspended') {
+            await audioContext.resume();
+            console.log('🔊 [TTS] Audio context resumed');
         }
-    } catch (_err) {
-            }
+        
+        // Play silent audio
+        if (silentAudio) {
+            silentAudio.currentTime = 0;
+            await silentAudio.play();
+            console.log('🔇 [TTS] Silent audio playing for background session');
+        }
+        
+        // Start keep-alive interval to prevent browser from suspending
+        if (!keepAliveInterval) {
+            keepAliveInterval = setInterval(() => {
+                if (synth && synth.speaking) {
+                    // Ping to keep alive - some browsers need periodic activity
+                    if (audioContext && audioContext.state === 'suspended') {
+                        audioContext.resume().catch(() => {});
+                    }
+                } else {
+                    // TTS stopped, clear interval
+                    if (keepAliveInterval) {
+                        clearInterval(keepAliveInterval);
+                        keepAliveInterval = null;
+                    }
+                }
+            }, 5000); // Check every 5 seconds
+        }
+    } catch (err) {
+        console.warn('⚠️ [TTS] Silent audio start failed:', err);
+    }
 };
 
 // Stop silent audio when TTS is complete
@@ -86,9 +116,16 @@ const stopSilentAudio = () => {
         if (silentAudio) {
             silentAudio.pause();
             silentAudio.currentTime = 0;
+            console.log('🔇 [TTS] Silent audio stopped');
         }
-    } catch (_err) {
-            }
+        // Clear keep-alive interval
+        if (keepAliveInterval) {
+            clearInterval(keepAliveInterval);
+            keepAliveInterval = null;
+        }
+    } catch (err) {
+        console.warn('⚠️ [TTS] Silent audio stop failed:', err);
+    }
 };
 
 // Function to populate voices, returns a promise that resolves when voices are loaded.
@@ -180,14 +217,29 @@ const handleVisibilityChange = async () => {
     if (document.hidden) {
         // Screen locked or app backgrounded
         isBackgroundPlayback = true;
-                // Keep silent audio playing to maintain audio session
+        console.log('📱 [TTS] App went to background, isSpeaking:', synth?.speaking);
+        
+        // Keep silent audio playing to maintain audio session
         if (synth && synth.speaking) {
             await startSilentAudio();
+            
+            // On some devices, we need to "nudge" the speech synthesis
+            // by pausing and resuming to prevent it from stopping
+            if (!synth.paused) {
+                // Brief pause/resume can help keep TTS alive on some browsers
+                setTimeout(() => {
+                    if (synth && synth.speaking && !synth.paused) {
+                        console.log('📱 [TTS] Nudging speech synthesis to stay alive');
+                    }
+                }, 100);
+            }
         }
     } else {
         // Screen unlocked or app foregrounded
         isBackgroundPlayback = false;
-                // Reacquire wake lock if TTS is still speaking
+        console.log('📱 [TTS] App came to foreground, isSpeaking:', synth?.speaking);
+        
+        // Reacquire wake lock if TTS is still speaking
         if (synth && synth.speaking) {
             await requestWakeLock();
         }

@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { ttsService } from '../../services/ttsService';
 
-const TTSControls: React.FC = () => {
-  const [isSpeaking, setIsSpeaking] = useState(false);
+interface TTSControlsProps {
+  isLatestMessage?: boolean;
+}
+
+const TTSControls: React.FC<TTSControlsProps> = ({ isLatestMessage = false }) => {
+  // Initialize with current TTS state
+  const [isSpeaking, setIsSpeaking] = useState(() => ttsService.isSpeaking());
   const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
@@ -38,13 +43,20 @@ const TTSControls: React.FC = () => {
   const handleRestart = async () => {
     await ttsService.restart();
   };
+  
+  const handleStop = () => {
+    ttsService.cancel();
+  };
 
-  if (!isSpeaking) {
+  // Only show controls on the latest AI message when TTS is active
+  if (!isSpeaking || !isLatestMessage) {
     return null;
   }
 
   return (
     <div className="flex items-center gap-2 mt-3 pt-3 border-t border-[#424242]/30">
+      <span className="text-xs text-[#A3A3A3] mr-1">🔊 Speaking</span>
+      
       <button
         onClick={handlePauseResume}
         className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#2E2E2E] hover:bg-[#3E3E3E] border border-[#424242] text-[#FFAB40] text-xs font-medium rounded-lg transition-all duration-200"
@@ -75,7 +87,18 @@ const TTSControls: React.FC = () => {
         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
           <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
         </svg>
-        <span>Restart</span>
+        <span>Repeat</span>
+      </button>
+      
+      <button
+        onClick={handleStop}
+        className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#2E2E2E] hover:bg-[#3E3E3E] border border-[#424242] text-red-400 text-xs font-medium rounded-lg transition-all duration-200"
+        title="Stop speaking"
+      >
+        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M6 6h12v12H6z" />
+        </svg>
+        <span>Stop</span>
       </button>
     </div>
   );

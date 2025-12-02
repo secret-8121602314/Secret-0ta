@@ -69,6 +69,7 @@ interface SubTabsProps {
   onFeedback?: (tabId: string, type: 'up' | 'down') => void;
   onModifyTab?: (tabId: string, tabTitle: string, suggestion: string, currentContent: string) => void;
   onDeleteTab?: (tabId: string) => void;
+  onExpandedChange?: (isExpanded: boolean) => void;
 }
 
 const SubTabs: React.FC<SubTabsProps> = ({ 
@@ -78,7 +79,8 @@ const SubTabs: React.FC<SubTabsProps> = ({
   isLoading = false,
   onFeedback,
   onModifyTab,
-  onDeleteTab
+  onDeleteTab,
+  onExpandedChange
 }) => {
   const [localActiveTab, setLocalActiveTab] = useState<string>(activeTabId || subtabs[0]?.id || '');
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
@@ -229,19 +231,22 @@ const SubTabs: React.FC<SubTabsProps> = ({
     // ✅ FIX: Collapse if all loading
     if (allLoading && isExpanded) {
             setIsExpanded(false);
+            onExpandedChange?.(false);
     }
     
     // ✅ FIX: Expand when ANY content loads (more responsive)
     // Changed from hasLoadedContent to anyLoaded for immediate feedback
     if (anyLoaded && !isExpanded) {
             setIsExpanded(true);
+            onExpandedChange?.(true);
     }
     
     // ✅ NEW: Additional check for all loaded (belt and suspenders)
     if (allLoaded && !isExpanded && subtabs.length > 0) {
             setIsExpanded(true);
+            onExpandedChange?.(true);
     }
-  }, [subtabs, isExpanded, hasUserInteracted]);
+  }, [subtabs, isExpanded, hasUserInteracted, onExpandedChange]);
 
   const handleTabClick = (tabId: string) => {
     setLocalActiveTab(tabId);
@@ -249,8 +254,10 @@ const SubTabs: React.FC<SubTabsProps> = ({
   };
 
   const toggleExpanded = () => {
-    setIsExpanded(!isExpanded);
+    const newExpanded = !isExpanded;
+    setIsExpanded(newExpanded);
     setHasUserInteracted(true); // Mark that user has manually controlled the accordion
+    onExpandedChange?.(newExpanded); // Notify parent of expanded state change
   };
 
   // Return null if no subtabs (after hooks)
@@ -290,10 +297,16 @@ const SubTabs: React.FC<SubTabsProps> = ({
       {isExpanded && (
         <div
           className="absolute bottom-full left-0 right-0 mb-2 z-50 animate-fade-in"
+          style={{
+            // ✅ Responsive max-height: uses CSS clamp for mobile-friendly sizing
+            // Mobile: leaves 300px for header, input bar, button, and safe area
+            // Desktop: allows more content to be visible
+            maxHeight: 'min(calc(100vh - 300px), 500px)',
+          }}
         >
-          <div className="bg-[#1C1C1C] border border-[#424242]/60 rounded-xl shadow-2xl">
+          <div className="bg-[#1C1C1C] border border-[#424242]/60 rounded-xl shadow-2xl h-full flex flex-col" style={{ maxHeight: 'inherit' }}>
           {/* Tab Headers */}
-          <div className="flex items-center gap-2 p-2 sm:p-3 border-b border-[#424242]/40">
+          <div className="flex items-center gap-2 p-2 sm:p-3 border-b border-[#424242]/40 flex-shrink-0">
             <div className="flex flex-wrap gap-1 sm:gap-2 flex-1">
               {subtabs.map((tab) => (
                 <button
@@ -331,10 +344,10 @@ const SubTabs: React.FC<SubTabsProps> = ({
             </div>
           </div>
 
-          {/* Tab Content - Matching header section styling */}
+          {/* Tab Content - Scrollable area that fills available space */}
           {activeTab && (
             <div 
-              className="p-4 max-h-64 overflow-y-auto transition-all duration-300 rounded-b-xl bg-[#2E2E2E]/40"
+              className="p-4 flex-1 min-h-0 overflow-y-auto custom-scrollbar transition-all duration-300 rounded-b-xl bg-[#2E2E2E]/40"
             >
               {activeTab.status === 'loading' || (!activeTab.content && isLoading) ? (
                 <div className="flex items-center justify-center py-8">
