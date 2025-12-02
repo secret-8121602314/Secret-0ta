@@ -14,13 +14,17 @@ const AIAvatar: React.FC<AIAvatarProps> = ({ className }) => {
   };
 
   return (
-    <img
-      src={imgSrc}
-      alt="AI Avatar"
-      className={`${className} rounded-full object-cover`}
+    <div 
+      className={`${className} rounded-full bg-[#1C1C1C] border border-[#333] flex items-center justify-center`}
       aria-label="AI Avatar"
-      onError={handleError}
-    />
+    >
+      <img
+        src={imgSrc}
+        alt="AI Avatar"
+        className="w-[70%] h-[70%] object-contain"
+        onError={handleError}
+      />
+    </div>
   );
 };
 
