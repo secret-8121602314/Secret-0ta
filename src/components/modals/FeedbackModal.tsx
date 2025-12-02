@@ -169,11 +169,11 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
       onClick={handleClose}
     >
       <div 
-        className="bg-[#1C1C1C] border border-[#424242] rounded-xl w-full max-w-md shadow-2xl"
+        className="bg-[#1C1C1C] border border-[#424242] rounded-xl w-full max-w-md shadow-2xl max-h-[90vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[#424242]">
+        <div className="flex items-center justify-between p-4 border-b border-[#424242] flex-shrink-0">
           <div className="flex items-center gap-2">
             <span className="text-xl">📝</span>
             <h2 className="text-lg font-semibold text-[#F5F5F5]">Help Us Improve</h2>
@@ -189,7 +189,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-4 space-y-4">
+        <div className="p-4 space-y-4 overflow-y-auto flex-1">
           <p className="text-sm text-[#CFCFCF]">
             What was wrong with this response? Your feedback helps Otagon improve.
           </p>
@@ -363,7 +363,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-4 border-t border-[#424242]">
+        <div className="flex items-center justify-end gap-3 p-4 border-t border-[#424242] flex-shrink-0">
           <button
             onClick={handleClose}
             className="px-4 py-2 text-sm text-[#A3A3A3] hover:text-white transition-colors"

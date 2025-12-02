@@ -764,6 +764,34 @@ export class SupabaseService {
       return null;
     }
   }
+
+  // Submit user feedback (bugs, feature requests, general feedback)
+  async submitUserFeedback(
+    authUserId: string, 
+    feedbackType: 'bug' | 'feature' | 'general', 
+    message: string
+  ): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('user_feedback')
+        .insert({
+          auth_user_id: authUserId,
+          feedback_type: feedbackType,
+          message: message,
+          created_at: new Date().toISOString(),
+        });
+
+      if (error) {
+        console.error('Error submitting user feedback:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error submitting user feedback:', error);
+      return false;
+    }
+  }
 }
 
 export const supabaseService = SupabaseService.getInstance();

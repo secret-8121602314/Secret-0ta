@@ -3,6 +3,7 @@ import { UserTier } from '../../types';
 import { authService } from '../../services/authService';
 import { supabaseService } from '../../services/supabaseService';
 import { toastService } from '../../services/toastService';
+import UserFeedbackModal from '../modals/UserFeedbackModal';
 
 interface SettingsContextMenuProps {
   isOpen: boolean;
@@ -36,6 +37,7 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
   const [timeRemaining, setTimeRemaining] = useState('');
   const [isStartingTrial, setIsStartingTrial] = useState(false);
   const [isLoadingTrialStatus, setIsLoadingTrialStatus] = useState(true); // Prevents flash
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
 
   // Check trial status when menu opens
   useEffect(() => {
@@ -268,54 +270,75 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
         </button>
       )}
 
-      {/* Trial Status Display */}
-      {isTrialActive && timeRemaining && (
+      {/* Feedback Option */}
+      <button
+        onClick={() => {
+          setIsFeedbackModalOpen(true);
+          onClose();
+        }}
+        className="w-full px-4 py-2 text-left text-text-primary hover:bg-surface-light/50 transition-colors duration-200 flex items-center space-x-3"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+        </svg>
+        <span>Send Feedback</span>
+      </button>
+
+      {/* Trial-related options - only render after loading completes to prevent flash */}
+      {userTier === 'free' && (
+        <>
+          {/* Trial Status Display */}
+          {!isLoadingTrialStatus && isTrialActive && timeRemaining && (
+            <div className="w-full px-4 py-2 text-left text-blue-400 flex items-center space-x-3 cursor-default">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span className="text-sm">Pro Trial: {timeRemaining}</span>
+            </div>
+          )}
+
+          {/* Start Free Trial - Only show for eligible users after loading */}
+          {!isLoadingTrialStatus && isTrialEligible && !isTrialActive && (
+            <button
+              onClick={handleStartTrial}
+              disabled={isStartingTrial}
+              className="w-full px-4 py-2 text-left text-blue-400 hover:bg-blue-500/10 transition-colors duration-200 flex items-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span>{isStartingTrial ? 'Starting...' : 'Start 7-Day Pro Trial'}</span>
+            </button>
+          )}
+
+          {/* Upgrade to Pro - Show when trial expired and loading is done */}
+          {!isLoadingTrialStatus && !isTrialEligible && !isTrialActive && (
+            <button
+              onClick={() => {
+                if (onUpgradeClick) {
+                  onUpgradeClick();
+                }
+                onClose();
+              }}
+              className="w-full px-4 py-2 text-left text-[#FFAB40] hover:bg-gradient-to-r hover:from-[#FF4D4D]/10 hover:to-[#FFAB40]/10 transition-colors duration-200 flex items-center space-x-3"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+              </svg>
+              <span>Upgrade to Pro</span>
+            </button>
+          )}
+        </>
+      )}
+
+      {/* Trial timer for Pro users who are on trial */}
+      {userTier === 'pro' && !isLoadingTrialStatus && isTrialActive && timeRemaining && (
         <div className="w-full px-4 py-2 text-left text-blue-400 flex items-center space-x-3 cursor-default">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
           <span className="text-sm">Pro Trial: {timeRemaining}</span>
         </div>
-      )}
-
-      {/* Loading state for trial status - prevents flash */}
-      {isLoadingTrialStatus && userTier === 'free' && (
-        <div className="w-full px-4 py-2 text-left text-text-muted flex items-center space-x-3">
-          <div className="w-4 h-4 border-2 border-text-muted/30 border-t-text-muted rounded-full animate-spin" />
-          <span className="text-sm">Loading...</span>
-        </div>
-      )}
-
-      {/* Start Free Trial - Only show for eligible users after loading */}
-      {!isLoadingTrialStatus && isTrialEligible && !isTrialActive && (
-        <button
-          onClick={handleStartTrial}
-          disabled={isStartingTrial}
-          className="w-full px-4 py-2 text-left text-blue-400 hover:bg-blue-500/10 transition-colors duration-200 flex items-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-          <span>{isStartingTrial ? 'Starting...' : 'Start 7-Day Pro Trial'}</span>
-        </button>
-      )}
-
-      {/* Upgrade to Pro - Show when trial expired and loading is done */}
-      {!isLoadingTrialStatus && !isTrialEligible && !isTrialActive && userTier === 'free' && (
-        <button
-          onClick={() => {
-            if (onUpgradeClick) {
-              onUpgradeClick();
-            }
-            onClose();
-          }}
-          className="w-full px-4 py-2 text-left text-[#FFAB40] hover:bg-gradient-to-r hover:from-[#FF4D4D]/10 hover:to-[#FFAB40]/10 transition-colors duration-200 flex items-center space-x-3"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-          </svg>
-          <span>Upgrade to Pro</span>
-        </button>
       )}
 
       {/* Divider before logout */}
@@ -334,6 +357,12 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
         </svg>
         <span>Logout</span>
       </button>
+
+      {/* User Feedback Modal */}
+      <UserFeedbackModal
+        isOpen={isFeedbackModalOpen}
+        onClose={() => setIsFeedbackModalOpen(false)}
+      />
     </div>
   );
 };
