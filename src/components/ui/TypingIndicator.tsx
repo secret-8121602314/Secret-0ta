@@ -1,4 +1,5 @@
 import React from 'react';
+import { AITextLoading } from './AITextLoading';
 
 interface TypingIndicatorProps {
   variant?: 'dots' | 'skeleton' | 'wave' | 'circular';
@@ -11,18 +12,9 @@ const TypingIndicator: React.FC<TypingIndicatorProps> = ({
   showText = true, 
   className = '' 
 }) => {
-  // Dots animation (default)
+  // Animated text loading (default) - gaming-themed cycling messages
   if (variant === 'dots') {
-    return (
-      <div className={`flex items-center gap-2 py-2 px-3 ${className}`}>
-        <div className="flex items-center space-x-1">
-          <div className="w-2 h-2 bg-[#FFAB40] rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-          <div className="w-2 h-2 bg-[#FFAB40] rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-          <div className="w-2 h-2 bg-[#FFAB40] rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-        </div>
-        {showText && <span className="text-sm text-[#FFAB40] font-medium">AI is thinking...</span>}
-      </div>
-    );
+    return <AITextLoading className={className} />;
   }
 
   // Skeleton animation

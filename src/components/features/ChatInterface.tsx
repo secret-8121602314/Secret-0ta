@@ -8,6 +8,7 @@ import DownloadIcon from '../ui/DownloadIcon';
 import AIAvatar from '../ui/AIAvatar';
 import TypingIndicator from '../ui/TypingIndicator';
 import SendIcon from '../ui/SendIcon';
+import StopIcon from '../ui/StopIcon';
 import ErrorBoundary from '../ErrorBoundary';
 import TTSControls from '../ui/TTSControls';
 import SuggestedPrompts from './SuggestedPrompts';
@@ -713,27 +714,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         
         {isLoading && (
           <div className="flex justify-start">
-            <div className="flex items-start gap-3">
-              {/* AI Avatar */}
-              <div className="flex-shrink-0">
-                <AIAvatar className="w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0" />
-              </div>
-              
-              {/* Loading content */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 sm:gap-4 py-2 sm:py-3">
-                  <TypingIndicator variant="dots" showText={false} />
-                  {onStop && (
-                    <button
-                      onClick={onStop}
-                      className="text-xs font-semibold px-2 sm:px-3 py-1 sm:py-1.5 rounded-full transition-all duration-200 bg-[#424242]/60 text-[#CFCFCF] hover:bg-[#424242] hover:text-[#F5F5F5] hover:scale-105"
-                      aria-label="Stop generating response"
-                    >
-                      Stop
-                    </button>
-                  )}
-                </div>
-              </div>
+            <div className="flex items-center gap-3">
+              <AIAvatar className="w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0" />
+              <TypingIndicator variant="dots" showText={false} />
             </div>
           </div>
         )}
@@ -982,22 +965,29 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               )
             )}
             
-            <button
-              type="submit"
-              disabled={!message.trim() && !imageFile}
-              aria-label="Send message"
-              className={`flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-xl transition-all duration-300 disabled:cursor-not-allowed ${
-                (!message.trim() && !imageFile) || isLoading
-                  ? 'bg-[#2E2E2E]/15 text-[#A3A3A3]/25 scale-100'
-                  : 'bg-gradient-to-r from-[#FFAB40] to-[#FF8C00] text-[#181818] scale-100 md:hover:scale-105 md:hover:shadow-lg md:hover:shadow-[#FFAB40]/25 active:scale-95 font-semibold'
-              }`}
-            >
-              {isLoading ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current"></div>
-              ) : (
+            {isLoading && onStop ? (
+              <button
+                type="button"
+                onClick={onStop}
+                aria-label="Stop generating"
+                className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-xl transition-all duration-300 bg-[#EF4444] text-white scale-100 md:hover:scale-105 md:hover:bg-[#DC2626] active:scale-95"
+              >
+                <StopIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={!message.trim() && !imageFile}
+                aria-label="Send message"
+                className={`flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-xl transition-all duration-300 disabled:cursor-not-allowed ${
+                  !message.trim() && !imageFile
+                    ? 'bg-[#2E2E2E]/15 text-[#A3A3A3]/25 scale-100'
+                    : 'bg-gradient-to-r from-[#FFAB40] to-[#FF8C00] text-[#181818] scale-100 md:hover:scale-105 md:hover:shadow-lg md:hover:shadow-[#FFAB40]/25 active:scale-95 font-semibold'
+                }`}
+              >
                 <SendIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-              )}
-            </button>
+              </button>
+            )}
           </div>
           </form>
         </div>
