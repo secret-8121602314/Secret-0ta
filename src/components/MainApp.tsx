@@ -37,6 +37,7 @@ import SettingsContextMenu from './ui/SettingsContextMenu';
 import ProfileSetupBanner from './ui/ProfileSetupBanner';
 import GameProgressBar from './features/GameProgressBar';
 import ErrorBoundary from './ErrorBoundary';
+import AdBanner from './ads/AdBanner';
 import WelcomeScreen from './welcome/WelcomeScreen';
 import ConnectionSplashScreen from './splash/ConnectionSplashScreen';
 import ProUpgradeSplashScreen from './splash/ProUpgradeSplashScreen';
@@ -3194,21 +3195,7 @@ const MainApp: React.FC<MainAppProps> = ({
 
           {/* Google AdSense Banner - Always show for free users */}
           {currentUser.tier === 'free' && (
-            <div className="px-3 sm:px-4 lg:px-6 pt-0 sm:pt-1 flex-shrink-0">
-              <div className="bg-gradient-to-r from-gray-100/10 to-gray-200/10 border border-gray-300/20 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6">
-                <div className="h-16 sm:h-20 lg:h-24 overflow-hidden rounded-lg">
-                  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4482938310886744"
-                    crossOrigin="anonymous"></script>
-                  <ins className="adsbygoogle"
-                    style={{ display: 'block', height: '100%' }}
-                    data-ad-client="ca-pub-4482938310886744"
-                    data-ad-slot="6150844525"
-                    data-ad-format="auto"
-                    data-full-width-responsive="true"></ins>
-                  <script dangerouslySetInnerHTML={{ __html: '(adsbygoogle = window.adsbygoogle || []).push({});' }} />
-                </div>
-              </div>
-            </div>
+            <AdBanner />
           )}
 
           {/* Game Progress Bar with Game Info Button - Show for game conversations (not Game Hub) */}
