@@ -167,6 +167,9 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
       if (success) {
         toastService.success('Pro trial activated! Enjoy your 7-day trial.');
         
+        // Close the menu first
+        onClose();
+        
         // Refresh trial status to show timer
         const status = await supabaseService.getTrialStatus(currentUser.authUserId);
         if (status) {
