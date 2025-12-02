@@ -354,9 +354,9 @@ html, body {
 
 /* Enhanced Chat Message System */
 .chat-message-user {
-  @apply text-base text-rose-300;
+  @apply text-sm sm:text-base text-rose-300;
   @apply bg-gradient-to-r from-rose-900/15 to-rose-800/15;
-  @apply py-3 px-6 rounded-2xl rounded-br-none;
+  @apply py-2.5 px-5 sm:py-3 sm:px-5 rounded-2xl rounded-br-none;
   @apply border-2 border-rose-500/40;
   @apply backdrop-blur-sm shadow-lg;
   @apply max-w-2xl ml-auto;
@@ -365,7 +365,7 @@ html, body {
 .chat-message-ai {
   @apply border-2 border-neutral-700/60;
   @apply bg-gradient-to-r from-neutral-800/15 to-neutral-700/15;
-  @apply p-6 rounded-2xl rounded-bl-none;
+  @apply p-4 sm:p-5 rounded-2xl rounded-bl-none;
   @apply text-left;
   @apply backdrop-blur-sm shadow-lg;
   @apply mr-auto;

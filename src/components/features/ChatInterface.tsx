@@ -65,6 +65,13 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
   onFeedback
 }) => {
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
+  const [feedbackGiven, setFeedbackGiven] = useState<'up' | 'down' | null>(null);
+  
+  // Handle feedback with local state tracking
+  const handleFeedback = (type: 'up' | 'down') => {
+    setFeedbackGiven(type);
+    onFeedback?.(message.id, type);
+  };
   
   return (
     <>
@@ -112,8 +119,8 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
         <div
           className={`${
             message.role === 'user'
-              ? 'max-w-[80%] chat-message-user'
-              : 'max-w-[95%] sm:max-w-[85%] chat-message-ai'
+              ? 'max-w-[75%] sm:max-w-[80%] chat-message-user'
+              : 'max-w-[85%] sm:max-w-[85%] chat-message-ai'
         }`}
       >
         <div className="flex items-start gap-3">
@@ -163,25 +170,25 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
                 remarkPlugins={[remarkGfm]}
                 components={{
                   h1: ({ children }) => (
-                    <h1 className="text-lg font-bold text-[#F5F5F5] mb-3 mt-2">{children}</h1>
+                    <h1 className="text-base sm:text-lg font-bold text-[#F5F5F5] mb-2 sm:mb-3 mt-1 sm:mt-2">{children}</h1>
                   ),
                   h2: ({ children }) => (
-                    <h2 className="text-base font-semibold text-[#F5F5F5] mb-2 mt-2">{children}</h2>
+                    <h2 className="text-sm sm:text-base font-semibold text-[#F5F5F5] mb-1.5 sm:mb-2 mt-1 sm:mt-2">{children}</h2>
                   ),
                   h3: ({ children }) => (
-                    <h3 className="text-sm font-semibold text-[#F5F5F5] mb-2 mt-2">{children}</h3>
+                    <h3 className="text-sm font-semibold text-[#F5F5F5] mb-1.5 sm:mb-2 mt-1 sm:mt-2">{children}</h3>
                   ),
                   p: ({ children }) => (
-                    <p className="text-[#CFCFCF] leading-relaxed mb-3">{children}</p>
+                    <p className="text-sm sm:text-base text-[#CFCFCF] leading-relaxed mb-2 sm:mb-3">{children}</p>
                   ),
                   ul: ({ children }) => (
-                    <ul className="list-disc list-outside ml-5 text-[#CFCFCF] mb-3 space-y-1.5">{children}</ul>
+                    <ul className="list-disc list-outside ml-4 sm:ml-5 text-sm sm:text-base text-[#CFCFCF] mb-2 sm:mb-3 space-y-1 sm:space-y-1.5">{children}</ul>
                   ),
                   ol: ({ children }) => (
-                    <ol className="list-decimal list-outside ml-5 text-[#CFCFCF] mb-3 space-y-1.5">{children}</ol>
+                    <ol className="list-decimal list-outside ml-4 sm:ml-5 text-sm sm:text-base text-[#CFCFCF] mb-2 sm:mb-3 space-y-1 sm:space-y-1.5">{children}</ol>
                   ),
                   li: ({ children }) => (
-                    <li className="text-[#CFCFCF] leading-relaxed">{children}</li>
+                    <li className="text-sm sm:text-base text-[#CFCFCF] leading-relaxed">{children}</li>
                   ),
                   strong: ({ children }) => (
                     <strong className="font-semibold text-[#F5F5F5]">{children}</strong>
@@ -258,41 +265,57 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
         </div>
       </div>
       
-        {/* Edit button for user messages - OUTSIDE the bubble, small icon only */}
+        {/* Edit button for user messages - aligned to end of bubble */}
         {message.role === 'user' && !message.id.startsWith('msg_pending_') && onEditMessage && (
-          <button
-            onClick={() => {
-              const cleanContent = message.content.replace(/\n\n_⏳ Queued.*_$/, '');
-              onEditMessage(message.id, cleanContent);
-            }}
-            className="mt-1 p-1 text-[#555] hover:text-[#FF4D4D] hover:bg-[#FF4D4D]/10 rounded transition-colors"
-            title="Edit and resubmit"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-          </button>
-        )}
-        
-        {/* Feedback buttons for AI messages - OUTSIDE the bubble, consistent size, middle-aligned */}
-        {message.role === 'assistant' && onFeedback && !isLoading && (
-          <div className="flex items-center justify-start gap-1 mt-1 ml-11">
+          <div className="flex justify-end mt-1.5 mr-1">
             <button
-              onClick={() => onFeedback(message.id, 'up')}
-              className="p-1 text-[#555] hover:text-green-500 hover:bg-green-500/10 rounded transition-colors"
-              title="Good response"
+              onClick={() => {
+                const cleanContent = message.content.replace(/\n\n_⏳ Queued.*_$/, '');
+                onEditMessage(message.id, cleanContent);
+              }}
+              className="flex items-center justify-center w-7 h-7 text-[#666] active:text-[#FF4D4D] active:bg-[#FF4D4D]/10 sm:hover:text-[#FF4D4D] sm:hover:bg-[#FF4D4D]/10 rounded-full"
+              title="Edit and resubmit"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </button>
+          </div>
+        )}
+        
+        {/* Feedback buttons for AI messages - Below the bubble, aligned with avatar */}
+        {message.role === 'assistant' && onFeedback && !isLoading && (
+          <div className="flex items-center justify-start gap-1.5 mt-1.5 ml-11 sm:ml-12">
+            <button
+              onClick={() => handleFeedback('up')}
+              disabled={feedbackGiven !== null}
+              className={`flex items-center justify-center w-7 h-7 rounded-full transition-colors ${
+                feedbackGiven === 'up'
+                  ? 'text-green-500 bg-green-500/15'
+                  : feedbackGiven === 'down'
+                    ? 'text-[#444] cursor-not-allowed'
+                    : 'text-[#666] active:text-green-500 active:bg-green-500/10 sm:hover:text-green-500 sm:hover:bg-green-500/10'
+              }`}
+              title={feedbackGiven ? (feedbackGiven === 'up' ? 'You liked this' : 'Feedback given') : 'Good response'}
+            >
+              <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill={feedbackGiven === 'up' ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6.633 10.25c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V2.75a.75.75 0 0 1 .75-.75 2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282m0 0h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23H5.904m10.598-9.75H14.25M5.904 18.5c.083.205.173.405.27.602.197.4-.078.898-.523.898h-.908c-.889 0-1.713-.518-1.972-1.368a12 12 0 0 1-.521-3.507c0-1.553.295-3.036.831-4.398C3.387 9.953 4.167 9.5 5 9.5h1.053c.472 0 .745.556.5.96a8.958 8.958 0 0 0-1.302 4.665c0 1.194.232 2.333.654 3.375Z" />
               </svg>
             </button>
             <button
-              onClick={() => onFeedback(message.id, 'down')}
-              className="p-1 text-[#555] hover:text-red-500 hover:bg-red-500/10 rounded transition-colors"
-              title="Poor response"
+              onClick={() => handleFeedback('down')}
+              disabled={feedbackGiven !== null}
+              className={`flex items-center justify-center w-7 h-7 rounded-full transition-colors ${
+                feedbackGiven === 'down'
+                  ? 'text-red-500 bg-red-500/15'
+                  : feedbackGiven === 'up'
+                    ? 'text-[#444] cursor-not-allowed'
+                    : 'text-[#666] active:text-red-500 active:bg-red-500/10 sm:hover:text-red-500 sm:hover:bg-red-500/10'
+              }`}
+              title={feedbackGiven ? (feedbackGiven === 'down' ? 'You disliked this' : 'Feedback given') : 'Poor response'}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018c.163 0 .326.02.485.06L17 4m-7 10v2a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
+              <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill={feedbackGiven === 'down' ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7.498 15.25H4.372c-1.026 0-1.945-.694-2.054-1.715a12.137 12.137 0 0 1-.068-1.285c0-2.848.992-5.464 2.649-7.521C5.287 4.247 5.886 4 6.504 4h4.016a4.5 4.5 0 0 1 1.423.23l3.114 1.04a4.5 4.5 0 0 0 1.423.23h1.294M7.498 15.25c.618 0 .991.724.725 1.282A7.471 7.471 0 0 0 7.5 19.5a2.25 2.25 0 0 0 2.25 2.25.75.75 0 0 0 .75-.75v-.633c0-.573.11-1.14.322-1.672.304-.76.93-1.33 1.653-1.715a9.04 9.04 0 0 0 2.86-2.4c.498-.634 1.226-1.08 2.032-1.08h.384m-10.253 1.5H9.7m8.075-9.75c.01.05.027.1.05.148.593 1.2.925 2.55.925 3.977 0 1.487-.36 2.89-.999 4.125m.023-8.25c-.076-.365.183-.75.575-.75h.908c.889 0 1.713.518 1.972 1.368.339 1.11.521 2.287.521 3.507 0 1.553-.295 3.036-.831 4.398-.306.774-1.086 1.227-1.918 1.227h-1.053c-.472 0-.745-.556-.5-.96.417-.66.778-1.378 1.07-2.128.426-1.1.654-2.224.654-3.375a9.116 9.116 0 0 0-1.4-4.887Z" />
               </svg>
             </button>
           </div>
@@ -510,12 +533,22 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     adjustTextareaHeight();
   }, [message]);
 
-  // Update message when initialMessage prop changes (e.g., after tab switch)
+  // Update message when initialMessage prop changes (e.g., from edit button or tab switch)
+  // Use a ref to track the last applied initialMessage to avoid infinite loops
+  const lastAppliedInitialMessage = useRef(initialMessage);
   useEffect(() => {
-    if (initialMessage !== undefined && initialMessage !== message) {
+    // Only update if initialMessage actually changed from what we last applied
+    if (initialMessage !== lastAppliedInitialMessage.current) {
+      lastAppliedInitialMessage.current = initialMessage;
       setMessage(initialMessage);
+      // Focus the textarea when editing a message
+      if (initialMessage && textareaRef.current) {
+        setTimeout(() => {
+          textareaRef.current?.focus();
+        }, 100);
+      }
     }
-  }, [initialMessage, message]);
+  }, [initialMessage]);
 
   // ✅ NEW: Handle queued image from WebSocket (manual mode)
   useEffect(() => {
@@ -641,7 +674,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       {/* Messages Area - Only this should scroll */}
       <div 
         ref={messagesContainerRef}
-        className={`flex-1 p-6 space-y-6 min-h-0 ${conversation.messages.length > 0 ? 'overflow-y-auto custom-scrollbar' : 'overflow-y-hidden'}`}
+        className={`flex-1 p-3 sm:p-5 space-y-3 sm:space-y-5 min-h-0 ${conversation.messages.length > 0 ? 'overflow-y-auto custom-scrollbar' : 'overflow-y-hidden'}`}
       >
         {conversation.messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">

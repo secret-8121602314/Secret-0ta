@@ -156,6 +156,9 @@ const MainApp: React.FC<MainAppProps> = ({
   // Input preservation for tab switching
   const [currentInputMessage, setCurrentInputMessage] = useState<string>('');
   
+  // ✅ Track message being edited (ID of the user message to replace on resubmit)
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  
   // ✅ NEW: Queued screenshot from WebSocket (manual mode)
   const [queuedScreenshot, setQueuedScreenshot] = useState<string | null>(null);
   
@@ -1054,6 +1057,11 @@ const MainApp: React.FC<MainAppProps> = ({
   const handleConversationSelect = async (id: string) => {
     console.error('🔄 [MainApp] Switching to conversation:', id);
     
+    // Clear editing state when switching conversations
+    if (editingMessageId) {
+      setEditingMessageId(null);
+    }
+    
     // ✅ CRITICAL FIX: ALWAYS use local state as source of truth
     // Reloading from service can cause race conditions where newly created tabs disappear
     // because background sync hasn't completed yet
@@ -1515,6 +1523,12 @@ const MainApp: React.FC<MainAppProps> = ({
   // Handle input message change
   const handleInputMessageChange = (message: string) => {
     setCurrentInputMessage(message);
+    
+    // If user clears the input while editing, cancel the edit
+    if (!message.trim() && editingMessageId) {
+      setEditingMessageId(null);
+      toastService.info('Edit cancelled');
+    }
   };
 
   // Handle active session toggle with session summaries
@@ -1828,57 +1842,21 @@ const MainApp: React.FC<MainAppProps> = ({
 
   // ✅ EDIT MESSAGE: Allow user to edit and resubmit a query
   const handleEditMessage = useCallback((messageId: string, content: string) => {
-    console.log('✏️ [MainApp] Editing message:', messageId);
+    console.log('✏️ [MainApp] Setting up edit for message:', messageId);
     
     if (!activeConversation) return;
     
-    // Find the message index
+    // Find the message to ensure it exists
     const messageIndex = activeConversation.messages.findIndex(m => m.id === messageId);
     if (messageIndex === -1) return;
     
-    // Remove the user message and all subsequent messages (including AI response)
-    const messagesToRemove = activeConversation.messages.slice(messageIndex);
-    const messagesToKeep = activeConversation.messages.slice(0, messageIndex);
+    // Store which message is being edited - will be used on submit to remove old messages
+    setEditingMessageId(messageId);
     
-    // Update conversations state - combine message removal and subtab clearing in single update
-    setConversations(prev => {
-      const updated = { ...prev };
-      if (updated[activeConversation.id]) {
-        updated[activeConversation.id] = {
-          ...updated[activeConversation.id],
-          messages: messagesToKeep,
-          subtabs: [], // Clear subtabs - they'll regenerate with new response
-          updatedAt: Date.now()
-        };
-      }
-      return updated;
-    });
-    
-    // Update active conversation separately (after state update is queued)
-    setActiveConversation(prev => {
-      if (!prev || prev.id !== activeConversation.id) return prev;
-      return {
-        ...prev,
-        messages: messagesToKeep,
-        subtabs: [],
-        updatedAt: Date.now()
-      };
-    });
-    
-    // Remove messages from database (fire and forget)
-    // Use MessageService which has the deleteMessage method
-    import('../services/messageService').then(({ MessageService }) => {
-      const messageService = MessageService.getInstance();
-      messagesToRemove.forEach(msg => {
-        messageService.deleteMessage(activeConversation.id, msg.id)
-          .catch(err => console.warn('Failed to delete message from DB:', err));
-      });
-    }).catch(err => console.warn('Failed to import MessageService:', err));
-    
-    // Set the message in the input field
+    // Set the message in the input field for editing
     setCurrentInputMessage(content);
     
-    toastService.info('Message removed - edit and resend');
+    toastService.info('Editing message - modify and resend, or clear to cancel');
   }, [activeConversation]);
 
   // ✅ FEEDBACK: Handle thumbs up/down on AI responses
@@ -2066,6 +2044,30 @@ const MainApp: React.FC<MainAppProps> = ({
       }
     }
 
+    // ✅ EDIT MODE: If we're editing a message, remove the old message and all subsequent messages first
+    let messagesToKeep = activeConversation.messages;
+    if (editingMessageId) {
+      const messageIndex = activeConversation.messages.findIndex(m => m.id === editingMessageId);
+      if (messageIndex !== -1) {
+        const messagesToRemove = activeConversation.messages.slice(messageIndex);
+        messagesToKeep = activeConversation.messages.slice(0, messageIndex);
+        
+        console.log('✏️ [MainApp] Edit mode: removing messages from index', messageIndex, 'onwards');
+        
+        // Remove messages from database (fire and forget)
+        import('../services/messageService').then(({ MessageService }) => {
+          const messageService = MessageService.getInstance();
+          messagesToRemove.forEach(msg => {
+            messageService.deleteMessage(activeConversation.id, msg.id)
+              .catch(err => console.warn('Failed to delete message from DB:', err));
+          });
+        }).catch(err => console.warn('Failed to import MessageService:', err));
+      }
+      
+      // Clear editing state
+      setEditingMessageId(null);
+    }
+
     const newMessage = {
       id: `msg_${Date.now()}`,
       content: message,
@@ -2080,7 +2082,8 @@ const MainApp: React.FC<MainAppProps> = ({
       if (updated[activeConversation.id]) {
         updated[activeConversation.id] = {
           ...updated[activeConversation.id],
-          messages: [...updated[activeConversation.id].messages, newMessage],
+          messages: [...messagesToKeep, newMessage],
+          subtabs: editingMessageId ? [] : updated[activeConversation.id].subtabs, // Clear subtabs only if editing
           updatedAt: Date.now()
         };
         // Update activeConversation immediately so UI reflects the new message
