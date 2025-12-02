@@ -183,7 +183,7 @@ const UserFeedbackModal: React.FC<UserFeedbackModalProps> = ({
                   ? 'What feature would make Otagon better for you?'
                   : 'Tell us what you think...'
               }
-              className="w-full h-32 px-4 py-3 bg-surface-dark border border-surface-light/20 rounded-lg text-text-primary placeholder-text-muted/50 resize-none focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all"
+              className="w-full h-32 px-4 py-3 bg-[#1A1A1A] border border-surface-light/40 rounded-lg text-text-primary placeholder-text-muted/50 resize-none cursor-text hover:border-surface-light/60 hover:bg-[#1A1A1A]/80 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 focus:bg-[#0F0F0F] transition-all"
             />
           </div>
 

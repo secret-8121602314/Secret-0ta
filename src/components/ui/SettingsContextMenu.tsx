@@ -224,12 +224,19 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
   };
 
   if (!isOpen) {
-    return null;
+    // Still render the feedback modal even when menu is closed
+    return (
+      <UserFeedbackModal
+        isOpen={isFeedbackModalOpen}
+        onClose={() => setIsFeedbackModalOpen(false)}
+      />
+    );
   }
 
   const safePosition = getMenuPosition();
 
   return (
+    <>
     <div
       ref={menuRef}
       className="fixed z-[100] bg-surface border border-surface-light/20 rounded-lg shadow-xl py-2 min-w-[200px]"
@@ -364,6 +371,7 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
         onClose={() => setIsFeedbackModalOpen(false)}
       />
     </div>
+    </>
   );
 };
 
