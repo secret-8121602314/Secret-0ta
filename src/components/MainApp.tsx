@@ -497,25 +497,25 @@ const MainApp: React.FC<MainAppProps> = ({
     const unsubscribe = authService.subscribe((authState) => {
       const newUserId = authState.user?.authUserId || null;
       
-      // ✅ FIX: If a new user logs in, ALWAYS update - clear logout flag if needed
-      // This fixes race condition where login happens before logout flag is cleared
-      if (newUserId && newUserId !== currentUserId) {
+      // Only update if user ID changed
+      if (newUserId !== currentUserId) {
         console.log('🔍 [MainApp] Auth state change detected:', {
           previousUserId: currentUserId,
           newUserId,
           isLoading: authState.isLoading,
-          wasLoggingOut: isLoggingOutRef.current
+          isLoggingOut: isLoggingOutRef.current
         });
         
-        // ✅ CRITICAL: Clear logout flag when new user logs in
-        // This prevents loadData from being blocked
-        if (isLoggingOutRef.current) {
-          console.log('🔍 [MainApp] New user login detected during logout - clearing logout flag');
-          isLoggingOutRef.current = false;
+        // ✅ FIX: If we have a new valid user, ALWAYS update and clear logout flag
+        // This ensures new user login after logout works correctly
+        if (newUserId) {
+          // Clear logout flag since a new user is logging in
+          if (isLoggingOutRef.current) {
+            console.log('🔍 [MainApp] New user detected during logout transition - clearing logout flag');
+            isLoggingOutRef.current = false;
+          }
+          setCurrentUserId(newUserId);
         }
-        
-        // Update current user ID to trigger loadData
-        setCurrentUserId(newUserId);
       }
     });
 
@@ -585,14 +585,16 @@ const MainApp: React.FC<MainAppProps> = ({
         
         // ✅ FIX: Ensure Game Hub exists first - this returns it directly (RLS workaround)
         const gameHubFromEnsure = await ConversationService.ensureGameHubExists(forceRefresh);
-                // ✅ CRITICAL: Use cached conversations instead of requerying Supabase
-        // getConversations() bypasses cache and queries Supabase which fails due to RLS
-        const userConversations = ConversationService.getCachedConversations() || {};
-                console.log('🔍 [MainApp] Conversation count:', Object.keys(userConversations).length);
+        
+        // ✅ FIX: Use getConversations() directly to get fresh data after ensureGameHubExists
+        // getCachedConversations() can return null/empty if cache was invalidated during Game Hub creation
+        let userConversations = await ConversationService.getConversations();
+        console.log('🔍 [MainApp] Conversation count:', Object.keys(userConversations).length);
         
         // ✅ Ensure Game Hub is in the loaded conversations
         if (gameHubFromEnsure && !userConversations[gameHubFromEnsure.id]) {
-                    userConversations[gameHubFromEnsure.id] = gameHubFromEnsure;
+          console.log('🔍 [MainApp] Adding Game Hub from ensureGameHubExists to conversations');
+          userConversations = { ...userConversations, [gameHubFromEnsure.id]: gameHubFromEnsure };
         }
         
         setConversations(userConversations);
@@ -746,25 +748,11 @@ const MainApp: React.FC<MainAppProps> = ({
         if (Object.keys(conversations).length > 0 || activeConversation) {
                     setIsInitializing(false);
         } else {
-          // Try to get user and trigger load one more time
+          // Try to get user and load conversations one more time
                     const currentUser = authService.getCurrentUser();
           if (currentUser) {
-            console.log('🔍 [MainApp] Safety timeout - forcing user load');
             setUser(currentUser);
             UserService.setCurrentUser(currentUser);
-            
-            // ✅ FIX: Force trigger loadData by updating currentUserId if different
-            if (currentUser.authUserId !== currentUserId) {
-              // Clear any stale logout flag
-              isLoggingOutRef.current = false;
-              hasLoadedConversationsRef.current = false;
-              setCurrentUserId(currentUser.authUserId);
-            } else {
-              setIsInitializing(false);
-            }
-          } else {
-            // No user found after 3s - force exit loading state
-            console.log('🔍 [MainApp] Safety timeout - no user found, exiting loading');
             setIsInitializing(false);
           }
         }
