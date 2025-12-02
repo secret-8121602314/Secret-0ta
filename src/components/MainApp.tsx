@@ -2913,9 +2913,33 @@ const MainApp: React.FC<MainAppProps> = ({
     } catch (error) {
       console.error("Failed to get AI response:", error);
       
-      // Check if it was aborted
+      // Check if it was aborted (user stopped the response)
       if (error instanceof Error && error.name === 'AbortError') {
-                return;
+        // Add a system message to indicate the response was stopped
+        const stoppedMessage = {
+          id: `msg_${Date.now() + 1}`,
+          content: "*Response stopped by user*",
+          role: 'assistant' as const,
+          timestamp: Date.now(),
+        };
+        
+        // Update state immediately
+        setConversations(prev => {
+          const updated = { ...prev };
+          if (updated[activeConversation.id]) {
+            updated[activeConversation.id] = {
+              ...updated[activeConversation.id],
+              messages: [...updated[activeConversation.id].messages, stoppedMessage],
+              updatedAt: Date.now()
+            };
+            setActiveConversation(updated[activeConversation.id]);
+          }
+          return updated;
+        });
+        
+        // Save to database
+        await ConversationService.addMessage(activeConversation.id, stoppedMessage);
+        return;
       }
       
       // Use error recovery service
