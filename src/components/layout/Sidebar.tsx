@@ -40,6 +40,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   // Long press detection
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const longPressTarget = useRef<HTMLElement | null>(null);
   const longPressDelay = 1500; // 1.5 seconds
 
   // Sort conversations: Game Hub first, then pinned, then others (newest last)
@@ -74,20 +75,35 @@ const Sidebar: React.FC<SidebarProps> = ({
     e.preventDefault();
     e.stopPropagation();
     
+    // Get the target element's bounding rect for fixed positioning
+    const target = e.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    
+    // Position menu to the right of the tab, just below the top of the tab
+    // Add some padding to prevent going off-screen
+    const x = Math.min(rect.right + 8, window.innerWidth - 180); // 180 = approximate menu width + margin
+    const y = Math.min(rect.top, window.innerHeight - 200); // 200 = approximate menu height + margin
+    
     setContextMenu({
       isOpen: true,
-      position: { x: e.clientX, y: e.clientY },
+      position: { x, y },
       conversationId,
     });
   };
 
-  const handleLongPressStart = (conversationId: string) => {
+  const handleLongPressStart = (e: React.MouseEvent | React.TouchEvent, conversationId: string) => {
+    longPressTarget.current = e.currentTarget as HTMLElement;
     longPressTimer.current = setTimeout(() => {
-      setContextMenu({
-        isOpen: true,
-        position: { x: window.innerWidth / 2, y: window.innerHeight / 2 },
-        conversationId,
-      });
+      if (longPressTarget.current) {
+        const rect = longPressTarget.current.getBoundingClientRect();
+        const x = Math.min(rect.right + 8, window.innerWidth - 180);
+        const y = Math.min(rect.top, window.innerHeight - 200);
+        setContextMenu({
+          isOpen: true,
+          position: { x, y },
+          conversationId,
+        });
+      }
     }, longPressDelay);
   };
 
@@ -96,6 +112,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
     }
+    longPressTarget.current = null;
   };
 
   const closeContextMenu = () => {
@@ -221,10 +238,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                     } ${borderClass}`}
                     onClick={() => onConversationSelect(conversation.id)}
                     onContextMenu={(e) => handleContextMenu(e, conversation.id)}
-                    onMouseDown={() => handleLongPressStart(conversation.id)}
+                    onMouseDown={(e) => handleLongPressStart(e, conversation.id)}
                     onMouseUp={handleLongPressEnd}
                     onMouseLeave={handleLongPressEnd}
-                    onTouchStart={() => handleLongPressStart(conversation.id)}
+                    onTouchStart={(e) => handleLongPressStart(e, conversation.id)}
                     onTouchEnd={handleLongPressEnd}
                     style={{ zIndex: 1 }}
                   >

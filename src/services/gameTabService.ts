@@ -143,7 +143,7 @@ class GameTabService {
       genre: data.genre,
       subtabs: subTabs,
       subtabsOrder: subTabs.map(tab => tab.id),
-      isActiveSession: false,
+      isActiveSession: true, // Default to Playing Mode when user asks for help
       activeObjective: '',
       gameProgress: 0,
       isUnreleased: data.isUnreleased || false // Mark if unreleased
