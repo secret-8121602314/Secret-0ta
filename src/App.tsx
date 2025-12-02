@@ -321,44 +321,15 @@ function App() {
     }));
   };
 
-  const handleOAuthSuccess = async () => {
+  const handleOAuthSuccess = () => {
     // Clear URL without causing navigation
     window.history.replaceState({}, document.title, '/');
     
+    // Set app state to show the app
+    setAppState((prev: AppState) => ({ ...prev, view: 'app' }));
+    
     // Log successful OAuth in current context (browser or PWA)
     console.log('🔐 [App] OAuth successful in:', isPWAMode() ? 'PWA' : 'Browser');
-    
-    // ✅ FIX: Get the authenticated user and determine next step
-    // This ensures we properly handle onboarding for new users
-    try {
-      const currentUser = authService.getCurrentUser();
-      console.log('🔐 [App] Current user after OAuth:', currentUser?.email);
-      
-      if (currentUser) {
-        // Get the next onboarding step for this user
-        const nextStep = await onboardingService.getNextOnboardingStep(currentUser.authUserId);
-        console.log('🔐 [App] Next onboarding step after OAuth:', nextStep);
-        
-        setHasEverLoggedIn(true);
-        setAuthState({ user: currentUser, isLoading: false, error: null });
-        
-        // Set app state with the correct onboarding status
-        setAppState((prev: AppState) => ({
-          ...prev,
-          view: 'app',
-          onboardingStatus: nextStep
-        }));
-      } else {
-        // Fallback: trigger auth processing by setting view to app
-        // The auth subscription will handle the rest
-        console.log('🔐 [App] No user found after OAuth, waiting for auth subscription');
-        setAppState((prev: AppState) => ({ ...prev, view: 'app' }));
-      }
-    } catch (error) {
-      console.error('🔐 [App] Error processing OAuth success:', error);
-      // Fallback to basic flow
-      setAppState((prev: AppState) => ({ ...prev, view: 'app' }));
-    }
   };
 
   const handleOAuthError = (error: string) => {

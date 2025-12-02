@@ -497,23 +497,16 @@ const MainApp: React.FC<MainAppProps> = ({
     const unsubscribe = authService.subscribe((authState) => {
       const newUserId = authState.user?.authUserId || null;
       
-      // Only update if user ID changed
-      if (newUserId !== currentUserId) {
+      // Only update if user ID changed and we're not logging out
+      if (newUserId !== currentUserId && !isLoggingOutRef.current) {
         console.log('🔍 [MainApp] Auth state change detected:', {
           previousUserId: currentUserId,
           newUserId,
-          isLoading: authState.isLoading,
-          isLoggingOut: isLoggingOutRef.current
+          isLoading: authState.isLoading
         });
         
-        // ✅ FIX: If we have a new valid user, ALWAYS update and clear logout flag
-        // This ensures new user login after logout works correctly
+        // Update current user ID
         if (newUserId) {
-          // Clear logout flag since a new user is logging in
-          if (isLoggingOutRef.current) {
-            console.log('🔍 [MainApp] New user detected during logout transition - clearing logout flag');
-            isLoggingOutRef.current = false;
-          }
           setCurrentUserId(newUserId);
         }
       }
@@ -585,16 +578,14 @@ const MainApp: React.FC<MainAppProps> = ({
         
         // ✅ FIX: Ensure Game Hub exists first - this returns it directly (RLS workaround)
         const gameHubFromEnsure = await ConversationService.ensureGameHubExists(forceRefresh);
-        
-        // ✅ FIX: Use getConversations() directly to get fresh data after ensureGameHubExists
-        // getCachedConversations() can return null/empty if cache was invalidated during Game Hub creation
-        let userConversations = await ConversationService.getConversations();
-        console.log('🔍 [MainApp] Conversation count:', Object.keys(userConversations).length);
+                // ✅ CRITICAL: Use cached conversations instead of requerying Supabase
+        // getConversations() bypasses cache and queries Supabase which fails due to RLS
+        const userConversations = ConversationService.getCachedConversations() || {};
+                console.log('🔍 [MainApp] Conversation count:', Object.keys(userConversations).length);
         
         // ✅ Ensure Game Hub is in the loaded conversations
         if (gameHubFromEnsure && !userConversations[gameHubFromEnsure.id]) {
-          console.log('🔍 [MainApp] Adding Game Hub from ensureGameHubExists to conversations');
-          userConversations = { ...userConversations, [gameHubFromEnsure.id]: gameHubFromEnsure };
+                    userConversations[gameHubFromEnsure.id] = gameHubFromEnsure;
         }
         
         setConversations(userConversations);
