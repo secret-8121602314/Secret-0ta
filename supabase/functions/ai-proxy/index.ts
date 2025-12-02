@@ -101,7 +101,7 @@ serve(async (req: Request) => {
       temperature = 0.7, 
       maxTokens = 2048, 
       requestType,
-      model = 'gemini-2.5-flash-preview-09-2025',
+      model = 'gemini-2.5-flash',
       tools = []
     } = body;
 

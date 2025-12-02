@@ -59,20 +59,20 @@ class AIService {
         throw new Error("VITE_GEMINI_API_KEY is not set in the environment variables.");
       }
       this.genAI = new GoogleGenerativeAI(API_KEY);
-      // Using gemini-2.5-flash-preview-09-2025 for all operations (enhanced performance)
+      // Using gemini-2.5-flash for all operations (enhanced performance)
       // ? FIX 2: Apply safety settings to all model initializations
       this.flashModel = this.genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash-preview-09-2025",
+        model: "gemini-2.5-flash",
         safetySettings: SAFETY_SETTINGS
       });
       this.proModel = this.genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash-preview-09-2025",
+        model: "gemini-2.5-flash",
         safetySettings: SAFETY_SETTINGS
       });
       // ? NEW: Model with Google Search grounding enabled
       // Note: google_search is a valid Gemini 2.5 tool but not in the @google/generative-ai types yet
       this.flashModelWithGrounding = this.genAI.getGenerativeModel({
-        model: "gemini-2.5-flash-preview-09-2025",
+        model: "gemini-2.5-flash",
         safetySettings: SAFETY_SETTINGS,
         tools: [{
           google_search: {}  // ? Gemini 2.5 syntax, works for both text and images
@@ -376,7 +376,7 @@ class AIService {
         }
 
         // Determine which model and tools to use
-        const modelName = 'gemini-2.5-flash-preview-09-2025';
+        const modelName = 'gemini-2.5-flash';
         
         // ? ENHANCEMENT: Enable Google Search grounding for both text AND images
         // This allows game detection from screenshots to access current information
@@ -503,7 +503,7 @@ class AIService {
           cacheType,
           gameTitle: conversation.gameTitle,
           conversationId: conversation.id,
-          modelUsed: 'gemini-2.5-flash-preview-09-2025',
+          modelUsed: 'gemini-2.5-flash',
           tokensUsed: aiResponse.metadata.tokens || 0,
           ttlHours: ttl
         }).catch(error => console.warn('Failed to cache AI response in database:', error));
@@ -525,7 +525,7 @@ class AIService {
         authUserId: user.authUserId,
         requestType: conversation.isGameHub ? 'game_hub' : hasImages ? 'image_analysis' : 'chat',
         tokensUsed: aiResponse.metadata.tokens || 0,
-        aiModel: 'gemini-2.5-flash-preview-09-2025',
+        aiModel: 'gemini-2.5-flash',
         endpoint: '/generateContent'
       }).catch(error => console.warn('Failed to log API usage:', error));
       
@@ -766,7 +766,7 @@ In addition to your regular response, provide structured data in the following o
           imageBase64 = imageData.split(',')[1];
         }
 
-        const modelName = 'gemini-2.5-flash-preview-09-2025';
+        const modelName = 'gemini-2.5-flash';
         
         // ? Enable Google Search grounding for current game information
         // Works with both text and images in Gemini 2.5
@@ -900,7 +900,7 @@ In addition to your regular response, provide structured data in the following o
           otakonTags: tags,
           rawContent: rawContent,
           metadata: {
-            model: 'gemini-2.5-flash-preview-09-2025',
+            model: 'gemini-2.5-flash',
             timestamp: Date.now(),
             cost: 0,
             tokens: 0,
@@ -1132,7 +1132,7 @@ In addition to your regular response, provide structured data in the following o
           otakonTags: new Map(), // Empty for JSON mode
           rawContent: rawResponse,
           metadata: {
-            model: 'gemini-2.5-flash-preview-09-2025',
+            model: 'gemini-2.5-flash',
             timestamp: Date.now(),
             cost: 0,
             tokens: 0,
@@ -1174,7 +1174,7 @@ In addition to your regular response, provide structured data in the following o
             temperature: 0.7,
             maxTokens: 2048,
             requestType: 'text',
-            model: 'gemini-2.5-flash-preview-09-2025'
+            model: 'gemini-2.5-flash'
           });
 
           if (!edgeResponse.success) {
@@ -1206,7 +1206,7 @@ In addition to your regular response, provide structured data in the following o
           otakonTags: tags,
           rawContent: rawContent,
           metadata: {
-            model: 'gemini-2.5-flash-preview-09-2025',
+            model: 'gemini-2.5-flash',
             timestamp: Date.now(),
             cost: 0,
             tokens: 0,
@@ -1359,7 +1359,7 @@ NOW generate COMPREHENSIVE valid JSON for ALL these tab IDs (MUST include every 
           temperature: 0.7,
           maxTokens: 5000, // ? Increased to 5000 to accommodate comprehensive 150-250 word insights per tab
           requestType: 'text',
-          model: 'gemini-2.5-flash-preview-09-2025' // Back to Flash model
+          model: 'gemini-2.5-flash' // Back to Flash model
         });
 
         if (!edgeResponse.success) {
@@ -1514,7 +1514,7 @@ NOW generate COMPREHENSIVE valid JSON for ALL these tab IDs (MUST include every 
           detection_confidence: confidence.toLowerCase() as 'high' | 'low',
           detected_genre: detectedGenre,
           game_status: gameStatus as 'released' | 'unreleased' | null,
-          ai_model: 'gemini-2.5-flash-preview-09-2025',
+          ai_model: 'gemini-2.5-flash',
           tokens_used: aiResponse.metadata.tokens || 0,
           query_type: queryType
         });
