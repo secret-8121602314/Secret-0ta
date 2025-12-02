@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect, memo } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { Conversation, ActiveSessionState, ChatMessage } from '../../types';
+import { MarkdownRenderer } from './MarkdownRenderer';
 import ManualUploadToggle from '../ui/ManualUploadToggle';
 import ScreenshotButton from '../ui/ScreenshotButton';
 import DownloadIcon from '../ui/DownloadIcon';
@@ -166,68 +165,11 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
                 </div>
               </div>
             )}
-            <div className="text-[#F5F5F5] leading-relaxed">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  h1: ({ children }) => (
-                    <h1 className="text-base sm:text-lg font-bold text-[#F5F5F5] mb-2 sm:mb-3 mt-1 sm:mt-2">{children}</h1>
-                  ),
-                  h2: ({ children }) => (
-                    <h2 className="text-sm sm:text-base font-semibold text-[#F5F5F5] mb-1.5 sm:mb-2 mt-1 sm:mt-2">{children}</h2>
-                  ),
-                  h3: ({ children }) => (
-                    <h3 className="text-sm font-semibold text-[#F5F5F5] mb-1.5 sm:mb-2 mt-1 sm:mt-2">{children}</h3>
-                  ),
-                  p: ({ children }) => (
-                    <p className="text-sm sm:text-base text-[#CFCFCF] leading-relaxed mb-2 sm:mb-3">{children}</p>
-                  ),
-                  ul: ({ children }) => (
-                    <ul className="list-disc list-outside ml-4 sm:ml-5 text-sm sm:text-base text-[#CFCFCF] mb-2 sm:mb-3 space-y-1 sm:space-y-1.5">{children}</ul>
-                  ),
-                  ol: ({ children }) => (
-                    <ol className="list-decimal list-outside ml-4 sm:ml-5 text-sm sm:text-base text-[#CFCFCF] mb-2 sm:mb-3 space-y-1 sm:space-y-1.5">{children}</ol>
-                  ),
-                  li: ({ children }) => (
-                    <li className="text-sm sm:text-base text-[#CFCFCF] leading-relaxed">{children}</li>
-                  ),
-                  strong: ({ children }) => (
-                    <strong className="font-semibold text-[#F5F5F5]">{children}</strong>
-                  ),
-                  em: ({ children }) => (
-                    <em className="italic text-[#E0E0E0]">{children}</em>
-                  ),
-                  code: ({ children }) => (
-                    <code className="bg-[#2E2E2E] text-[#FF4D4D] px-1.5 py-0.5 rounded text-xs font-mono">
-                      {children}
-                    </code>
-                  ),
-                  pre: ({ children }) => (
-                    <pre className="bg-[#1C1C1C] border border-[#424242] rounded-lg p-3 overflow-x-auto mb-3">
-                      {children}
-                    </pre>
-                  ),
-                  blockquote: ({ children }) => (
-                    <blockquote className="border-l-4 border-[#FF4D4D] pl-4 italic text-[#B0B0B0] my-3">
-                      {children}
-                    </blockquote>
-                  ),
-                  a: ({ href, children }) => (
-                    <a 
-                      href={href} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-[#FF4D4D] hover:text-[#FF6B6B] underline"
-                    >
-                      {children}
-                    </a>
-                  ),
-                  br: () => <br className="my-1" />
-                }}
-              >
-                {message.content.replace(/\\\*/g, '*')}
-              </ReactMarkdown>
-            </div>
+            <MarkdownRenderer 
+              content={message.content} 
+              variant="chat" 
+              className="text-[#F5F5F5] leading-relaxed"
+            />
             
             {/* TTS Controls for AI messages */}
             {message.role === 'assistant' && <TTSControls />}

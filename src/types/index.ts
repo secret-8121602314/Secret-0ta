@@ -303,6 +303,59 @@ export interface GameTab {
   isActiveSession?: boolean;
 }
 
+// ============================================
+// OTAKON Tag Types - Typed interfaces for AI response tags
+// ============================================
+
+/** Subtab content update from AI */
+export interface OtakonSubtabUpdate {
+  tab: string;
+  content: string;
+}
+
+/** Insight update for dynamic tab content */
+export interface OtakonInsightUpdate {
+  id: string;
+  content: string;
+  title?: string;
+}
+
+/** Game identification from screenshot analysis */
+export interface OtakonGameIdentification {
+  gameId: string;
+  confidence: 'high' | 'medium' | 'low';
+  genre?: string;
+  isFullscreen?: boolean;
+  gameStatus?: 'released' | 'unreleased';
+}
+
+/** Parsed result from parseOtakonTags */
+export interface ParsedOtakonTags {
+  cleanContent: string;
+  tags: OtakonTagsMap;
+}
+
+/** Type-safe tag accessors */
+export interface OtakonTagsMap {
+  // Core methods (Map-compatible)
+  has(key: string): boolean;
+  get(key: 'PROGRESS'): number | undefined;
+  get(key: 'OBJECTIVE'): string | undefined;
+  get(key: 'SUGGESTIONS'): string[] | undefined;
+  get(key: 'SUBTAB_UPDATE'): OtakonSubtabUpdate[] | undefined;
+  get(key: 'INSIGHT_UPDATE'): OtakonInsightUpdate | undefined;
+  get(key: 'GAME_ID'): string | undefined;
+  get(key: 'CONFIDENCE'): 'high' | 'medium' | 'low' | undefined;
+  get(key: 'GENRE'): string | undefined;
+  get(key: 'GAME_STATUS'): 'released' | 'unreleased' | undefined;
+  get(key: 'IS_FULLSCREEN'): boolean | undefined;
+  get(key: 'TRIUMPH'): string | undefined;
+  get(key: 'OBJECTIVE_SET'): string | undefined;
+  get(key: string): unknown;
+  keys(): IterableIterator<string>;
+  readonly size: number;
+}
+
 export interface AIResponse {
   content: string; // The user-facing text
   suggestions: string[];

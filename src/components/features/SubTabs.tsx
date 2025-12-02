@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { SubTab } from '../../types';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { MarkdownRenderer } from './MarkdownRenderer';
 
 // Type-based styling configuration for each subtab type
 const subtabStyles: Record<string, { accent: string; accentHover: string; bgTint: string; borderTint: string; icon: string }> = {
@@ -247,77 +246,12 @@ const SubTabs: React.FC<SubTabsProps> = ({
                 </div>
               ) : activeTab.content ? (
                 <div className="prose prose-invert prose-sm max-w-none">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      h1: ({ children }) => (
-                        <h1 className="text-lg font-bold text-[#F5F5F5] mb-3">{children}</h1>
-                      ),
-                      h2: ({ children }) => (
-                        <h2 className="text-base font-semibold text-[#F5F5F5] mb-2">{children}</h2>
-                      ),
-                      h3: ({ children }) => (
-                        <h3 className="text-sm font-semibold text-[#F5F5F5] mb-2">{children}</h3>
-                      ),
-                      p: ({ children }) => (
-                        <p className="text-[#CFCFCF] leading-relaxed mb-2">{children}</p>
-                      ),
-                      ul: ({ children }) => (
-                        <ul className="list-disc list-inside text-[#CFCFCF] mb-2 space-y-1">{children}</ul>
-                      ),
-                      ol: ({ children }) => (
-                        <ol className="list-decimal list-inside text-[#CFCFCF] mb-2 space-y-1">{children}</ol>
-                      ),
-                      li: ({ children }) => (
-                        <li className="text-[#CFCFCF]">{children}</li>
-                      ),
-                      strong: ({ children }) => (
-                        <strong className="font-semibold text-[#F5F5F5]">{children}</strong>
-                      ),
-                      em: ({ children }) => (
-                        <em className="italic text-[#E0E0E0]">{children}</em>
-                      ),
-                      code: ({ children }) => (
-                        <code 
-                          className="px-1 py-0.5 rounded text-xs font-mono"
-                          style={{ 
-                            backgroundColor: '#2E2E2E', 
-                            color: getSubtabStyle(activeTab.type).accent 
-                          }}
-                        >
-                          {children}
-                        </code>
-                      ),
-                      pre: ({ children }) => (
-                        <pre className="bg-[#1C1C1C] border border-[#424442] rounded-lg p-3 overflow-x-auto">
-                          {children}
-                        </pre>
-                      ),
-                      blockquote: ({ children }) => (
-                        <blockquote 
-                          className="pl-4 italic text-[#B0B0B0] my-2"
-                          style={{ borderLeft: `4px solid ${getSubtabStyle(activeTab.type).accent}` }}
-                        >
-                          {children}
-                        </blockquote>
-                      ),
-                      a: ({ href, children }) => (
-                        <a 
-                          href={href} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="underline transition-colors"
-                          style={{ color: getSubtabStyle(activeTab.type).accent }}
-                          onMouseEnter={(e) => e.currentTarget.style.color = getSubtabStyle(activeTab.type).accentHover}
-                          onMouseLeave={(e) => e.currentTarget.style.color = getSubtabStyle(activeTab.type).accent}
-                        >
-                          {children}
-                        </a>
-                      ),
-                    }}
-                  >
-                    {activeTab.content}
-                  </ReactMarkdown>
+                  <MarkdownRenderer
+                    content={activeTab.content}
+                    variant="subtab"
+                    accentColor={getSubtabStyle(activeTab.type).accent}
+                    accentHoverColor={getSubtabStyle(activeTab.type).accentHover}
+                  />
                   
                   {/* Feedback buttons */}
                   {onFeedback && (

@@ -952,25 +952,25 @@ In addition to your regular response, provide structured data in the following o
         cleanContent = cleanContent.replace(/\\\*/g, '*');
 
         // 2. Fix headers with MISSING closing ** (AI sends "** Lore:**" without closing **)
-        cleanContent = cleanContent.replace(/\*\*\s*Hint\s*:\*\*\s*/gi, '\n\n**Hint:**\n');
-        cleanContent = cleanContent.replace(/\*\*\s*Lore\s*:\*\*\s*/gi, '\n\n**Lore:**\n');
-        cleanContent = cleanContent.replace(/\*\*\s*Places\s+of\s+Interest\s*:\*\*\s*/gi, '\n\n**Places of Interest:**\n');
-        cleanContent = cleanContent.replace(/\*\*\s*Strategy\s*:\*\*\s*/gi, '\n\n**Strategy:**\n');
-        cleanContent = cleanContent.replace(/\*\*\s*What\s+to\s+focus\s+on\s*:\*\*\s*/gi, '\n\n**What to focus on:**\n');
+        cleanContent = cleanContent.replace(/\*\*\s*Hint\s*:\*\*\s*/gi, '\n\nHint:\n');
+        cleanContent = cleanContent.replace(/\*\*\s*Lore\s*:\*\*\s*/gi, '\n\nLore:\n');
+        cleanContent = cleanContent.replace(/\*\*\s*Places\s+of\s+Interest\s*:\*\*\s*/gi, '\n\nPlaces of Interest:\n');
+        cleanContent = cleanContent.replace(/\*\*\s*Strategy\s*:\*\*\s*/gi, '\n\nStrategy:\n');
+        cleanContent = cleanContent.replace(/\*\*\s*What\s+to\s+focus\s+on\s*:\*\*\s*/gi, '\n\nWhat to focus on:\n');
 
         // 3. Fix headers WITHOUT any closing ** (AI sends "** Lore:" with no ** at end)
-        cleanContent = cleanContent.replace(/\n\*\*\s*Hint\s*:\s*\n/gi, '\n\n**Hint:**\n');
-        cleanContent = cleanContent.replace(/\n\*\*\s*Lore\s*:\s*\n/gi, '\n\n**Lore:**\n');
-        cleanContent = cleanContent.replace(/\n\*\*\s*Places\s+of\s+Interest\s*:\s*\n/gi, '\n\n**Places of Interest:**\n');
-        cleanContent = cleanContent.replace(/\n\*\*\s*Strategy\s*:\s*\n/gi, '\n\n**Strategy:**\n');
-        cleanContent = cleanContent.replace(/\n\*\*\s*What\s+to\s+focus\s+on\s*:\s*\n/gi, '\n\n**What to focus on:**\n');
+        cleanContent = cleanContent.replace(/\n\*\*\s*Hint\s*:\s*\n/gi, '\n\nHint:\n');
+        cleanContent = cleanContent.replace(/\n\*\*\s*Lore\s*:\s*\n/gi, '\n\nLore:\n');
+        cleanContent = cleanContent.replace(/\n\*\*\s*Places\s+of\s+Interest\s*:\s*\n/gi, '\n\nPlaces of Interest:\n');
+        cleanContent = cleanContent.replace(/\n\*\*\s*Strategy\s*:\s*\n/gi, '\n\nStrategy:\n');
+        cleanContent = cleanContent.replace(/\n\*\*\s*What\s+to\s+focus\s+on\s*:\s*\n/gi, '\n\nWhat to focus on:\n');
 
         // 4. Fix standalone headers on their own line
-        cleanContent = cleanContent.replace(/^\*\*\s*Hint\s*:\s*\**\s*$/gim, '**Hint:**');
-        cleanContent = cleanContent.replace(/^\*\*\s*Lore\s*:\s*\**\s*$/gim, '**Lore:**');
-        cleanContent = cleanContent.replace(/^\*\*\s*Places\s+of\s+Interest\s*:\s*\**\s*$/gim, '**Places of Interest:**');
-        cleanContent = cleanContent.replace(/^\*\*\s*Strategy\s*:\s*\**\s*$/gim, '**Strategy:**');
-        cleanContent = cleanContent.replace(/^\*\*\s*What\s+to\s+focus\s+on\s*:\s*\**\s*$/gim, '**What to focus on:**');
+        cleanContent = cleanContent.replace(/^\*\*\s*Hint\s*:\s*\**\s*$/gim, 'Hint:');
+        cleanContent = cleanContent.replace(/^\*\*\s*Lore\s*:\s*\**\s*$/gim, 'Lore:');
+        cleanContent = cleanContent.replace(/^\*\*\s*Places\s+of\s+Interest\s*:\s*\**\s*$/gim, 'Places of Interest:');
+        cleanContent = cleanContent.replace(/^\*\*\s*Strategy\s*:\s*\**\s*$/gim, 'Strategy:');
+        cleanContent = cleanContent.replace(/^\*\*\s*What\s+to\s+focus\s+on\s*:\s*\**\s*$/gim, 'What to focus on:');
 
         // 5. Fix the "Space inside Bold" issue GLOBALLY
         cleanContent = cleanContent.replace(/\*\*\s+([^*]+?)\*\*/g, '**$1**');
@@ -1052,6 +1052,8 @@ In addition to your regular response, provide structured data in the following o
           .replace(/##FOCUS##\s*/g, '\n\n**What to focus on:**\n')
           // ? STEP 13: Clean up any stray **** (four asterisks from double-processing)
           .replace(/\*{4,}/g, '**')
+          // Remove orphaned ** in middle of text (e.g., "text** More text")
+          .replace(/([a-z])\*\*\s+([A-Z])/g, '$1 $2')
           // ? STEP 14: Fix paragraph formatting (use [^*\n]+ to prevent matching across newlines!)
           .replace(/(\*\*[^*\n]+\*\*:?)([A-Z])/g, '$1\n\n$2') // Break after bold headers on same line
           .replace(/\.([A-Z][a-z])/g, '.\n\n$1') // Period + Capital = new paragraph
@@ -1059,6 +1061,10 @@ In addition to your regular response, provide structured data in the following o
           // ? STEP 15: Final cleanup
           .replace(/^\n+/, '') // Remove leading newlines
           .replace(/\n{3,}/g, '\n\n') // Remove excessive newlines
+          // ? FINAL SAFETY NET: Catch any remaining malformed headers with spaces
+          .replace(/\*\*\s+(Hint|Lore|Strategy):\*\*/gi, '**$1:**')
+          .replace(/\*\*\s+Places\s+of\s+Interest:\*\*/gi, '**Places of Interest:**')
+          .replace(/\*\*\s+What\s+to\s+focus\s+on:\*\*/gi, '**What to focus on:**')
           .trim();
         
                 console.log('?? [AIService] Last 200 chars after cleaning:', cleanContent.slice(-200));
