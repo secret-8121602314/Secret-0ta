@@ -4,6 +4,7 @@ import { ConversationService } from './conversationService';
 import { profileAwareTabService, GameContext, ProfileSpecificTab } from './profileAwareTabService';
 import { toastService } from './toastService';
 import { subtabsService } from './subtabsService';
+import { chatMemoryService } from './chatMemoryService';
 
 // ✅ UUID generator utility
 function generateUUID(): string {
@@ -60,6 +61,14 @@ class GameTabService {
     // 🔒 TIER-GATING: Check if subtabs should be generated based on user tier
     const userTier = data.userTier || 'free';
     const isPro = userTier === 'pro' || userTier === 'vanguard_pro';
+    
+    console.log('🎮 [GameTabService] Creating new game tab:', {
+      gameTitle: data.gameTitle,
+      userTier,
+      isPro,
+      isUnreleased: data.isUnreleased,
+      hasAiResponse: !!data.aiResponse
+    });
     
     // For unreleased games, don't generate subtabs
     let subTabs: SubTab[] = [];
@@ -343,19 +352,56 @@ class GameTabService {
         return; // Early exit - user may have deleted tab or switched games
       }
 
-      // ✅ CRITICAL: Use AI response content as context (not conversation.messages which is empty at creation time!)
-      // Priority 1: Use AI response content (from screenshot analysis)
-      // Priority 2: Use conversation messages (if migrated already)
+      // ✅ Use conversation context for subtab generation
+      // Priority 1: Use cached summary if messages > 10 (efficiency)
+      // Priority 2: Use recent messages (last 10) + summary if available
+      // Priority 3: Fall back to AI response for new tabs
+      // 
+      // RACE CONDITION SAFEGUARD: Summary might be slightly stale if being regenerated.
+      // We ALWAYS include the last 5 messages alongside summary to ensure fresh context.
+      // This guarantees the most recent user interactions are captured even if summary lags.
       let conversationContext = '';
       
-      if (aiResponse?.content) {
-        conversationContext = `AI Analysis: ${aiResponse.content}`;
-        console.error(`🤖 [GameTabService] [${conversationId}] Using AI response as context (${aiResponse.content.length} chars)`);
-      } else if (conversation.messages.length > 0) {
-        conversationContext = conversation.messages
+      const freshConv = preCheckConversations[conversationId];
+      const messageCount = freshConv.messages?.length || 0;
+      
+      if (messageCount > 10) {
+        // For long conversations, use summary + recent messages for efficiency
+        try {
+          const summary = await chatMemoryService.loadConversationSummary(conversationId);
+          // Always get the last 5 messages to ensure we have fresh context
+          // even if summary is slightly stale (race condition safeguard)
+          const recentMessages = freshConv.messages.slice(-5)
+            .map(msg => `${msg.role === 'user' ? 'User' : 'AI'}: ${msg.content}`)
+            .join('\n\n');
+            
+          if (summary) {
+            conversationContext = `Previous Context Summary:\n${JSON.stringify(summary)}\n\nRecent Messages (guaranteed fresh):\n${recentMessages}`;
+            console.error(`🤖 [GameTabService] [${conversationId}] ✅ Using summary + 5 recent messages (${messageCount} total msgs)`);
+          } else {
+            // No summary, use last 10 messages
+            conversationContext = freshConv.messages.slice(-10)
+              .map(msg => `${msg.role === 'user' ? 'User' : 'AI'}: ${msg.content}`)
+              .join('\n\n');
+            console.error(`🤖 [GameTabService] [${conversationId}] Using last 10 messages (no summary available)`);
+          }
+        } catch (err) {
+          // Fallback to last 10 messages
+          conversationContext = freshConv.messages.slice(-10)
+            .map(msg => `${msg.role === 'user' ? 'User' : 'AI'}: ${msg.content}`)
+            .join('\n\n');
+          console.error(`🤖 [GameTabService] [${conversationId}] Using last 10 messages (summary load failed)`);
+        }
+      } else if (messageCount > 0) {
+        // For shorter conversations, use all messages
+        conversationContext = freshConv.messages
           .map(msg => `${msg.role === 'user' ? 'User' : 'AI'}: ${msg.content}`)
           .join('\n\n');
-        console.error(`🤖 [GameTabService] [${conversationId}] Using messages as context (${conversation.messages.length} msgs)`);
+        console.error(`🤖 [GameTabService] [${conversationId}] ✅ Using all ${messageCount} messages`);
+      } else if (aiResponse?.content) {
+        // Fall back to AI response if no messages yet (new tab scenario)
+        conversationContext = `AI Analysis: ${aiResponse.content}`;
+        console.error(`🤖 [GameTabService] [${conversationId}] Using AI response as context (${aiResponse.content.length} chars)`);
       } else {
         console.error(`🤖 [GameTabService] [${conversationId}] ⚠️ No context available`);
       }
@@ -433,7 +479,7 @@ class GameTabService {
         
         // Items/Collectibles tabs
         'Items You May Have Missed': 'missed_items',
-        'Collectible Hunting': 'missed_items',
+        'Collectible Hunting': 'collectible_hunting',
         
         // Points of Interest
         'Points of Interest': 'points_of_interest',
@@ -445,7 +491,7 @@ class GameTabService {
         
         // World/Exploration
         'Dynamic World Events': 'points_of_interest',
-        'Exploration Route': 'exploration_tips',
+        'Exploration Route': 'exploration_route',
         
         // Optimization/Efficiency
         'Fast Travel Optimization': 'pro_tips',
@@ -468,9 +514,7 @@ class GameTabService {
         'Sequence Breaking Options': 'sequence_breaking',
         'Upgrade Priority': 'upgrade_priority',
         
-        // Open-World specific tabs
-        'Collectible Hunting': 'collectible_hunting',
-        'Exploration Route': 'exploration_route',
+        // Open-World specific tabs (already defined above, removed duplicates)
         
         // Survival-Crafting specific tabs
         'Resource Locations': 'resource_locations',
@@ -722,6 +766,50 @@ class GameTabService {
   generateGameConversationId(gameTitle: string): string {
     const sanitized = gameTitle.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
     return `game-${sanitized}`;
+  }
+
+  /**
+   * Update subtabs after migration with context from the target conversation
+   * Called AFTER migration to ensure subtabs are updated (not regenerated) with new context
+   * This is critical when:
+   * 1. A screenshot is uploaded from Game Hub and migrates to a game tab
+   * 2. A screenshot of Game B is uploaded from Game A and migrates to Game B
+   * The subtabs should be UPDATED (appended) with new insights, not regenerated
+   */
+  async updateSubtabsAfterMigration(
+    conversationId: string,
+    aiResponse?: AIResponse
+  ): Promise<void> {
+    console.error(`🔄 [GameTabService] [${conversationId}] Updating subtabs after migration...`);
+    
+    try {
+      // Get fresh conversation data with all migrated messages
+      const conversations = await ConversationService.getConversations(true);
+      const conversation = conversations[conversationId];
+      
+      if (!conversation) {
+        console.error(`🔄 [GameTabService] [${conversationId}] ⚠️ Conversation not found, aborting`);
+        return;
+      }
+      
+      // If no subtabs exist yet, this will be handled by createGameTab
+      if (!conversation.subtabs || conversation.subtabs.length === 0) {
+        console.error(`🔄 [GameTabService] [${conversationId}] No subtabs to update`);
+        return;
+      }
+      
+      // Check if AI response has progressive updates
+      if (aiResponse?.progressiveInsightUpdates && aiResponse.progressiveInsightUpdates.length > 0) {
+        console.error(`🔄 [GameTabService] [${conversationId}] Applying ${aiResponse.progressiveInsightUpdates.length} progressive updates`);
+        await this.updateSubTabsFromAIResponse(conversationId, aiResponse.progressiveInsightUpdates);
+      } else {
+        console.error(`🔄 [GameTabService] [${conversationId}] No progressive updates in AI response`);
+      }
+      
+      console.error(`🔄 [GameTabService] [${conversationId}] ✅ Subtab update complete`);
+    } catch (error) {
+      console.error(`🔄 [GameTabService] [${conversationId}] ❌ Failed to update subtabs:`, error);
+    }
   }
 
   /**

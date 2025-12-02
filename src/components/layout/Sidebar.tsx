@@ -136,18 +136,18 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      {/* Overlay */}
+      {/* Overlay - z-[55] ensures it's above SubTabs (z-50) but below Sidebar (z-60) */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-md z-40 lg:hidden"
+          className="fixed inset-0 bg-black/60 backdrop-blur-md z-[55] lg:hidden"
           onClick={onClose}
         />
       )}
 
-      {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-72 sm:w-80 bg-gradient-to-b from-surface to-background border-r border-surface-light/20 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
+      {/* Sidebar - z-[60] ensures it's above SubTabs expanded panel (z-50) when open on mobile */}
+      <div className={`fixed inset-y-0 left-0 z-[60] w-72 sm:w-80 bg-gradient-to-b from-surface to-background border-r border-surface-light/20 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
-      }`} style={{ zIndex: 50 }}>
+      }`} style={{ zIndex: 60 }}>
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="p-4 sm:p-6 border-b border-surface-light/20 flex-shrink-0 relative" style={{ zIndex: 10 }}>

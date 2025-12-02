@@ -134,6 +134,13 @@ const connect = (
         return;
       }
       
+      // ✅ Handle partner disconnection - PC app closed or lost connection
+      if (data.type === 'partner_disconnected' || data.type === 'partner_left' || data.type === 'peer_disconnected') {
+        console.log('🔗 [WebSocket] Partner disconnected - PC app closed or lost connection');
+        // This is passed to onMessage handler which will update UI
+        // But also log it clearly for debugging
+      }
+      
       // Log full message for screenshot types to debug
       if (data.type === 'screenshot_success' || data.type === 'screenshot_batch' || data.type === 'screenshot') {
         console.log('🔗 [WebSocket] Full screenshot message:', JSON.stringify(data).substring(0, 500));

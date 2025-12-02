@@ -54,6 +54,18 @@ const MainAppRoute: React.FC = () => {
       }
     }
     
+    // ✅ Handle partner disconnection - PC app closed or lost connection
+    if (data.type === 'partner_disconnected' || data.type === 'partner_left' || data.type === 'peer_disconnected') {
+      console.log('[MainAppRoute] ⚠️ Partner disconnected! PC app may have closed.');
+      setConnectionStatus(ConnectionStatus.DISCONNECTED);
+      setConnectionCode(null);
+      setConnectionError(null);
+      // Clear saved connection data since partner is gone
+      localStorage.removeItem('otakon_connection_code');
+      localStorage.removeItem('otakon_last_connection');
+      return;
+    }
+    
     // Handle pong (heartbeat response) - just ignore
     if (data.type === 'pong') {
       return;

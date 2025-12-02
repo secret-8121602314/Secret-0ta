@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { AuthState, ConnectionStatus, AppState, ActiveModal, PlayerProfile } from './types';
-import type { OnboardingStep } from './services/onboardingService';
 import { authService } from './services/authService';
-import { onboardingService } from './services/onboardingService';
+import { onboardingService, type OnboardingStep } from './services/onboardingService';
 import { connect, disconnect, setHandlers } from './services/websocketService';
 import { toastService } from './services/toastService';
 import { validateScreenshotDataUrl, normalizeDataUrl } from './utils/imageValidation';
@@ -89,7 +88,7 @@ function App() {
                 lastActivity: Date.now()
               }
             })
-            .eq('auth_user_id', authState.user!.authUserId);
+            .eq('auth_user_id', authState.user?.authUserId ?? '');
           if (error) {
             console.error('Failed to update app state in Supabase:', error);
           }
@@ -99,7 +98,7 @@ function App() {
       };
       updateAppState();
     }
-  }, [appState.view, appState.onboardingStatus, appState.activeSubView, appState.isHandsFreeMode, appState.showUpgradeScreen, appState.showDailyCheckin, appState.isFirstTime, authState.user]);
+  }, [appState.view, appState.onboardingStatus, appState.activeSubView, appState.isHandsFreeMode, appState.showUpgradeScreen, appState.showDailyCheckin, appState.isFirstTime, authState.user, authState.isLoading]);
 
   useEffect(() => {
     let isMounted = true;
@@ -190,6 +189,7 @@ function App() {
         authSubscriptionRef.current();
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -199,7 +199,7 @@ function App() {
       }
     }, 10000);
     return () => clearTimeout(timeout);
-  }, [isInitializing]);
+  }, [isInitializing, hasEverLoggedIn]);
 
   useEffect(() => {
     const isAuthCallback = window.location.pathname === '/auth/callback' || 
@@ -297,7 +297,7 @@ function App() {
       
       return () => clearTimeout(timeout);
     }
-  }, []);
+  }, [connectionStatus]);
 
   const handleGetStarted = () => {
     setAppState((prev: AppState) => ({ ...prev, view: 'app', onboardingStatus: 'login' }));

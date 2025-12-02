@@ -177,7 +177,8 @@ const MainApp: React.FC<MainAppProps> = ({
   
   // ✅ TIER UPGRADE: Track previous tier to detect upgrades
   const previousTierRef = useRef<string | null>(null);
-  const [_isGeneratingSubtabs, setIsGeneratingSubtabs] = useState(false);
+  const [isGeneratingSubtabs, setIsGeneratingSubtabs] = useState(false);
+  const [generatingSubtabsProgress, setGeneratingSubtabsProgress] = useState<{current: number; total: number; gameName: string} | null>(null);
   
   // ✅ PERFORMANCE: Memoize currentUser to prevent re-creating object on every render
   const currentUser = useMemo(() => user || { tier: 'free' } as User, [user]);
@@ -859,17 +860,29 @@ const MainApp: React.FC<MainAppProps> = ({
       gameTabService.generateSubtabsForExistingGameTabs(
         conversations,
         undefined, // playerProfile - could get from profileService if needed
-        (completed, total, currentGame) => {
+        async (completed, total, currentGame) => {
           console.log(`🔄 [TierChange] Progress: ${completed}/${total} - ${currentGame}`);
+          
+          // Update progress state for UI banner
+          setGeneratingSubtabsProgress({ current: completed + 1, total, gameName: currentGame });
           
           // Show progress toast for each game
           if (completed < total) {
-            toastService.info(`Generating insights (${completed + 1}/${total}): ${currentGame}`);
+            // Removed toast - now showing in banner instead
+            
+            // ✅ INCREMENTAL REFRESH: Update UI after each game to show progress immediately
+            try {
+              const updatedConvs = await ConversationService.getConversations(true);
+              setConversations(updatedConvs);
+            } catch (err) {
+              console.warn('Failed to incrementally refresh conversations:', err);
+            }
           } else {
             toastService.success(`All insights generated! ✨ Created insights for ${total} games`);
             setIsGeneratingSubtabs(false);
+            setGeneratingSubtabsProgress(null);
             
-            // Refresh conversations to get the updated subtabs
+            // Final refresh to get all updated subtabs
             ConversationService.getConversations(true).then(updatedConvs => {
               setConversations(updatedConvs);
             }).catch(err => {
@@ -880,6 +893,7 @@ const MainApp: React.FC<MainAppProps> = ({
       ).catch(error => {
         console.error('🔄 [TierChange] Failed to generate subtabs:', error);
         setIsGeneratingSubtabs(false);
+        setGeneratingSubtabsProgress(null);
         toastService.error('Error generating insights. Some game insights may not have been created.');
       });
     } else if (!wasFree && currentTier === 'free') {
@@ -1846,7 +1860,14 @@ const MainApp: React.FC<MainAppProps> = ({
 
   // Placeholder for game tab creation - will be implemented in Week 3
   const handleCreateGameTab = async (gameInfo: { gameTitle: string; genre?: string; aiResponse?: Record<string, unknown>; isUnreleased?: boolean }): Promise<Conversation | null> => {
-        try {
+    console.log('🎮 [MainApp] handleCreateGameTab called:', {
+      gameTitle: gameInfo.gameTitle,
+      currentUserTier: currentUser.tier,
+      hasAiResponse: !!gameInfo.aiResponse,
+      isUnreleased: gameInfo.isUnreleased
+    });
+    
+    try {
       const user = authService.getCurrentUser();
       if (!user) {
         console.error('User not authenticated for game tab creation');
@@ -1861,8 +1882,14 @@ const MainApp: React.FC<MainAppProps> = ({
       // Check if game tab already exists
       const existingConversation = conversations[conversationId];
       if (existingConversation) {
-                return existingConversation;
+        console.log('🎮 [MainApp] Game tab already exists in local state:', conversationId);
+        return existingConversation;
       }
+
+      console.log('🎮 [MainApp] Creating new game tab via gameTabService:', {
+        conversationId,
+        userTier: currentUser.tier
+      });
 
       // Create new game tab with AI response data
       const newGameTab = await gameTabService.createGameTab({
@@ -2722,27 +2749,11 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
         });
       }
 
-      // Handle progressive insight updates (if AI provided updates to existing subtabs)
-      if (response.progressiveInsightUpdates && response.progressiveInsightUpdates.length > 0) {
-                // Update subtabs in background (non-blocking)
-        gameTabService.updateSubTabsFromAIResponse(
-          activeConversation.id,
-          response.progressiveInsightUpdates
-        ).then(() => {
-                    // Refresh conversations to show updated subtabs
-          ConversationService.getConversations().then(updatedConversations => {
-            const freshConversations = deepCloneConversations(updatedConversations);
-            setConversations(freshConversations);
-            
-            // Update active conversation to reflect changes
-            const refreshedConversation = freshConversations[activeConversation.id];
-            if (refreshedConversation) {
-              setActiveConversation(refreshedConversation);
-            }
-          });
-        }).catch(error => {
-          console.error('📝 [MainApp] Failed to update subtabs:', error);
-        });
+      // ✅ DEFER subtab updates - will be applied AFTER migration to the correct target conversation
+      // Store the updates to apply after we know which conversation they should go to
+      const pendingSubtabUpdates = response.progressiveInsightUpdates || [];
+      if (pendingSubtabUpdates.length > 0) {
+        console.error('🎮 [MainApp] 📌 Deferring', pendingSubtabUpdates.length, 'subtab updates until after migration decision');
       }
 
       // ✅ NEW: Handle OTAKON_SUBTAB_UPDATE for automatic subtab content updates
@@ -2991,7 +3002,13 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               activeConversation.id,
               targetConversationId
             );
-                        // Update state to reflect the final changes from database
+            
+            // ✅ After migration, update subtabs with new context from the AI response
+            // This updates existing subtabs progressively, not regenerating them
+            gameTabService.updateSubtabsAfterMigration(targetConversationId, response as unknown as AIResponse)
+              .catch(error => console.error('🔄 [MainApp] Background subtab update failed:', error));
+            
+            // Update state to reflect the final changes from database
             const updatedConversations = await ConversationService.getConversations();
             setConversations(updatedConversations);
             
@@ -3058,6 +3075,29 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               } else {
                 console.error(`🎮 [MainApp] ✅ No loading subtabs for "${gameTab.title}", skipping poll`);
               }
+              
+              // ✅ CRITICAL: Apply deferred subtab updates to TARGET conversation (not source!)
+              // This ensures subtab updates go to Game B when you upload a Game B screenshot from Game A
+              if (pendingSubtabUpdates.length > 0) {
+                console.error(`🎮 [MainApp] ✅ Applying ${pendingSubtabUpdates.length} deferred subtab updates to TARGET: ${gameTab.title}`);
+                gameTabService.updateSubTabsFromAIResponse(
+                  targetConversationId,  // ✅ Use TARGET conversation, not source
+                  pendingSubtabUpdates
+                ).then(() => {
+                  console.error('🎮 [MainApp] ✅ Successfully applied deferred subtab updates to target');
+                  // Refresh to show updated subtabs
+                  ConversationService.getConversations().then(refreshedConvs => {
+                    const freshConversations = deepCloneConversations(refreshedConvs);
+                    setConversations(freshConversations);
+                    const refreshedTarget = freshConversations[targetConversationId];
+                    if (refreshedTarget) {
+                      setActiveConversation(refreshedTarget);
+                    }
+                  });
+                }).catch(error => {
+                  console.error('🎮 [MainApp] ❌ Failed to apply deferred subtab updates:', error);
+                });
+              }
             }
           } else {
             // ✅ No migration - apply progress updates to CURRENT conversation
@@ -3086,6 +3126,27 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               // Persist to database
               ConversationService.updateConversation(activeConversation.id, progressUpdates)
                 .catch(error => console.error('Failed to update progress:', error));
+            }
+            
+            // ✅ No migration - apply subtab updates to CURRENT conversation
+            if (pendingSubtabUpdates.length > 0) {
+              console.error(`🎮 [MainApp] ✅ Applying ${pendingSubtabUpdates.length} subtab updates to CURRENT: ${activeConversation.title}`);
+              gameTabService.updateSubTabsFromAIResponse(
+                activeConversation.id,
+                pendingSubtabUpdates
+              ).then(() => {
+                console.error('🎮 [MainApp] ✅ Successfully applied subtab updates');
+                ConversationService.getConversations().then(refreshedConvs => {
+                  const freshConversations = deepCloneConversations(refreshedConvs);
+                  setConversations(freshConversations);
+                  const refreshedConv = freshConversations[activeConversation.id];
+                  if (refreshedConv) {
+                    setActiveConversation(refreshedConv);
+                  }
+                });
+              }).catch(error => {
+                console.error('🎮 [MainApp] ❌ Failed to apply subtab updates:', error);
+              });
             }
             
             // ✅ No migration - set prompts for current tab (Game Hub or existing game tab)
@@ -3413,6 +3474,33 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
             <AdBanner />
           )}
 
+          {/* Subtabs Generation Progress Banner - Show during tier upgrade */}
+          {isGeneratingSubtabs && generatingSubtabsProgress && (
+            <div className="mx-3 sm:mx-4 lg:mx-6 mb-3 flex-shrink-0">
+              <div className="bg-gradient-to-r from-[#1C1C1C] to-[#252525] border border-[#FF4D4D]/30 rounded-xl px-4 py-3 shadow-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 border-2 border-[#FF4D4D] border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium text-white truncate">
+                        Generating Insights: {generatingSubtabsProgress.gameName}
+                      </span>
+                      <span className="text-xs text-[#A3A3A3] flex-shrink-0">
+                        {generatingSubtabsProgress.current}/{generatingSubtabsProgress.total}
+                      </span>
+                    </div>
+                    <div className="mt-2 h-1.5 bg-[#2E2E2E] rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] rounded-full transition-all duration-500 ease-out"
+                        style={{ width: `${(generatingSubtabsProgress.current / generatingSubtabsProgress.total) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Game Progress Bar with Game Info Button - Show for game conversations (not Game Hub) */}
           {activeConversation && !activeConversation.isGameHub && activeConversation.gameTitle && (
             <div className="px-3 sm:px-4 lg:px-6 pb-3 sm:pb-4 flex-shrink-0">
@@ -3455,8 +3543,9 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
           )}
 
           {/* Chat Thread Name - Show on mobile when sidebar is collapsed */}
+          {/* z-30 ensures it's below SubTabs expanded panel (z-40) on mobile */}
           {activeConversation && (
-            <div className="lg:hidden px-3 sm:px-4 mb-3 sm:mb-4 flex-shrink-0">
+            <div className="lg:hidden px-3 sm:px-4 mb-3 sm:mb-4 flex-shrink-0 relative z-30">
               <div className="flex items-center gap-2">
                 {/* Thread name button */}
                 <button

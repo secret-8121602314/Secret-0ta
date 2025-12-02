@@ -36,6 +36,16 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
     setActiveTab('overview');
   }, [initialGameData]);
 
+  // Enhanced close handler that resets state and returns to original game
+  const handleClose = useCallback(() => {
+    // Reset to initial game data when closing
+    setCurrentGameData(initialGameData);
+    setGameHistory([]);
+    setActiveTab('overview');
+    setSelectedImageIndex(null);
+    onClose();
+  }, [initialGameData, onClose]);
+
   // Handle clicking on a similar game
   const handleSimilarGameClick = useCallback(async (similarGame: { id: number; name: string }) => {
     if (isLoadingSimilar) {
@@ -110,7 +120,7 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
   return (
     <Modal 
       isOpen={isOpen} 
-      onClose={onClose} 
+      onClose={handleClose} 
       title={gameName || 'Game Info'}
       maxWidth="lg"
     >
@@ -144,16 +154,16 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
         </AnimatePresence>
 
         {/* Cover and Quick Info */}
-        <div className="flex gap-4">
+        <div className="flex gap-2 sm:gap-4">
           {currentGameData.cover?.url && (
             <img
               src={currentGameData.cover.url}
               alt={currentGameData.name}
-              className="w-24 h-32 sm:w-48 sm:h-64 md:w-64 md:h-80 object-cover rounded-lg shadow-lg flex-shrink-0"
+              className="w-20 h-28 sm:w-48 sm:h-64 md:w-64 md:h-80 object-cover rounded-lg shadow-lg flex-shrink-0"
             />
           )}
           <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-bold text-text-primary truncate">{currentGameData.name}</h3>
+            <h3 className="text-base sm:text-lg font-bold text-text-primary truncate">{currentGameData.name}</h3>
             
             {/* Rating */}
             <div className="mt-1">
@@ -161,25 +171,25 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
             </div>
             
             {/* Release Date */}
-            <p className="text-text-secondary text-sm mt-2">
+            <p className="text-text-secondary text-xs sm:text-sm mt-1 sm:mt-2">
               <span className="font-medium">Released:</span> {formatReleaseDate(currentGameData.first_release_date)}
             </p>
             
             {/* Developer/Publisher */}
             {developers.length > 0 && (
-              <p className="text-text-secondary text-sm">
+              <p className="text-text-secondary text-xs sm:text-sm">
                 <span className="font-medium">Developer:</span> {developers.slice(0, 2).join(', ')}
               </p>
             )}
             {publishers.length > 0 && (
-              <p className="text-text-secondary text-sm">
+              <p className="text-text-secondary text-xs sm:text-sm">
                 <span className="font-medium">Publisher:</span> {publishers.slice(0, 2).join(', ')}
               </p>
             )}
             
             {/* Genres */}
             {currentGameData.genres && currentGameData.genres.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-2">
+              <div className="flex flex-wrap gap-1 mt-1 sm:mt-2">
                 {currentGameData.genres.slice(0, 4).map(genre => (
                   <span
                     key={genre.id}

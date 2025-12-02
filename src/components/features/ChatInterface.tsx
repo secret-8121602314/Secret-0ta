@@ -800,8 +800,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       {/* Sub-tabs Section - Show for released game conversations only (not Game Hub, not unreleased) */}
       {/* Hide when Command Centre is active to prevent overlap */}
+      {/* z-40 ensures SubTabs expanded panel appears ABOVE the Chat Thread Name header on mobile */}
       {!showAutocomplete && conversation && !conversation.isGameHub && !conversation.isUnreleased && conversation.subtabs && conversation.subtabs.length > 0 && (
-        <div className="flex-shrink-0 px-3 pb-2">
+        <div className="flex-shrink-0 px-3 pb-2 relative z-40">
           <ErrorBoundary fallback={<SubTabsErrorFallback />}>
             <SubTabs
               key={`subtabs-${conversation.id}`}

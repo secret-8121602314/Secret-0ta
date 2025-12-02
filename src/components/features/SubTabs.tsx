@@ -265,6 +265,10 @@ const SubTabs: React.FC<SubTabsProps> = ({
     return null;
   }
 
+  // Check if any subtabs are still loading
+  const hasLoadingSubtabs = subtabs.some(tab => tab.status === 'loading' || tab.content === 'Loading...');
+  const allSubtabsLoading = subtabs.every(tab => tab.status === 'loading' || tab.content === 'Loading...');
+
   return (
     <div className="mb-4 relative">
       {/* Collapsible Header - Matching Latest Gaming News style */}
@@ -272,12 +276,23 @@ const SubTabs: React.FC<SubTabsProps> = ({
         onClick={toggleExpanded}
         className="w-full flex items-center justify-between mb-2 py-2 px-3 rounded-lg bg-[#1C1C1C]/50 hover:bg-[#1C1C1C] border border-[#424242]/30 hover:border-[#424242]/60 transition-all duration-200 relative z-10"
       >
-        <div className={`text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
-          isExpanded 
-            ? 'bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent' 
-            : 'text-[#A3A3A3]'
-        }`}>
-          Lore & Insights
+        <div className="flex items-center gap-2">
+          <div className={`text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
+            isExpanded 
+              ? 'bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent' 
+              : 'text-[#A3A3A3]'
+          }`}>
+            Lore & Insights
+          </div>
+          {/* Loading indicator when subtabs are being generated */}
+          {hasLoadingSubtabs && (
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 border-2 border-[#FF4D4D] border-t-transparent rounded-full animate-spin" />
+              <span className="text-[10px] text-[#A3A3A3]">
+                {allSubtabsLoading ? 'Generating...' : 'Updating...'}
+              </span>
+            </div>
+          )}
         </div>
         <svg
           className={`w-4 h-4 transition-all duration-200 ${
@@ -293,21 +308,28 @@ const SubTabs: React.FC<SubTabsProps> = ({
         </svg>
       </button>
 
-      {/* Collapsible Content - Overlay positioned above the button */}
+      {/* Collapsible Content - Overlay positioned above the button
+          Z-INDEX STACKING ORDER (mobile):
+          - z-[60]: Sidebar (when open)
+          - z-[55]: Sidebar backdrop (when open)
+          - z-50: SubTabs expanded panel (this)
+          - z-40: SubTabs container (in ChatInterface)
+          - z-30: Chat Thread Name header (in MainApp)
+      */}
       {isExpanded && (
         <div
           className="absolute bottom-full left-0 right-0 mb-2 z-50 animate-fade-in"
           style={{
-            // ✅ Responsive max-height: uses CSS clamp for mobile-friendly sizing
+            // Responsive max-height: mobile-friendly sizing
             // Mobile: leaves 300px for header, input bar, button, and safe area
             // Desktop: allows more content to be visible
             maxHeight: 'min(calc(100vh - 300px), 500px)',
           }}
         >
           <div className="bg-[#1C1C1C] border border-[#424242]/60 rounded-xl shadow-2xl h-full flex flex-col" style={{ maxHeight: 'inherit' }}>
-          {/* Tab Headers */}
-          <div className="flex items-center gap-2 p-2 sm:p-3 border-b border-[#424242]/40 flex-shrink-0">
-            <div className="flex flex-wrap gap-1 sm:gap-2 flex-1">
+          {/* Tab Headers - Horizontally scrollable on mobile */}
+          <div className="border-b border-[#424242]/40 flex-shrink-0">
+            <div className="flex gap-1.5 sm:gap-2 p-2 sm:p-3 overflow-x-auto scrollbar-thin scrollbar-thumb-[#424242] scrollbar-track-transparent">
               {subtabs.map((tab) => (
                 <button
                   key={tab.id}
