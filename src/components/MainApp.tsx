@@ -497,18 +497,25 @@ const MainApp: React.FC<MainAppProps> = ({
     const unsubscribe = authService.subscribe((authState) => {
       const newUserId = authState.user?.authUserId || null;
       
-      // Only update if user ID changed and we're not logging out
-      if (newUserId !== currentUserId && !isLoggingOutRef.current) {
+      // ✅ FIX: If a new user logs in, ALWAYS update - clear logout flag if needed
+      // This fixes race condition where login happens before logout flag is cleared
+      if (newUserId && newUserId !== currentUserId) {
         console.log('🔍 [MainApp] Auth state change detected:', {
           previousUserId: currentUserId,
           newUserId,
-          isLoading: authState.isLoading
+          isLoading: authState.isLoading,
+          wasLoggingOut: isLoggingOutRef.current
         });
         
-        // Update current user ID
-        if (newUserId) {
-          setCurrentUserId(newUserId);
+        // ✅ CRITICAL: Clear logout flag when new user logs in
+        // This prevents loadData from being blocked
+        if (isLoggingOutRef.current) {
+          console.log('🔍 [MainApp] New user login detected during logout - clearing logout flag');
+          isLoggingOutRef.current = false;
         }
+        
+        // Update current user ID to trigger loadData
+        setCurrentUserId(newUserId);
       }
     });
 
@@ -739,11 +746,25 @@ const MainApp: React.FC<MainAppProps> = ({
         if (Object.keys(conversations).length > 0 || activeConversation) {
                     setIsInitializing(false);
         } else {
-          // Try to get user and load conversations one more time
+          // Try to get user and trigger load one more time
                     const currentUser = authService.getCurrentUser();
           if (currentUser) {
+            console.log('🔍 [MainApp] Safety timeout - forcing user load');
             setUser(currentUser);
             UserService.setCurrentUser(currentUser);
+            
+            // ✅ FIX: Force trigger loadData by updating currentUserId if different
+            if (currentUser.authUserId !== currentUserId) {
+              // Clear any stale logout flag
+              isLoggingOutRef.current = false;
+              hasLoadedConversationsRef.current = false;
+              setCurrentUserId(currentUser.authUserId);
+            } else {
+              setIsInitializing(false);
+            }
+          } else {
+            // No user found after 3s - force exit loading state
+            console.log('🔍 [MainApp] Safety timeout - no user found, exiting loading');
             setIsInitializing(false);
           }
         }
