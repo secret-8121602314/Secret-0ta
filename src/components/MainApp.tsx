@@ -2388,7 +2388,45 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
     if (tabManagementService.hasTabCommand(message)) {
       const command = tabManagementService.parseTabCommand(message, activeConversation);
       if (command) {
-                console.log('📝 [MainApp] Command description:', tabManagementService.describeCommand(command));
+        console.log('📝 [MainApp] Command description:', tabManagementService.describeCommand(command));
+        
+        // ✅ DELETE COMMANDS: Handle directly without AI (no credit cost)
+        if (command.type === 'delete') {
+          console.log('🗑️ [MainApp] Delete command detected - handling directly without AI');
+          
+          // Add AI response message confirming the delete
+          const deleteConfirmMessage = {
+            id: `msg_${Date.now() + 1}`,
+            content: `✅ Deleted "${command.tabName}" from your insights.`,
+            role: 'assistant' as const,
+            timestamp: Date.now(),
+          };
+          
+          // Delete the subtab directly
+          await handleDeleteSubtab(command.tabId);
+          
+          // Add confirmation message
+          setConversations(prev => {
+            const updated = { ...prev };
+            if (updated[activeConversation.id]) {
+              updated[activeConversation.id] = {
+                ...updated[activeConversation.id],
+                messages: [...updated[activeConversation.id].messages, deleteConfirmMessage],
+                updatedAt: Date.now(),
+              };
+              setActiveConversation(updated[activeConversation.id]);
+            }
+            return updated;
+          });
+          
+          // Save confirmation message to DB
+          conversationStore.addMessage(activeConversation.id, deleteConfirmMessage).catch(err => 
+            console.error('Failed to save delete confirmation:', err)
+          );
+          
+          // Return early - no AI call, no credits consumed
+          return;
+        }
       }
     }
 
