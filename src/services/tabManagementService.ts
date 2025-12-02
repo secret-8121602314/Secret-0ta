@@ -120,26 +120,17 @@ class TabManagementService {
   }
 
   /**
-   * Get available tab names for autocomplete
+   * Get available tabs for autocomplete (returns objects with id and title)
    */
-  public getAvailableTabNames(conversation: Conversation): string[] {
+  public getAvailableTabNames(conversation: Conversation): Array<{ id: string; title: string }> {
     if (!conversation.subtabs || conversation.subtabs.length === 0) {
       return [];
     }
 
     return conversation.subtabs.map(tab => ({
       id: tab.id,
-      title: tab.title,
-      // Create multiple search variations
-      variations: [
-        tab.id,
-        tab.title,
-        tab.id.replace(/_/g, ' '),
-        tab.title.toLowerCase()
-      ]
-    }))
-    // Return primary names (tab IDs for consistency)
-    .map(tab => tab.id);
+      title: tab.title
+    }));
   }
 
   /**

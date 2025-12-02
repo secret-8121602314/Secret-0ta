@@ -13,6 +13,7 @@ import { UserService } from '../services/userService';
 import { SupabaseService } from '../services/supabaseService';
 import { supabase } from '../lib/supabase';
 import { tabManagementService } from '../services/tabManagementService';
+import { subtabsService } from '../services/subtabsService';
 import { ttsService } from '../services/ttsService';
 import { toastService } from '../services/toastService';
 import { MessageRoutingService } from '../services/messageRoutingService';
@@ -1966,6 +1967,94 @@ const MainApp: React.FC<MainAppProps> = ({
     }
   }, [feedbackMessageId, activeConversation]);
 
+  // ✅ SUBTAB MANAGEMENT: Handle modify and delete actions
+  const handleModifySubtab = useCallback(async (
+    tabId: string, 
+    tabTitle: string, 
+    suggestion: string, 
+    currentContent: string
+  ) => {
+    if (!activeConversation) return;
+    
+    console.log('✏️ [MainApp] Modifying subtab:', { tabId, tabTitle, suggestion });
+    
+    try {
+      // 1. Update the subtab status to loading
+      const updatedSubtabs = activeConversation.subtabs?.map(subtab => 
+        subtab.id === tabId 
+          ? { ...subtab, status: 'loading' as const, content: 'Regenerating based on your feedback...' }
+          : subtab
+      ) || [];
+      
+      // Update conversation with loading state
+      setConversations(prev => ({
+        ...prev,
+        [activeConversation.id]: {
+          ...activeConversation,
+          subtabs: updatedSubtabs,
+          updatedAt: Date.now()
+        }
+      }));
+      
+      // 2. Create a special prompt that instructs the AI to regenerate the subtab
+      const regeneratePrompt = `[SYSTEM: Regenerate the "${tabTitle}" insight tab based on user feedback]
+
+User's feedback for the "${tabTitle}" tab:
+"${suggestion}"
+
+Previous content:
+${currentContent.slice(0, 500)}${currentContent.length > 500 ? '...' : ''}
+
+Please regenerate the "${tabTitle}" content incorporating the user's feedback. Make sure to use the OTAKON INSIGHT_UPDATE tag to update the tab.`;
+      
+      // 3. Send as a system-level message to regenerate (use ref to avoid circular dependency)
+      if (handleSendMessageRef.current) {
+        await handleSendMessageRef.current(regeneratePrompt);
+      }
+      
+      toastService.info(`Regenerating "${tabTitle}"...`);
+    } catch (error) {
+      console.error('[MainApp] Error modifying subtab:', error);
+      toastService.error(`Failed to modify "${tabTitle}"`);
+    }
+  }, [activeConversation, setConversations]);
+  
+  const handleDeleteSubtab = useCallback(async (tabId: string) => {
+    if (!activeConversation) return;
+    
+    const subtabToDelete = activeConversation.subtabs?.find(s => s.id === tabId);
+    if (!subtabToDelete) return;
+    
+    console.log('🗑️ [MainApp] Deleting subtab:', { tabId, title: subtabToDelete.title });
+    
+    try {
+      // 1. Delete from database
+      const success = await subtabsService.deleteSubtab(activeConversation.id, tabId);
+      
+      if (!success) {
+        throw new Error('Failed to delete subtab from database');
+      }
+      
+      // 2. Update local state
+      const updatedSubtabs = activeConversation.subtabs?.filter(s => s.id !== tabId) || [];
+      
+      setConversations(prev => ({
+        ...prev,
+        [activeConversation.id]: {
+          ...activeConversation,
+          subtabs: updatedSubtabs,
+          subtabsOrder: updatedSubtabs.map(s => s.id),
+          updatedAt: Date.now()
+        }
+      }));
+      
+      toastService.success(`"${subtabToDelete.title}" deleted`);
+    } catch (error) {
+      console.error('[MainApp] Error deleting subtab:', error);
+      toastService.error(`Failed to delete "${subtabToDelete.title}"`);
+    }
+  }, [activeConversation, setConversations]);
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleSendMessage = async (message: string, imageUrl?: string) => {
     // ✅ RATE LIMITING: Prevent rapid-fire duplicate requests
@@ -3323,6 +3412,8 @@ const MainApp: React.FC<MainAppProps> = ({
                   onDeleteQueuedMessage={handleDeleteQueuedMessage}
                   onEditMessage={handleEditMessage}
                   onFeedback={handleFeedback}
+                  onModifySubtab={handleModifySubtab}
+                  onDeleteSubtab={handleDeleteSubtab}
                 />
               </ErrorBoundary>
             </div>

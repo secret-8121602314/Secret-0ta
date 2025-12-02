@@ -330,6 +330,8 @@ interface ChatInterfaceProps {
   onDeleteQueuedMessage?: (messageId: string) => void;
   onEditMessage?: (messageId: string, content: string) => void;
   onFeedback?: (messageId: string, type: 'up' | 'down') => void;
+  onModifySubtab?: (tabId: string, tabTitle: string, suggestion: string, currentContent: string) => void;
+  onDeleteSubtab?: (tabId: string) => void;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -354,14 +356,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onDeleteQueuedMessage,
   onEditMessage,
   onFeedback,
+  onModifySubtab,
+  onDeleteSubtab,
 }) => {
   const [message, setMessage] = useState(initialMessage);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
-  const [autocompleteSuggestions, setAutocompleteSuggestions] = useState<string[]>([]);
+  const [autocompleteSuggestions, setAutocompleteSuggestions] = useState<Array<{ id: string; title: string }>>([]);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
+  // Two-step command flow: first select tab, then select command
+  const [selectedTab, setSelectedTab] = useState<{ id: string; title: string } | null>(null);
+  const [commandStep, setCommandStep] = useState<'selectTab' | 'selectCommand'>('selectTab');
   // Mobile: collapsed by default, Desktop: expanded by default
   const [isQuickActionsExpanded, setIsQuickActionsExpanded] = useState(() => {
     return window.innerWidth > 640; // Collapsed on mobile (<=640px), expanded on desktop
@@ -437,51 +444,127 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     onMessageChange?.(newValue);
 
     // Check for @ command to show autocomplete
-    if (conversation && newValue.startsWith('@')) {
+    if (conversation && newValue === '@') {
+      // Just typed @, show tab selection
       const availableTabs = tabManagementService.getAvailableTabNames(conversation);
       if (availableTabs.length > 0) {
         setAutocompleteSuggestions(availableTabs);
         setShowAutocomplete(true);
         setSelectedSuggestionIndex(0);
+        setCommandStep('selectTab');
+        setSelectedTab(null);
+      } else {
+        setShowAutocomplete(false);
+      }
+    } else if (conversation && newValue.startsWith('@') && !newValue.includes(' /')) {
+      // Typing tab name, filter suggestions
+      const availableTabs = tabManagementService.getAvailableTabNames(conversation);
+      const searchTerm = newValue.slice(1).toLowerCase();
+      const filteredTabs = availableTabs.filter(tab => 
+        tab.title.toLowerCase().includes(searchTerm)
+      );
+      if (filteredTabs.length > 0) {
+        setAutocompleteSuggestions(filteredTabs);
+        setShowAutocomplete(true);
+        setSelectedSuggestionIndex(0);
+        setCommandStep('selectTab');
       } else {
         setShowAutocomplete(false);
       }
     } else {
       setShowAutocomplete(false);
+      setCommandStep('selectTab');
+      setSelectedTab(null);
     }
   };
 
-  // Handle suggestion selection
-  const handleSelectSuggestion = (tabId: string) => {
-    setMessage(`@${tabId} `);
+  // Handle tab selection (first step)
+  const handleSelectTab = (tab: { id: string; title: string }) => {
+    setSelectedTab(tab);
+    setCommandStep('selectCommand');
+    setSelectedSuggestionIndex(0);
+  };
+
+  // Handle command selection (second step)
+  const handleSelectCommand = (command: 'update' | 'modify' | 'delete') => {
+    if (!selectedTab) return;
+    
+    if (command === 'update') {
+      setMessage(`@${selectedTab.title} `);
+    } else if (command === 'modify') {
+      setMessage(`@${selectedTab.title} /modify `);
+    } else if (command === 'delete') {
+      setMessage(`@${selectedTab.title} /delete`);
+    }
+    
     setShowAutocomplete(false);
+    setCommandStep('selectTab');
+    setSelectedTab(null);
     textareaRef.current?.focus();
+  };
+
+  // Handle going back to tab selection
+  const handleBackToTabs = () => {
+    setCommandStep('selectTab');
+    setSelectedTab(null);
+    setSelectedSuggestionIndex(0);
+  };
+
+  // Legacy handler for backward compatibility
+  const handleSelectSuggestion = (tab: { id: string; title: string }) => {
+    handleSelectTab(tab);
   };
 
   // Handle key down events
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Handle autocomplete navigation
-    if (showAutocomplete && autocompleteSuggestions.length > 0) {
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setSelectedSuggestionIndex(prev => 
-          prev < autocompleteSuggestions.length - 1 ? prev + 1 : 0
-        );
-        return;
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setSelectedSuggestionIndex(prev => 
-          prev > 0 ? prev - 1 : autocompleteSuggestions.length - 1
-        );
-        return;
-      } else if (e.key === 'Tab' || (e.key === 'Enter' && showAutocomplete)) {
-        e.preventDefault();
-        handleSelectSuggestion(autocompleteSuggestions[selectedSuggestionIndex]);
-        return;
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        setShowAutocomplete(false);
-        return;
+    if (showAutocomplete) {
+      // Step 1: Tab selection
+      if (commandStep === 'selectTab' && autocompleteSuggestions.length > 0) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setSelectedSuggestionIndex(prev => 
+            prev < autocompleteSuggestions.length - 1 ? prev + 1 : 0
+          );
+          return;
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setSelectedSuggestionIndex(prev => 
+            prev > 0 ? prev - 1 : autocompleteSuggestions.length - 1
+          );
+          return;
+        } else if (e.key === 'Enter' && autocompleteSuggestions[selectedSuggestionIndex]) {
+          e.preventDefault();
+          handleSelectTab(autocompleteSuggestions[selectedSuggestionIndex]);
+          return;
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          setShowAutocomplete(false);
+          setCommandStep('selectTab');
+          setSelectedTab(null);
+          return;
+        }
+      }
+      // Step 2: Command selection
+      else if (commandStep === 'selectCommand' && selectedTab) {
+        const commands = ['update', 'modify', 'delete'] as const;
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setSelectedSuggestionIndex(prev => prev < 2 ? prev + 1 : 0);
+          return;
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setSelectedSuggestionIndex(prev => prev > 0 ? prev - 1 : 2);
+          return;
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          handleSelectCommand(commands[selectedSuggestionIndex]);
+          return;
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          handleBackToTabs();
+          return;
+        }
       }
     }
 
@@ -699,7 +782,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       {/* Removed - will show preview inside the input form instead */}
 
       {/* Sub-tabs Section - Show for released game conversations only (not Game Hub, not unreleased) */}
-      {conversation && !conversation.isGameHub && !conversation.isUnreleased && conversation.subtabs && conversation.subtabs.length > 0 && (
+      {/* Hide when Command Centre is active to prevent overlap */}
+      {!showAutocomplete && conversation && !conversation.isGameHub && !conversation.isUnreleased && conversation.subtabs && conversation.subtabs.length > 0 && (
         <div className="flex-shrink-0 px-3 pb-2">
           <ErrorBoundary fallback={<SubTabsErrorFallback />}>
             <SubTabs
@@ -707,6 +791,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               subtabs={conversation.subtabs}
               isLoading={isLoading}
               onFeedback={onFeedback}
+              onModifyTab={onModifySubtab}
+              onDeleteTab={onDeleteSubtab}
             />
           </ErrorBoundary>
         </div>
@@ -789,44 +875,123 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             boxShadow: '0 0 20px rgba(255, 77, 77, 0.3), 0 0 40px rgba(255, 171, 64, 0.2), 0 0 60px rgba(0, 0, 0, 0.1)'
           }}>
           
-          {/* Autocomplete Dropdown */}
-          {showAutocomplete && autocompleteSuggestions.length > 0 && (
+          {/* Autocomplete Dropdown - Command Centre */}
+          {showAutocomplete && (
             <div 
               ref={autocompleteRef}
-              className="absolute bottom-full mb-2 left-3 right-3 bg-[#1C1C1C] border border-[#424242] rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto"
+              className="absolute bottom-full mb-2 left-0 right-0 bg-[#1C1C1C] border border-[#424242] rounded-xl shadow-2xl overflow-hidden"
+              style={{ zIndex: 9999, backgroundColor: '#1C1C1C' }}
             >
-              <div className="p-2">
-                <div className="text-xs text-[#A3A3A3] mb-2 px-2">
-                  Select a subtab to update:
-                </div>
-                {autocompleteSuggestions.map((tabId, index) => {
-                  const tab = conversation?.subtabs?.find(t => t.id === tabId);
-                  return (
+              {/* Step 1: Select Tab */}
+              {commandStep === 'selectTab' && autocompleteSuggestions.length > 0 && (
+                <>
+                  <div className="px-3 py-2 border-b border-[#424242]/50 bg-gradient-to-r from-[#E53A3A]/10 to-transparent">
+                    <div className="text-xs font-semibold text-[#E53A3A] uppercase tracking-wider">
+                      📋 Command Centre - Select a subtab
+                    </div>
+                  </div>
+                  <div className="max-h-48 overflow-y-auto">
+                    {autocompleteSuggestions.map((tab, index) => (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => handleSelectTab(tab)}
+                        className={`w-full text-left px-4 py-3 transition-colors border-b border-[#424242]/20 last:border-b-0 ${
+                          index === selectedSuggestionIndex
+                            ? 'bg-[#E53A3A]/20'
+                            : 'hover:bg-[#2A2A2A]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-[#E53A3A] font-bold text-lg">@</span>
+                          <span className="text-[#F5F5F5] font-medium">{tab.title}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="px-3 py-2 border-t border-[#424242]/50 bg-[#1A1A1A]/80">
+                    <div className="text-xs text-[#888888] flex items-center gap-4">
+                      <span>↑↓ Navigate</span>
+                      <span>Enter Select</span>
+                      <span>Esc Cancel</span>
+                    </div>
+                  </div>
+                </>
+              )}
+              
+              {/* Step 2: Select Command */}
+              {commandStep === 'selectCommand' && selectedTab && (
+                <>
+                  <div className="px-3 py-2 border-b border-[#424242]/50 bg-gradient-to-r from-[#E53A3A]/10 to-transparent">
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs font-semibold text-[#E53A3A] uppercase tracking-wider">
+                        📋 @{selectedTab.title} - Select action
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleBackToTabs}
+                        className="text-xs text-[#888888] hover:text-[#F5F5F5] transition-colors"
+                      >
+                        ← Back
+                      </button>
+                    </div>
+                  </div>
+                  <div className="py-1">
                     <button
-                      key={tabId}
                       type="button"
-                      onClick={() => handleSelectSuggestion(tabId)}
-                      className={`w-full text-left px-3 py-2 rounded transition-colors ${
-                        index === selectedSuggestionIndex
-                          ? 'bg-[#E53A3A]/20 border border-[#E53A3A]/60'
-                          : 'hover:bg-[#2A2A2A] border border-transparent'
+                      onClick={() => handleSelectCommand('update')}
+                      className={`w-full text-left px-4 py-3 transition-colors hover:bg-[#2A2A2A] ${
+                        selectedSuggestionIndex === 0 ? 'bg-[#E53A3A]/20' : ''
                       }`}
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="text-[#E53A3A] font-mono text-sm">@{tabId}</span>
-                        {tab && (
-                          <span className="text-[#888888] text-xs">- {tab.title}</span>
-                        )}
+                      <div className="flex items-center gap-3">
+                        <span className="text-green-400 text-lg">✏️</span>
+                        <div>
+                          <span className="text-[#F5F5F5] font-medium">Update</span>
+                          <p className="text-xs text-[#888888]">Add new information to this tab</p>
+                        </div>
                       </div>
                     </button>
-                  );
-                })}
-              </div>
-              <div className="px-3 py-2 border-t border-[#424242]/30 bg-[#1A1A1A]/50">
-                <div className="text-xs text-[#888888]">
-                  Use ↑↓ to navigate, Tab/Enter to select, Esc to cancel
-                </div>
-              </div>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectCommand('modify')}
+                      className={`w-full text-left px-4 py-3 transition-colors hover:bg-[#2A2A2A] ${
+                        selectedSuggestionIndex === 1 ? 'bg-[#E53A3A]/20' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-blue-400 text-lg">🔧</span>
+                        <div>
+                          <span className="text-[#F5F5F5] font-medium">/modify</span>
+                          <p className="text-xs text-[#888888]">Change tab name or restructure content</p>
+                        </div>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectCommand('delete')}
+                      className={`w-full text-left px-4 py-3 transition-colors hover:bg-red-500/20 ${
+                        selectedSuggestionIndex === 2 ? 'bg-red-500/20' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-red-400 text-lg">🗑️</span>
+                        <div>
+                          <span className="text-red-400 font-medium">/delete</span>
+                          <p className="text-xs text-[#888888]">Remove this tab permanently</p>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                  <div className="px-3 py-2 border-t border-[#424242]/50 bg-[#1A1A1A]/80">
+                    <div className="text-xs text-[#888888] flex items-center gap-4">
+                      <span>↑↓ Navigate</span>
+                      <span>Enter Select</span>
+                      <span>Esc Back</span>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
 

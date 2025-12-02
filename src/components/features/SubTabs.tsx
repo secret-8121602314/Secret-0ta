@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { SubTab } from '../../types';
 import { MarkdownRenderer } from './MarkdownRenderer';
 
@@ -67,6 +67,8 @@ interface SubTabsProps {
   onTabClick?: (tabId: string) => void;
   isLoading?: boolean;
   onFeedback?: (tabId: string, type: 'up' | 'down') => void;
+  onModifyTab?: (tabId: string, tabTitle: string, suggestion: string, currentContent: string) => void;
+  onDeleteTab?: (tabId: string) => void;
 }
 
 const SubTabs: React.FC<SubTabsProps> = ({ 
@@ -74,14 +76,113 @@ const SubTabs: React.FC<SubTabsProps> = ({
   activeTabId, 
   onTabClick, 
   isLoading = false,
-  onFeedback
+  onFeedback,
+  onModifyTab,
+  onDeleteTab
 }) => {
   const [localActiveTab, setLocalActiveTab] = useState<string>(activeTabId || subtabs[0]?.id || '');
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [hasUserInteracted, setHasUserInteracted] = useState<boolean>(false);
+  
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tabId: string; tabTitle: string } | null>(null);
+  const contextMenuRef = useRef<HTMLDivElement>(null);
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  
+  // Modify modal state
+  const [modifyModal, setModifyModal] = useState<{ tabId: string; tabTitle: string; currentContent: string } | null>(null);
+  const [modifySuggestion, setModifySuggestion] = useState('');
+  const [isModifying, setIsModifying] = useState(false);
+  const modifyInputRef = useRef<HTMLTextAreaElement>(null);
 
   const currentActiveTab = activeTabId || localActiveTab;
   const activeTab = subtabs.find(tab => tab.id === currentActiveTab);
+  
+  // Close context menu on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (contextMenuRef.current && !contextMenuRef.current.contains(e.target as Node)) {
+        setContextMenu(null);
+      }
+    };
+    
+    if (contextMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('touchstart', handleClickOutside);
+      };
+    }
+  }, [contextMenu]);
+  
+  // Focus modify input when modal opens
+  useEffect(() => {
+    if (modifyModal && modifyInputRef.current) {
+      modifyInputRef.current.focus();
+    }
+  }, [modifyModal]);
+  
+  // Handle modify submit
+  const handleModifySubmit = useCallback(() => {
+    if (!modifyModal || !modifySuggestion.trim() || isModifying) return;
+    
+    setIsModifying(true);
+    
+    // Call the parent handler with all context
+    if (onModifyTab) {
+      onModifyTab(
+        modifyModal.tabId,
+        modifyModal.tabTitle,
+        modifySuggestion.trim(),
+        modifyModal.currentContent
+      );
+    }
+    
+    // Close modal and reset state
+    setModifyModal(null);
+    setModifySuggestion('');
+    setIsModifying(false);
+  }, [modifyModal, modifySuggestion, isModifying, onModifyTab]);
+  
+  // Handle delete confirmation
+  const handleDeleteConfirm = useCallback((tabId: string) => {
+    if (onDeleteTab) {
+      onDeleteTab(tabId);
+    }
+    setContextMenu(null);
+  }, [onDeleteTab]);
+
+  // Handle right-click on subtab (desktop)
+  const handleContextMenu = (e: React.MouseEvent, tab: SubTab) => {
+    e.preventDefault();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      tabId: tab.id,
+      tabTitle: tab.title
+    });
+  };
+  
+  // Handle long-press on subtab (mobile)
+  const handleTouchStart = (e: React.TouchEvent, tab: SubTab) => {
+    longPressTimer.current = setTimeout(() => {
+      const touch = e.touches[0];
+      setContextMenu({
+        x: touch.clientX,
+        y: touch.clientY,
+        tabId: tab.id,
+        tabTitle: tab.title
+      });
+    }, 500); // 500ms hold to trigger
+  };
+  
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
 
   // 🔍 DEBUG: Log subtabs state on every render
   console.log('🎨 [SubTabs] Rendering:', {
@@ -164,12 +265,18 @@ const SubTabs: React.FC<SubTabsProps> = ({
         onClick={toggleExpanded}
         className="w-full flex items-center justify-between mb-2 py-2 px-3 rounded-lg bg-[#1C1C1C]/50 hover:bg-[#1C1C1C] border border-[#424242]/30 hover:border-[#424242]/60 transition-all duration-200 relative z-10"
       >
-        <div className="text-xs font-semibold text-[#A3A3A3] uppercase tracking-wider">
+        <div className={`text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
+          isExpanded 
+            ? 'bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent' 
+            : 'text-[#A3A3A3]'
+        }`}>
           Lore & Insights
         </div>
         <svg
-          className={`w-4 h-4 text-[#A3A3A3] transition-transform duration-200 ${
-            isExpanded ? 'rotate-180' : ''
+          className={`w-4 h-4 transition-all duration-200 ${
+            isExpanded 
+              ? 'rotate-180 text-[#FF4D4D]' 
+              : 'text-[#A3A3A3]'
           }`}
           fill="none"
           stroke="currentColor"
@@ -184,7 +291,7 @@ const SubTabs: React.FC<SubTabsProps> = ({
         <div
           className="absolute bottom-full left-0 right-0 mb-2 z-50 animate-fade-in"
         >
-          <div className="bg-[#1C1C1C]/95 backdrop-blur-md border border-[#424242]/60 rounded-xl shadow-2xl">
+          <div className="bg-[#1C1C1C] border border-[#424242]/60 rounded-xl shadow-2xl">
           {/* Tab Headers */}
           <div className="flex items-center gap-2 p-2 sm:p-3 border-b border-[#424242]/40">
             <div className="flex flex-wrap gap-1 sm:gap-2 flex-1">
@@ -192,8 +299,12 @@ const SubTabs: React.FC<SubTabsProps> = ({
                 <button
                   key={tab.id}
                   onClick={() => handleTabClick(tab.id)}
+                  onContextMenu={(e) => handleContextMenu(e, tab)}
+                  onTouchStart={(e) => handleTouchStart(e, tab)}
+                  onTouchEnd={handleTouchEnd}
+                  onTouchMove={handleTouchEnd}
                   className={`
-                    px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200 whitespace-nowrap
+                    px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200 whitespace-nowrap select-none
                     ${currentActiveTab === tab.id
                       ? 'bg-[#FF4D4D] text-white shadow-lg'
                       : 'bg-[#2E2E2E]/60 text-[#A3A3A3] hover:bg-[#424242]/60 hover:text-[#F5F5F5]'
@@ -201,6 +312,7 @@ const SubTabs: React.FC<SubTabsProps> = ({
                     ${tab.isNew ? 'ring-2 ring-[#FF4D4D]/50' : ''}
                   `}
                   disabled={isLoading}
+                  title="Right-click or hold for options"
                 >
                   <div className="flex items-center gap-2">
                     {tab.isNew && (
@@ -219,21 +331,16 @@ const SubTabs: React.FC<SubTabsProps> = ({
             </div>
           </div>
 
-          {/* Tab Content - Type-based styling */}
+          {/* Tab Content - Matching header section styling */}
           {activeTab && (
             <div 
-              className="p-4 max-h-64 overflow-y-auto transition-all duration-300 rounded-b-xl"
-              style={{
-                backgroundColor: getSubtabStyle(activeTab.type).bgTint,
-                borderTop: `1px solid ${getSubtabStyle(activeTab.type).borderTint}`
-              }}
+              className="p-4 max-h-64 overflow-y-auto transition-all duration-300 rounded-b-xl bg-[#2E2E2E]/40"
             >
               {activeTab.status === 'loading' || (!activeTab.content && isLoading) ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="flex items-center gap-3 text-[#A3A3A3]">
                     <div 
-                      className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin"
-                      style={{ borderColor: getSubtabStyle(activeTab.type).accent, borderTopColor: 'transparent' }}
+                      className="w-5 h-5 border-2 border-[#A3A3A3] border-t-transparent rounded-full animate-spin"
                     />
                     <span>Loading {activeTab.title}...</span>
                   </div>
@@ -287,6 +394,149 @@ const SubTabs: React.FC<SubTabsProps> = ({
           )}
         </div>
       </div>
+      )}
+      
+      {/* Right-click Context Menu */}
+      {contextMenu && (
+        <div
+          ref={contextMenuRef}
+          className="fixed bg-[#1C1C1C] border border-[#424242] rounded-lg shadow-2xl overflow-hidden"
+          style={{
+            left: contextMenu.x,
+            top: contextMenu.y,
+            zIndex: 10000
+          }}
+        >
+          <div className="px-3 py-2 border-b border-[#424242]/50 bg-[#2A2A2A]">
+            <span className="text-xs font-semibold text-[#A3A3A3] uppercase tracking-wider">
+              {contextMenu.tabTitle}
+            </span>
+          </div>
+          <div className="py-1">
+            <button
+              onClick={() => {
+                // Find the tab to get its current content
+                const tab = subtabs.find(t => t.id === contextMenu.tabId);
+                setModifyModal({
+                  tabId: contextMenu.tabId,
+                  tabTitle: contextMenu.tabTitle,
+                  currentContent: tab?.content || ''
+                });
+                setContextMenu(null);
+              }}
+              className="w-full px-4 py-2 text-left text-sm text-[#F5F5F5] hover:bg-[#E53A3A]/20 transition-colors flex items-center gap-3"
+            >
+              <svg className="w-4 h-4 text-[#E53A3A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              <span>Modify Tab</span>
+            </button>
+            <button
+              onClick={() => handleDeleteConfirm(contextMenu.tabId)}
+              className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-500/20 transition-colors flex items-center gap-3"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              <span>Delete Tab</span>
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* Modify Modal Overlay */}
+      {modifyModal && (
+        <div 
+          className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setModifyModal(null);
+              setModifySuggestion('');
+            }
+          }}
+        >
+          <div 
+            className="bg-[#1C1C1C] border border-[#424242] rounded-xl shadow-2xl w-full max-w-lg overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[#424242]/50 bg-[#2A2A2A]">
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-[#E53A3A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                <span className="font-semibold text-white">Modify "{modifyModal.tabTitle}"</span>
+              </div>
+              <button
+                onClick={() => {
+                  setModifyModal(null);
+                  setModifySuggestion('');
+                }}
+                className="p-1 rounded-lg text-[#A3A3A3] hover:text-white hover:bg-[#424242]/50 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Modal Body */}
+            <div className="p-4 space-y-4">
+              <p className="text-sm text-[#A3A3A3]">
+                Describe what changes you'd like to see in this tab. The AI will regenerate the content based on your feedback.
+              </p>
+              
+              <textarea
+                ref={modifyInputRef}
+                value={modifySuggestion}
+                onChange={(e) => setModifySuggestion(e.target.value)}
+                placeholder="e.g., Make it more detailed, focus on combat strategies, include item locations..."
+                className="w-full h-32 px-3 py-2 bg-[#2A2A2A] border border-[#424242] rounded-lg text-white placeholder-[#6B7280] resize-none focus:outline-none focus:ring-2 focus:ring-[#E53A3A]/50 focus:border-[#E53A3A]"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                    handleModifySubmit();
+                  }
+                }}
+              />
+              
+              <p className="text-xs text-[#6B7280]">
+                Press Ctrl+Enter to submit
+              </p>
+            </div>
+            
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-3 px-4 py-3 border-t border-[#424242]/50 bg-[#2A2A2A]">
+              <button
+                onClick={() => {
+                  setModifyModal(null);
+                  setModifySuggestion('');
+                }}
+                className="px-4 py-2 text-sm font-medium text-[#A3A3A3] hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleModifySubmit}
+                disabled={!modifySuggestion.trim() || isModifying}
+                className="px-4 py-2 text-sm font-medium bg-[#E53A3A] text-white rounded-lg hover:bg-[#CC2E2E] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+              >
+                {isModifying ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Regenerating...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Regenerate
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -451,10 +451,43 @@ class GameTabService {
         'Fast Travel Optimization': 'pro_tips',
         'Progression Balance': 'next_session_plan',
         
+        // Souls-like specific tabs
+        'Death Recovery Strategy': 'death_recovery',
+        'NPC Questlines': 'npc_questlines',
+        'Level Layout Insights': 'level_layout',
+        
         // RPG-specific tabs
         'Companion Management': 'companion_management',
         'Side Activity Guide': 'side_activity_guide',
         'NPC Interactions': 'npc_interactions',
+        
+        // Metroidvania-specific tabs
+        'New Ability Unlocked': 'ability_unlocks',
+        'Backtracking Guide': 'backtracking_guide',
+        'Map Completion': 'map_completion',
+        'Sequence Breaking Options': 'sequence_breaking',
+        'Upgrade Priority': 'upgrade_priority',
+        
+        // Open-World specific tabs
+        'Collectible Hunting': 'collectible_hunting',
+        'Exploration Route': 'exploration_route',
+        
+        // Survival-Crafting specific tabs
+        'Resource Locations': 'resource_locations',
+        'Base Building Guide': 'base_building',
+        'Crafting Priority': 'crafting_priority',
+        'Survival Tips': 'survival_tips',
+        'Exploration Targets': 'exploration_targets',
+        'Progression Roadmap': 'progression_roadmap',
+        'Danger Warnings': 'danger_warnings',
+        'Multiplayer Synergy': 'multiplayer_synergy',
+        'Seasonal Preparation': 'seasonal_preparation',
+        
+        // Horror specific tabs
+        'Resource Management': 'resource_management',
+        'Safe Zone Mapping': 'safe_zone_mapping',
+        'Sanity Management': 'sanity_management',
+        'Progressive Fear Adaptation': 'fear_adaptation',
         
         // FPS-specific tabs
         'Loadout Analysis': 'loadout_analysis',
