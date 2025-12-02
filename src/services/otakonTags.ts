@@ -44,6 +44,35 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
   cleanContent = cleanContent.replace(/\*\*\s*([A-Za-z ]+?)\s*:\s*\*\*/g, '**$1:**');
 
   // ---------------------------------------------------------
+  // 🆕 NEWS/GAMING RESPONSE FORMATTING FIXES
+  // ---------------------------------------------------------
+  
+  // 7. Fix bold markers split across lines: "**Title\n**" → "**Title**\n"
+  cleanContent = cleanContent.replace(/\*\*([^*\n]+)\n\*\*/g, '**$1**\n');
+  
+  // 8. Fix mixed ### and **: "###** Title" → "### Title" or "###**Title**" → "### Title"
+  cleanContent = cleanContent.replace(/###\s*\*\*\s*/g, '### ');
+  cleanContent = cleanContent.replace(/##\s*\*\*\s*/g, '## ');
+  
+  // 9. Fix orphaned ** at start of lines (often from malformed bold)
+  cleanContent = cleanContent.replace(/^\*\*\s*$/gm, '');
+  cleanContent = cleanContent.replace(/\n\*\*\s*\n/g, '\n\n');
+  
+  // 10. Fix "** Release Date:**" → "**Release Date:**"
+  cleanContent = cleanContent.replace(/\*\*\s+Release\s+Date\s*:\s*\*\*/gi, '**Release Date:**');
+  cleanContent = cleanContent.replace(/\*\*\s+The\s+Verdict\s*:\s*\*\*/gi, '**The Verdict:**');
+  cleanContent = cleanContent.replace(/\*\*\s+Key\s+Features\s*:\s*\*\*/gi, '**Key Features:**');
+  
+  // 11. Clean orphaned bold markers (unmatched **)
+  const boldCount = (cleanContent.match(/\*\*/g) || []).length;
+  if (boldCount % 2 !== 0) {
+    // Remove trailing orphaned **
+    cleanContent = cleanContent.replace(/\*\*\s*$/g, '');
+    // Remove leading orphaned **
+    cleanContent = cleanContent.replace(/^\s*\*\*/g, '');
+  }
+
+  // ---------------------------------------------------------
 
   console.log(`🏷️ [otakonTags] Parsing response (${rawContent.length} chars)...`);
   

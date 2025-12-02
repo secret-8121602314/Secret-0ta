@@ -5,10 +5,12 @@
 
 import { supabase } from '../lib/supabase';
 import { authService } from './authService';
+import { correctionService, type CorrectionSubmission } from './ai/correctionService';
+import type { CorrectionType, CorrectionScope, AICorrection } from './ai/behaviorService';
 
 export type FeedbackType = 'up' | 'down';
 export type ContentType = 'message' | 'subtab';
-export type FeedbackCategory = 'not_helpful' | 'incorrect' | 'off_topic' | 'inappropriate' | 'other';
+export type FeedbackCategory = 'not_helpful' | 'incorrect' | 'off_topic' | 'inappropriate' | 'correction' | 'other';
 
 export interface FeedbackData {
   messageId: string;
@@ -17,6 +19,16 @@ export interface FeedbackData {
   contentType: ContentType;
   category?: FeedbackCategory;
   comment?: string;
+}
+
+export interface CorrectionData {
+  messageId: string;
+  conversationId: string;
+  originalResponse: string;
+  correctionText: string;
+  correctionType: CorrectionType;
+  correctionScope: CorrectionScope;
+  gameTitle: string | null;
 }
 
 class FeedbackService {
@@ -120,6 +132,100 @@ class FeedbackService {
       category,
       comment,
     });
+  }
+
+  /**
+   * Submit a correction to AI behavior
+   * This goes through AI validation before being applied
+   */
+  async submitCorrection(data: CorrectionData): Promise<{ 
+    success: boolean; 
+    error?: string; 
+    correction?: AICorrection;
+    rateLimitRemaining?: number;
+  }> {
+    try {
+      const user = authService.getCurrentUser();
+      if (!user?.authUserId) {
+        console.warn('[FeedbackService] User not authenticated for correction');
+        return { success: false, error: 'User not authenticated' };
+      }
+
+      // Check rate limit first
+      const rateLimit = correctionService.getRateLimitStatus();
+      if (!rateLimit.allowed) {
+        return { 
+          success: false, 
+          error: 'Daily correction limit reached. Try again tomorrow.',
+          rateLimitRemaining: 0
+        };
+      }
+
+      // Submit through correctionService which handles validation
+      const submission: CorrectionSubmission = {
+        originalResponse: data.originalResponse,
+        correctionText: data.correctionText,
+        type: data.correctionType,
+        scope: data.correctionScope,
+        gameTitle: data.gameTitle,
+        messageId: data.messageId,
+        conversationId: data.conversationId,
+      };
+
+      const result = await correctionService.submitCorrection(user.authUserId, submission);
+      
+      if (result.success) {
+        console.log('[FeedbackService] Correction submitted successfully:', {
+          messageId: data.messageId,
+          type: data.correctionType,
+          scope: data.correctionScope
+        });
+        
+        return { 
+          success: true, 
+          correction: result.correction,
+          rateLimitRemaining: correctionService.getRateLimitStatus().remaining
+        };
+      }
+
+      return { 
+        success: false, 
+        error: result.error,
+        rateLimitRemaining: correctionService.getRateLimitStatus().remaining
+      };
+    } catch (error) {
+      console.error('[FeedbackService] Error submitting correction:', error);
+      return { success: false, error: 'Failed to submit correction' };
+    }
+  }
+
+  /**
+   * Get rate limit status for corrections
+   */
+  getCorrectionRateLimit(): { allowed: boolean; remaining: number } {
+    return correctionService.getRateLimitStatus();
+  }
+
+  /**
+   * Get all corrections for the current user
+   */
+  async getUserCorrections(): Promise<AICorrection[]> {
+    const user = authService.getCurrentUser();
+    if (!user?.authUserId) {
+      return [];
+    }
+    return correctionService.getAllCorrections(user.authUserId);
+  }
+
+  /**
+   * Toggle a correction's active status
+   */
+  async toggleCorrection(correctionId: string, isActive: boolean): Promise<boolean> {
+    const user = authService.getCurrentUser();
+    if (!user?.authUserId) {
+      return false;
+    }
+    return correctionService.toggleCorrection(user.authUserId, correctionId, isActive);
   }
 
   /**

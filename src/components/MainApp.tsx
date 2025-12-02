@@ -6,6 +6,7 @@ import { authService } from '../services/authService';
 import { aiService } from '../services/aiService';
 import { useActiveSession } from '../hooks/useActiveSession';
 import { suggestedPromptsService } from '../services/suggestedPromptsService';
+import { shownPromptsService } from '../services/ai/shownPromptsService';
 import { sessionSummaryService } from '../services/sessionSummaryService';
 import { gameTabService } from '../services/gameTabService';
 import { errorRecoveryService } from '../services/errorRecoveryService';
@@ -1969,11 +1970,15 @@ const MainApp: React.FC<MainAppProps> = ({
   const handleEditMessage = useCallback((messageId: string, content: string) => {
     console.log('✏️ [MainApp] Setting up edit for message:', messageId);
     
-    if (!activeConversation) return;
+    if (!activeConversation) {
+      return;
+    }
     
     // Find the message to ensure it exists
     const messageIndex = activeConversation.messages.findIndex(m => m.id === messageId);
-    if (messageIndex === -1) return;
+    if (messageIndex === -1) {
+      return;
+    }
     
     // Store which message is being edited - will be used on submit to remove old messages
     setEditingMessageId(messageId);
@@ -1987,9 +1992,10 @@ const MainApp: React.FC<MainAppProps> = ({
   // ✅ FEEDBACK: Handle thumbs up/down on AI responses
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [feedbackMessageId, setFeedbackMessageId] = useState<string | null>(null);
+  const [feedbackOriginalResponse, setFeedbackOriginalResponse] = useState<string>('');
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   
-  const handleFeedback = useCallback(async (messageId: string, type: 'up' | 'down') => {
+  const handleFeedback = useCallback(async (messageId: string, type: 'up' | 'down', messageContent?: string) => {
     // Determine content type based on ID format:
     // - Message IDs start with 'msg_' (e.g., 'msg_1732836123456')
     // - Subtab IDs are snake_case identifiers (e.g., 'story_so_far', 'missed_items')
@@ -1997,7 +2003,9 @@ const MainApp: React.FC<MainAppProps> = ({
     
     console.log('📊 [MainApp] Feedback:', { messageId, type, contentType });
     
-    if (!activeConversation) return;
+    if (!activeConversation) {
+      return;
+    }
     
     if (type === 'up') {
       // Quick positive feedback - submit immediately
@@ -2014,12 +2022,15 @@ const MainApp: React.FC<MainAppProps> = ({
     } else {
       // Negative feedback - open modal for details
       setFeedbackMessageId(messageId);
+      setFeedbackOriginalResponse(messageContent || '');
       setFeedbackModalOpen(true);
     }
   }, [activeConversation]);
   
   const handleSubmitNegativeFeedback = useCallback(async (category: string, comment: string) => {
-    if (!feedbackMessageId || !activeConversation) return;
+    if (!feedbackMessageId || !activeConversation) {
+      return;
+    }
     
     // Determine content type based on ID format (same logic as handleFeedback)
     const contentType = feedbackMessageId.startsWith('msg_') ? 'message' : 'subtab';
@@ -2028,7 +2039,7 @@ const MainApp: React.FC<MainAppProps> = ({
     
     try {
       const { feedbackService } = await import('../services/feedbackService');
-      type FeedbackCategoryType = 'not_helpful' | 'incorrect' | 'off_topic' | 'inappropriate' | 'other';
+      type FeedbackCategoryType = 'not_helpful' | 'incorrect' | 'off_topic' | 'inappropriate' | 'correction' | 'other';
       const result = await feedbackService.submitNegativeFeedback(
         feedbackMessageId,
         activeConversation.id,
@@ -2039,6 +2050,11 @@ const MainApp: React.FC<MainAppProps> = ({
       
       if (result.success) {
         toastService.success('Thanks for helping us improve! 🙏');
+        // ✅ Confirm the feedback in the UI by calling the message component's confirm callback
+        const messageElement = document.querySelector(`[data-message-id="${feedbackMessageId}"]`);
+        if (messageElement && (messageElement as any).__confirmFeedback) {
+          (messageElement as any).__confirmFeedback('down');
+        }
       } else {
         toastService.error('Failed to submit feedback');
       }
@@ -2049,8 +2065,46 @@ const MainApp: React.FC<MainAppProps> = ({
       setIsSubmittingFeedback(false);
       setFeedbackModalOpen(false);
       setFeedbackMessageId(null);
+      setFeedbackOriginalResponse('');
     }
   }, [feedbackMessageId, activeConversation]);
+
+  // 🎓 CORRECTION: Handle AI behavior corrections
+  const handleSubmitCorrection = useCallback(async (
+    correctionText: string,
+    correctionType: 'factual' | 'style' | 'terminology' | 'behavior',
+    correctionScope: 'global' | 'game'
+  ): Promise<{ success: boolean; error?: string }> => {
+    if (!feedbackMessageId || !activeConversation) {
+      return { success: false, error: 'No message selected' };
+    }
+    
+    setIsSubmittingFeedback(true);
+    
+    try {
+      const { feedbackService } = await import('../services/feedbackService');
+      const result = await feedbackService.submitCorrection({
+        messageId: feedbackMessageId,
+        conversationId: activeConversation.id,
+        originalResponse: feedbackOriginalResponse,
+        correctionText,
+        correctionType,
+        correctionScope,
+        gameTitle: activeConversation.isGameHub ? null : (activeConversation.gameTitle ?? null),
+      });
+      
+      if (result.success) {
+        toastService.success('🎓 OTAKON will learn from this! Thanks for teaching!');
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('[MainApp] Error submitting correction:', error);
+      return { success: false, error: 'Failed to submit correction' };
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
+  }, [feedbackMessageId, feedbackOriginalResponse, activeConversation]);
 
   // ✅ SUBTAB MANAGEMENT: Handle modify and delete actions
   const handleModifySubtab = useCallback(async (
@@ -2059,7 +2113,9 @@ const MainApp: React.FC<MainAppProps> = ({
     suggestion: string, 
     currentContent: string
   ) => {
-    if (!activeConversation) return;
+    if (!activeConversation) {
+      return;
+    }
     
     console.log('✏️ [MainApp] Modifying subtab:', { tabId, tabTitle, suggestion });
     
@@ -2110,10 +2166,14 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
   }, [activeConversation, setConversations]);
   
   const handleDeleteSubtab = useCallback(async (tabId: string) => {
-    if (!activeConversation) return;
+    if (!activeConversation) {
+      return;
+    }
     
     const subtabToDelete = activeConversation.subtabs?.find(s => s.id === tabId);
-    if (!subtabToDelete) return;
+    if (!subtabToDelete) {
+      return;
+    }
     
     console.log('🗑️ [MainApp] Deleting subtab:', { tabId, title: subtabToDelete.title });
     
@@ -2680,8 +2740,24 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
       const suggestionsToUse = response.followUpPrompts || response.suggestions;
       console.log('🔍 [MainApp] suggestionsToUse (before processing):', suggestionsToUse);
       
-      const processedSuggestions = suggestedPromptsService.processAISuggestions(suggestionsToUse);
+      let processedSuggestions = suggestedPromptsService.processAISuggestions(suggestionsToUse);
       console.log('🔍 [MainApp] processedSuggestions (after processing):', processedSuggestions);
+      
+      // 🔄 Filter out already shown prompts to prevent repetition
+      if (user?.authUserId && processedSuggestions.length > 0) {
+        try {
+          const gameTitle = activeConversation?.isGameHub ? null : (activeConversation?.gameTitle ?? null);
+          processedSuggestions = await shownPromptsService.filterNewPrompts(
+            user.authUserId,
+            processedSuggestions,
+            'followup',
+            gameTitle
+          );
+          console.log('🔍 [MainApp] processedSuggestions (after shown filter):', processedSuggestions);
+        } catch (filterError) {
+          console.warn('[MainApp] Failed to filter shown prompts, using unfiltered:', filterError);
+        }
+      }
       
       // ✅ DEBUG: Log all response fields for progress tracking
       console.log('📊 [MainApp] AI Response received:', {
@@ -3051,11 +3127,16 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               
               // ✅ Set suggested prompts AFTER tab switch (based on FINAL active tab)
               if (processedSuggestions.length > 0) {
-                                setSuggestedPrompts(processedSuggestions);
+                setSuggestedPrompts(processedSuggestions);
+                // 🔄 Record shown prompts to prevent future repetition
+                if (user?.authUserId) {
+                  shownPromptsService.recordShownPrompts(user.authUserId, processedSuggestions, 'followup', gameTab.gameTitle ?? null)
+                    .catch(err => console.warn('[MainApp] Failed to record shown prompts:', err));
+                }
               } else {
                 // Use fallback suggestions based on the GAME TAB, not Game Hub
                 const fallbackSuggestions = suggestedPromptsService.getFallbackSuggestions(gameTab.id, false);
-                                setSuggestedPrompts(fallbackSuggestions);
+                setSuggestedPrompts(fallbackSuggestions);
               }
               
               // Poll for subtab updates if they're still loading
@@ -3153,9 +3234,15 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
             if (processedSuggestions.length > 0) {
               console.log('✅ [MainApp] Setting AI-provided suggestions (no migration):', processedSuggestions);
               setSuggestedPrompts(processedSuggestions);
+              // 🔄 Record shown prompts to prevent future repetition
+              if (user?.authUserId) {
+                const gameTitle = activeConversation.isGameHub ? null : (activeConversation.gameTitle ?? null);
+                shownPromptsService.recordShownPrompts(user.authUserId, processedSuggestions, 'followup', gameTitle)
+                  .catch(err => console.warn('[MainApp] Failed to record shown prompts:', err));
+              }
             } else {
               const fallbackSuggestions = suggestedPromptsService.getFallbackSuggestions(activeConversation.id, activeConversation.isGameHub);
-                            setSuggestedPrompts(fallbackSuggestions);
+              setSuggestedPrompts(fallbackSuggestions);
             }
           }
         } else {
@@ -3682,9 +3769,14 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
         onClose={() => {
           setFeedbackModalOpen(false);
           setFeedbackMessageId(null);
+          setFeedbackOriginalResponse('');
         }}
         onSubmit={handleSubmitNegativeFeedback}
+        onSubmitCorrection={handleSubmitCorrection}
         isSubmitting={isSubmittingFeedback}
+        isAuthenticated={!!currentUser?.authUserId}
+        originalResponse={feedbackOriginalResponse}
+        gameTitle={activeConversation?.isGameHub ? null : activeConversation?.gameTitle}
       />
 
       {/* Settings Context Menu */}

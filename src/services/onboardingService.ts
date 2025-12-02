@@ -194,6 +194,77 @@ class OnboardingService {
     return Boolean(value);
   }
 
+  /**
+   * ✅ OPTIMIZATION: Compute next onboarding step from User object directly
+   * This avoids a redundant database call since User already contains all onboarding fields
+   * Use this when you already have the User object (e.g., after auth)
+   */
+  getNextOnboardingStepFromUser(user: {
+    hasSeenSplashScreens: boolean;
+    hasSeenHowToUse: boolean;
+    hasSeenFeaturesConnected: boolean;
+    hasSeenProFeatures: boolean;
+    pcConnected: boolean;
+    pcConnectionSkipped: boolean;
+  }): OnboardingStep {
+    const hasSeenSplashScreens = this.getBooleanValue(user.hasSeenSplashScreens);
+    const hasSeenHowToUse = this.getBooleanValue(user.hasSeenHowToUse);
+    const hasSeenFeaturesConnected = this.getBooleanValue(user.hasSeenFeaturesConnected);
+    const hasSeenProFeatures = this.getBooleanValue(user.hasSeenProFeatures);
+    const pcConnected = this.getBooleanValue(user.pcConnected);
+    const pcConnectionSkipped = this.getBooleanValue(user.pcConnectionSkipped);
+
+    // Check onboarding steps in order (matching old build logic)
+    if (!hasSeenSplashScreens) {
+      return 'initial';
+    }
+
+    // After initial splash, go to how-to-use (PC connection)
+    if (hasSeenSplashScreens && !hasSeenHowToUse) {
+      return 'how-to-use';
+    }
+
+    // If PC connection was successful, show features-connected
+    if (hasSeenHowToUse && pcConnected && !hasSeenFeaturesConnected) {
+      return 'features-connected';
+    }
+
+    // If PC connection was skipped, go to pro-features
+    if (hasSeenHowToUse && !pcConnected && pcConnectionSkipped && !hasSeenProFeatures) {
+      return 'pro-features';
+    }
+
+    // If PC connection failed (not skipped), go back to how-to-use
+    if (hasSeenHowToUse && !pcConnected && !pcConnectionSkipped) {
+      return 'how-to-use';
+    }
+
+    // After features-connected, go to pro-features
+    if (hasSeenFeaturesConnected && !hasSeenProFeatures) {
+      return 'pro-features';
+    }
+
+    // After pro features, onboarding is complete (profile setup is now an overlay)
+    if (hasSeenProFeatures) {
+      return 'complete';
+    }
+
+    // Fallback for unexpected state
+    console.error('🎯 [OnboardingService] ERROR: Unexpected onboarding flow state', {
+      hasSeenSplashScreens,
+      hasSeenHowToUse,
+      hasSeenFeaturesConnected,
+      hasSeenProFeatures,
+      pcConnected,
+      pcConnectionSkipped
+    });
+    return 'how-to-use';
+  }
+
+  /**
+   * @deprecated Use getNextOnboardingStepFromUser() when User object is available
+   * This makes an extra DB call - only use when you don't have User data
+   */
   async getNextOnboardingStep(userId: string): Promise<OnboardingStep> {
     try {
             const status = await this.getOnboardingStatus(userId);

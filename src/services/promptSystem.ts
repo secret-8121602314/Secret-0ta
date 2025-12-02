@@ -1,5 +1,86 @@
 import { Conversation, User, PlayerProfile } from '../types';
 import { profileAwareTabService } from './profileAwareTabService';
+import { behaviorService, type AICorrection } from './ai/behaviorService';
+
+// ============================================================================
+// AI BEHAVIOR CONTEXT (Non-repetitive responses & corrections)
+// ============================================================================
+
+/**
+ * Builds context for non-repetitive responses and user corrections
+ */
+export interface BehaviorContext {
+  previousTopics: string[];
+  corrections: AICorrection[];
+  scope: 'game' | 'global' | 'off';
+}
+
+/**
+ * Build the behavior context string for injection into prompts
+ */
+export function buildBehaviorContextString(context: BehaviorContext | null): string {
+  if (!context || context.scope === 'off') {
+    return '';
+  }
+  
+  const parts: string[] = [];
+  
+  // Previous topics (for non-repetitive responses)
+  if (context.previousTopics.length > 0) {
+    parts.push(`
+**📚 PREVIOUSLY DISCUSSED TOPICS (Avoid Repetition):**
+The user has already received information about these topics in recent conversations. 
+DO NOT repeat the same information - provide NEW angles, deeper insights, or different aspects.
+Topics covered: ${context.previousTopics.slice(0, 15).join(', ')}
+`);
+  }
+  
+  // User corrections
+  if (context.corrections.length > 0) {
+    const correctionLines = context.corrections.map(c => {
+      const scope = c.scope === 'global' ? '(Global)' : `(${c.gameTitle || 'This Game'})`;
+      return `- ${scope} Instead of "${c.originalSnippet.slice(0, 50)}...", prefer: "${c.correctionText}"`;
+    });
+    
+    parts.push(`
+**✏️ USER CORRECTIONS (Apply these preferences):**
+The user has provided the following corrections to improve your responses:
+${correctionLines.join('\n')}
+`);
+  }
+  
+  return parts.join('\n');
+}
+
+/**
+ * Fetch behavior context for a user
+ */
+export async function getBehaviorContext(
+  authUserId: string,
+  gameTitle: string | null
+): Promise<BehaviorContext | null> {
+  try {
+    const preferences = await behaviorService.getAIPreferences(authUserId);
+    
+    if (preferences.responseHistoryScope === 'off') {
+      return { previousTopics: [], corrections: [], scope: 'off' };
+    }
+    
+    const [topics, corrections] = await Promise.all([
+      behaviorService.getResponseTopics(authUserId, gameTitle, preferences.responseHistoryScope),
+      behaviorService.getActiveCorrections(authUserId, gameTitle, true),
+    ]);
+    
+    return {
+      previousTopics: topics,
+      corrections,
+      scope: preferences.responseHistoryScope,
+    };
+  } catch (error) {
+    console.error('[PromptSystem] Error fetching behavior context:', error);
+    return null;
+  }
+}
 
 // ============================================================================
 // GAMING FOCUS GUARDRAILS
@@ -157,6 +238,33 @@ When answering questions about gaming news, releases, reviews, or trailers:
 - Focus on recent news (within last 2 weeks)
 - **SUGGESTIONS for news responses MUST reference specific games/events you just covered**
 
+**TRAILER REQUESTS - INCLUDE VIDEO LINKS:**
+When the user asks about game trailers, gameplay videos, or announcements:
+- ALWAYS include direct YouTube links to official trailers when available
+- Format links as: [Watch Trailer](https://youtube.com/watch?v=VIDEO_ID)
+- Use official channels: PlayStation, Xbox, Nintendo, IGN, GameSpot, or publisher channels
+- Include multiple trailer types when relevant: Announcement, Gameplay, Story, Launch trailers
+- Example format:
+  ### Game Title
+  **Release Date:** Month Day, Year
+  Description of the trailer and what it reveals...
+  
+  🎬 [Watch Official Trailer](https://youtube.com/watch?v=XXXXX) | [Gameplay Reveal](https://youtube.com/watch?v=XXXXX)
+
+**CRITICAL MARKDOWN FORMATTING RULES - FOLLOW EXACTLY:**
+1. Bold text must be on the SAME LINE: "**Game Title**" NOT "**Game Title\n**"
+2. NO spaces after opening bold markers: "**Release Date:**" NOT "** Release Date:**"
+3. NO spaces before closing bold markers: "**Title**" NOT "**Title **"
+4. Don't mix ### with **: use "### Game Title" OR "**Game Title**" but NOT "###** Game Title"
+5. Each game entry should follow this EXACT format:
+
+### Game Title
+**Release Date:** Month Day, Year (Platforms)
+Description paragraph here...
+
+6. Keep bold markers and their content on a single line
+7. Use line breaks BETWEEN sections, not INSIDE bold markers
+
 **IMPORTANT - When to use game tags:**
 ✅ User asks: "How do I beat the first boss in Elden Ring?" → Include [OTAKON_GAME_ID: Elden Ring] [OTAKON_CONFIDENCE: high] [OTAKON_GENRE: Action RPG]
 ✅ User asks: "What's the best build for Cyberpunk 2077?" → Include [OTAKON_GAME_ID: Cyberpunk 2077] [OTAKON_CONFIDENCE: high] [OTAKON_GENRE: Action RPG]
@@ -175,6 +283,8 @@ ${OTAKON_TAG_DEFINITIONS}
 - Make responses engaging and immersive
 - NEVER include underscore lines (___), horizontal rules, or timestamps at the end of responses
 - End responses naturally without decorative separators
+- Use clean markdown: proper spacing around bold/italic, headings on their own lines
+- For lists of games/reviews, use consistent formatting throughout
 `;
 };
 
@@ -293,6 +403,18 @@ Examples of good suggestions:
 **Tag Definitions:**
 ${OTAKON_TAG_DEFINITIONS}
 
+**CRITICAL MARKDOWN FORMATTING RULES - FOLLOW EXACTLY:**
+1. Bold text must be on the SAME LINE: "**Game Title**" NOT "**Game Title\n**"
+2. NO spaces after opening bold markers: "**Release Date:**" NOT "** Release Date:**"
+3. NO spaces before closing bold markers: "**Title**" NOT "**Title **"
+4. Don't mix ### with **: use "### Heading" OR "**Bold Text**" but NOT "###** Mixed"
+5. Keep bold markers and their content on a single line
+6. Use line breaks BETWEEN sections, not INSIDE bold markers
+7. For game info, use this format:
+   ### Section Title
+   **Label:** Value
+   Description paragraph...
+
 **Response Style:**
 - Match the tone and atmosphere of ${conversation.gameTitle}
 - Be spoiler-free beyond current progress
@@ -301,6 +423,7 @@ ${OTAKON_TAG_DEFINITIONS}
 - Start with "Hint:" for game-specific queries
 - Include lore and story context appropriate to player's progress
 - When updating subtabs, seamlessly integrate the update into your response
+- Use clean, consistent markdown formatting throughout
 `;
 };
 
@@ -382,6 +505,13 @@ Example: [OTAKON_PROGRESS: 35] for a player in early-mid game
 - Use structured format with section headers
 - Focus on GAME LORE, SIGNIFICANCE, and USEFUL CONTEXT rather than describing obvious UI elements
 - Make the response immersive and engaging
+
+**CRITICAL MARKDOWN FORMATTING RULES - FOLLOW EXACTLY:**
+1. Bold text must be on the SAME LINE: "**Hint:**" NOT "**Hint:\n**"
+2. NO spaces after opening bold markers: "**Lore:**" NOT "** Lore:**"
+3. NO spaces before closing bold markers: "**Text**" NOT "**Text **"
+4. Keep bold markers and their content on a single line
+5. Use line breaks BETWEEN sections, not INSIDE bold markers
 
 **MANDATORY FORMAT FOR IMAGES - Use this exact structure with bold section headers:**
 **Hint:** [Game Name] - [Brief, actionable hint about what the player should do or focus on]
@@ -469,6 +599,7 @@ ${OTAKON_TAG_DEFINITIONS}
 
 /**
  * Determines the correct persona and returns the master prompt.
+ * Now includes behavior context for non-repetitive responses and user corrections.
  */
 export const getPromptForPersona = (
   conversation: Conversation,
@@ -476,15 +607,28 @@ export const getPromptForPersona = (
   user: User,
   isActiveSession: boolean,
   hasImages: boolean,
-  playerProfile?: PlayerProfile
+  playerProfile?: PlayerProfile,
+  behaviorContext?: BehaviorContext | null
 ): string => {
+  // Build behavior context string
+  const behaviorContextString = behaviorContext 
+    ? buildBehaviorContextString(behaviorContext)
+    : '';
+  
+  let basePrompt: string;
+  
   if (hasImages) {
-    return getScreenshotAnalysisPrompt(conversation, userMessage, user, playerProfile);
+    basePrompt = getScreenshotAnalysisPrompt(conversation, userMessage, user, playerProfile);
+  } else if (!conversation.isGameHub && conversation.gameTitle) {
+    basePrompt = getGameCompanionPrompt(conversation, userMessage, user, isActiveSession, playerProfile);
+  } else {
+    basePrompt = getGeneralAssistantPrompt(userMessage);
   }
   
-  if (!conversation.isGameHub && conversation.gameTitle) {
-    return getGameCompanionPrompt(conversation, userMessage, user, isActiveSession, playerProfile);
+  // Inject behavior context at the beginning of the prompt
+  if (behaviorContextString) {
+    return behaviorContextString + '\n\n' + basePrompt;
   }
   
-  return getGeneralAssistantPrompt(userMessage);
+  return basePrompt;
 };

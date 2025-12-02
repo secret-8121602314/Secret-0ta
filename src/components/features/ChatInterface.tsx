@@ -51,7 +51,7 @@ interface ChatMessageComponentProps {
   onDownloadImage: (url: string, index: number) => void;
   onDeleteQueuedMessage?: (messageId: string) => void;
   onEditMessage?: (messageId: string, content: string) => void;
-  onFeedback?: (messageId: string, type: 'up' | 'down') => void;
+  onFeedback?: (messageId: string, type: 'up' | 'down', messageContent?: string) => void;
   isLatestAIMessage?: boolean;
 }
 
@@ -76,10 +76,42 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
     : null;
   
   // Handle feedback with local state tracking
+  // For thumbs up: immediate feedback
+  // For thumbs down: opens modal, feedback only registers on modal submit (handled via callback)
   const handleFeedback = (type: 'up' | 'down') => {
-    setFeedbackGiven(type);
-    onFeedback?.(message.id, type);
+    if (type === 'up') {
+      // Thumbs up can toggle off, or register new
+      if (feedbackGiven === 'up') {
+        // Already liked - do nothing (can't change after submission)
+        return;
+      }
+      setFeedbackGiven('up');
+    }
+    // For down: don't set state yet - wait for modal submission
+    // The state will be set via setFeedbackConfirmed callback
+    
+    // Pass message content for corrections when thumbs down
+    onFeedback?.(message.id, type, type === 'down' ? message.content : undefined);
   };
+  
+  // Callback to confirm feedback was submitted (used for thumbs down after modal)
+  const setFeedbackConfirmed = (type: 'up' | 'down') => {
+    setFeedbackGiven(type);
+  };
+  
+  // Expose the confirmation method via the message element for parent to call
+  useEffect(() => {
+    const messageElement = document.querySelector(`[data-message-id="${message.id}"]`);
+    if (messageElement) {
+      (messageElement as HTMLElement).dataset.confirmFeedback = 'ready';
+      (messageElement as any).__confirmFeedback = setFeedbackConfirmed;
+    }
+    return () => {
+      if (messageElement) {
+        delete (messageElement as any).__confirmFeedback;
+      }
+    };
+  }, [message.id]);
   
   // Render session summary card if this is a summary message
   if (sessionSummaryData) {
@@ -332,7 +364,7 @@ interface ChatInterfaceProps {
   isSidebarOpen?: boolean;
   onDeleteQueuedMessage?: (messageId: string) => void;
   onEditMessage?: (messageId: string, content: string) => void;
-  onFeedback?: (messageId: string, type: 'up' | 'down') => void;
+  onFeedback?: (messageId: string, type: 'up' | 'down', messageContent?: string) => void;
   onModifySubtab?: (tabId: string, tabTitle: string, suggestion: string, currentContent: string) => void;
   onDeleteSubtab?: (tabId: string) => void;
 }
@@ -392,12 +424,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   // ✅ NEW: Scroll to show the START of new AI messages instead of the end
   const scrollToLatestMessage = () => {
-    if (!conversation || !messagesContainerRef.current) {return;}
+    if (!conversation || !messagesContainerRef.current) {
+      return;
+    }
     
     const messages = conversation.messages;
     const messageCount = messages.length;
     
-    if (messageCount === 0) return;
+    if (messageCount === 0) {
+      return;
+    }
     
     const lastMessage = messages[messageCount - 1];
     
@@ -492,7 +528,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   // Handle command selection (second step)
   const handleSelectCommand = (command: 'update' | 'modify' | 'delete') => {
-    if (!selectedTab) return;
+    if (!selectedTab) {
+      return;
+    }
     
     if (command === 'update') {
       setMessage(`@${selectedTab.title} `);
@@ -515,10 +553,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     setSelectedSuggestionIndex(0);
   };
 
-  // Legacy handler for backward compatibility
-  const handleSelectSuggestion = (tab: { id: string; title: string }) => {
+  // Legacy handler for backward compatibility - prefix with _ to mark as intentionally unused
+  const _handleSelectSuggestion = (tab: { id: string; title: string }) => {
     handleSelectTab(tab);
   };
+  // Suppress unused warning
+  void _handleSelectSuggestion;
 
   // Handle key down events
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

@@ -124,7 +124,9 @@ function App() {
         if (newAuthState.user) {
           setHasEverLoggedIn(true);
           const savedAppState = newAuthState.user.appState || {};
-          const nextStep = await onboardingService.getNextOnboardingStep(newAuthState.user.authUserId);
+          // ✅ OPTIMIZATION: Use synchronous method - User already has onboarding data from get_complete_user_data
+          // This eliminates a redundant get_user_onboarding_status RPC call (~200-500ms savings)
+          const nextStep = onboardingService.getNextOnboardingStepFromUser(newAuthState.user);
           console.log('🎯 [App] Next onboarding step:', nextStep);
           
           // Returning users: Skip onboarding if they've completed it before

@@ -4,13 +4,15 @@ import { AIResponse, Conversation, User, insightTabsConfig, PlayerProfile } from
 import type { ViteImportMeta, UserProfileData } from '../types/enhanced';
 import { cacheService } from './cacheService';
 import { aiCacheService } from './aiCacheService';
-import { getPromptForPersona } from './promptSystem';
+import { getPromptForPersona, getBehaviorContext, type BehaviorContext } from './promptSystem';
 import { errorRecoveryService } from './errorRecoveryService';
 import { characterImmersionService } from './characterImmersionService';
 import { profileAwareTabService } from './profileAwareTabService';
 import { toastService } from './toastService';
 import { supabase } from '../lib/supabase';
 import { ConversationService } from './conversationService';
+import { behaviorService } from './ai/behaviorService';
+import { correctionService } from './ai/correctionService';
 
 // ? SECURITY FIX: Use Edge Function proxy instead of exposed API key
 const USE_EDGE_FUNCTION = true; // Set to true to use secure server-side proxy
@@ -527,6 +529,17 @@ class AIService {
         endpoint: '/generateContent'
       }).catch(error => console.warn('Failed to log API usage:', error));
       
+      // 🔄 Extract and store response topics for non-repetitive AI behavior
+      if (user?.authUserId && aiResponse.content) {
+        const gameTitle = conversation.isGameHub ? null : (conversation.gameTitle ?? null);
+        const extractedTopics = correctionService.extractTopicsFromResponse(aiResponse.content);
+        if (extractedTopics.length > 0) {
+          behaviorService.addResponseTopics(user.authUserId, gameTitle, extractedTopics)
+            .then(() => console.log('📚 [AIService] Stored', extractedTopics.length, 'topics for behavior tracking'))
+            .catch(err => console.warn('[AIService] Failed to store response topics:', err));
+        }
+      }
+      
       return aiResponse;
 
     } catch (error) {
@@ -610,8 +623,30 @@ class AIService {
       return { ...cachedResponse, metadata: { ...cachedResponse.metadata, fromCache: true } };
     }
 
-    // Get enhanced prompt with context
-    const basePrompt = getPromptForPersona(conversation, userMessage, user, isActiveSession, hasImages);
+    // Fetch behavior context for non-repetitive responses and user corrections
+    let behaviorContext: BehaviorContext | null = null;
+    if (user.authUserId) {
+      try {
+        behaviorContext = await getBehaviorContext(
+          user.authUserId,
+          conversation.gameTitle || null
+        );
+      } catch (error) {
+        console.warn('[AIService] Failed to fetch behavior context:', error);
+        // Continue without behavior context
+      }
+    }
+
+    // Get enhanced prompt with context (now includes behavior context)
+    const basePrompt = getPromptForPersona(
+      conversation, 
+      userMessage, 
+      user, 
+      isActiveSession, 
+      hasImages,
+      undefined, // playerProfile - not passed here, handled internally
+      behaviorContext
+    );
     
     // Add immersion context for game conversations (not Game Hub)
     let immersionContext = '';
@@ -810,6 +845,18 @@ In addition to your regular response, provide structured data in the following o
           otakonTagKeys: Array.from(aiResponse.otakonTags.keys())
         });
 
+        // 🔄 Extract and store response topics for non-repetitive AI behavior
+        // Done async to not block response delivery
+        if (user?.authUserId && aiResponse.content) {
+          const behaviorGameTitle = conversation.isGameHub ? null : (conversation.gameTitle ?? null);
+          const extractedTopics = correctionService.extractTopicsFromResponse(aiResponse.content);
+          if (extractedTopics.length > 0) {
+            behaviorService.addResponseTopics(user.authUserId, behaviorGameTitle, extractedTopics)
+              .then(() => console.log('📚 [AIService] Stored', extractedTopics.length, 'topics for behavior tracking'))
+              .catch(err => console.warn('[AIService] Failed to store response topics:', err));
+          }
+        }
+
         cacheService.set(cacheKey, aiResponse, 60 * 60 * 1000).catch(err => console.warn(err));
         return aiResponse;
       }
@@ -859,6 +906,17 @@ In addition to your regular response, provide structured data in the following o
             tokens: 0,
           }
         };
+        
+        // 🔄 Extract and store response topics for non-repetitive AI behavior
+        if (user?.authUserId && aiResponse.content) {
+          const behaviorGameTitle = conversation.isGameHub ? null : (conversation.gameTitle ?? null);
+          const extractedTopics = correctionService.extractTopicsFromResponse(aiResponse.content);
+          if (extractedTopics.length > 0) {
+            behaviorService.addResponseTopics(user.authUserId, behaviorGameTitle, extractedTopics)
+              .then(() => console.log('📚 [AIService] Stored', extractedTopics.length, 'topics for behavior tracking'))
+              .catch(err => console.warn('[AIService] Failed to store response topics:', err));
+          }
+        }
         
         cacheService.set(cacheKey, aiResponse, 60 * 60 * 1000).catch(err => console.warn(err));
         return aiResponse;
@@ -945,28 +1003,51 @@ In addition to your regular response, provide structured data in the following o
         let cleanContent = structuredData.content || '';
         
         // ---------------------------------------------------------
-        // 🚨 CRITICAL FIX: SIMPLIFIED CLEANING APPROACH
-        // Strategy: Remove ALL bold markers first, then add back ONLY for section headers
-        // This avoids all the malformed bold issues from AI responses
+        // 🚨 CRITICAL FIX: FIX MALFORMED BOLD MARKERS
+        // Strategy: Fix broken bold patterns while preserving valid bold
+        // This handles news/gaming responses that need bold for titles
         // ---------------------------------------------------------
 
         // 1. Unescape asterisks (Fixes \*\* issues)
         cleanContent = cleanContent.replace(/\\\*/g, '*');
 
-        // 2. Normalize section headers to plain text (will be re-bolded in STEP 12)
+        // 2. Fix bold markers with spaces after opening: "** text**" → "**text**"
+        cleanContent = cleanContent.replace(/\*\*\s+([^*\n]+)\*\*/g, '**$1**');
+        
+        // 3. Fix bold markers with spaces before closing: "**text **" → "**text**"
+        cleanContent = cleanContent.replace(/\*\*([^*\n]+)\s+\*\*/g, '**$1**');
+        
+        // 4. Fix bold markers split across lines: "**Title\n**" → "**Title**\n"
+        cleanContent = cleanContent.replace(/\*\*([^*\n]+)\n\*\*/g, '**$1**\n');
+        
+        // 5. Fix mixed ### and **: "###** Title" → "### Title" or "###**Title**" → "### Title"
+        cleanContent = cleanContent.replace(/###\s*\*\*\s*/g, '### ');
+        cleanContent = cleanContent.replace(/##\s*\*\*\s*/g, '## ');
+        
+        // 6. Fix orphaned ** at start of lines (often from malformed bold)
+        cleanContent = cleanContent.replace(/^\*\*\s*$/gm, '');
+        cleanContent = cleanContent.replace(/\n\*\*\s*\n/g, '\n\n');
+        
+        // 7. Normalize section headers for screenshot responses (will be re-bolded later)
         cleanContent = cleanContent.replace(/\*\*\s*Hint\s*:\s*\**/gi, '\n\nHint:\n');
         cleanContent = cleanContent.replace(/\*\*\s*Lore\s*:\s*\**/gi, '\n\nLore:\n');
         cleanContent = cleanContent.replace(/\*\*\s*Places\s+of\s+Interest\s*:\s*\**/gi, '\n\nPlaces of Interest:\n');
         cleanContent = cleanContent.replace(/\*\*\s*Strategy\s*:\s*\**/gi, '\n\nStrategy:\n');
         cleanContent = cleanContent.replace(/\*\*\s*What\s+to\s+focus\s+on\s*:\s*\**/gi, '\n\nWhat to focus on:\n');
-
-        // 3. REMOVE ALL REMAINING BOLD MARKERS - inline bold causes too many formatting issues
-        // This strips "**text**", "** text**", "**text **", orphaned "**", etc.
-        cleanContent = cleanContent.replace(/\*\*/g, '');
+        
+        // 8. Clean orphaned bold markers (unmatched **)
+        // Count ** occurrences - if odd number, we have orphaned markers
+        const boldCount = (cleanContent.match(/\*\*/g) || []).length;
+        if (boldCount % 2 !== 0) {
+          // Remove trailing orphaned **
+          cleanContent = cleanContent.replace(/\*\*\s*$/g, '');
+          // Remove leading orphaned **
+          cleanContent = cleanContent.replace(/^\s*\*\*/g, '');
+        }
 
         // ---------------------------------------------------------
         
-                console.log('?? [AIService] Last 200 chars:', cleanContent.slice(-200));
+                console.log('🤖 [AIService] Last 200 chars:', cleanContent.slice(-200));
         
         // Remove structured fields if AI accidentally includes them in content
         // Apply cleaning in order of most specific to most general
@@ -1063,6 +1144,17 @@ In addition to your regular response, provide structured data in the following o
           gamePillData
         };
         
+        // 🔄 Extract and store response topics for non-repetitive AI behavior
+        if (user?.authUserId && aiResponse.content) {
+          const behaviorGameTitle = conversation.isGameHub ? null : (conversation.gameTitle ?? null);
+          const extractedTopics = correctionService.extractTopicsFromResponse(aiResponse.content);
+          if (extractedTopics.length > 0) {
+            behaviorService.addResponseTopics(user.authUserId, behaviorGameTitle, extractedTopics)
+              .then(() => console.log('📚 [AIService] Stored', extractedTopics.length, 'topics for behavior tracking'))
+              .catch(err => console.warn('[AIService] Failed to store response topics:', err));
+          }
+        }
+        
         cacheService.set(cacheKey, aiResponse, 60 * 60 * 1000).catch(err => console.warn(err));
         
         // Note: AI persistent cache not implemented for structured responses yet
@@ -1120,6 +1212,17 @@ In addition to your regular response, provide structured data in the following o
             tokens: 0,
           }
         };
+        
+        // 🔄 Extract and store response topics for non-repetitive AI behavior
+        if (user?.authUserId && aiResponse.content) {
+          const behaviorGameTitle = conversation.isGameHub ? null : (conversation.gameTitle ?? null);
+          const extractedTopics = correctionService.extractTopicsFromResponse(aiResponse.content);
+          if (extractedTopics.length > 0) {
+            behaviorService.addResponseTopics(user.authUserId, behaviorGameTitle, extractedTopics)
+              .then(() => console.log('📚 [AIService] Stored', extractedTopics.length, 'topics for behavior tracking'))
+              .catch(err => console.warn('[AIService] Failed to store response topics:', err));
+          }
+        }
         
         cacheService.set(cacheKey, aiResponse, 60 * 60 * 1000).catch(err => console.warn(err));
         return aiResponse;

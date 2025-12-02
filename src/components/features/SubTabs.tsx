@@ -86,6 +86,9 @@ const SubTabs: React.FC<SubTabsProps> = ({
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [hasUserInteracted, setHasUserInteracted] = useState<boolean>(false);
   
+  // Track previous content to detect actual updates
+  const prevContentRef = useRef<string>('');
+  
   // Context menu state
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tabId: string; tabTitle: string } | null>(null);
   const contextMenuRef = useRef<HTMLDivElement>(null);
@@ -204,12 +207,17 @@ const SubTabs: React.FC<SubTabsProps> = ({
       return;
     }
 
+    // Create a content signature to detect actual content changes
+    const currentContentSignature = subtabs
+      .filter(tab => tab.status === 'loaded' && tab.content && tab.content.trim().length > 0)
+      .map(tab => `${tab.id}:${tab.content?.length || 0}`)
+      .join('|');
+    
+    // Check if content has actually changed (new content generated/updated)
+    const contentChanged = currentContentSignature !== prevContentRef.current && currentContentSignature.length > 0;
+    
     // ✅ FIX: More robust status checks
     const allLoading = subtabs.every(tab => tab.status === 'loading');
-    const anyLoaded = subtabs.some(tab => tab.status === 'loaded');
-    const allLoaded = subtabs.every(tab => tab.status === 'loaded');
-    
-    // Check if we have subtabs that are loaded with actual content
     const hasLoadedContent = subtabs.some(tab => 
       tab.status === 'loaded' && 
       tab.content && 
@@ -219,32 +227,31 @@ const SubTabs: React.FC<SubTabsProps> = ({
     
     console.log('📂 [SubTabs] useEffect triggered:', {
       allLoading,
-      anyLoaded,
-      allLoaded,
       hasLoadedContent,
+      contentChanged,
       isExpanded,
       hasUserInteracted,
-      subtabStatuses: subtabs.map(s => ({ title: s.title, status: s.status })),
-      subtabContentLengths: subtabs.map(s => ({ title: s.title, length: s.content?.length || 0 }))
+      currentContentSignature: currentContentSignature.substring(0, 50),
+      prevContentSignature: prevContentRef.current.substring(0, 50)
     });
     
     // ✅ FIX: Collapse if all loading
     if (allLoading && isExpanded) {
-            setIsExpanded(false);
-            onExpandedChange?.(false);
+      setIsExpanded(false);
+      onExpandedChange?.(false);
     }
     
-    // ✅ FIX: Expand when ANY content loads (more responsive)
-    // Changed from hasLoadedContent to anyLoaded for immediate feedback
-    if (anyLoaded && !isExpanded) {
-            setIsExpanded(true);
-            onExpandedChange?.(true);
+    // ✅ FIX: Only expand when content is NEWLY generated or updated
+    // This prevents re-expanding when just switching conversations or re-rendering
+    if (contentChanged && hasLoadedContent && !isExpanded) {
+      console.log('📂 [SubTabs] Auto-expanding: new content detected');
+      setIsExpanded(true);
+      onExpandedChange?.(true);
     }
     
-    // ✅ NEW: Additional check for all loaded (belt and suspenders)
-    if (allLoaded && !isExpanded && subtabs.length > 0) {
-            setIsExpanded(true);
-            onExpandedChange?.(true);
+    // Update the previous content reference
+    if (currentContentSignature.length > 0) {
+      prevContentRef.current = currentContentSignature;
     }
   }, [subtabs, isExpanded, hasUserInteracted, onExpandedChange]);
 
@@ -327,9 +334,10 @@ const SubTabs: React.FC<SubTabsProps> = ({
           }}
         >
           <div className="bg-[#1C1C1C] border border-[#424242]/60 rounded-xl shadow-2xl h-full flex flex-col" style={{ maxHeight: 'inherit' }}>
-          {/* Tab Headers - Horizontally scrollable on mobile */}
+          {/* Tab Headers - Grid layout on all screen sizes */}
           <div className="border-b border-[#424242]/40 flex-shrink-0">
-            <div className="flex gap-1.5 sm:gap-2 p-2 sm:p-3 overflow-x-auto scrollbar-thin scrollbar-thumb-[#424242] scrollbar-track-transparent">
+            {/* Mobile: 3-4 cols | Tablet (sm/md): 4 cols | Desktop (lg+): 5 cols */}
+            <div className="grid grid-cols-3 xs:grid-cols-4 gap-1.5 p-2 sm:grid-cols-4 sm:gap-2 sm:p-3 lg:grid-cols-5">
               {subtabs.map((tab) => (
                 <button
                   key={tab.id}
@@ -339,7 +347,8 @@ const SubTabs: React.FC<SubTabsProps> = ({
                   onTouchEnd={handleTouchEnd}
                   onTouchMove={handleTouchEnd}
                   className={`
-                    px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200 whitespace-nowrap select-none
+                    px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-xs font-medium rounded-lg transition-all duration-200 select-none
+                    text-center
                     ${currentActiveTab === tab.id
                       ? 'bg-[#FF4D4D] text-white shadow-lg'
                       : 'bg-[#2E2E2E]/60 text-[#A3A3A3] hover:bg-[#424242]/60 hover:text-[#F5F5F5]'
@@ -347,18 +356,18 @@ const SubTabs: React.FC<SubTabsProps> = ({
                     ${tab.isNew ? 'ring-2 ring-[#FF4D4D]/50' : ''}
                   `}
                   disabled={isLoading}
-                  title="Right-click or hold for options"
+                  title={tab.title}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center gap-1 sm:gap-2">
                     {tab.isNew && (
-                      <div className="w-2 h-2 bg-[#FF4D4D] rounded-full animate-pulse" />
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#FF4D4D] rounded-full animate-pulse flex-shrink-0" />
                     )}
-                    <span>{tab.title}</span>
+                    <span className="leading-tight">{tab.title}</span>
                     {tab.status === 'loading' && (
-                      <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
+                      <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 border border-current border-t-transparent rounded-full animate-spin flex-shrink-0" />
                     )}
                     {tab.status === 'error' && (
-                      <div className="w-3 h-3 text-red-400">⚠</div>
+                      <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-red-400 flex-shrink-0">⚠</div>
                     )}
                   </div>
                 </button>
