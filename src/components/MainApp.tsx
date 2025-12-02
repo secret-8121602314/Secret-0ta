@@ -475,12 +475,11 @@ const MainApp: React.FC<MainAppProps> = ({
     
     const handleCachesCleared = () => {
       console.log('🔍 [MainApp] Caches cleared event received - logout complete, ready for new user');
-      // ✅ CRITICAL: Only clear logout flag AFTER caches are cleared
-      // This ensures loadData won't run until everything is reset
-      setTimeout(() => {
-        isLoggingOutRef.current = false;
-        console.log('🔍 [MainApp] Logout flag cleared - new user can now load');
-      }, 100);
+      // ✅ FIX: Clear logout flag immediately - no delay needed
+      // The 100ms delay was causing a race condition where User B's auth state
+      // would arrive during the delay window and be blocked from setting currentUserId
+      isLoggingOutRef.current = false;
+      console.log('🔍 [MainApp] Logout flag cleared - new user can now load');
     };
 
     window.addEventListener('otakon:user-logout', handleUserLogout);
@@ -497,16 +496,24 @@ const MainApp: React.FC<MainAppProps> = ({
     const unsubscribe = authService.subscribe((authState) => {
       const newUserId = authState.user?.authUserId || null;
       
-      // Only update if user ID changed and we're not logging out
-      if (newUserId !== currentUserId && !isLoggingOutRef.current) {
+      // ✅ FIX: Always update if user ID changed - don't block on logout flag
+      // If a new user arrives, logout is complete by definition
+      if (newUserId !== currentUserId) {
         console.log('🔍 [MainApp] Auth state change detected:', {
           previousUserId: currentUserId,
           newUserId,
-          isLoading: authState.isLoading
+          isLoading: authState.isLoading,
+          isLoggingOut: isLoggingOutRef.current
         });
         
         // Update current user ID
         if (newUserId) {
+          // ✅ FIX: If we're getting a new user ID, logout is complete
+          // Clear the flag to allow loadData to proceed
+          if (isLoggingOutRef.current) {
+            console.log('🔍 [MainApp] New user detected while logout flag was set - clearing flag');
+            isLoggingOutRef.current = false;
+          }
           setCurrentUserId(newUserId);
         }
       }
@@ -578,10 +585,17 @@ const MainApp: React.FC<MainAppProps> = ({
         
         // ✅ FIX: Ensure Game Hub exists first - this returns it directly (RLS workaround)
         const gameHubFromEnsure = await ConversationService.ensureGameHubExists(forceRefresh);
-                // ✅ CRITICAL: Use cached conversations instead of requerying Supabase
-        // getConversations() bypasses cache and queries Supabase which fails due to RLS
-        const userConversations = ConversationService.getCachedConversations() || {};
-                console.log('🔍 [MainApp] Conversation count:', Object.keys(userConversations).length);
+        console.log('🔍 [MainApp] Game Hub from ensureGameHubExists:', {
+          id: gameHubFromEnsure?.id,
+          title: gameHubFromEnsure?.title,
+          isGameHub: gameHubFromEnsure?.isGameHub
+        });
+        
+        // ✅ FIX: Don't use getCachedConversations() - it may be stale or null after cache invalidation
+        // Instead, call getConversations() to get fresh data from Supabase
+        let userConversations = await ConversationService.getConversations(forceRefresh);
+        console.log('🔍 [MainApp] Conversations from getConversations:', Object.keys(userConversations));
+        console.log('🔍 [MainApp] Conversation count:', Object.keys(userConversations).length);
         
         // ✅ Ensure Game Hub is in the loaded conversations
         if (gameHubFromEnsure && !userConversations[gameHubFromEnsure.id]) {
@@ -685,18 +699,42 @@ const MainApp: React.FC<MainAppProps> = ({
         // 🔧 CRITICAL: Only mark initialization as complete if we have an active conversation
         // This prevents showing "Loading chat..." when there's no active conversation set
         if (finalActive) {
-                    setIsInitializing(false);
+          console.log('🔍 [MainApp] Initialization complete with active conversation:', finalActive.id);
+          setIsInitializing(false);
         } else {
           console.error('🔍 [MainApp] ERROR: No active conversation after initialization!');
+          console.log('🔍 [MainApp] userConversations:', Object.keys(userConversations));
+          console.log('🔍 [MainApp] gameHubFromEnsure:', gameHubFromEnsure?.id);
+          
           // Force Game Hub as active if we somehow got here without one
-          const gameHubConv = Object.values(userConversations).find(
+          // First, try to find any Game Hub in the loaded conversations
+          let gameHubConv = Object.values(userConversations).find(
             conv => conv.isGameHub || conv.title === 'Game Hub' || conv.id === 'game-hub'
           );
+          
+          // If not found in userConversations, use the one from ensureGameHubExists
+          if (!gameHubConv && gameHubFromEnsure) {
+            console.log('🔍 [MainApp] Using gameHubFromEnsure as fallback');
+            gameHubConv = gameHubFromEnsure;
+            // Make sure it's in the conversations state
+            userConversations[gameHubConv.id] = gameHubConv;
+            setConversations({...userConversations});
+          }
+          
           if (gameHubConv) {
+            console.log('🔍 [MainApp] Setting Game Hub as active:', gameHubConv.id);
             await ConversationService.setActiveConversation(gameHubConv.id);
             const updatedConversations = await ConversationService.getConversations();
             setConversations(updatedConversations);
-            setActiveConversation(updatedConversations[gameHubConv.id]);
+            setActiveConversation(updatedConversations[gameHubConv.id] || gameHubConv);
+          } else {
+            console.error('🔍 [MainApp] CRITICAL: No Game Hub found at all! Creating new one...');
+            // Last resort: create a new Game Hub
+            const newGameHub = ConversationService.createConversation('Game Hub', 'game-hub');
+            await ConversationService.addConversation(newGameHub);
+            await ConversationService.setActiveConversation(newGameHub.id);
+            setConversations({ [newGameHub.id]: newGameHub });
+            setActiveConversation(newGameHub);
           }
           setIsInitializing(false);
         }
