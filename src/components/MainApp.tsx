@@ -2398,8 +2398,16 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
     // Determine query type: image+text or image-only = image query, text-only = text query
     const queryType = hasImage ? 'image' : 'text';
     
-    // ✅ SOFT WARNING: Show warning at 90% usage
-    if (user) {
+    // ✅ AI MODE CREDIT LOGIC:
+    // - Free tier: ALL queries deplete credits (always uses AI)
+    // - Pro/Vanguard with AI ON: ALL queries deplete credits
+    // - Pro/Vanguard with AI OFF + image: NO credits depleted (image stored, no AI call)
+    // - Pro/Vanguard with AI OFF + text: Credits depleted (text always goes to AI)
+    const isPro = user?.tier === 'pro' || user?.tier === 'vanguard_pro';
+    const shouldDepleteCredits = !isPro || aiModeEnabled || !hasImage;
+    
+    // ✅ SOFT WARNING: Show warning at 90% usage (only if credits will be depleted)
+    if (user && shouldDepleteCredits) {
       const currentCount = queryType === 'text' ? user.textCount : user.imageCount;
       const limit = queryType === 'text' ? user.textLimit : user.imageLimit;
       const usagePercent = (currentCount / limit) * 100;
@@ -2412,8 +2420,8 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
       }
     }
     
-    // Check if user can make the request
-    if (!UserService.canMakeRequest(queryType)) {
+    // Check if user can make the request (only check limits if credits will be depleted)
+    if (shouldDepleteCredits && !UserService.canMakeRequest(queryType)) {
       const errorMessage = {
         id: `msg_${Date.now() + 1}`,
         content: `You've reached your ${queryType} query limit for this month. Upgrade to Pro for more queries.`,
@@ -2445,33 +2453,37 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
       return;
     }
 
-    // Increment usage count
-    UserService.incrementUsage(queryType);
-    
-    // ✅ IMMEDIATE UI UPDATE: Update React state for credit indicator
-    if (user) {
-      const updatedUser = {
-        ...user,
-        usage: {
-          ...user.usage,
-          textCount: queryType === 'text' ? user.usage.textCount + 1 : user.usage.textCount,
-          imageCount: queryType === 'image' ? user.usage.imageCount + 1 : user.usage.imageCount,
-          totalRequests: user.usage.totalRequests + 1,
-        },
-        updatedAt: Date.now(),
-      };
-      setUser(updatedUser);
-    }
-    
-    // Update in Supabase (non-blocking - fire and forget)
-    if (user?.authUserId) {
-      const supabaseService = new SupabaseService();
-      supabaseService.incrementUsage(user.authUserId, queryType)
-        .then(() => {
-                    // Refresh user data in background to update credit indicator
-          return refreshUserData();
-        })
-        .catch(error => console.warn('Failed to update usage in Supabase:', error));
+    // Increment usage count (only if credits should be depleted)
+    if (shouldDepleteCredits) {
+      UserService.incrementUsage(queryType);
+      
+      // ✅ IMMEDIATE UI UPDATE: Update React state for credit indicator
+      if (user) {
+        const updatedUser = {
+          ...user,
+          usage: {
+            ...user.usage,
+            textCount: queryType === 'text' ? user.usage.textCount + 1 : user.usage.textCount,
+            imageCount: queryType === 'image' ? user.usage.imageCount + 1 : user.usage.imageCount,
+            totalRequests: user.usage.totalRequests + 1,
+          },
+          updatedAt: Date.now(),
+        };
+        setUser(updatedUser);
+      }
+      
+      // Update in Supabase (non-blocking - fire and forget)
+      if (user?.authUserId) {
+        const supabaseService = new SupabaseService();
+        supabaseService.incrementUsage(user.authUserId, queryType)
+          .then(() => {
+                      // Refresh user data in background to update credit indicator
+            return refreshUserData();
+          })
+          .catch(error => console.warn('Failed to update usage in Supabase:', error));
+      }
+    } else {
+      console.log('🔄 [MainApp] AI mode OFF - image query will not deplete credits (Pro/Vanguard)');
     }
 
     // Clear previous suggestions and start loading
@@ -2490,7 +2502,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
 
       // ✅ AI MODE TOGGLE: If AI mode is OFF and we have a screenshot, upload to storage instead of processing
       let finalImageUrl = imageUrl;
-      const isPro = user.tier === 'pro' || user.tier === 'vanguard_pro';
+      // Note: isPro already defined above in credit depletion logic
       
       if (imageUrl && isPro && !aiModeEnabled) {
         console.log('🔄 [MainApp] AI mode OFF - uploading screenshot to storage...');
