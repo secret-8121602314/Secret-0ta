@@ -5,8 +5,8 @@
 
 /* Prevent white flash during transitions */
 html, body {
-  background-color: #0F0F0F;
-  background: linear-gradient(135deg, #0F0F0F 0%, #111111 50%, #0F0F0F 100%);
+  background-color: #000000; /* Pure black to prevent white bars in safe areas */
+  background: #000000;
   /* Improve mobile scrolling */
   -webkit-overflow-scrolling: touch;
   /* Prevent zoom on input focus on iOS */
@@ -37,8 +37,8 @@ html, body {
     overflow: hidden !important;
     height: 100vh;
     height: 100dvh; /* Dynamic viewport height for mobile */
-    position: fixed;
     width: 100%;
+    background-color: #000000;
   }
   
   /* Full height root - NO safe-area padding (causes extra space on mobile) */
@@ -49,6 +49,7 @@ html, body {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    background-color: #000000;
   }
   
   /* Prevent double padding on body */
