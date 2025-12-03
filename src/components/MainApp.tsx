@@ -3079,7 +3079,10 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                               if (shouldMigrateMessages) {
             // ✅ FIX: Update local state IMMEDIATELY so messages appear in the new tab right away
             // This prevents the visual gap where messages disappear during migration
-            const messagesToMigrate = [newMessage, aiMessage];
+            // ✅ CRITICAL: Use database IDs for the messages to migrate (not temp client IDs)
+            const userMsgWithDbId = { ...newMessage, id: userMessageDbId };
+            const aiMsgWithDbId = { ...aiMessage, id: aiMessageDbId };
+            const messagesToMigrate = [userMsgWithDbId, aiMsgWithDbId];
             
             // Get fresh conversations state for immediate update
             const currentConversations = await ConversationService.getConversations();
@@ -3088,8 +3091,9 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
             
             if (sourceConv && destConv) {
               // Optimistically update state BEFORE database operations
+              // ✅ FIX: Filter using database UUIDs, not temporary client IDs
               const updatedSourceMessages = sourceConv.messages.filter(
-                m => m.id !== newMessage.id && m.id !== aiMessage.id
+                m => m.id !== userMessageDbId && m.id !== aiMessageDbId
               );
               const updatedDestMessages = [...destConv.messages, ...messagesToMigrate];
               
