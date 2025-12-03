@@ -70,6 +70,14 @@ html, body {
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
   }
+  
+  /* Constrain AdSense ads in PWA to prevent them from taking too much space */
+  .adsbygoogle,
+  .adsbygoogle iframe,
+  .adsbygoogle ins {
+    max-height: 100px !important;
+    overflow: hidden !important;
+  }
 }
 
 /* Mobile-specific improvements */
