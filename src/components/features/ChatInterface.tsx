@@ -926,8 +926,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       {/* END Main Chat Area Container */}
 
       {/* Floating Chat Input Section with Gradient Border */}
-      <div className="flex-shrink-0 bg-background/95 backdrop-blur-sm">
-        <div className="mx-3 my-3 rounded-2xl p-px transition-all duration-300" style={{
+      {/* pb-safe adds safe-area padding on iOS, mt-3 for top margin only, pb-3 for consistent bottom */}
+      <div className="flex-shrink-0 bg-background/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom,0px)]">
+        <div className="mx-3 mt-3 mb-2 rounded-2xl p-px transition-all duration-300" style={{
           background: isFocused 
             ? 'linear-gradient(135deg, #FF4D4D, #FFAB40)'
             : 'transparent'
