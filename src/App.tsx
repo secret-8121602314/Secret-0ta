@@ -259,11 +259,46 @@ function App() {
       document.body.style.width = '';
       document.body.style.top = '';
       document.body.style.left = '';
+      document.body.style.paddingBottom = '';
+      document.body.style.marginBottom = '';
       // Reset html styles
       document.documentElement.style.overflow = '';
       document.documentElement.style.height = '';
+      document.documentElement.style.paddingBottom = '';
+      document.documentElement.style.marginBottom = '';
       // Ensure proper scroll position
       window.scrollTo(0, 0);
+      
+      // ✅ ADSENSE FIX: Remove orphaned AdSense iframes and elements that may cause spacing
+      try {
+        // Remove any AdSense iframes outside the React tree
+        const adIframes = document.querySelectorAll('iframe[id^="google_ads"], iframe[id^="aswift"], iframe[name^="google_ads"]');
+        adIframes.forEach(iframe => {
+          // Only remove if it's a direct child of body (orphaned)
+          if (iframe.parentElement === document.body) {
+            console.log('🧹 [App] Removing orphaned AdSense iframe:', iframe.id || iframe.name);
+            iframe.remove();
+          }
+        });
+        
+        // Remove orphaned ins.adsbygoogle elements outside React tree
+        const adElements = document.querySelectorAll('body > ins.adsbygoogle');
+        adElements.forEach(el => {
+          console.log('🧹 [App] Removing orphaned AdSense element');
+          el.remove();
+        });
+        
+        // Remove any google_esf divs that might be injected
+        const esfDivs = document.querySelectorAll('div[id^="google_esf"]');
+        esfDivs.forEach(div => {
+          if (div.parentElement === document.body) {
+            console.log('🧹 [App] Removing orphaned Google ESF div');
+            div.remove();
+          }
+        });
+      } catch (error) {
+        console.warn('🧹 [App] Error during AdSense cleanup:', error);
+      }
     };
 
     const handleSignedOut = () => {

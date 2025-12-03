@@ -16,7 +16,9 @@ declare global {
 
 const AdBanner: React.FC = () => {
   const adRef = useRef<HTMLModElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const isAdLoaded = useRef(false);
+  const adKeyRef = useRef(Date.now()); // Unique key for each mount
 
   useEffect(() => {
     // Only push the ad once per component mount
@@ -33,10 +35,28 @@ const AdBanner: React.FC = () => {
     } catch (error) {
       console.error('[AdBanner] Error loading ad:', error);
     }
+
+    // Cleanup function to reset state and remove orphaned iframes
+    return () => {
+      isAdLoaded.current = false;
+      adKeyRef.current = Date.now();
+      
+      // Clean up any orphaned AdSense iframes in the container
+      if (containerRef.current) {
+        const iframes = containerRef.current.querySelectorAll('iframe');
+        iframes.forEach(iframe => {
+          try {
+            iframe.remove();
+          } catch (e) {
+            // Ignore errors during cleanup
+          }
+        });
+      }
+    };
   }, []);
 
   return (
-    <div className="px-3 sm:px-4 lg:px-6 pt-0 sm:pt-1 flex-shrink-0">
+    <div ref={containerRef} className="px-3 sm:px-4 lg:px-6 pt-0 sm:pt-1 flex-shrink-0">
       <div className="bg-gradient-to-r from-gray-100/10 to-gray-200/10 border border-gray-300/20 rounded-xl p-2 sm:p-3 mb-3 sm:mb-4">
         {/* 
           Constrain ad height to prevent AdSense from taking too much space on mobile/PWA.
