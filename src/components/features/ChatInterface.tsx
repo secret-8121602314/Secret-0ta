@@ -770,33 +770,31 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }
 
   return (
-    <div className="h-full bg-background flex flex-col overflow-hidden">
+    <div className="h-full max-h-full bg-background flex flex-col overflow-hidden">
       {/* Main Chat Area Container - relative positioned for SubTabs/GameHub overlay */}
-      <div className="flex-1 flex flex-col min-h-0 relative">
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
         {/* Messages Area - ONLY scrollable area, SubTabs overlay sits on top */}
         <div 
           ref={messagesContainerRef}
-          className={`flex-1 p-3 sm:p-5 space-y-3 sm:space-y-5 min-h-0 overflow-y-auto custom-scrollbar ${
-            conversation.messages.length === 0 ? 'overflow-y-hidden' : ''
+          className={`flex-1 min-h-0 overflow-y-auto custom-scrollbar ${
+            conversation.messages.length === 0 ? 'overflow-hidden flex items-center justify-center' : 'p-3 sm:p-5 space-y-3 sm:space-y-5'
           }`}
         >
         {conversation.messages.length === 0 ? (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center px-4">
-              <img
-                src="/images/mascot/4.png"
-                alt="Otagon Mascot"
-                className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 object-contain aspect-square mx-auto mb-3"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                }}
-              />
-              <p className="text-text-muted text-sm sm:text-base">
-                Start a conversation with <span className="bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent font-semibold">Otagon</span>
-              </p>
-              <p className="text-text-muted text-xs sm:text-sm mt-2 max-w-xs mx-auto">Ask me anything about gaming, strategies, or tips!</p>
-            </div>
+          <div className="text-center px-4">
+            <img
+              src="/images/mascot/4.png"
+              alt="Otagon Mascot"
+              className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 object-contain aspect-square mx-auto mb-3"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+              }}
+            />
+            <p className="text-text-muted text-sm sm:text-base">
+              Start a conversation with <span className="bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent font-semibold">Otagon</span>
+            </p>
+            <p className="text-text-muted text-xs sm:text-sm mt-2 max-w-xs mx-auto">Ask me anything about gaming, strategies, or tips!</p>
           </div>
         ) : (
           (() => {
