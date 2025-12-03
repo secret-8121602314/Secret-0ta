@@ -544,18 +544,8 @@ html, body {
   }
 }
 
-/* Root level constraints to prevent whole page scrolling */
-html, body {
-  height: 100%;
-  height: 100dvh;
-  margin: 0;
-  padding: 0;
-}
-
-#root {
-  height: 100%;
-  height: 100dvh;
-}
+/* NOTE: html, body, #root base styles are defined at the top of this file (lines 7-31) */
+/* Do not add duplicate rules here as they will override critical flex/overflow settings */
 
 /* Ensure 100vh utilities map to dynamic viewport height on mobile + installed PWA */
 @media (max-width: 768px) {
@@ -574,6 +564,9 @@ html, body {
   #root {
     min-height: 100vh;
     min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
   .h-screen {
@@ -637,6 +630,9 @@ html, body {
   #root {
     height: 100vh;
     height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     overscroll-behavior-y: none; /* Prevent pull-to-refresh */
   }
   
