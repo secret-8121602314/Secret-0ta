@@ -771,17 +771,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   return (
     <div className="h-full bg-background flex flex-col overflow-hidden">
-      {/* Messages Area - Only this should scroll, hide scrollbar when subtabs expanded */}
-      <div 
-        ref={messagesContainerRef}
-        className={`flex-1 p-3 sm:p-5 space-y-3 sm:space-y-5 min-h-0 ${
-          conversation.messages.length > 0 
-            ? isSubtabsExpanded 
-              ? 'overflow-hidden' // Hide scrollbar when subtabs are expanded
-              : 'overflow-y-auto custom-scrollbar' 
-            : 'overflow-y-hidden'
-        }`}
-      >
+      {/* Main Chat Area Container - relative positioned for SubTabs/GameHub overlay */}
+      <div className="flex-1 flex flex-col min-h-0 relative">
+        {/* Messages Area - ONLY scrollable area, SubTabs overlay sits on top */}
+        <div 
+          ref={messagesContainerRef}
+          className={`flex-1 p-3 sm:p-5 space-y-3 sm:space-y-5 min-h-0 overflow-y-auto custom-scrollbar ${
+            conversation.messages.length === 0 ? 'overflow-y-hidden' : ''
+          }`}
+        >
         {conversation.messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
@@ -835,14 +833,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Image Preview - Show inside the chat input area */}
-      {/* Removed - will show preview inside the input form instead */}
-
-      {/* Sub-tabs Section - Show for released game conversations only (not Game Hub, not unreleased) */}
-      {/* Hide when Command Centre is active to prevent overlap */}
-      {/* z-40 ensures SubTabs expanded panel appears ABOVE the Chat Thread Name header on mobile */}
-      {!showAutocomplete && conversation && !conversation.isGameHub && !conversation.isUnreleased && conversation.subtabs && conversation.subtabs.length > 0 && (
-        <div className="flex-shrink-0 px-3 pb-2 relative z-40">
+        {/* Sub-tabs Section - Absolute overlay at bottom of messages area */}
+        {/* Show for released game conversations only (not Game Hub, not unreleased) */}
+        {/* Hide when Command Centre is active to prevent overlap */}
+        {/* z-40 ensures SubTabs expanded panel appears ABOVE the Chat Thread Name header on mobile */}
+        {!showAutocomplete && conversation && !conversation.isGameHub && !conversation.isUnreleased && conversation.subtabs && conversation.subtabs.length > 0 && (
+          <div className="absolute bottom-0 left-0 right-0 px-3 pb-2 z-40 pointer-events-none">
+            <div className="pointer-events-auto">
           <ErrorBoundary fallback={<SubTabsErrorFallback />}>
             <SubTabs
               key={`subtabs-${conversation.id}`}
@@ -853,13 +850,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               onDeleteTab={onDeleteSubtab}
               onExpandedChange={setIsSubtabsExpanded}
             />
-          </ErrorBoundary>
-        </div>
-      )}
+            </ErrorBoundary>
+            </div>
+          </div>
+        )}
 
-      {/* Game Hub Quick Prompts - Only show in Game Hub tab */}
-      {conversation?.isGameHub && (
-        <div className="flex-shrink-0 mx-3 pb-1.5 relative">
+        {/* Game Hub Quick Prompts - Absolute overlay at bottom of messages area */}
+        {/* Only show in Game Hub tab */}
+        {conversation?.isGameHub && (
+          <div className="absolute bottom-0 left-0 right-0 mx-3 pb-1.5 z-40 pointer-events-none">
+            <div className="pointer-events-auto relative">
           {/* Collapsible Header */}
           <button
             onClick={() => setIsQuickActionsExpanded(!isQuickActionsExpanded)}
@@ -919,8 +919,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               </div>
             </div>
           )}
-        </div>
-      )}
+            </div>
+          </div>
+        )}
+      </div>
+      {/* END Main Chat Area Container */}
 
       {/* Floating Chat Input Section with Gradient Border */}
       <div className="flex-shrink-0 bg-background/95 backdrop-blur-sm">

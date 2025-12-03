@@ -3684,9 +3684,9 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
           )}
 
           {/* Chat Thread Name - Show on mobile when sidebar is collapsed */}
-          {/* z-30 ensures it's below SubTabs expanded panel (z-40) on mobile */}
+          {/* z-20 ensures consistent stacking with other fixed elements, below SubTabs expanded panel (z-40) */}
           {activeConversation && (
-            <div className="lg:hidden px-3 sm:px-4 mb-3 sm:mb-4 flex-shrink-0 relative z-30">
+            <div className="lg:hidden px-3 sm:px-4 mb-3 sm:mb-4 flex-shrink-0 relative z-20">
               <div className="flex items-center gap-2">
                 {/* Thread name button */}
                 <button

@@ -11,9 +11,8 @@ html, body {
   -webkit-overflow-scrolling: touch;
   /* Prevent zoom on input focus on iOS */
   -webkit-text-size-adjust: 100%;
-  /* Prevent body overflow that causes scroll issues */
-  overflow-x: hidden;
-  overflow-y: auto;
+  /* CRITICAL: Prevent body scroll - only internal containers should scroll */
+  overflow: hidden;
   /* Ensure proper height */
   margin: 0;
   padding: 0;

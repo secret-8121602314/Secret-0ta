@@ -347,7 +347,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
   };
 
   return (
-    <div className="h-[100dvh] bg-gradient-to-br from-background via-[#0F0F0F] to-background text-text-primary flex flex-col items-center justify-between px-4 py-3 md:py-4 lg:py-6 relative overflow-hidden">
+    <div className="h-[100dvh] bg-gradient-to-br from-background via-[#0F0F0F] to-background text-text-primary flex flex-col items-center justify-between px-4 py-6 md:py-6 lg:py-8 relative overflow-hidden">
       
       <div className={`w-full max-w-md lg:max-w-lg xl:max-w-xl relative z-10 transition-all duration-500 ${isAnimating ? 'scale-105' : 'scale-100'} mx-auto flex-1 flex flex-col justify-center`}>
         {/* Logo and Title */}
@@ -702,8 +702,8 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="w-full py-2 pb-[max(8px,env(safe-area-inset-bottom))] md:p-4 lg:p-5 text-center flex-shrink-0">
+      {/* Footer - Note: #root already applies safe-area-inset-bottom in PWA mode (globals.css) */}
+      <div className="w-full py-2 pb-2 md:p-4 lg:p-5 text-center flex-shrink-0">
         <p className="text-[10px] md:text-sm lg:text-base text-text-muted">
           By continuing, you agree to our{' '}
           <button
