@@ -13,18 +13,18 @@ html, body {
   -webkit-text-size-adjust: 100%;
   /* CRITICAL: Prevent body scroll - only internal containers should scroll */
   overflow: hidden;
-  /* Ensure proper height - use dvh for mobile */
+  /* Ensure proper height - use svh (small viewport) to account for browser chrome on mobile */
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
-  height: 100dvh;
+  height: 100svh; /* Small viewport height - accounts for browser chrome being visible */
 }
 
 /* Root element must fill viewport in all modes */
 #root {
   height: 100%;
-  height: 100dvh;
+  height: 100svh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -547,17 +547,18 @@ html, body {
 /* NOTE: html, body, #root base styles are defined at the top of this file (lines 7-31) */
 /* Do not add duplicate rules here as they will override critical flex/overflow settings */
 
-/* Ensure 100vh utilities map to dynamic viewport height on mobile + installed PWA */
+/* Ensure 100vh utilities map to small viewport height on mobile (accounts for browser chrome) */
 @media (max-width: 768px) {
   .h-screen {
-    height: 100dvh !important;
+    height: 100svh !important;
   }
 
   .min-h-screen {
-    min-height: 100dvh !important;
+    min-height: 100svh !important;
   }
 }
 
+/* PWA standalone mode - use dvh since there's no browser chrome */
 @media (display-mode: standalone) {
   html,
   body,
@@ -623,22 +624,33 @@ html, body {
 @media (max-width: 768px) {
   html, body {
     height: 100vh;
-    height: 100dvh; /* Dynamic viewport height for mobile */
+    height: 100svh; /* Small viewport height - accounts for browser chrome */
     overscroll-behavior-y: none; /* Prevent pull-to-refresh from breaking layout */
   }
   
   #root {
     height: 100vh;
-    height: 100dvh;
+    height: 100svh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     overscroll-behavior-y: none; /* Prevent pull-to-refresh */
   }
   
+  /* CRITICAL: Ensure app-container fills the full height on mobile browser */
+  /* Use 100% with !important to ensure Tailwind's h-full doesn't interfere */
+  .app-container {
+    height: 100% !important;
+    min-height: 0 !important; /* Allow flex shrinking */
+    max-height: 100% !important;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  
   .chat-layout-fixed {
     height: 100vh;
-    height: 100dvh; /* Dynamic viewport height for mobile */
+    height: 100svh; /* Small viewport height for mobile */
   }
   
   .chat-content-scrollable {
