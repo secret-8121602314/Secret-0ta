@@ -1321,6 +1321,13 @@ ${contextSection}
 Instructions for each tab:
 ${instructions}
 
+CRITICAL ACCURACY RULES (MUST FOLLOW):
+1. Base ALL content STRICTLY on the game title "${gameTitle}" and the provided context/conversation.
+2. NEVER mix information from different games - only discuss "${gameTitle}".
+3. NEVER confuse characters within the same game - if a character is mentioned, only describe what is explicitly known from context.
+4. NEVER invent character details, relationships, or plot points not provided in the context.
+5. If context is insufficient, provide general genre-appropriate guidance rather than inventing specifics.
+
 CRITICAL FORMATTING RULES:
 1. Return ONLY valid JSON, nothing else (no markdown fences, no explanations)
 2. Use this exact format: {"tab_id": "content", "tab_id": "content"}
