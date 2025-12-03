@@ -117,11 +117,6 @@ html, body {
   display: none;  /* Safari and Chrome */
 }
 
-/* Safe area utilities for mobile */
-.pb-safe {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-
 /* Spin animation for logo */
 @keyframes spin {
   from {
@@ -628,14 +623,13 @@ html, body {
 /* Mobile-specific chat optimizations */
 @media (max-width: 768px) {
   html, body {
-    height: 100%;
+    height: 100vh;
     height: 100svh; /* Small viewport height - accounts for browser chrome */
     overscroll-behavior-y: none; /* Prevent pull-to-refresh from breaking layout */
-    overflow: hidden !important;
   }
   
   #root {
-    height: 100%;
+    height: 100vh;
     height: 100svh;
     display: flex;
     flex-direction: column;
@@ -648,19 +642,14 @@ html, body {
   .app-container {
     height: 100% !important;
     min-height: 0 !important; /* Allow flex shrinking */
-    max-height: 100svh !important;
+    max-height: 100% !important;
     display: flex;
     flex-direction: column;
     overflow: hidden;
   }
   
-  /* Ensure chat interface fills remaining space properly */
-  .app-container > div {
-    min-height: 0;
-  }
-  
   .chat-layout-fixed {
-    height: 100%;
+    height: 100vh;
     height: 100svh; /* Small viewport height for mobile */
   }
   

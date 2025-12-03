@@ -677,6 +677,27 @@ export class AuthService {
         console.error('⚠️ [AuthService] Failed to reset SupabaseService:', error);
       }
       
+      // ✅ MOBILE FIX: Reset body/document styles to prevent accumulated spacing
+      // This ensures any leftover inline styles from modals/overlays are cleared
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.height = '';
+      document.body.style.width = '';
+      document.documentElement.style.overflow = '';
+      document.documentElement.style.height = '';
+      
+      // ✅ MOBILE FIX: Remove any orphaned AdSense elements that might have accumulated
+      // AdSense can create elements that don't get cleaned up properly
+      const orphanedAdElements = document.querySelectorAll('ins.adsbygoogle[data-ad-status="unfilled"]');
+      orphanedAdElements.forEach(el => {
+        if (el.parentElement && !el.closest('.app-container')) {
+          console.log('🧹 [AuthService] Removing orphaned ad element');
+          el.remove();
+        }
+      });
+      
+      console.log('🧹 [AuthService] DOM styles reset for clean re-login');
+      
       // Clear auth state
       this.updateAuthState({ user: null, isLoading: false, error: null });
       

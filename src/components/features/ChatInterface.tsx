@@ -770,31 +770,33 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }
 
   return (
-    <div className="h-full max-h-full bg-background flex flex-col overflow-hidden">
+    <div className="h-full bg-background flex flex-col overflow-hidden">
       {/* Main Chat Area Container - relative positioned for SubTabs/GameHub overlay */}
-      <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
+      <div className="flex-1 flex flex-col min-h-0 relative">
         {/* Messages Area - ONLY scrollable area, SubTabs overlay sits on top */}
         <div 
           ref={messagesContainerRef}
-          className={`flex-1 min-h-0 overflow-y-auto custom-scrollbar ${
-            conversation.messages.length === 0 ? 'overflow-hidden flex items-center justify-center' : 'p-3 sm:p-5 space-y-3 sm:space-y-5'
+          className={`flex-1 p-3 sm:p-5 space-y-3 sm:space-y-5 min-h-0 overflow-y-auto custom-scrollbar ${
+            conversation.messages.length === 0 ? 'overflow-y-hidden' : ''
           }`}
         >
         {conversation.messages.length === 0 ? (
-          <div className="text-center px-4">
-            <img
-              src="/images/mascot/4.png"
-              alt="Otagon Mascot"
-              className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 object-contain aspect-square mx-auto mb-3"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-              }}
-            />
-            <p className="text-text-muted text-sm sm:text-base">
-              Start a conversation with <span className="bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent font-semibold">Otagon</span>
-            </p>
-            <p className="text-text-muted text-xs sm:text-sm mt-2 max-w-xs mx-auto">Ask me anything about gaming, strategies, or tips!</p>
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <img
+                src="/images/mascot/4.png"
+                alt="Otagon Mascot"
+                className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 object-contain aspect-square mx-auto mb-4"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                }}
+              />
+              <p className="text-text-muted text-lg">
+                Start a conversation with <span className="bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent font-semibold">Otagon</span>
+              </p>
+              <p className="text-text-muted text-sm mt-2">Ask me anything about gaming, strategies, or tips. You can also start uploading gameplay screenshots for help!</p>
+            </div>
           </div>
         ) : (
           (() => {
@@ -924,8 +926,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       {/* END Main Chat Area Container */}
 
       {/* Floating Chat Input Section with Gradient Border */}
-      <div className="flex-shrink-0 bg-background/95 backdrop-blur-sm pb-safe">
-        <div className="mx-3 my-2 rounded-2xl p-px transition-all duration-300" style={{
+      <div className="flex-shrink-0 bg-background/95 backdrop-blur-sm">
+        <div className="mx-3 my-3 rounded-2xl p-px transition-all duration-300" style={{
           background: isFocused 
             ? 'linear-gradient(135deg, #FF4D4D, #FFAB40)'
             : 'transparent'

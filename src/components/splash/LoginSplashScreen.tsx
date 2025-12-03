@@ -355,7 +355,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
           <img
             src="/images/otagon-logo.png"
             alt="Otagon Logo"
-            className="mx-auto mb-2 md:mb-3 lg:mb-4 w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 object-contain aspect-square"
+            className="mx-auto mb-2 md:mb-3 lg:mb-4 w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 object-contain aspect-square"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';

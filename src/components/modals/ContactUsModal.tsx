@@ -70,7 +70,8 @@ const ContactUsModal: React.FC<ContactUsModalProps> = ({ isOpen, onClose }) => {
 
     return () => {
       document.removeEventListener('keydown', handleEscKey);
-      document.body.style.overflow = 'unset';
+      // Reset to empty string for clean state (let CSS handle default)
+      document.body.style.overflow = '';
     };
   }, [isOpen, onClose]);
 

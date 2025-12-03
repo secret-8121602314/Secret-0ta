@@ -55,16 +55,22 @@ const Modal: React.FC<ModalProps> = ({
   className,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
+  const originalOverflowRef = useRef<string>('');
 
   useEffect(() => {
     if (isOpen) {
+      // Store original overflow value before modifying
+      originalOverflowRef.current = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
     } else {
-      document.body.style.overflow = 'unset';
+      // Restore to empty string (let CSS handle it) rather than 'unset'
+      // This prevents accumulating style issues
+      document.body.style.overflow = '';
     }
 
     return () => {
-      document.body.style.overflow = 'unset';
+      // On unmount, always reset to empty string for clean state
+      document.body.style.overflow = '';
     };
   }, [isOpen]);
 

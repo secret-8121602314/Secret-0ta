@@ -249,8 +249,26 @@ function App() {
       }
     };
 
+    // ✅ MOBILE FIX: Reset DOM styles on sign out to prevent accumulated spacing
+    const cleanupDOMStyles = () => {
+      console.log('🧹 [App] Cleaning up DOM styles on sign out');
+      // Reset body styles
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.height = '';
+      document.body.style.width = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      // Reset html styles
+      document.documentElement.style.overflow = '';
+      document.documentElement.style.height = '';
+      // Ensure proper scroll position
+      window.scrollTo(0, 0);
+    };
+
     const handleSignedOut = () => {
       console.log('🔐 [App] Signed out event received');
+      cleanupDOMStyles(); // ✅ MOBILE FIX: Clean up DOM before state change
       setAuthState({ user: null, isLoading: false, error: null });
     };
 
@@ -261,6 +279,9 @@ function App() {
       
       // Show warning toast - session expired
       toastService.warning('Your session has expired. Please log in again to continue.');
+      
+      // ✅ MOBILE FIX: Clean up DOM before state change
+      cleanupDOMStyles();
       
       // Clear state and redirect to login after a short delay
       setTimeout(() => {
