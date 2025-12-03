@@ -13,11 +13,21 @@ html, body {
   -webkit-text-size-adjust: 100%;
   /* CRITICAL: Prevent body scroll - only internal containers should scroll */
   overflow: hidden;
-  /* Ensure proper height */
+  /* Ensure proper height - use dvh for mobile */
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
+  height: 100dvh;
+}
+
+/* Root element must fill viewport in all modes */
+#root {
+  height: 100%;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* Provide consistent chrome color + safe-area padding inside standalone PWAs */
@@ -537,12 +547,14 @@ html, body {
 /* Root level constraints to prevent whole page scrolling */
 html, body {
   height: 100%;
+  height: 100dvh;
   margin: 0;
   padding: 0;
 }
 
 #root {
   height: 100%;
+  height: 100dvh;
 }
 
 /* Ensure 100vh utilities map to dynamic viewport height on mobile + installed PWA */

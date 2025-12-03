@@ -3469,7 +3469,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
 
   if (isInitializing && (!user || Object.keys(conversations).length === 0)) {
     return (
-      <div className="h-screen bg-background flex items-center justify-center">
+      <div className="h-full bg-background flex items-center justify-center">
         <div className="text-center">
           <LoadingSpinner size="lg" className="mx-auto mb-4" />
           <p className="text-text-muted">{!user ? 'Loading...' : 'Initializing chat...'}</p>
@@ -3481,7 +3481,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
   // If no user but we have initialization done, still show error or redirect
   if (!user && !isInitializing) {
     return (
-      <div className="h-screen bg-background flex items-center justify-center">
+      <div className="h-full bg-background flex items-center justify-center">
         <div className="text-center">
           <p className="text-text-muted">User not found. Please refresh the page.</p>
         </div>
@@ -3490,7 +3490,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
   }
 
   return (
-    <div className="app-container h-screen bg-background flex overflow-hidden">
+    <div className="app-container h-full bg-background flex overflow-hidden">
       {/* Sidebar */}
       <ErrorBoundary fallback={
         <div className="w-64 bg-[#1C1C1C] p-4 border-r border-[#424242] flex items-center justify-center">
