@@ -74,17 +74,17 @@ const TrialBanner: React.FC<TrialBannerProps> = ({ userTier, onTrialStart }) => 
   if (trialStatus.isEligible && !trialStatus.isActive) {
     return (
       <>
-        <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-xl p-4 mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+        <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row items-center gap-3 sm:justify-between">
+            <div className="flex items-center space-x-3 text-center sm:text-left">
+              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
                 <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-text-primary">Try Pro Free</h3>
-                <p className="text-text-secondary">
+                <h3 className="text-base sm:text-lg font-semibold text-text-primary">Try Pro Free</h3>
+                <p className="text-xs sm:text-sm text-text-secondary">
                   Get 7 days of Pro features. No credit card required.
                 </p>
               </div>
@@ -92,7 +92,7 @@ const TrialBanner: React.FC<TrialBannerProps> = ({ userTier, onTrialStart }) => 
             <Button
               onClick={() => setIsTrialConfirmModalOpen(true)}
               variant="primary"
-              className="btn-primary-enhanced"
+              className="btn-primary-enhanced w-full sm:w-auto flex-shrink-0"
             >
               Start Pro Trial
             </Button>

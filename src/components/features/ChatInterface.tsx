@@ -781,21 +781,21 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           }`}
         >
         {conversation.messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center px-4">
               <img
                 src="/images/mascot/4.png"
                 alt="Otagon Mascot"
-                className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 object-contain aspect-square mx-auto mb-4"
+                className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 object-contain aspect-square mx-auto mb-3"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.style.display = 'none';
                 }}
               />
-              <p className="text-text-muted text-lg">
+              <p className="text-text-muted text-sm sm:text-base">
                 Start a conversation with <span className="bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent font-semibold">Otagon</span>
               </p>
-              <p className="text-text-muted text-sm mt-2">Ask me anything about gaming, strategies, or tips. You can also start uploading gameplay screenshots for help!</p>
+              <p className="text-text-muted text-xs sm:text-sm mt-2 max-w-xs mx-auto">Ask me anything about gaming, strategies, or tips!</p>
             </div>
           </div>
         ) : (
