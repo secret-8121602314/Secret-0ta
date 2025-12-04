@@ -107,9 +107,9 @@ html, body {
   width: 100% !important;
   height: 100% !important;
   
-  /* Flex layout */
+  /* Flex layout - ROW direction for sidebar + main content */
   display: flex !important;
-  flex-direction: column !important;
+  flex-direction: row !important;
   
   /* Prevent overflow */
   overflow: hidden !important;
