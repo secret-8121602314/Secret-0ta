@@ -24,13 +24,13 @@ const ProBadge = () => (
 
 const FeatureItem: React.FC<{ icon: React.ReactNode; title: React.ReactNode; children: React.ReactNode }> = ({ icon, title, children }) => {
   return (
-    <div className="flex items-start gap-8 p-8 transition-all duration-500 hover:scale-105 bg-gradient-to-r from-[#1C1C1C]/40 to-[#0A0A0A]/40 border border-neutral-800/60 rounded-2xl backdrop-blur-sm">
-      <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 mt-1 rounded-xl bg-gradient-to-br from-[#FF4D4D]/20 to-[#FFAB40]/20 border-2 border-neutral-700/60 backdrop-blur-sm">
+    <div className="flex items-start gap-3 sm:gap-4 md:gap-6 p-4 sm:p-5 md:p-6 transition-all duration-500 hover:scale-[1.02] bg-gradient-to-r from-[#1C1C1C]/40 to-[#0A0A0A]/40 border border-neutral-800/60 rounded-xl sm:rounded-2xl backdrop-blur-sm">
+      <div className="flex-shrink-0 flex items-center justify-center h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12 mt-0.5 rounded-lg sm:rounded-xl bg-gradient-to-br from-[#FF4D4D]/20 to-[#FFAB40]/20 border-2 border-neutral-700/60 backdrop-blur-sm">
         {icon}
       </div>
-      <div className="flex-grow">
-        <h3 className="text-xl font-bold text-white mb-4 flex items-center">{title}</h3>
-        <div className="text-neutral-300 text-base leading-relaxed space-y-3">{children}</div>
+      <div className="flex-grow min-w-0">
+        <h3 className="text-base sm:text-lg md:text-xl font-bold text-white mb-2 sm:mb-3 flex items-center flex-wrap">{title}</h3>
+        <div className="text-neutral-300 text-sm sm:text-base leading-relaxed space-y-2 sm:space-y-3">{children}</div>
       </div>
     </div>
   );
@@ -55,26 +55,26 @@ const HowToUseSplashScreen: React.FC<HowToUseSplashScreenProps> = ({ onComplete 
   return (
     <div className="h-screen bg-gradient-to-br from-[#111111] to-[#0A0A0A] text-[#F5F5F5] flex flex-col font-inter">
       {/* Fixed Header */}
-      <header className="flex-shrink-0 px-4 sm:px-6 md:px-8 pt-3 sm:pt-4 md:pt-6 pb-2 sm:pb-3 text-center z-10 bg-gradient-to-br from-[#111111] to-[#0A0A0A]">
+      <header className="flex-shrink-0 px-5 sm:px-6 md:px-8 pt-6 sm:pt-5 md:pt-6 pb-2 sm:pb-3 text-center z-10 bg-gradient-to-br from-[#111111] to-[#0A0A0A]">
         <div className="max-w-4xl mx-auto">
           {/* Mascot Image */}
           <img
             src="/images/mascot/5.2.png"
             alt="Connected Mascot"
-            className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 object-contain mx-auto mb-3"
+            className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 object-contain mx-auto mb-2 sm:mb-3"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';
             }}
           />
-          <h1 className="text-3xl font-bold text-white leading-normal">You're Connected!</h1>
-          <p className="text-base text-neutral-300 leading-relaxed mt-2">Master Otagon in four easy steps.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white leading-normal">You're Connected!</h1>
+          <p className="text-sm sm:text-base text-neutral-300 leading-relaxed mt-1 sm:mt-2">Master Otagon in four easy steps.</p>
         </div>
       </header>
 
       {/* Scrollable Main Content */}
-      <main className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-8 pb-3 sm:pb-4 md:pb-6 how-to-use-scrollbar">
-        <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6 py-2 sm:py-3">
+      <main className="flex-1 overflow-y-auto px-5 sm:px-6 md:px-8 pb-3 sm:pb-4 how-to-use-scrollbar">
+        <div className="max-w-4xl mx-auto space-y-3 sm:space-y-4 md:space-y-5 py-1 sm:py-2">
           {/* Item 1: Capture */}
           <FeatureItem
             icon={<KeyboardIcon className="w-6 h-6 text-[#FFAB40]" />}
@@ -147,11 +147,11 @@ const HowToUseSplashScreen: React.FC<HowToUseSplashScreenProps> = ({ onComplete 
       </main>
 
       {/* Fixed Footer */}
-      <footer className="flex-shrink-0 p-6 sm:p-8 z-10 bg-gradient-to-br from-[#111111] to-[#0A0A0A]">
+      <footer className="flex-shrink-0 px-6 sm:px-8 py-4 sm:p-6 z-10 bg-gradient-to-br from-[#111111] to-[#0A0A0A]">
         <div className="w-full max-w-4xl mx-auto text-center">
           <button
             onClick={onComplete}
-            className="bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] md:hover:from-[#E53A3A] md:hover:to-[#D98C1F] text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 md:hover:scale-105 md:hover:shadow-lg active:scale-95 text-lg flex items-center justify-center mx-auto"
+            className="bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] md:hover:from-[#E53A3A] md:hover:to-[#D98C1F] text-white font-bold py-3 sm:py-4 px-6 sm:px-8 rounded-xl transition-all duration-300 md:hover:scale-105 md:hover:shadow-lg active:scale-95 text-base sm:text-lg flex items-center justify-center mx-auto"
           >
             Let's Begin
           </button>

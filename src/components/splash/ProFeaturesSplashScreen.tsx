@@ -64,7 +64,7 @@ const ProFeaturesSplashScreen: React.FC<ProFeaturesSplashScreenProps> = ({ onCom
   return (
     <div className="h-screen bg-gradient-to-br from-[#111111] to-[#0A0A0A] text-[#F5F5F5] flex flex-col font-inter overflow-hidden">
       {/* Tab Switcher - Top */}
-      <div className="flex-shrink-0 px-4 pt-3 pb-2">
+      <div className="flex-shrink-0 px-5 pt-6 sm:pt-4 pb-2">
         <div className="w-full max-w-xs mx-auto p-1 bg-[#1A1A1A]/80 backdrop-blur-sm rounded-xl flex items-center gap-1">
           <motion.button 
             onClick={() => setActiveTab('pro')} 
@@ -84,7 +84,7 @@ const ProFeaturesSplashScreen: React.FC<ProFeaturesSplashScreenProps> = ({ onCom
       </div>
 
       {/* Main Content - Mascot and header above list, centered, mobile first */}
-      <main className="flex-1 px-4 py-2 overflow-hidden lg:overflow-y-auto">
+      <main className="flex-1 px-5 sm:px-6 py-2 overflow-hidden lg:overflow-y-auto">
         <div className="h-full max-w-5xl mx-auto flex flex-col lg:block">
           <AnimatePresence mode="wait">
             <motion.div
@@ -99,71 +99,71 @@ const ProFeaturesSplashScreen: React.FC<ProFeaturesSplashScreenProps> = ({ onCom
               <div className="lg:hidden flex flex-col items-center justify-center h-full">
                 {/* Evenly distributed mascot+header, badge, and list for Vanguard; fallback for Pro */}
                 {isVanguard ? (
-                  <div className="flex flex-col flex-1 w-full items-center justify-center h-full gap-6">
+                  <div className="flex flex-col flex-1 w-full items-center justify-center h-full gap-3 sm:gap-4 py-4">
                     {/* Mascot + header */}
                     <div className="flex flex-col items-center">
                       <div className="relative">
                         <img 
                           src="/images/mascot/vanguard-user.png"
                           alt="Vanguard Mascot"
-                          className="w-60 h-60 sm:w-72 sm:h-72 object-contain rounded-xl"
+                          className="w-36 h-36 sm:w-44 sm:h-44 md:w-52 md:h-52 object-contain rounded-xl"
                         />
                       </div>
-                      <h2 className="mt-5 text-xl sm:text-2xl font-bold text-center text-amber-300">
+                      <h2 className="mt-3 sm:mt-4 text-lg sm:text-xl md:text-2xl font-bold text-center text-amber-300">
                         Founding Member
                       </h2>
-                      <p className="text-xs sm:text-base text-neutral-400 text-center mt-2 px-2">
+                      <p className="text-xs sm:text-sm text-neutral-400 text-center mt-1 px-2">
                         Shape the future
                       </p>
                     </div>
                     {/* Badge */}
-                    <div className="py-2 px-3 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/40 rounded-lg">
-                      <p className="text-xs sm:text-base font-semibold text-amber-300 text-center">✨ All Pro features included!</p>
+                    <div className="py-1.5 px-2.5 sm:py-2 sm:px-3 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/40 rounded-lg">
+                      <p className="text-xs sm:text-sm font-semibold text-amber-300 text-center">✨ All Pro features included!</p>
                     </div>
                     {/* List */}
-                    <div className="space-y-2 w-full max-w-xs mx-auto overflow-y-auto max-h-[40vh]">
+                    <div className="space-y-1.5 sm:space-y-2 w-full max-w-xs mx-auto overflow-y-auto max-h-[35vh] px-1">
                       {currentFeatures.map(f => (
-                        <div key={f.title} className="flex items-center gap-3 py-2 px-2 rounded-lg bg-[#181818]/60 border border-neutral-800/40">
-                          <svg className="w-6 h-6 flex-shrink-0 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                        <div key={f.title} className="flex items-center gap-2 sm:gap-3 py-1.5 sm:py-2 px-2 rounded-lg bg-[#181818]/60 border border-neutral-800/40">
+                          <svg className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
-                          <span className="text-base sm:text-lg text-neutral-200 font-medium">{f.title}</span>
+                          <span className="text-sm sm:text-base text-neutral-200 font-medium">{f.title}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 ) : (
-                  <>
-                    {/* Mascot and header (40% height) */}
-                    <div className="flex flex-col items-center justify-center" style={{ flex: '0 0 40%' }}>
+                  <div className="flex flex-col flex-1 w-full items-center justify-center h-full gap-3 sm:gap-4 py-4">
+                    {/* Mascot and header */}
+                    <div className="flex flex-col items-center justify-center">
                       <div className="relative">
                         <img 
                           src="/images/mascot/pro-user.png"
                           alt="Pro Mascot"
-                          className="w-60 h-60 sm:w-72 sm:h-72 object-contain rounded-xl"
+                          className="w-36 h-36 sm:w-44 sm:h-44 md:w-52 md:h-52 object-contain rounded-xl"
                         />
                       </div>
-                      <h2 className="mt-5 text-xl sm:text-2xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40]">
+                      <h2 className="mt-3 sm:mt-4 text-lg sm:text-xl md:text-2xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40]">
                         Otagon Pro
                       </h2>
-                      <p className="text-xs sm:text-base text-neutral-400 text-center mt-2 px-2">
+                      <p className="text-xs sm:text-sm text-neutral-400 text-center mt-1 px-2">
                         Ultimate companion
                       </p>
                     </div>
-                    {/* Features list (60% height) */}
-                    <div className="flex-1 w-full flex flex-col items-center justify-center mt-4" style={{ flex: '1 1 60%' }}>
-                      <div className="space-y-2 w-full max-w-xs mx-auto overflow-y-auto max-h-[40vh]">
+                    {/* Features list */}
+                    <div className="w-full flex flex-col items-center justify-center">
+                      <div className="space-y-1.5 sm:space-y-2 w-full max-w-xs mx-auto overflow-y-auto max-h-[35vh] px-1">
                         {currentFeatures.map(f => (
-                          <div key={f.title} className="flex items-center gap-3 py-2 px-2 rounded-lg bg-[#181818]/60 border border-neutral-800/40">
-                            <svg className="w-6 h-6 flex-shrink-0 text-[#FFAB40]" fill="currentColor" viewBox="0 0 20 20">
+                          <div key={f.title} className="flex items-center gap-2 sm:gap-3 py-1.5 sm:py-2 px-2 rounded-lg bg-[#181818]/60 border border-neutral-800/40">
+                            <svg className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 text-[#FFAB40]" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                             </svg>
-                            <span className="text-base sm:text-lg text-neutral-200 font-medium">{f.title}</span>
+                            <span className="text-sm sm:text-base text-neutral-200 font-medium">{f.title}</span>
                           </div>
                         ))}
                       </div>
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
 
@@ -210,7 +210,7 @@ const ProFeaturesSplashScreen: React.FC<ProFeaturesSplashScreenProps> = ({ onCom
       </main>
 
       {/* Footer - Sticky */}
-      <footer className="flex-shrink-0 bg-gradient-to-t from-[#0A0A0A] to-transparent px-4 pt-3 pb-4 sm:pb-5">
+      <footer className="flex-shrink-0 bg-gradient-to-t from-[#0A0A0A] to-transparent px-6 sm:px-8 pt-2 pb-6 sm:pb-5">
         <div className="w-full max-w-md mx-auto space-y-2">
           {/* Upgrade Button - Disabled */}
           <motion.button

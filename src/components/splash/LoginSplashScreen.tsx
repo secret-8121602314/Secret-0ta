@@ -347,7 +347,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
   };
 
   return (
-    <div className="h-[100dvh] bg-gradient-to-br from-background via-[#0F0F0F] to-background text-text-primary flex flex-col items-center justify-between px-4 py-6 md:py-6 lg:py-8 relative overflow-hidden">
+    <div className="h-[100dvh] bg-gradient-to-br from-background via-[#0F0F0F] to-background text-text-primary flex flex-col items-center justify-between px-5 sm:px-6 py-8 sm:py-6 md:py-6 lg:py-8 relative overflow-hidden">
       
       <div className={`w-full max-w-md lg:max-w-lg xl:max-w-xl relative z-10 transition-all duration-500 ${isAnimating ? 'scale-105' : 'scale-100'} mx-auto flex-1 flex flex-col justify-center`}>
         {/* Logo and Title */}
