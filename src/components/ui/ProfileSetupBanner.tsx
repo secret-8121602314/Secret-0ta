@@ -116,17 +116,18 @@ export const ProfileSetupBanner: React.FC<ProfileSetupBannerProps> = ({
       return;
     }
 
-    const originalOverflow = document.body.style.overflow;
+    // Set overflow hidden when overlay is active
     document.body.style.overflow = 'hidden';
 
     return () => {
-      document.body.style.overflow = originalOverflow;
+      // Reset to empty string to let CSS handle default (which is hidden via !important)
+      document.body.style.overflow = '';
     };
   }, [shouldUseOverlay]);
 
   const collapsedBanner = (
     <div className="mx-3 sm:mx-4 lg:mx-6 mb-4 sm:mb-6">
-      <div className="bg-gradient-to-r from-[#FF4D4D]/10 to-[#FFAB40]/10 border-2 border-[#FF4D4D]/30 rounded-xl p-4 shadow-lg animate-slide-down backdrop-blur-sm">
+      <div className="bg-gradient-to-r from-[#FF4D4D]/10 to-[#FFAB40]/10 border-2 border-[#FF4D4D]/30 rounded-xl p-4 shadow-lg animate-fade-slide-down backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3 flex-1">
             <div className="w-10 h-10 bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] rounded-full flex items-center justify-center flex-shrink-0 shadow-lg">

@@ -237,6 +237,7 @@ const AppRouter: React.FC<AppRouterProps> = ({
       return (
         <>
           <MainApp
+            key={`mainapp-${authState.user?.authUserId || 'guest'}`}
             onLogout={handleLogout}
             onOpenSettings={() => setSettingsOpen(true)}
             onOpenAbout={() => openModal('about')}

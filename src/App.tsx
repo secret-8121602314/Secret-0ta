@@ -334,6 +334,16 @@ function App() {
 
   const handleLoginComplete = async () => {
     console.log('🎯 [App] Email login completed, setting view to app');
+    
+    // ✅ MOBILE FIX: Ensure clean DOM state before transitioning to app
+    document.body.style.cssText = '';
+    document.documentElement.style.cssText = '';
+    const rootEl = document.getElementById('root');
+    if (rootEl) {
+      rootEl.style.cssText = '';
+    }
+    void document.body.offsetHeight; // Force layout recalculation
+    
     setAppState((prev: AppState) => {
       const newState: AppState = { ...prev, view: 'app', onboardingStatus: 'loading' };
       console.log('🎯 [App] Setting view to app with loading status:', newState);
@@ -353,6 +363,15 @@ function App() {
   const handleOAuthSuccess = () => {
     // Clear URL without causing navigation
     window.history.replaceState({}, document.title, '/');
+    
+    // ✅ MOBILE FIX: Ensure clean DOM state before transitioning to app
+    document.body.style.cssText = '';
+    document.documentElement.style.cssText = '';
+    const rootEl = document.getElementById('root');
+    if (rootEl) {
+      rootEl.style.cssText = '';
+    }
+    void document.body.offsetHeight; // Force layout recalculation
     
     // Set app state to show the app
     setAppState((prev: AppState) => ({ ...prev, view: 'app' }));
@@ -381,6 +400,19 @@ function App() {
     
     // Preserve welcome screen flag (user has seen it once, don't show again)
     const welcomeShown = localStorage.getItem('otakon_welcome_shown');
+    
+    // ✅ MOBILE FIX: Clean up DOM styles SYNCHRONOUSLY before logout
+    // This ensures no stale styles remain when LoginSplashScreen renders
+    console.log('🧹 [App] Cleaning up DOM styles before logout...');
+    document.body.style.cssText = '';
+    document.documentElement.style.cssText = '';
+    const rootEl = document.getElementById('root');
+    if (rootEl) {
+      rootEl.style.cssText = '';
+    }
+    void document.body.offsetHeight; // Force layout recalculation
+    window.scrollTo(0, 0);
+    console.log('🧹 [App] DOM styles cleaned up before logout');
     
     // ✅ PWA FIX: Dispatch a custom event BEFORE signOut to notify components to reset their refs
     // This is critical for MainApp to reset hasLoadedConversationsRef
@@ -850,6 +882,13 @@ function App() {
         };
         setAuthState(prev => ({ ...prev, user: updatedUser }));
         
+        // ✅ MOBILE FIX: Force layout recalculation after banner dismissal
+        // This ensures the flex container properly expands the chat area
+        requestAnimationFrame(() => {
+          document.body.style.overflow = '';
+          void document.body.offsetHeight; // Force reflow
+        });
+        
         // Use markProfileSetupComplete to properly set has_profile_setup flag
         await onboardingService.markProfileSetupComplete(authState.user.authUserId, profileData as unknown as Record<string, unknown>);
         
@@ -874,6 +913,13 @@ function App() {
           hasProfileSetup: true
         };
         setAuthState(prev => ({ ...prev, user: updatedUser }));
+        
+        // ✅ MOBILE FIX: Force layout recalculation after banner dismissal
+        // This ensures the flex container properly expands the chat area
+        requestAnimationFrame(() => {
+          document.body.style.overflow = '';
+          void document.body.offsetHeight; // Force reflow
+        });
         
         // Use 'profile-setup' step to properly set has_profile_setup flag
         await onboardingService.updateOnboardingStatus(authState.user.authUserId, 'profile-setup', {

@@ -677,14 +677,10 @@ export class AuthService {
         console.error('⚠️ [AuthService] Failed to reset SupabaseService:', error);
       }
       
-      // ✅ MOBILE FIX: Reset body/document styles to prevent accumulated spacing
-      // This ensures any leftover inline styles from modals/overlays are cleared
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.height = '';
-      document.body.style.width = '';
-      document.documentElement.style.overflow = '';
-      document.documentElement.style.height = '';
+      // ✅ MOBILE FIX: DOM style cleanup is now handled by cleanupDOMStyles() in App.tsx
+      // via the 'otakon:signed-out' event dispatched by supabase.ts when SIGNED_OUT fires.
+      // This consolidates all style cleanup to one place to avoid race conditions.
+      // The event-based cleanup uses cssText = '' for a complete reset.
       
       // ✅ MOBILE FIX: Remove any orphaned AdSense elements that might have accumulated
       // AdSense can create elements that don't get cleaned up properly
@@ -696,7 +692,7 @@ export class AuthService {
         }
       });
       
-      console.log('🧹 [AuthService] DOM styles reset for clean re-login');
+      console.log('🧹 [AuthService] AdSense cleanup complete, DOM styles delegated to App.tsx');
       
       // Clear auth state
       this.updateAuthState({ user: null, isLoading: false, error: null });

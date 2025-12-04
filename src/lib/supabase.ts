@@ -35,6 +35,16 @@ if (typeof window !== 'undefined') {
   supabase.auth.onAuthStateChange((event, session) => {
     if (event === 'SIGNED_IN') {
       if (session?.access_token) {
+        // ✅ MOBILE FIX: Clean DOM state on successful sign-in to prevent stale styles
+        document.body.style.cssText = '';
+        document.documentElement.style.cssText = '';
+        const rootEl = document.getElementById('root');
+        if (rootEl) {
+          rootEl.style.cssText = '';
+        }
+        void document.body.offsetHeight; // Force layout recalculation
+        console.log('🔐 [Supabase] DOM styles cleaned on SIGNED_IN');
+        
         // Store session timestamp for PWA mode
         localStorage.setItem('otakon_session_refreshed', Date.now().toString());
         localStorage.setItem('otakon_last_session_check', Date.now().toString());
@@ -68,6 +78,16 @@ if (typeof window !== 'undefined') {
         }));
       }
     } else if (event === 'SIGNED_OUT') {
+      // ✅ MOBILE FIX: Clean DOM state on sign-out to prevent stale styles
+      document.body.style.cssText = '';
+      document.documentElement.style.cssText = '';
+      const rootEl = document.getElementById('root');
+      if (rootEl) {
+        rootEl.style.cssText = '';
+      }
+      void document.body.offsetHeight; // Force layout recalculation
+      console.log('🔐 [Supabase] DOM styles cleaned on SIGNED_OUT');
+      
       // Clear all session data
       localStorage.removeItem('otakon_session_refreshed');
       localStorage.removeItem('otakon_last_session_check');
