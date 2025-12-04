@@ -927,7 +927,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       {/* Floating Chat Input Section with Gradient Border */}
       <div className="flex-shrink-0 bg-background/95 backdrop-blur-sm">
-        <div className="mx-3 mt-3 mb-3 rounded-2xl p-px transition-all duration-300" style={{
+        <div className="mx-3 mt-3 mb-4 rounded-2xl p-px transition-all duration-300" style={{
           background: isFocused 
             ? 'linear-gradient(135deg, #FF4D4D, #FFAB40)'
             : 'transparent'
