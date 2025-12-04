@@ -40,10 +40,10 @@ const AdBanner: React.FC = () => {
       <div className="bg-gradient-to-r from-gray-100/10 to-gray-200/10 border border-gray-300/20 rounded-xl p-2 sm:p-3 mb-3 sm:mb-4">
         {/* 
           Constrain ad height to prevent AdSense from taking too much space on mobile/PWA.
-          Mobile: 72px, Tablet: 80px, Desktop: 96px (20% reduction)
+          Mobile: 50px, Tablet: 56px, Desktop: 67px (additional 30% reduction = 50% total)
           Using overflow-hidden to clip any overflow from AdSense iframe
         */}
-        <div className="h-[72px] sm:h-[80px] lg:h-[96px] overflow-hidden rounded-lg">
+        <div className="h-[50px] sm:h-[56px] lg:h-[67px] overflow-hidden rounded-lg">
           <ins
             ref={adRef}
             className="adsbygoogle"
@@ -51,7 +51,7 @@ const AdBanner: React.FC = () => {
               display: 'block',
               width: '100%',
               height: '100%',
-              maxHeight: '96px'
+              maxHeight: '67px'
             }}
             data-ad-client="ca-pub-4482938310886744"
             data-ad-slot="6150844525"
