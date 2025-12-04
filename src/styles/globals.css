@@ -1196,25 +1196,27 @@ html, body {
 /* ============================================================================
    ADSENSE BANNER HEIGHT CONSTRAINTS - FORCE STRICT SIZING
    Override Google AdSense defaults with !important to prevent oversizing
+   Updated to 75/84/100px sizes
    ============================================================================ */
 
 /* Force height on ad container */
 .adsbygoogle {
   height: 100% !important;
-  max-height: inherit !important;
+  max-height: 100px !important;
   min-height: auto !important;
 }
 
 /* Force iframe inside adsbygoogle to respect parent height */
 .adsbygoogle iframe {
   height: 100% !important;
-  max-height: inherit !important;
+  max-height: 100px !important;
   min-height: auto !important;
 }
 
 /* Prevent ad div from expanding beyond container */
 [class*="adsbygoogle"] {
   height: 100% !important;
+  max-height: 100px !important;
   display: block !important;
 }
 
