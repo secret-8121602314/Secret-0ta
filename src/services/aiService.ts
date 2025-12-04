@@ -388,11 +388,18 @@ class AIService {
           ? [{ google_search: {} }]  // Updated to Gemini 2.5 syntax
           : [];
 
+        // ? ACCURACY FIX: Use lower temperature for image analysis (more precise game detection)
+        // and for factual queries (release dates, stats, specific information)
+        const isFactualQuery = userMessage.toLowerCase().match(
+          /release date|when does|how many|stats|damage|percentage|price|cost|how much|exact|specific/i
+        );
+        const optimalTemperature = hasImages ? 0.4 : (isFactualQuery ? 0.4 : 0.7);
+
         // Call Edge Function proxy
         const edgeResponse = await this.callEdgeFunction({
           prompt,
           image: imageBase64,
-          temperature: 0.7,
+          temperature: optimalTemperature,
           maxTokens: 2048,
           requestType: hasImages ? 'image' : 'text',
           model: modelName,
@@ -780,10 +787,16 @@ In addition to your regular response, provide structured data in the following o
           ? [{ google_search: {} }]  // ? Gemini 2.5 syntax, works for images too
           : [];
 
+        // ? ACCURACY FIX: Use lower temperature for image analysis and factual queries
+        const isFactualQuery = userMessage.toLowerCase().match(
+          /release date|when does|how many|stats|damage|percentage|price|cost|how much|exact|specific/i
+        );
+        const optimalTemperature = hasImages ? 0.4 : (isFactualQuery ? 0.4 : 0.7);
+
         const edgeResponse = await this.callEdgeFunction({
           prompt,
           image: imageBase64,
-          temperature: 0.7,
+          temperature: optimalTemperature,
           maxTokens: 2048,
           requestType: hasImages ? 'image' : 'text',
           model: modelName,
