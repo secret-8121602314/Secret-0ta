@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import TTSStatusIndicator from '../ui/TTSStatusIndicator';
 import { ttsService } from '../../services/ttsService';
 
@@ -10,6 +10,14 @@ interface HandsFreeModalProps {
 }
 
 const SPEECH_RATE_KEY = 'otakonSpeechRate';
+
+// Detect iOS devices
+const isIOSDevice = (): boolean => {
+  if (typeof navigator === 'undefined') return false;
+  const userAgent = navigator.userAgent || navigator.vendor || '';
+  return /iPad|iPhone|iPod/.test(userAgent) || 
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); // iPad on iOS 13+
+};
 
 const HandsFreeModal: React.FC<HandsFreeModalProps> = ({
   isOpen,
@@ -25,6 +33,9 @@ const HandsFreeModal: React.FC<HandsFreeModalProps> = ({
     const savedRate = localStorage.getItem(SPEECH_RATE_KEY);
     return savedRate ? parseFloat(savedRate) : 0.94;
   });
+  
+  // Memoize iOS detection
+  const isIOS = useMemo(() => isIOSDevice(), []);
 
   useEffect(() => {
     const updateVoices = async () => {
@@ -141,6 +152,21 @@ const HandsFreeModal: React.FC<HandsFreeModalProps> = ({
                 <h3 className="text-sm font-medium text-[#CFCFCF] mb-3">TTS Status</h3>
                 <TTSStatusIndicator showDetails={true} />
             </div>
+            
+            {/* iOS Warning Note */}
+            {isIOS && (
+                <div className="bg-amber-900/30 border border-amber-600/50 p-4 rounded-lg flex gap-3">
+                    <svg className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div>
+                        <p className="text-amber-200 text-sm font-medium">iOS Limitation</p>
+                        <p className="text-amber-300/80 text-xs mt-1">
+                            Voice responses will pause when your screen locks or Safari is in the background. Keep your screen on for uninterrupted playback.
+                        </p>
+                    </div>
+                </div>
+            )}
             
             <div>
                 <label htmlFor="voice-select" className="block text-sm font-medium text-[#CFCFCF] mb-1">
