@@ -5,12 +5,14 @@ interface AddGameModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreateGame: (gameName: string, query: string) => void;
+  onCloseSidebar?: () => void;
 }
 
 const AddGameModal: React.FC<AddGameModalProps> = ({
   isOpen,
   onClose,
   onCreateGame,
+  onCloseSidebar,
 }) => {
   const [gameName, setGameName] = useState('');
   const [query, setQuery] = useState('');
@@ -60,8 +62,15 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
     return null;
   }
 
+  // Close sidebar on mobile when modal opens
+  React.useEffect(() => {
+    if (isOpen && typeof window !== 'undefined' && window.innerWidth < 1024) {
+      onCloseSidebar?.();
+    }
+  }, [isOpen, onCloseSidebar]);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="relative w-full max-w-lg bg-background rounded-2xl shadow-2xl border-2 border-transparent bg-clip-padding" style={{ backgroundImage: 'linear-gradient(#1a1a1a, #1a1a1a), linear-gradient(135deg, #FF4D4D, #FFAB40)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box' }}>
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-700">

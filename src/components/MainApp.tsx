@@ -3811,7 +3811,9 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
         isOpen={addGameModalOpen}
         onClose={() => setAddGameModalOpen(false)}
         onCreateGame={handleCreateGame}
+        onCloseSidebar={() => setSidebarOpen(false)}
       />
+
 
       {/* Game Info Modal - IGDB Integration */}
       <GameInfoModal
