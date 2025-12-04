@@ -3596,8 +3596,12 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
           </div>
         </header>
 
-        {/* Chat Area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Chat Area - key forces remount when profile banner visibility changes */}
+        {/* This ensures flex layout properly recalculates on Safari PWA */}
+        <div 
+          key={`chat-area-${showProfileSetupBanner ? 'with-banner' : 'no-banner'}`}
+          className="flex-1 flex flex-col overflow-hidden"
+        >
           {/* Profile Setup Banner - Show if user hasn't set up profile */}
           {showProfileSetupBanner && onProfileSetupComplete && onProfileSetupDismiss && (
             <div className="flex-shrink-0 pt-3 sm:pt-4 lg:pt-6">

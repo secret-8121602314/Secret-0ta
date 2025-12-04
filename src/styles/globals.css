@@ -72,26 +72,42 @@ html, body {
 
 /* PWA Standalone Mode - MINIMAL overrides, most rules already work */
 @media (display-mode: standalone) {
-  /* These are just reinforcements, not new rules */
-  html, #root {
-    /* Ensure no external factors add spacing */
+  /* 
+   * PWA Layout Strategy:
+   * - Use 100dvh (dynamic viewport height) everywhere for consistency
+   * - Body is position: fixed to prevent iOS Safari bounce/scroll issues
+   * - All elements use the same height unit to avoid calculation mismatches
+   */
+  html {
     margin: 0 !important;
     padding: 0 !important;
     height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
     overflow: hidden !important;
   }
   
   /* Body uses fixed positioning for iOS PWA stability */
+  /* Using inset instead of individual top/left/right/bottom for cleaner code */
   body {
     position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
+    inset: 0 !important;
+    width: 100dvw !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
     margin: 0 !important;
     padding: 0 !important;
+    overflow: hidden !important;
+  }
+  
+  #root {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
+    max-height: 100% !important;
     overflow: hidden !important;
   }
 }
@@ -126,6 +142,24 @@ html, body {
     height: 100% !important;
     min-height: 0 !important;
     max-height: 100% !important;
+  }
+  
+  /* 
+   * PWA Flex Fix: Ensure flex-1 elements properly expand when siblings are removed
+   * Safari PWA can be lazy about recalculating flex layouts
+   * Using flex: 1 1 0% (which is what Tailwind's flex-1 compiles to) should work,
+   * but we add min-height: 0 to allow shrinking below content size
+   */
+  .flex-1 {
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+  }
+  
+  /* Ensure flex columns properly distribute space */
+  .flex-col > .flex-1 {
+    flex-basis: 0% !important;
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
   }
   
   /* Ensure sidebar conversation list scrolls properly */

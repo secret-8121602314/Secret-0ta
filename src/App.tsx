@@ -9,6 +9,7 @@ import { supabase } from './lib/supabase';
 import AppRouter from './components/AppRouter';
 import { ToastContainer } from './components/ui/ToastContainer';
 import { isPWAMode } from './utils/pwaDetection';
+import LayoutDebugOverlay from './components/debug/LayoutDebugOverlay';
 
 console.log('🚀🚀🚀 APP.TSX LOADED - NEW CODE VERSION 9:24 PM 🚀🚀🚀');
 
@@ -975,6 +976,7 @@ function App() {
           isManualNavigationRef={isManualNavigationRef}
         />
       <ToastContainer />
+      <LayoutDebugOverlay />
     </>
   );
 }

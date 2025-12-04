@@ -2,40 +2,60 @@
   "cookies": [
     {
       "name": "CLID",
-      "value": "5b8a209a166e4f09830c440562ebd95f.20251128.20261128",
+      "value": "4dc473b25456478fae16b631fde19f1d.20251204.20261204",
       "domain": "www.clarity.ms",
       "path": "/",
-      "expires": 1795888133.356312,
+      "expires": 1796362947.492057,
       "httpOnly": true,
       "secure": true,
       "sameSite": "None"
     },
     {
       "name": "_clck",
-      "value": "lvmmk1%5E2%5Eg1e%5E0%5E2158",
+      "value": "1y9yj4v%5E2%5Eg1k%5E0%5E2164",
       "domain": "localhost",
       "path": "/",
-      "expires": 1795888133,
+      "expires": 1796362947,
       "httpOnly": false,
       "secure": false,
       "sameSite": "Lax"
     },
     {
       "name": "_ga",
-      "value": "GA1.1.731144029.1764352134",
+      "value": "GA1.1.1008688397.1764826948",
       "domain": "localhost",
       "path": "/",
-      "expires": 1798912133.505164,
+      "expires": 1799386947.568234,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "test_cookie",
+      "value": "CheckForPermission",
+      "domain": ".doubleclick.net",
+      "path": "/",
+      "expires": 1764827847.908365,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "_clsk",
+      "value": "3mf77i%5E1764826948336%5E1%5E1%5Ev.clarity.ms%2Fcollect",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1764913348,
       "httpOnly": false,
       "secure": false,
       "sameSite": "Lax"
     },
     {
       "name": "MUID",
-      "value": "25987C8E00CE623D1A906A3C01266310",
+      "value": "1CAAF591AB3B6FD520A1E329AAD36EA0",
       "domain": ".bing.com",
       "path": "/",
-      "expires": 1798048135.304481,
+      "expires": 1798522948.510427,
       "httpOnly": false,
       "secure": true,
       "sameSite": "None"
@@ -45,17 +65,17 @@
       "value": "0",
       "domain": ".c.bing.com",
       "path": "/",
-      "expires": 1764956935.304525,
+      "expires": 1765431748.510479,
       "httpOnly": false,
       "secure": true,
       "sameSite": "None"
     },
     {
       "name": "SRM_B",
-      "value": "25987C8E00CE623D1A906A3C01266310",
+      "value": "1CAAF591AB3B6FD520A1E329AAD36EA0",
       "domain": ".c.bing.com",
       "path": "/",
-      "expires": 1798048135.30454,
+      "expires": 1798522948.510497,
       "httpOnly": false,
       "secure": true,
       "sameSite": "None"
@@ -72,10 +92,10 @@
     },
     {
       "name": "MUID",
-      "value": "25987C8E00CE623D1A906A3C01266310",
+      "value": "1CAAF591AB3B6FD520A1E329AAD36EA0",
       "domain": ".clarity.ms",
       "path": "/",
-      "expires": 1798048135.414778,
+      "expires": 1798522948.61753,
       "httpOnly": false,
       "secure": true,
       "sameSite": "None"
@@ -85,7 +105,7 @@
       "value": "0",
       "domain": ".c.clarity.ms",
       "path": "/",
-      "expires": 1764956935.414805,
+      "expires": 1765431748.617567,
       "httpOnly": false,
       "secure": true,
       "sameSite": "None"
@@ -95,27 +115,17 @@
       "value": "0",
       "domain": ".c.clarity.ms",
       "path": "/",
-      "expires": 1764352735.414819,
+      "expires": 1764827548.617583,
       "httpOnly": false,
       "secure": true,
       "sameSite": "None"
     },
     {
-      "name": "_clsk",
-      "value": "wx3k54%5E1764352138264%5E2%5E1%5Eb.clarity.ms%2Fcollect",
-      "domain": "localhost",
-      "path": "/",
-      "expires": 1764438538,
-      "httpOnly": false,
-      "secure": false,
-      "sameSite": "Lax"
-    },
-    {
       "name": "_ga_LJWNXPBRYT",
-      "value": "GS2.1.s1764352133$o1$g1$t1764352138$j55$l0$h0",
+      "value": "GS2.1.s1764826947$o1$g0$t1764826952$j55$l0$h0",
       "domain": "localhost",
       "path": "/",
-      "expires": 1798912138.673696,
+      "expires": 1799386952.170383,
       "httpOnly": false,
       "secure": false,
       "sameSite": "Lax"
@@ -126,36 +136,17 @@
       "origin": "http://localhost:5173",
       "localStorage": [
         {
-          "name": "otakon_last_session_check",
-          "value": "1764352137630"
-        },
-        {
-          "name": "sb-127-auth-token",
-          "value": "{\"access_token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjU0MzIxL2F1dGgvdjEiLCJzdWIiOiI1YWFmMmI1YS1mNGM2LTRmOTItOWFmNS01ZGJlMjJmNDdkN2UiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzY0MzU1NzM3LCJpYXQiOjE3NjQzNTIxMzcsImVtYWlsIjoidGVzdEBvdGFnb24ubG9jYWwiLCJwaG9uZSI6IiIsImFwcF9tZXRhZGF0YSI6eyJwcm92aWRlciI6ImVtYWlsIiwicHJvdmlkZXJzIjpbImVtYWlsIl19LCJ1c2VyX21ldGFkYXRhIjp7ImVtYWlsX3ZlcmlmaWVkIjp0cnVlfSwicm9sZSI6ImF1dGhlbnRpY2F0ZWQiLCJhYWwiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJwYXNzd29yZCIsInRpbWVzdGFtcCI6MTc2NDM1MjEzN31dLCJzZXNzaW9uX2lkIjoiNGI2MTRmMTItZDM5ZC00NzE3LWFjYzEtNzUwZDAxYTQ4NjZhIiwiaXNfYW5vbnltb3VzIjpmYWxzZX0.bP9s0A7FxhKrwJNuq9xE1yJZ-2wXbFGI-w-MluUhZio\",\"token_type\":\"bearer\",\"expires_in\":3600,\"expires_at\":1764355737,\"refresh_token\":\"65o45fhh7l5y\",\"user\":{\"id\":\"5aaf2b5a-f4c6-4f92-9af5-5dbe22f47d7e\",\"aud\":\"authenticated\",\"role\":\"authenticated\",\"email\":\"test@otagon.local\",\"email_confirmed_at\":\"2025-11-28T13:29:43.431003Z\",\"phone\":\"\",\"confirmed_at\":\"2025-11-28T13:29:43.431003Z\",\"last_sign_in_at\":\"2025-11-28T17:48:57.623477256Z\",\"app_metadata\":{\"provider\":\"email\",\"providers\":[\"email\"]},\"user_metadata\":{\"email_verified\":true},\"identities\":[{\"identity_id\":\"f90bc8b2-8c51-47fa-8ecf-90ccab914fb9\",\"id\":\"5aaf2b5a-f4c6-4f92-9af5-5dbe22f47d7e\",\"user_id\":\"5aaf2b5a-f4c6-4f92-9af5-5dbe22f47d7e\",\"identity_data\":{\"email\":\"test@otagon.local\",\"email_verified\":false,\"phone_verified\":false,\"sub\":\"5aaf2b5a-f4c6-4f92-9af5-5dbe22f47d7e\"},\"provider\":\"email\",\"last_sign_in_at\":\"2025-11-28T13:29:43.427656Z\",\"created_at\":\"2025-11-28T13:29:43.427675Z\",\"updated_at\":\"2025-11-28T13:29:43.427675Z\",\"email\":\"test@otagon.local\"}],\"created_at\":\"2025-11-28T13:29:43.425428Z\",\"updated_at\":\"2025-11-28T17:48:57.626186Z\",\"is_anonymous\":false},\"weak_password\":null}"
-        },
-        {
-          "name": "otakon_session_refreshed",
-          "value": "1764352137630"
-        },
-        {
-          "name": "otakon_manual_upload_mode",
-          "value": "true"
-        },
-        {
           "name": "otakon_suggested_prompts_last_reset",
-          "value": "1764352133142"
-        },
+          "value": "1764826947970"
+        }
+      ]
+    },
+    {
+      "origin": "https://www.google.com",
+      "localStorage": [
         {
-          "name": "otakonPreferredVoiceURI",
-          "value": "Microsoft David - English (United States)"
-        },
-        {
-          "name": "otakon_conversations",
-          "value": "{\"game-hub\":{\"id\":\"game-hub\",\"authUserId\":\"5aaf2b5a-f4c6-4f92-9af5-5dbe22f47d7e\",\"title\":\"Game Hub\",\"messages\":[],\"subtabs\":[],\"subtabsOrder\":[],\"isActiveSession\":false,\"gameProgress\":0,\"createdAt\":1764337882729,\"updatedAt\":1764352057169,\"isActive\":true,\"isPinned\":false,\"isGameHub\":true,\"isUnreleased\":false}}"
-        },
-        {
-          "name": "otakon_user",
-          "value": "{\"id\":\"d4dd1427-992f-4dd3-ab26-a24d23848ad2\",\"authUserId\":\"5aaf2b5a-f4c6-4f92-9af5-5dbe22f47d7e\",\"email\":\"test@otagon.local\",\"tier\":\"free\",\"hasProfileSetup\":false,\"hasSeenSplashScreens\":true,\"hasSeenHowToUse\":true,\"hasSeenFeaturesConnected\":true,\"hasSeenProFeatures\":true,\"pcConnected\":false,\"pcConnectionSkipped\":true,\"onboardingCompleted\":true,\"hasWelcomeMessage\":true,\"isNewUser\":false,\"hasUsedTrial\":false,\"lastActivity\":1764352060867,\"textCount\":0,\"imageCount\":0,\"textLimit\":55,\"imageLimit\":25,\"totalRequests\":0,\"lastReset\":1764337205886,\"connectionDeviceInfo\":{},\"preferences\":{},\"usage\":{\"textCount\":0,\"imageCount\":0,\"textLimit\":55,\"imageLimit\":25,\"totalRequests\":0,\"lastReset\":1764337205886,\"tier\":\"free\"},\"appState\":{\"onboardingStatus\":\"complete\",\"hasSeenProFeatures\":true,\"onboardingCompleted\":true,\"completedOnboardingAt\":\"2025-11-28T13:51:22.619Z\"},\"profileData\":{},\"onboardingData\":{},\"behaviorData\":{},\"feedbackData\":{},\"usageData\":{\"textCount\":920,\"imageCount\":0,\"totalRequests\":920},\"createdAt\":1764337205886,\"updatedAt\":1764352060826}"
+          "name": "rc::h",
+          "value": "1764826948813"
         }
       ]
     }
