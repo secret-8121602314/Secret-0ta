@@ -597,7 +597,7 @@ const MainApp: React.FC<MainAppProps> = ({
         
         // ✅ FIX: Don't use getCachedConversations() - it may be stale or null after cache invalidation
         // Instead, call getConversations() to get fresh data from Supabase
-        let userConversations = await ConversationService.getConversations(forceRefresh);
+        const userConversations = await ConversationService.getConversations(forceRefresh);
         console.log('🔍 [MainApp] Conversations from getConversations:', Object.keys(userConversations));
         console.log('🔍 [MainApp] Conversation count:', Object.keys(userConversations).length);
         
@@ -955,7 +955,9 @@ const MainApp: React.FC<MainAppProps> = ({
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-                  } else if (status === 'CHANNEL_ERROR') {
+          // Successfully subscribed to real-time updates
+          console.log('✅ [MainApp] Real-time subscription active');
+        } else if (status === 'CHANNEL_ERROR') {
           console.error('❌ [MainApp] Real-time subscription error');
         }
       });
@@ -1934,7 +1936,10 @@ const MainApp: React.FC<MainAppProps> = ({
     
     // Remove from IndexedDB queue if we have a queueId
     if (targetMessage && (targetMessage as { queueId?: string }).queueId) {
-      await offlineQueueService.removePendingMessage((targetMessage as { queueId?: string }).queueId!);
+      const queueId = (targetMessage as { queueId?: string }).queueId;
+      if (queueId) {
+        await offlineQueueService.removePendingMessage(queueId);
+      }
     } else {
       // Fallback: clear all messages (shouldn't happen normally)
       console.warn('[MainApp] No queueId found, clearing all pending messages');
@@ -2051,9 +2056,9 @@ const MainApp: React.FC<MainAppProps> = ({
       if (result.success) {
         toastService.success('Thanks for helping us improve! 🙏');
         // ✅ Confirm the feedback in the UI by calling the message component's confirm callback
-        const messageElement = document.querySelector(`[data-message-id="${feedbackMessageId}"]`);
-        if (messageElement && (messageElement as any).__confirmFeedback) {
-          (messageElement as any).__confirmFeedback('down');
+        const messageElement = document.querySelector(`[data-message-id="${feedbackMessageId}"]`) as HTMLElement & { __confirmFeedback?: (type: 'up' | 'down') => void };
+        if (messageElement && messageElement.__confirmFeedback) {
+          messageElement.__confirmFeedback('down');
         }
       } else {
         toastService.error('Failed to submit feedback');
@@ -2287,7 +2292,8 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
     // Prevent duplicate/concurrent sends
     if (!activeConversation || isLoading) {
       if (isLoading) {
-              }
+        // Already processing a message, skip this request
+      }
       console.warn('📸 [MainApp] handleSendMessage blocked:', { 
         hasActiveConversation: !!activeConversation, 
         isLoading,
@@ -2420,7 +2426,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
           });
           
           // Save confirmation message to DB
-          conversationStore.addMessage(activeConversation.id, deleteConfirmMessage).catch(err => 
+          ConversationService.addMessage(activeConversation.id, deleteConfirmMessage).catch((err: unknown) => 
             console.error('Failed to save delete confirmation:', err)
           );
           
@@ -2800,7 +2806,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
           processedSuggestions = await shownPromptsService.filterNewPrompts(
             user.authUserId,
             processedSuggestions,
-            'followup',
+            'suggested',
             gameTitle
           );
           console.log('🔍 [MainApp] processedSuggestions (after shown filter):', processedSuggestions);
@@ -3026,29 +3032,59 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
       }
 
       // Handle game tab creation if game is identified
+      // 🔍 DEBUG: Log all otakon tags for debugging game tab creation
+      console.log('🎮 [MainApp] DEBUG - All otakon tags from AI response:', {
+        hasGameId: response.otakonTags.has('GAME_ID'),
+        allTagKeys: Array.from(response.otakonTags.keys()),
+        allTagValues: Object.fromEntries(response.otakonTags),
+        imageUrl: imageUrl ? '(has image)' : '(no image)',
+        activeConversationId: activeConversation.id,
+        isGameHub: activeConversation.isGameHub
+      });
+      
       if (response.otakonTags.has('GAME_ID')) {
         const gameTitle = response.otakonTags.get('GAME_ID');
         const confidence = response.otakonTags.get('CONFIDENCE');
         const isUnreleased = response.otakonTags.get('GAME_STATUS') === 'unreleased';
         const genre = response.otakonTags.get('GENRE') || 'Default';
 
-                // Create game tab if:
-        // 1. Confidence is high (game is valid)
-        // 2. IS_FULLSCREEN is true (actual gameplay, not launcher/menu)
-        // 3. Game can be unreleased OR released - both get tabs
-        // Invalid games (low confidence, no GAME_ID, menus/launchers) stay in Game Hub
+        // Create game tab if confidence is high (game is valid)
+        // 
+        // SIMPLIFIED LOGIC:
+        // - For TEXT queries: Create tab if confidence is high
+        // - For IMAGE queries (screenshots OR camera photos): Create tab if confidence is high
+        //   - Removed IS_FULLSCREEN requirement because:
+        //     1. Users can upload camera photos of their screen (not fullscreen)
+        //     2. Camera photos of gameplay should still create tabs
+        //     3. High confidence already indicates the AI recognized actual gameplay
+        // 
+        // The AI's high confidence in game identification is sufficient to create a tab.
+        // Low confidence (menus, launchers, unclear images) will stay in Game Hub.
+        const shouldCreateTab = confidence === 'high';
+        
+        // Keep IS_FULLSCREEN for informational/logging purposes only
         const isFullscreen = response.otakonTags.get('IS_FULLSCREEN') === 'true';
-        const shouldCreateTab = confidence === 'high' && isFullscreen;
+        const wasImageQuery = !!imageUrl;
+        
+        // 🔍 DEBUG: Log all decision factors for game tab creation
+        console.log('🎮 [MainApp] DEBUG - Game tab creation decision:', {
+          gameTitle,
+          confidence,
+          confidenceIsHigh: confidence === 'high',
+          isFullscreen: isFullscreen, // Informational only
+          wasImageQuery,
+          shouldCreateTab,
+          note: 'IS_FULLSCREEN no longer blocks tab creation - high confidence is sufficient'
+        });
 
         if (!shouldCreateTab) {
           console.log('⚠️ [MainApp] Tab creation blocked:', {
             gameTitle,
             confidence,
             isFullscreen,
-            reason: !isFullscreen ? '❌ Pre-game screen detected (main menu/launcher) - staying in Game Hub' : 
-                    confidence !== 'high' ? '❌ Low confidence detection' : 
-                    '❌ Generic detection',
-            hint: 'Take a gameplay or in-game menu screenshot (inventory, map, skills) to create a dedicated game tab'
+            wasImageQuery,
+            reason: confidence !== 'high' ? '❌ Low confidence detection - game not clearly identified' : '❌ Unknown reason',
+            hint: 'Make sure the game is clearly visible in the image or mention it by name'
           });
         }
 
@@ -3184,8 +3220,13 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                 setSuggestedPrompts(processedSuggestions);
                 // 🔄 Record shown prompts to prevent future repetition
                 if (user?.authUserId) {
-                  shownPromptsService.recordShownPrompts(user.authUserId, processedSuggestions, 'followup', gameTab.gameTitle ?? null)
-                    .catch(err => console.warn('[MainApp] Failed to record shown prompts:', err));
+                  const promptsToRecord = processedSuggestions.map(p => ({
+                    promptText: p,
+                    promptType: 'suggested' as const,
+                    gameTitle: gameTab.gameTitle ?? null
+                  }));
+                  shownPromptsService.recordShownPrompts(user.authUserId, promptsToRecord)
+                    .catch((err: unknown) => console.warn('[MainApp] Failed to record shown prompts:', err));
                 }
               } else {
                 // Use fallback suggestions based on the GAME TAB, not Game Hub
@@ -3291,16 +3332,21 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               // 🔄 Record shown prompts to prevent future repetition
               if (user?.authUserId) {
                 const gameTitle = activeConversation.isGameHub ? null : (activeConversation.gameTitle ?? null);
-                shownPromptsService.recordShownPrompts(user.authUserId, processedSuggestions, 'followup', gameTitle)
-                  .catch(err => console.warn('[MainApp] Failed to record shown prompts:', err));
+                const promptsToRecord = processedSuggestions.map(p => ({
+                  promptText: p,
+                  promptType: 'suggested' as const,
+                  gameTitle: gameTitle
+                }));
+                shownPromptsService.recordShownPrompts(user.authUserId, promptsToRecord)
+                  .catch((err: unknown) => console.warn('[MainApp] Failed to record shown prompts:', err));
               }
             } else {
               const fallbackSuggestions = suggestedPromptsService.getFallbackSuggestions(activeConversation.id, activeConversation.isGameHub);
               setSuggestedPrompts(fallbackSuggestions);
             }
           }
-        } else {
-                  }
+        }
+        // else: No GAME_ID tag in response, nothing to process for game tab creation
       }
 
     } catch (error) {
@@ -3403,10 +3449,12 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
         console.log(`📤 [MainApp] Flushing ${pendingMessages.length} queued messages...`);
         toastService.info(`Sending ${pendingMessages.length} queued message(s)...`);
         
-        // Process messages in order
+        // Process messages in order (sequential processing required for proper ordering)
+        // eslint-disable-next-line no-await-in-loop
         for (const pending of pendingMessages) {
           try {
             // Wait a bit between messages to avoid rate limiting
+            // eslint-disable-next-line no-await-in-loop
             await new Promise(resolve => setTimeout(resolve, 500));
             
             // Switch to the conversation if needed
@@ -3433,9 +3481,11 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               });
               
               // Re-send the actual message
+              // eslint-disable-next-line no-await-in-loop
               await handleSendMessageRef.current(pending.content, pending.imageUrl);
               
               // Remove from queue after successful send
+              // eslint-disable-next-line no-await-in-loop
               await offlineQueueService.removePendingMessage(pending.id);
               console.log(`✅ [MainApp] Sent queued message: ${pending.content.substring(0, 30)}...`);
             } else {

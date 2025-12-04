@@ -774,11 +774,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       {/* Main Chat Area Container - relative positioned for SubTabs/GameHub overlay */}
       <div className="flex-1 flex flex-col min-h-0 relative">
         {/* Messages Area - ONLY scrollable area, SubTabs overlay sits on top */}
+        {/* Add extra bottom padding in Game Hub to prevent overlap with Latest Gaming News buttons */}
         <div 
           ref={messagesContainerRef}
           className={`flex-1 p-3 sm:p-5 space-y-3 sm:space-y-5 min-h-0 overflow-y-auto custom-scrollbar ${
             conversation.messages.length === 0 ? 'overflow-y-hidden flex items-center justify-center' : ''
-          }`}
+          } ${conversation.isGameHub && conversation.messages.length > 0 ? 'pb-16' : ''}`}
         >
         {conversation.messages.length === 0 ? (
           <div className="flex items-center justify-center h-full w-full pb-32">
