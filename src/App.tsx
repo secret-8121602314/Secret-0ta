@@ -62,53 +62,8 @@ function App() {
   const hasReceivedPCMessage = useRef<boolean>(false); // Track if we've received any message from PC client
   const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Timeout for connection verification
 
-  // ========== CRITICAL: Fix viewport height on mobile ==========
-  // 100dvh can miscalculate on mobile browsers. This sets --vh and directly sets #root height.
-  useEffect(() => {
-    const setViewportHeight = () => {
-      // Use window.innerHeight which is always the actual visible viewport
-      const vh = window.innerHeight;
-      const root = document.getElementById('root');
-      
-      // Set CSS custom property for any CSS that needs it
-      document.documentElement.style.setProperty('--vh', `${vh * 0.01}px`);
-      document.documentElement.style.setProperty('--app-height', `${vh}px`);
-      
-      // CRITICAL: Directly set #root height to bypass CSS 100dvh issues
-      if (root) {
-        root.style.height = `${vh}px`;
-        root.style.minHeight = `${vh}px`;
-        root.style.maxHeight = `${vh}px`;
-      }
-      
-      console.log(`📐 [Viewport] Set height to ${vh}px (innerHeight)`);
-    };
-
-    // Set immediately
-    setViewportHeight();
-    
-    // Re-set on resize, orientation change, and visual viewport changes
-    window.addEventListener('resize', setViewportHeight);
-    window.addEventListener('orientationchange', setViewportHeight);
-    
-    // Visual viewport API for more accurate mobile handling
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', setViewportHeight);
-    }
-    
-    // Also set after a short delay in case of late layout changes
-    const timeout = setTimeout(setViewportHeight, 100);
-    
-    return () => {
-      window.removeEventListener('resize', setViewportHeight);
-      window.removeEventListener('orientationchange', setViewportHeight);
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', setViewportHeight);
-      }
-      clearTimeout(timeout);
-    };
-  }, []);
-  // ============================================================
+  // NOTE: Viewport height is now handled by CSS using position:fixed + inset:0
+  // This approach is bulletproof and doesn't require JavaScript
 
   useEffect(() => {
     console.log('🎯 [App] App state changed:', {
@@ -299,22 +254,16 @@ function App() {
     };
 
     // ✅ MOBILE FIX: Reset DOM styles on sign out to prevent accumulated spacing
-    // BUT preserve viewport height fix
+    // CSS handles viewport height with position:fixed + inset:0, no JS needed
     const cleanupDOMStyles = () => {
       console.log('🧹 [App] Cleaning up DOM styles on sign out');
       
-      // Reset ALL inline styles on body
+      // Reset inline styles - CSS will handle layout via position:fixed + inset:0
       document.body.style.cssText = '';
-      
-      // Reset ALL inline styles on html (but keep --app-height)
-      const vh = window.innerHeight;
       document.documentElement.style.cssText = '';
-      document.documentElement.style.setProperty('--app-height', `${vh}px`);
-      
-      // Reset #root inline styles but re-apply viewport height fix
       const root = document.getElementById('root');
       if (root) {
-        root.style.cssText = `height: ${vh}px !important; min-height: ${vh}px !important; max-height: ${vh}px !important;`;
+        root.style.cssText = '';
       }
       
       // Force layout recalculation
@@ -388,14 +337,12 @@ function App() {
     console.log('🎯 [App] Email login completed, setting view to app');
     
     // ✅ MOBILE FIX: Ensure clean DOM state before transitioning to app
-    // BUT preserve viewport height fix
-    const vh = window.innerHeight;
+    // CSS handles viewport height with position:fixed + inset:0
     document.body.style.cssText = '';
     document.documentElement.style.cssText = '';
-    document.documentElement.style.setProperty('--app-height', `${vh}px`);
     const rootEl = document.getElementById('root');
     if (rootEl) {
-      rootEl.style.cssText = `height: ${vh}px !important; min-height: ${vh}px !important; max-height: ${vh}px !important;`;
+      rootEl.style.cssText = '';
     }
     void document.body.offsetHeight; // Force layout recalculation
     
@@ -420,14 +367,12 @@ function App() {
     window.history.replaceState({}, document.title, '/');
     
     // ✅ MOBILE FIX: Ensure clean DOM state before transitioning to app
-    // BUT preserve viewport height fix
-    const vh = window.innerHeight;
+    // CSS handles viewport height with position:fixed + inset:0
     document.body.style.cssText = '';
     document.documentElement.style.cssText = '';
-    document.documentElement.style.setProperty('--app-height', `${vh}px`);
     const rootEl = document.getElementById('root');
     if (rootEl) {
-      rootEl.style.cssText = `height: ${vh}px !important; min-height: ${vh}px !important; max-height: ${vh}px !important;`;
+      rootEl.style.cssText = '';
     }
     void document.body.offsetHeight; // Force layout recalculation
     
@@ -460,20 +405,17 @@ function App() {
     const welcomeShown = localStorage.getItem('otakon_welcome_shown');
     
     // ✅ MOBILE FIX: Clean up DOM styles SYNCHRONOUSLY before logout
-    // This ensures no stale styles remain when LoginSplashScreen renders
-    // BUT preserve viewport height fix
+    // CSS handles viewport height with position:fixed + inset:0
     console.log('🧹 [App] Cleaning up DOM styles before logout...');
-    const vh = window.innerHeight;
     document.body.style.cssText = '';
     document.documentElement.style.cssText = '';
-    document.documentElement.style.setProperty('--app-height', `${vh}px`);
     const rootEl = document.getElementById('root');
     if (rootEl) {
-      rootEl.style.cssText = `height: ${vh}px !important; min-height: ${vh}px !important; max-height: ${vh}px !important;`;
+      rootEl.style.cssText = '';
     }
     void document.body.offsetHeight; // Force layout recalculation
     window.scrollTo(0, 0);
-    console.log('🧹 [App] DOM styles cleaned up before logout, viewport height preserved');
+    console.log('🧹 [App] DOM styles cleaned up before logout');
     
     // ✅ PWA FIX: Dispatch a custom event BEFORE signOut to notify components to reset their refs
     // This is critical for MainApp to reset hasLoadedConversationsRef

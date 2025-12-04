@@ -52,21 +52,17 @@ html, body {
 }
 
 /* Root element - SINGLE SOURCE */
-/* CRITICAL: !important on all layout-affecting properties */
+/* CRITICAL: Using position:fixed + inset:0 for bulletproof viewport filling */
+/* This approach doesn't rely on dvh/vh or JavaScript - it just fills the viewport */
 #root {
-  /* Fill the viewport exactly - multiple fallbacks for browser compatibility */
-  width: 100% !important;
-  /* CRITICAL: Use CSS variable set by JavaScript, with fallbacks */
-  /* JavaScript sets --app-height to actual window.innerHeight */
-  height: var(--app-height, 100vh) !important;
-  min-height: var(--app-height, 100vh) !important;
-  max-height: var(--app-height, 100vh) !important;
+  /* BULLETPROOF: Fixed positioning with inset:0 fills the entire viewport */
+  /* This is immune to dvh bugs and doesn't need JavaScript */
+  position: fixed !important;
+  inset: 0 !important;  /* Same as top:0; right:0; bottom:0; left:0; */
   
-  /* CRITICAL FIX: Prevent flex shrinking if body becomes flex container */
-  /* AdSense scripts can inject elements that trigger flex behavior */
-  flex: none !important;
-  flex-grow: 0 !important;
-  flex-shrink: 0 !important;
+  /* Explicit dimensions as fallback */
+  width: 100% !important;
+  height: 100% !important;
   
   /* Flex column layout for header/content/input structure */
   display: flex !important;
@@ -87,41 +83,35 @@ html, body {
 @media (display-mode: standalone) {
   /* 
    * PWA Layout Strategy:
-   * - Use 100dvh (dynamic viewport height) everywhere for consistency
+   * - #root uses position:fixed + inset:0 for bulletproof viewport filling
+   * - This approach is immune to dvh bugs and doesn't need JavaScript
    * - Body is position: fixed to prevent iOS Safari bounce/scroll issues
-   * - All elements use the same height unit to avoid calculation mismatches
    */
   html {
     margin: 0 !important;
     padding: 0 !important;
-    height: 100dvh !important;
-    min-height: 100dvh !important;
-    max-height: 100dvh !important;
+    height: 100% !important;
     overflow: hidden !important;
   }
   
   /* Body uses fixed positioning for iOS PWA stability */
-  /* Using inset instead of individual top/left/right/bottom for cleaner code */
   body {
     position: fixed !important;
     inset: 0 !important;
-    width: 100dvw !important;
-    height: 100dvh !important;
-    min-height: 100dvh !important;
-    max-height: 100dvh !important;
+    width: 100% !important;
+    height: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
     overflow: hidden !important;
   }
   
+  /* #root inherits the fixed + inset:0 from base styles - no override needed */
+  /* Just reinforce the key properties */
   #root {
+    position: fixed !important;
+    inset: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
-    width: 100% !important;
-    /* Use JS-set --app-height for accurate viewport (100dvh can miscalculate) */
-    height: var(--app-height, 100dvh) !important;
-    min-height: var(--app-height, 100dvh) !important;
-    max-height: var(--app-height, 100dvh) !important;
     overflow: hidden !important;
   }
 }

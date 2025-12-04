@@ -36,18 +36,15 @@ if (typeof window !== 'undefined') {
     if (event === 'SIGNED_IN') {
       if (session?.access_token) {
         // ✅ MOBILE FIX: Clean DOM state on successful sign-in to prevent stale styles
-        // BUT preserve viewport height fix
+        // CSS handles viewport height with position:fixed + inset:0
         document.body.style.cssText = '';
         document.documentElement.style.cssText = '';
         const rootEl = document.getElementById('root');
         if (rootEl) {
-          // Clear styles but immediately re-apply viewport height fix
-          const vh = window.innerHeight;
-          rootEl.style.cssText = `height: ${vh}px !important; min-height: ${vh}px !important; max-height: ${vh}px !important;`;
-          document.documentElement.style.setProperty('--app-height', `${vh}px`);
+          rootEl.style.cssText = '';
         }
         void document.body.offsetHeight; // Force layout recalculation
-        console.log('🔐 [Supabase] DOM styles cleaned on SIGNED_IN, viewport height preserved');
+        console.log('🔐 [Supabase] DOM styles cleaned on SIGNED_IN');
         
         // Store session timestamp for PWA mode
         localStorage.setItem('otakon_session_refreshed', Date.now().toString());
@@ -83,18 +80,15 @@ if (typeof window !== 'undefined') {
       }
     } else if (event === 'SIGNED_OUT') {
       // ✅ MOBILE FIX: Clean DOM state on sign-out to prevent stale styles
-      // BUT preserve viewport height fix
+      // CSS handles viewport height with position:fixed + inset:0
       document.body.style.cssText = '';
       document.documentElement.style.cssText = '';
       const rootEl = document.getElementById('root');
       if (rootEl) {
-        // Clear styles but immediately re-apply viewport height fix
-        const vh = window.innerHeight;
-        rootEl.style.cssText = `height: ${vh}px !important; min-height: ${vh}px !important; max-height: ${vh}px !important;`;
-        document.documentElement.style.setProperty('--app-height', `${vh}px`);
+        rootEl.style.cssText = '';
       }
       void document.body.offsetHeight; // Force layout recalculation
-      console.log('🔐 [Supabase] DOM styles cleaned on SIGNED_OUT, viewport height preserved');
+      console.log('🔐 [Supabase] DOM styles cleaned on SIGNED_OUT');
       
       // Clear all session data
       localStorage.removeItem('otakon_session_refreshed');
