@@ -1192,3 +1192,29 @@ html, body {
 .delay-500 {
   animation-delay: 0.5s;
 }
+
+/* ============================================================================
+   ADSENSE BANNER HEIGHT CONSTRAINTS - FORCE STRICT SIZING
+   Override Google AdSense defaults with !important to prevent oversizing
+   ============================================================================ */
+
+/* Force height on ad container */
+.adsbygoogle {
+  height: 100% !important;
+  max-height: inherit !important;
+  min-height: auto !important;
+}
+
+/* Force iframe inside adsbygoogle to respect parent height */
+.adsbygoogle iframe {
+  height: 100% !important;
+  max-height: inherit !important;
+  min-height: auto !important;
+}
+
+/* Prevent ad div from expanding beyond container */
+[class*="adsbygoogle"] {
+  height: 100% !important;
+  display: block !important;
+}
+
