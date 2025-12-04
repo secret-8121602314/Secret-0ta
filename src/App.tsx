@@ -252,16 +252,22 @@ function App() {
     // ✅ MOBILE FIX: Reset DOM styles on sign out to prevent accumulated spacing
     const cleanupDOMStyles = () => {
       console.log('🧹 [App] Cleaning up DOM styles on sign out');
-      // Reset body styles
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.height = '';
-      document.body.style.width = '';
-      document.body.style.top = '';
-      document.body.style.left = '';
-      // Reset html styles
-      document.documentElement.style.overflow = '';
-      document.documentElement.style.height = '';
+      
+      // Reset ALL inline styles on body
+      document.body.style.cssText = '';
+      
+      // Reset ALL inline styles on html
+      document.documentElement.style.cssText = '';
+      
+      // Reset #root inline styles if any were added dynamically
+      const root = document.getElementById('root');
+      if (root) {
+        root.style.cssText = '';
+      }
+      
+      // Force layout recalculation
+      void document.body.offsetHeight;
+      
       // Ensure proper scroll position
       window.scrollTo(0, 0);
     };

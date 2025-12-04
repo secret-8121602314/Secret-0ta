@@ -3,58 +3,80 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Prevent white flash during transitions */
+/* =============================================================================
+   CRITICAL: UNIFIED LAYOUT SYSTEM FOR WEB, MOBILE BROWSER, AND PWA
+   
+   PROBLEM SOLVED: Spacing accumulating on mobile browser/PWA after login cycles
+   ROOT CAUSE: Multiple conflicting height/overflow rules cascading unpredictably
+   
+   SOLUTION: Single source of truth for layout - works identically across:
+   - Desktop browser (any size)
+   - Mobile browser (Safari, Chrome)  
+   - PWA standalone mode (iOS, Android)
+   
+   KEY PRINCIPLE: Use 100dvh everywhere - it adapts to browser chrome automatically
+   ============================================================================= */
+
+/* Base styles - SINGLE SOURCE for html, body */
 html, body {
-  background-color: #000000; /* Pure black to prevent white bars in safe areas */
-  background: #000000;
-  /* Improve mobile scrolling */
-  -webkit-overflow-scrolling: touch;
-  /* Prevent zoom on input focus on iOS */
-  -webkit-text-size-adjust: 100%;
-  /* CRITICAL: Prevent body scroll - only internal containers should scroll */
-  overflow: hidden;
-  /* Ensure proper height - use svh (small viewport) to account for browser chrome on mobile */
+  /* Reset */
   margin: 0;
   padding: 0;
+  
+  /* Pure black background - prevents white flash and safe area issues */
+  background-color: #000000;
+  background: #000000;
+  
+  /* Full viewport using dvh - works on mobile AND desktop */
   width: 100%;
-  height: 100%;
-  height: 100dvh; /* Dynamic viewport height - adapts to browser chrome visibility */
+  height: 100dvh;
+  
+  /* CRITICAL: Prevent any scrolling on html/body - only children scroll */
+  overflow: hidden;
+  
+  /* Mobile optimizations */
+  -webkit-overflow-scrolling: touch;
+  -webkit-text-size-adjust: 100%;
+  
+  /* Prevent pull-to-refresh from breaking layout */
+  overscroll-behavior: none;
 }
 
-/* Root element must fill viewport in all modes */
+/* Root element - SINGLE SOURCE */
 #root {
-  height: 100%;
+  /* Fill the viewport exactly */
+  width: 100%;
   height: 100dvh;
+  
+  /* Flex column layout for header/content/input structure */
   display: flex;
   flex-direction: column;
+  
+  /* Prevent overflow - children handle their own scrolling */
   overflow: hidden;
+  
+  /* No padding or margin that could add space */
+  margin: 0;
+  padding: 0;
+  
+  /* Black background for consistency */
+  background-color: #000000;
 }
 
-/* Provide consistent chrome color inside standalone PWAs */
+/* PWA Standalone Mode - MINIMAL overrides, most rules already work */
 @media (display-mode: standalone) {
-  /* Prevent body scroll - only internal sections should scroll */
-  html, body {
-    overflow: hidden !important;
-    height: 100vh;
-    height: 100dvh; /* Dynamic viewport height for mobile */
-    width: 100%;
-    background-color: #000000;
-  }
-  
-  /* Full height root - NO safe-area padding (causes extra space on mobile) */
-  #root {
-    padding: 0;
-    height: 100vh;
-    height: 100dvh;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    background-color: #000000;
-  }
-  
-  /* Prevent double padding on body */
-  body {
+  /* These are just reinforcements, not new rules */
+  html, body, #root {
+    /* Ensure no external factors add spacing */
+    margin: 0 !important;
     padding: 0 !important;
+  }
+  
+  body {
+    /* Extra safety for iOS PWA */
+    position: fixed;
+    width: 100%;
+    height: 100dvh;
   }
 }
 
@@ -63,13 +85,31 @@ html, body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* PWA App Container - Fixed Layout */
+/* App Container - consistent across all modes */
+.app-container {
+  /* Fill available space */
+  width: 100%;
+  height: 100%;
+  
+  /* Flex layout */
+  display: flex;
+  flex-direction: column;
+  
+  /* Prevent overflow */
+  overflow: hidden;
+  
+  /* No extra spacing */
+  margin: 0;
+  padding: 0;
+}
+
+/* PWA-specific app container adjustments */
 @media (display-mode: standalone) {
   .app-container {
+    /* Reinforce height in standalone mode */
     height: 100%;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    min-height: 0;
+    max-height: 100%;
   }
   
   /* Ensure sidebar conversation list scrolls properly */
@@ -542,46 +582,21 @@ html, body {
   }
 }
 
-/* NOTE: html, body, #root base styles are defined at the top of this file (lines 7-31) */
+/* NOTE: html, body, #root base styles are defined at the TOP of this file */
 /* Do not add duplicate rules here as they will override critical flex/overflow settings */
 
-/* Ensure 100vh utilities map to dynamic viewport height on mobile */
-@media (max-width: 768px) {
-  .h-screen {
-    height: 100dvh !important;
-  }
-
-  .min-h-screen {
-    min-height: 100dvh !important;
-  }
+/* Tailwind utility overrides for consistent viewport height */
+.h-screen {
+  height: 100dvh !important;
 }
 
-/* PWA standalone mode - use dvh since there's no browser chrome */
-@media (display-mode: standalone) {
-  html,
-  body,
-  #root {
-    min-height: 100vh;
-    min-height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .h-screen {
-    height: 100vh;
-    height: 100dvh !important;
-  }
-
-  .min-h-screen {
-    min-height: 100vh;
-    min-height: 100dvh !important;
-  }
+.min-h-screen {
+  min-height: 100dvh !important;
 }
 
 /* Fixed chat layout - prevents UI elements from scrolling out of view */
 .chat-layout-fixed {
-  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -620,35 +635,8 @@ html, body {
 
 /* Mobile-specific chat optimizations */
 @media (max-width: 768px) {
-  html, body {
-    height: 100vh;
-    height: 100dvh; /* Dynamic viewport height - adapts to browser chrome */
-    overscroll-behavior-y: none; /* Prevent pull-to-refresh from breaking layout */
-  }
-  
-  #root {
-    height: 100vh;
-    height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    overscroll-behavior-y: none; /* Prevent pull-to-refresh */
-  }
-  
-  /* CRITICAL: Ensure app-container fills the full height on mobile browser */
-  /* Use 100% with !important to ensure Tailwind's h-full doesn't interfere */
-  .app-container {
-    height: 100% !important;
-    min-height: 0 !important; /* Allow flex shrinking */
-    max-height: 100% !important;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  
   .chat-layout-fixed {
-    height: 100vh;
-    height: 100dvh; /* Dynamic viewport height for mobile */
+    height: 100dvh; /* Use dvh on mobile for dynamic viewport */
   }
   
   .chat-content-scrollable {
@@ -656,7 +644,6 @@ html, body {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
   }
-  
 }
 
 /* Desktop-specific chat layout optimizations */
@@ -699,11 +686,6 @@ html, body {
 
 *:not(.custom-scrollbar)::-webkit-scrollbar {
   display: none !important;
-}
-
-/* Specifically hide horizontal scrollbars for body and html */
-html, body {
-  overflow-x: hidden !important;
 }
 
 /* Allow vertical scrolling for custom scrollbar elements */
