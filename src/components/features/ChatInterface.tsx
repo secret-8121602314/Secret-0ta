@@ -777,11 +777,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         <div 
           ref={messagesContainerRef}
           className={`flex-1 p-3 sm:p-5 space-y-3 sm:space-y-5 min-h-0 overflow-y-auto custom-scrollbar ${
-            conversation.messages.length === 0 ? 'overflow-y-hidden' : ''
+            conversation.messages.length === 0 ? 'overflow-y-hidden flex items-center justify-center' : ''
           }`}
         >
         {conversation.messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center h-full w-full">
             <div className="text-center">
               <img
                 src="/images/mascot/4.png"
