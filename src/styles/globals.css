@@ -133,9 +133,11 @@ html, body {
 
 /* App Container - consistent across all modes */
 .app-container {
-  /* Fill available space */
+  /* Fill available space - CRITICAL: flex: 1 to fill parent flex container */
   width: 100% !important;
   height: 100% !important;
+  flex: 1 1 0% !important;  /* CRITICAL: Fill #root which is display:flex */
+  min-height: 0 !important; /* Allow shrinking in flex context */
   
   /* Flex layout - ROW direction for sidebar + main content */
   display: flex !important;
