@@ -781,7 +781,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           }`}
         >
         {conversation.messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full w-full">
+          <div className="flex items-center justify-center h-full w-full pb-32">
             <div className="text-center">
               <img
                 src="/images/mascot/4.png"
