@@ -299,19 +299,22 @@ function App() {
     };
 
     // ✅ MOBILE FIX: Reset DOM styles on sign out to prevent accumulated spacing
+    // BUT preserve viewport height fix
     const cleanupDOMStyles = () => {
       console.log('🧹 [App] Cleaning up DOM styles on sign out');
       
       // Reset ALL inline styles on body
       document.body.style.cssText = '';
       
-      // Reset ALL inline styles on html
+      // Reset ALL inline styles on html (but keep --app-height)
+      const vh = window.innerHeight;
       document.documentElement.style.cssText = '';
+      document.documentElement.style.setProperty('--app-height', `${vh}px`);
       
-      // Reset #root inline styles if any were added dynamically
+      // Reset #root inline styles but re-apply viewport height fix
       const root = document.getElementById('root');
       if (root) {
-        root.style.cssText = '';
+        root.style.cssText = `height: ${vh}px !important; min-height: ${vh}px !important; max-height: ${vh}px !important;`;
       }
       
       // Force layout recalculation
@@ -385,11 +388,14 @@ function App() {
     console.log('🎯 [App] Email login completed, setting view to app');
     
     // ✅ MOBILE FIX: Ensure clean DOM state before transitioning to app
+    // BUT preserve viewport height fix
+    const vh = window.innerHeight;
     document.body.style.cssText = '';
     document.documentElement.style.cssText = '';
+    document.documentElement.style.setProperty('--app-height', `${vh}px`);
     const rootEl = document.getElementById('root');
     if (rootEl) {
-      rootEl.style.cssText = '';
+      rootEl.style.cssText = `height: ${vh}px !important; min-height: ${vh}px !important; max-height: ${vh}px !important;`;
     }
     void document.body.offsetHeight; // Force layout recalculation
     
@@ -414,11 +420,14 @@ function App() {
     window.history.replaceState({}, document.title, '/');
     
     // ✅ MOBILE FIX: Ensure clean DOM state before transitioning to app
+    // BUT preserve viewport height fix
+    const vh = window.innerHeight;
     document.body.style.cssText = '';
     document.documentElement.style.cssText = '';
+    document.documentElement.style.setProperty('--app-height', `${vh}px`);
     const rootEl = document.getElementById('root');
     if (rootEl) {
-      rootEl.style.cssText = '';
+      rootEl.style.cssText = `height: ${vh}px !important; min-height: ${vh}px !important; max-height: ${vh}px !important;`;
     }
     void document.body.offsetHeight; // Force layout recalculation
     
@@ -452,16 +461,19 @@ function App() {
     
     // ✅ MOBILE FIX: Clean up DOM styles SYNCHRONOUSLY before logout
     // This ensures no stale styles remain when LoginSplashScreen renders
+    // BUT preserve viewport height fix
     console.log('🧹 [App] Cleaning up DOM styles before logout...');
+    const vh = window.innerHeight;
     document.body.style.cssText = '';
     document.documentElement.style.cssText = '';
+    document.documentElement.style.setProperty('--app-height', `${vh}px`);
     const rootEl = document.getElementById('root');
     if (rootEl) {
-      rootEl.style.cssText = '';
+      rootEl.style.cssText = `height: ${vh}px !important; min-height: ${vh}px !important; max-height: ${vh}px !important;`;
     }
     void document.body.offsetHeight; // Force layout recalculation
     window.scrollTo(0, 0);
-    console.log('🧹 [App] DOM styles cleaned up before logout');
+    console.log('🧹 [App] DOM styles cleaned up before logout, viewport height preserved');
     
     // ✅ PWA FIX: Dispatch a custom event BEFORE signOut to notify components to reset their refs
     // This is critical for MainApp to reset hasLoadedConversationsRef
