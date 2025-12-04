@@ -62,6 +62,54 @@ function App() {
   const hasReceivedPCMessage = useRef<boolean>(false); // Track if we've received any message from PC client
   const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Timeout for connection verification
 
+  // ========== CRITICAL: Fix viewport height on mobile ==========
+  // 100dvh can miscalculate on mobile browsers. This sets --vh and directly sets #root height.
+  useEffect(() => {
+    const setViewportHeight = () => {
+      // Use window.innerHeight which is always the actual visible viewport
+      const vh = window.innerHeight;
+      const root = document.getElementById('root');
+      
+      // Set CSS custom property for any CSS that needs it
+      document.documentElement.style.setProperty('--vh', `${vh * 0.01}px`);
+      document.documentElement.style.setProperty('--app-height', `${vh}px`);
+      
+      // CRITICAL: Directly set #root height to bypass CSS 100dvh issues
+      if (root) {
+        root.style.height = `${vh}px`;
+        root.style.minHeight = `${vh}px`;
+        root.style.maxHeight = `${vh}px`;
+      }
+      
+      console.log(`📐 [Viewport] Set height to ${vh}px (innerHeight)`);
+    };
+
+    // Set immediately
+    setViewportHeight();
+    
+    // Re-set on resize, orientation change, and visual viewport changes
+    window.addEventListener('resize', setViewportHeight);
+    window.addEventListener('orientationchange', setViewportHeight);
+    
+    // Visual viewport API for more accurate mobile handling
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', setViewportHeight);
+    }
+    
+    // Also set after a short delay in case of late layout changes
+    const timeout = setTimeout(setViewportHeight, 100);
+    
+    return () => {
+      window.removeEventListener('resize', setViewportHeight);
+      window.removeEventListener('orientationchange', setViewportHeight);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', setViewportHeight);
+      }
+      clearTimeout(timeout);
+    };
+  }, []);
+  // ============================================================
+
   useEffect(() => {
     console.log('🎯 [App] App state changed:', {
       view: appState.view,

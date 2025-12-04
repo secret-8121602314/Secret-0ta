@@ -29,10 +29,13 @@ html, body {
   background-color: #000000 !important;
   background: #000000 !important;
   
-  /* Full viewport using dvh - works on mobile AND desktop */
-  /* !important ensures height is never modified by external scripts */
+  /* Full viewport - use vh as base, dvh can miscalculate on some browsers */
   width: 100% !important;
-  height: 100dvh !important;
+  height: 100vh !important;
+  height: 100dvh !important; /* Override with dvh if supported correctly */
+  
+  /* CRITICAL: Body must be block, NOT flex - prevents AdSense from breaking layout */
+  display: block !important;
   
   /* CRITICAL: Prevent any scrolling on html/body - only children scroll */
   overflow: hidden !important;
@@ -51,9 +54,19 @@ html, body {
 /* Root element - SINGLE SOURCE */
 /* CRITICAL: !important on all layout-affecting properties */
 #root {
-  /* Fill the viewport exactly - !important prevents overrides */
+  /* Fill the viewport exactly - multiple fallbacks for browser compatibility */
   width: 100% !important;
-  height: 100dvh !important;
+  /* CRITICAL: Use CSS variable set by JavaScript, with fallbacks */
+  /* JavaScript sets --app-height to actual window.innerHeight */
+  height: var(--app-height, 100vh) !important;
+  min-height: var(--app-height, 100vh) !important;
+  max-height: var(--app-height, 100vh) !important;
+  
+  /* CRITICAL FIX: Prevent flex shrinking if body becomes flex container */
+  /* AdSense scripts can inject elements that trigger flex behavior */
+  flex: none !important;
+  flex-grow: 0 !important;
+  flex-shrink: 0 !important;
   
   /* Flex column layout for header/content/input structure */
   display: flex !important;
@@ -105,10 +118,10 @@ html, body {
     margin: 0 !important;
     padding: 0 !important;
     width: 100% !important;
-    /* Match body's 100dvh for consistency */
-    height: 100dvh !important;
-    min-height: 100dvh !important;
-    max-height: 100dvh !important;
+    /* Use JS-set --app-height for accurate viewport (100dvh can miscalculate) */
+    height: var(--app-height, 100dvh) !important;
+    min-height: var(--app-height, 100dvh) !important;
+    max-height: var(--app-height, 100dvh) !important;
     overflow: hidden !important;
   }
 }
