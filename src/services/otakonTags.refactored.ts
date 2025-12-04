@@ -227,10 +227,18 @@ function normalizeHeaders(content: string): string {
  * Fixes various formatting issues in the content
  */
 function fixFormatting(content: string): string {
-  return content
+  let result = content
     // Fix bold text spacing: ** Text** → **Text**
     .replace(/\*\*\s+([^*\n]+?)\*\*/g, '**$1**')
     .replace(/\*\*([^*\n]+?)\s+\*\*/g, '**$1**')
+    
+    // Fix inline malformed bold markers within paragraphs
+    // Pattern: "** Text" without closing → remove the opening **
+    .replace(/\*\*\s+([A-Za-z][A-Za-z\s]+?)(?=\s+(?:is|are|was|were|has|have|and|or|but|the|a|an|of|to|in|on|at|for|with|as|by|from|serves?|often|usually)\s)/gi, '$1')
+    // Pattern: "Text**" without opening → remove the orphaned closing **
+    .replace(/(\b[A-Za-z]+)\s*\*\*(?=,|\s|\.)/g, '$1')
+    // Pattern: Incomplete bold ending at punctuation
+    .replace(/\*\*\s*([^*\n]{3,}?)([.!?])(?!\*\*)/g, '$1$2')
     
     // Remove empty bold markers
     .replace(/^\s*\*\*\s*$/gm, '')
@@ -260,4 +268,15 @@ function fixFormatting(content: string): string {
     // Normalize line breaks
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+    
+  // Clean orphaned bold markers (unmatched **)
+  const boldCount = (result.match(/\*\*/g) || []).length;
+  if (boldCount % 2 !== 0) {
+    result = result.replace(/\*\*\s*$/g, '');
+    result = result.replace(/^\s*\*\*/g, '');
+    result = result.replace(/\s\*\*\s+([A-Z])/g, ' $1');
+    result = result.replace(/(\w)\*\*(?=[\s,.])/g, '$1');
+  }
+  
+  return result;
 }

@@ -63,13 +63,30 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
   cleanContent = cleanContent.replace(/\*\*\s+The\s+Verdict\s*:\s*\*\*/gi, '**The Verdict:**');
   cleanContent = cleanContent.replace(/\*\*\s+Key\s+Features\s*:\s*\*\*/gi, '**Key Features:**');
   
-  // 11. Clean orphaned bold markers (unmatched **)
+  // 11. Fix inline malformed bold markers within paragraphs
+  // Pattern: "** Text" without closing → remove the opening **
+  // This handles cases like "The ** Main Academy Gate is" where bold was started but not closed
+  cleanContent = cleanContent.replace(/\*\*\s+([A-Za-z][A-Za-z\s]+?)(?=\s+(?:is|are|was|were|has|have|and|or|but|the|a|an|of|to|in|on|at|for|with|as|by|from|serves?|often|usually)\s)/gi, '$1');
+  
+  // Pattern: "Text**" or "Text **" without opening → remove the orphaned closing **
+  // This handles cases like "Debate Parlor**, a grand" where only closing was present
+  cleanContent = cleanContent.replace(/(\b[A-Za-z]+)\s*\*\*(?=,|\s|\.)/g, '$1');
+  
+  // Pattern: Incomplete bold that ends a sentence (no closing before punctuation)
+  // "** TextText." → "TextText." (remove unclosed bold)
+  cleanContent = cleanContent.replace(/\*\*\s*([^*\n]{3,}?)([.!?])(?!\*\*)/g, '$1$2');
+  
+  // 12. Clean orphaned bold markers (unmatched **)
   const boldCount = (cleanContent.match(/\*\*/g) || []).length;
   if (boldCount % 2 !== 0) {
     // Remove trailing orphaned **
     cleanContent = cleanContent.replace(/\*\*\s*$/g, '');
     // Remove leading orphaned **
     cleanContent = cleanContent.replace(/^\s*\*\*/g, '');
+    // Remove orphaned ** in the middle of text (after space, before letter)
+    cleanContent = cleanContent.replace(/\s\*\*\s+([A-Z])/g, ' $1');
+    // Remove orphaned closing ** after a word (word** followed by space/punctuation)
+    cleanContent = cleanContent.replace(/(\w)\*\*(?=[\s,.])/g, '$1');
   }
 
   // ---------------------------------------------------------

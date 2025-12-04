@@ -1035,7 +1035,15 @@ In addition to your regular response, provide structured data in the following o
         cleanContent = cleanContent.replace(/\*\*\s*Strategy\s*:\s*\**/gi, '\n\nStrategy:\n');
         cleanContent = cleanContent.replace(/\*\*\s*What\s+to\s+focus\s+on\s*:\s*\**/gi, '\n\nWhat to focus on:\n');
         
-        // 8. Clean orphaned bold markers (unmatched **)
+        // 8. Fix inline malformed bold markers within paragraphs
+        // Pattern: "** Text" without closing → remove the opening **
+        cleanContent = cleanContent.replace(/\*\*\s+([A-Za-z][A-Za-z\s]+?)(?=\s+(?:is|are|was|were|has|have|and|or|but|the|a|an|of|to|in|on|at|for|with|as|by|from|serves?|often|usually)\s)/gi, '$1');
+        // Pattern: "Text**" without opening → remove the orphaned closing **
+        cleanContent = cleanContent.replace(/(\b[A-Za-z]+)\s*\*\*(?=,|\s|\.)/g, '$1');
+        // Pattern: Incomplete bold ending at punctuation
+        cleanContent = cleanContent.replace(/\*\*\s*([^*\n]{3,}?)([.!?])(?!\*\*)/g, '$1$2');
+        
+        // 9. Clean orphaned bold markers (unmatched **)
         // Count ** occurrences - if odd number, we have orphaned markers
         const boldCount = (cleanContent.match(/\*\*/g) || []).length;
         if (boldCount % 2 !== 0) {
@@ -1043,6 +1051,10 @@ In addition to your regular response, provide structured data in the following o
           cleanContent = cleanContent.replace(/\*\*\s*$/g, '');
           // Remove leading orphaned **
           cleanContent = cleanContent.replace(/^\s*\*\*/g, '');
+          // Remove orphaned ** in the middle of text
+          cleanContent = cleanContent.replace(/\s\*\*\s+([A-Z])/g, ' $1');
+          // Remove orphaned closing ** after a word
+          cleanContent = cleanContent.replace(/(\w)\*\*(?=[\s,.])/g, '$1');
         }
 
         // ---------------------------------------------------------
