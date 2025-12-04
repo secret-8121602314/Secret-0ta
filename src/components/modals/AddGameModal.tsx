@@ -58,16 +58,17 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
     }
   };
 
-  if (!isOpen) {
-    return null;
-  }
-
   // Close sidebar on mobile when modal opens
+  // IMPORTANT: This useEffect must be BEFORE any conditional returns to follow React's Rules of Hooks
   React.useEffect(() => {
     if (isOpen && typeof window !== 'undefined' && window.innerWidth < 1024) {
       onCloseSidebar?.();
     }
   }, [isOpen, onCloseSidebar]);
+
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
