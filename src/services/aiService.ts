@@ -4,7 +4,7 @@ import { AIResponse, Conversation, User, insightTabsConfig, PlayerProfile } from
 import type { ViteImportMeta, UserProfileData } from '../types/enhanced';
 import { cacheService } from './cacheService';
 import { aiCacheService } from './aiCacheService';
-import { getPromptForPersona, getBehaviorContext, type BehaviorContext } from './promptSystem';
+import { getPromptForPersona, getBehaviorContext, type BehaviorContext, type QueryContext } from './promptSystem';
 import { errorRecoveryService } from './errorRecoveryService';
 import { characterImmersionService } from './characterImmersionService';
 import { profileAwareTabService } from './profileAwareTabService';
@@ -334,6 +334,16 @@ class AIService {
     // Get user's timezone for release date accuracy
     const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     
+    // Build query context for interaction-aware responses
+    const queryContext: QueryContext = {
+      interactionType: hasImages ? 'image_upload' : 'text_input',
+      isFirstMessage: conversation.messages.length === 0,
+      messageCount: conversation.messages.length,
+      subtabsFilled: conversation.subtabs?.filter(s => s.content && s.content !== 'Loading...').length || 0,
+      subtabsTotal: conversation.subtabs?.length || 0,
+      isReturningUser: false // Will be calculated based on timestamp in future
+    };
+    
     // Use the enhanced prompt system with session context and player profile
     const basePrompt = getPromptForPersona(
       conversation, 
@@ -343,7 +353,8 @@ class AIService {
       hasImages,
       playerProfile,
       null, // behaviorContext
-      userTimezone
+      userTimezone,
+      queryContext
     );
     
     // Add immersion context for game conversations (not Game Hub)
@@ -650,6 +661,34 @@ class AIService {
 
     // Get enhanced prompt with context (now includes behavior context)
     const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    
+    // Build query context for interaction-aware responses
+    // Detect if this came from a suggested prompt (starts with common patterns)
+    const isSuggestedPrompt = userMessage.startsWith('How do I') || 
+                              userMessage.startsWith('What') || 
+                              userMessage.startsWith('Tell me') ||
+                              userMessage.startsWith('Where') ||
+                              userMessage.startsWith('Show me');
+    const isCommandCentre = userMessage.startsWith('@');
+    
+    // Calculate time since last interaction
+    const lastMessage = conversation.messages[conversation.messages.length - 1];
+    const timeSinceLastInteraction = lastMessage 
+      ? (Date.now() - (lastMessage.timestamp || 0)) / (1000 * 60) // minutes
+      : 0;
+    
+    const queryContext: QueryContext = {
+      interactionType: hasImages ? 'image_upload' : 
+                       isCommandCentre ? 'command_centre' :
+                       isSuggestedPrompt ? 'suggested_prompt' : 'text_input',
+      isFirstMessage: conversation.messages.length === 0,
+      messageCount: conversation.messages.length,
+      timeSinceLastInteraction,
+      subtabsFilled: conversation.subtabs?.filter(s => s.content && s.content !== 'Loading...').length || 0,
+      subtabsTotal: conversation.subtabs?.length || 0,
+      isReturningUser: timeSinceLastInteraction > 30 // 30 minutes = returning user
+    };
+    
     const basePrompt = getPromptForPersona(
       conversation, 
       userMessage, 
@@ -658,7 +697,8 @@ class AIService {
       hasImages,
       undefined, // playerProfile - not passed here, handled internally
       behaviorContext,
-      userTimezone
+      userTimezone,
+      queryContext
     );
     
     // Add immersion context for game conversations (not Game Hub)

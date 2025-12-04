@@ -3,6 +3,172 @@ import { profileAwareTabService } from './profileAwareTabService';
 import { behaviorService, type AICorrection } from './ai/behaviorService';
 
 // ============================================================================
+// QUERY CONTEXT (Interaction-aware responses)
+// ============================================================================
+
+/**
+ * Context about HOW the user is interacting with Otagon
+ * This enables more tailored, context-aware responses
+ */
+export interface QueryContext {
+  /** How the query originated */
+  interactionType: 'text_input' | 'suggested_prompt' | 'image_upload' | 'command_centre';
+  /** Is this the user's first message in this tab? */
+  isFirstMessage: boolean;
+  /** Total messages in this conversation */
+  messageCount: number;
+  /** Time since last interaction in this tab (minutes) */
+  timeSinceLastInteraction?: number;
+  /** Number of subtabs that have content */
+  subtabsFilled?: number;
+  /** Total subtabs available */
+  subtabsTotal?: number;
+  /** Is user returning after a break? */
+  isReturningUser?: boolean;
+}
+
+/**
+ * Build query context string for injection into prompts
+ */
+export function buildQueryContextString(context: QueryContext): string {
+  const parts: string[] = [];
+  
+  // Interaction type guidance
+  if (context.interactionType === 'suggested_prompt') {
+    parts.push(`
+**💡 SUGGESTED PROMPT CLICKED:**
+The user clicked a suggested follow-up prompt. This means:
+- They want a DIRECT answer to this specific question
+- Keep your response focused and concise
+- Don't repeat information from the previous response
+- Build on what was just discussed
+`);
+  } else if (context.interactionType === 'image_upload') {
+    parts.push(`
+**📸 IMAGE UPLOAD:**
+The user uploaded an image. Focus on:
+- Analyzing the visual content thoroughly
+- Providing immediate, actionable insights
+- Connecting visual observations to game knowledge
+`);
+  } else if (context.interactionType === 'command_centre') {
+    parts.push(`
+**@ COMMAND CENTRE:**
+The user is using the Command Centre to manage subtabs.
+- Execute the requested subtab action precisely
+- Confirm what was changed
+- Keep the response brief unless the action requires explanation
+`);
+  }
+  
+  // First message in tab
+  if (context.isFirstMessage) {
+    parts.push(`
+**🆕 FIRST INTERACTION IN THIS TAB:**
+This is the user's first message in this conversation tab.
+- Introduce yourself warmly but briefly
+- Orient them to what you can help with for this game
+- Be welcoming without being overly verbose
+`);
+  }
+  
+  // Returning user after break
+  if (context.isReturningUser && context.timeSinceLastInteraction && context.timeSinceLastInteraction > 60) {
+    parts.push(`
+**👋 WELCOME BACK:**
+The user is returning after a break (${Math.round(context.timeSinceLastInteraction / 60)} hours).
+- Briefly acknowledge their return (e.g., "Welcome back!")
+- Don't repeat what was discussed before unless asked
+- Ask if they've made progress since last time
+`);
+  }
+  
+  return parts.join('\n');
+}
+
+/**
+ * Build experience evolution context based on user journey
+ */
+export function buildExperienceEvolutionContext(
+  conversation: Conversation,
+  queryContext?: QueryContext
+): string {
+  const parts: string[] = [];
+  const messageCount = queryContext?.messageCount || conversation.messages.length;
+  const progress = conversation.gameProgress || 0;
+  const subtabsFilled = queryContext?.subtabsFilled || 0;
+  const subtabsTotal = queryContext?.subtabsTotal || 0;
+  
+  // Don't add context for Game Hub or first few messages
+  if (conversation.isGameHub || messageCount < 3) {
+    return '';
+  }
+  
+  // Experience evolution based on conversation depth
+  if (messageCount >= 20) {
+    parts.push(`
+**📊 DEEP ENGAGEMENT DETECTED (${messageCount}+ messages):**
+This user is deeply engaged with this game. They likely:
+- Know the basics - skip introductory explanations
+- Want advanced strategies and hidden details
+- Appreciate deeper lore and connections
+- May be going for completionist achievements
+Adapt your responses to their expertise level.
+`);
+  } else if (messageCount >= 10) {
+    parts.push(`
+**📈 ENGAGED USER (${messageCount} messages):**
+The user has been actively discussing this game.
+- They're past the basics - go deeper when relevant
+- Reference previous discussions naturally
+- Suggest advanced topics they might enjoy
+`);
+  }
+  
+  // Progress-based evolution
+  if (progress >= 80) {
+    parts.push(`
+**🏆 LATE GAME (${progress}% progress):**
+This player is in late/end-game content.
+- They've seen most of the game - spoilers are less critical
+- Focus on end-game optimization, secret bosses, alternate endings
+- Discuss post-game content and NG+ if applicable
+`);
+  } else if (progress >= 50) {
+    parts.push(`
+**⚔️ MID-GAME (${progress}% progress):**
+This player is in mid-game.
+- Balance tips with spoiler protection
+- They understand core mechanics - focus on mastery
+- Prepare them for upcoming challenges
+`);
+  }
+  
+  // Subtab engagement (Pro users)
+  if (subtabsTotal > 0 && subtabsFilled > 0) {
+    const fillRatio = subtabsFilled / subtabsTotal;
+    if (fillRatio >= 0.8) {
+      parts.push(`
+**📚 RICH KNOWLEDGE BASE:**
+The user has built up extensive knowledge in their subtabs.
+- Reference their saved content when relevant
+- Suggest updating subtabs with new insights
+- Connect new information to their existing knowledge
+`);
+    } else if (fillRatio >= 0.4) {
+      parts.push(`
+**📝 GROWING KNOWLEDGE BASE:**
+Some subtabs have content. When providing valuable information:
+- Suggest saving important insights to relevant subtabs
+- Use [OTAKON_SUBTAB_UPDATE] to add new knowledge
+`);
+    }
+  }
+  
+  return parts.join('\n');
+}
+
+// ============================================================================
 // AI BEHAVIOR CONTEXT (Non-repetitive responses & corrections)
 // ============================================================================
 
@@ -547,6 +713,100 @@ ${OTAKON_TAG_DEFINITIONS}
 `;
 };
 
+// ============================================================================
+// UNRELEASED GAME PROMPT - Dedicated experience for upcoming games
+// ============================================================================
+const getUnreleasedGamePrompt = (
+  conversation: Conversation,
+  userMessage: string,
+  _user: User,
+  playerProfile?: PlayerProfile
+): string => {
+  // Get player profile context if available
+  const profile = playerProfile || profileAwareTabService.getDefaultProfile();
+  const profileContext = profileAwareTabService.buildProfileContext(profile);
+
+  // Gather recent conversation history
+  const recentMessages = conversation.messages
+    .slice(-10)
+    .map(m => `${m.role === 'user' ? 'User' : 'Otagon'}: ${m.content}`)
+    .join('\n');
+
+  return `
+**Persona: Pre-Release Game Companion**
+You are Otagon, an AI companion helping users explore and discuss **${conversation.gameTitle}** - an UNRELEASED/UPCOMING game.
+
+${GAMING_FOCUS_GUARDRAILS}
+
+${ANTI_HALLUCINATION_RULES}
+
+**🚀 UNRELEASED GAME MODE - CRITICAL RULES:**
+
+This game has NOT been released yet. Your role is to:
+1. **Discuss confirmed information** from official sources (trailers, dev interviews, press releases)
+2. **Analyze trailers and screenshots** when provided
+3. **Help with pre-release preparation** (PC specs, pre-order info, edition comparisons)
+4. **Engage in informed speculation** clearly marked as speculation
+5. **Track release date and news** accurately
+
+**What you MUST do:**
+✅ Clearly distinguish between CONFIRMED facts and SPECULATION
+✅ Use phrases like "Based on the trailer..." or "The developers have confirmed..."
+✅ For speculation, say "This is speculation, but..." or "If the mechanics are similar to [previous game]..."
+✅ Provide context from related games in the series/genre
+✅ Help users decide on pre-orders, editions, and system requirements
+✅ Discuss what's known about gameplay mechanics, story, characters
+
+**What you MUST NOT do:**
+❌ Pretend to have gameplay tips for a game that isn't released
+❌ Make up story details, boss strategies, or walkthroughs
+❌ Claim certainty about unconfirmed features
+❌ Forget that the user CANNOT play this game yet
+
+**Web Search Grounding Available:**
+- You have Google Search for the LATEST news, trailers, and announcements
+- Use it to verify release dates, features, and recent developer statements
+- Your knowledge cutoff is January 2025 - use grounding for anything after that
+
+**Game Context:**
+- Game: ${conversation.gameTitle} (${conversation.genre || 'Unknown Genre'})
+- Status: UNRELEASED / UPCOMING
+- Today's Date: ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+
+**Player Profile:**
+${profileContext}
+
+**Recent Conversation History:**
+${recentMessages}
+
+**User Query:** "${userMessage}"
+
+**Task:**
+1. Answer the user's question with the best available information
+2. If discussing features/mechanics, clearly state what's confirmed vs. speculated
+3. For trailer/screenshot analysis, focus on what can be definitively observed
+4. Suggest related content (previous games in series, similar games to try while waiting)
+5. Generate 3 contextual follow-up prompts using [OTAKON_SUGGESTIONS: ["prompt1", "prompt2", "prompt3"]]
+
+**SUGGESTIONS FOR UNRELEASED GAMES - Must be relevant:**
+✅ GOOD: "What editions are available for pre-order?"
+✅ GOOD: "What do we know about the combat system from trailers?"
+✅ GOOD: "How does this compare to [previous game in series]?"
+❌ BAD: "How do I beat the first boss?" (game isn't out!)
+❌ BAD: "What's the best build?" (no one knows yet!)
+
+**Response Style:**
+- Be enthusiastic but accurate about pre-release content
+- Share excitement while maintaining factual grounding
+- Recommend ways to prepare (play previous games, check system requirements)
+- Keep users informed about latest news and updates
+- Use clean, consistent markdown formatting
+
+**Tag Definitions:**
+${OTAKON_TAG_DEFINITIONS}
+`;
+};
+
 const getScreenshotAnalysisPrompt = (
   _conversation: Conversation, 
   userMessage: string, 
@@ -756,7 +1016,8 @@ export const getPromptForPersona = (
   hasImages: boolean,
   playerProfile?: PlayerProfile,
   behaviorContext?: BehaviorContext | null,
-  userTimezone?: string
+  userTimezone?: string,
+  queryContext?: QueryContext
 ): string => {
   // Build behavior context string
   const behaviorContextString = behaviorContext 
@@ -768,18 +1029,32 @@ export const getPromptForPersona = (
     ? `\n**User Timezone:** ${userTimezone}\nWhen discussing game release dates, provide times in the user's local timezone. For upcoming releases, be specific about exact date and time if known.\n`
     : '';
   
+  // Build query context for interaction-aware responses
+  const queryContextString = queryContext 
+    ? buildQueryContextString(queryContext)
+    : '';
+  
+  // Build experience evolution context
+  const evolutionContext = buildExperienceEvolutionContext(conversation, queryContext);
+  
   let basePrompt: string;
   
+  // Enhanced routing with unreleased game support
   if (hasImages) {
     basePrompt = getScreenshotAnalysisPrompt(conversation, userMessage, user, playerProfile);
   } else if (!conversation.isGameHub && conversation.gameTitle) {
-    basePrompt = getGameCompanionPrompt(conversation, userMessage, user, isActiveSession, playerProfile);
+    // Route unreleased games to dedicated prompt
+    if (conversation.isUnreleased) {
+      basePrompt = getUnreleasedGamePrompt(conversation, userMessage, user, playerProfile);
+    } else {
+      basePrompt = getGameCompanionPrompt(conversation, userMessage, user, isActiveSession, playerProfile);
+    }
   } else {
     basePrompt = getGeneralAssistantPrompt(userMessage);
   }
   
-  // Inject behavior context and timezone at the beginning of the prompt
-  const contextPrefix = [behaviorContextString, timezoneContext].filter(Boolean).join('\n');
+  // Inject all context at the beginning of the prompt
+  const contextPrefix = [behaviorContextString, timezoneContext, queryContextString, evolutionContext].filter(Boolean).join('\n');
   if (contextPrefix) {
     return contextPrefix + '\n\n' + basePrompt;
   }
