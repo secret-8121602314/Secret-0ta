@@ -266,8 +266,7 @@ class AIService {
       ? aiCacheService.generateCacheKey(userMessage, cacheContext)
       : '';
     
-    if (aiCacheKey) {
-          }
+    // Cache key generated, ready for lookup
     
     // Check AI cache first (persistent, cross-user for global/game queries)
     if (shouldUseCache && aiCacheKey) {
@@ -290,8 +289,8 @@ class AIService {
             cacheType: 'ai_persistent'
           }
         };
-      } else {
-              }
+      }
+      // Cache miss - will fetch from API
     } else {
       console.log(`?? [AIService] Skipping AI cache check (shouldUseCache=${shouldUseCache}, hasKey=${!!aiCacheKey})`);
     }
@@ -332,6 +331,9 @@ class AIService {
         }
       : undefined;
     
+    // Get user's timezone for release date accuracy
+    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    
     // Use the enhanced prompt system with session context and player profile
     const basePrompt = getPromptForPersona(
       conversation, 
@@ -339,7 +341,9 @@ class AIService {
       user, 
       isActiveSession, 
       hasImages,
-      playerProfile
+      playerProfile,
+      null, // behaviorContext
+      userTimezone
     );
     
     // Add immersion context for game conversations (not Game Hub)
@@ -638,6 +642,7 @@ class AIService {
     }
 
     // Get enhanced prompt with context (now includes behavior context)
+    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const basePrompt = getPromptForPersona(
       conversation, 
       userMessage, 
@@ -645,7 +650,8 @@ class AIService {
       isActiveSession, 
       hasImages,
       undefined, // playerProfile - not passed here, handled internally
-      behaviorContext
+      behaviorContext,
+      userTimezone
     );
     
     // Add immersion context for game conversations (not Game Hub)
@@ -953,7 +959,7 @@ In addition to your regular response, provide structured data in the following o
                   items: { type: SchemaType.STRING },
                   description: "MANDATORY: Array of state updates. MUST include 'PROGRESS: XX' (0-100) to track game completion percentage."
                 },
-                gamePillData: {
+                ogamePillData: {
                   type: SchemaType.OBJECT,
                   properties: {
                     shouldCreate: { type: SchemaType.BOOLEAN },
@@ -962,6 +968,14 @@ In addition to your regular response, provide structured data in the following o
                     wikiContent: { 
                       type: SchemaType.STRING,
                       description: "JSON string containing pre-filled subtab content"
+                    },
+                    confidence: {
+                      type: SchemaType.NUMBER,
+                      description: "Confidence score (0-1) for game identification. 0.8+ for high confidence."
+                    },
+                    gameStatus: {
+                      type: SchemaType.STRING,
+                      description: "Game release status. Use 'unreleased' for games not yet released, omit for released games."
                     }
                   }
                 }
@@ -1540,8 +1554,8 @@ NOW generate COMPREHENSIVE valid JSON for ALL these tab IDs (MUST include every 
       
       if (error) {
         console.error('Failed to log Game Hub interaction:', error);
-      } else {
-              }
+      }
+      // Successfully logged Game Hub interaction
     } catch (error) {
       console.error('Error logging Game Hub interaction:', error);
     }
@@ -1574,8 +1588,8 @@ NOW generate COMPREHENSIVE valid JSON for ALL these tab IDs (MUST include every 
       
       if (error) {
         console.error('Failed to mark Game Hub tab created:', error);
-      } else {
-              }
+      }
+      // Successfully marked tab as created
     } catch (error) {
       console.error('Error marking Game Hub tab created:', error);
     }

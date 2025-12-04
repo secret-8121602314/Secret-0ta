@@ -376,6 +376,8 @@ export interface AIResponse {
     gameName: string;
     genre: string;
     wikiContent: Record<string, string>; // Pre-filled subtab content
+    confidence?: number; // Game identification confidence (0-1)
+    gameStatus?: string; // 'unreleased' for upcoming games
   };
   progressiveInsightUpdates?: Array<{
     tabId: string;

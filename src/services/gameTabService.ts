@@ -6,6 +6,13 @@ import { toastService } from './toastService';
 import { subtabsService } from './subtabsService';
 import { chatMemoryService } from './chatMemoryService';
 
+// ============================================================================
+// SUBTAB CONTENT LIMITS
+// ============================================================================
+// Prevent subtabs from growing indefinitely during long sessions
+const MAX_SUBTAB_CONTENT_LENGTH = 3000;  // Characters before summarization
+const SUBTAB_SUMMARY_TARGET = 1500;       // Target length after summarization
+
 // ✅ UUID generator utility
 function generateUUID(): string {
   return globalThis.crypto?.randomUUID() || 
@@ -832,9 +839,24 @@ class GameTabService {
                                tab.content !== 'Loading...' &&
                                tab.status === 'loaded';
           
-          const newContent = shouldAppend
+          let newContent = shouldAppend
             ? tab.content + separator + update.content  // ✅ Append to existing
             : update.content;  // First update or loading state
+          
+          // ✅ CONTENT LIMIT CHECK: Prevent indefinite growth
+          if (newContent.length > MAX_SUBTAB_CONTENT_LENGTH) {
+            console.error(`📝 [GameTabService] [${conversationId}] Subtab ${tab.id} exceeds ${MAX_SUBTAB_CONTENT_LENGTH} chars, needs summarization`);
+            // For now, keep most recent content by trimming oldest entries
+            // TODO: In future, use AI to summarize the content
+            const entries = newContent.split('\n\n---\n');
+            if (entries.length > 2) {
+              // Keep first entry (original context) and last few entries (most recent)
+              const firstEntry = entries[0];
+              const recentEntries = entries.slice(-3).join('\n\n---\n');
+              newContent = firstEntry + '\n\n---\n**[Earlier entries summarized]**\n\n---\n' + recentEntries;
+              console.error(`📝 [GameTabService] [${conversationId}] Subtab ${tab.id} content trimmed to ${newContent.length} chars`);
+            }
+          }
           
           return {
             ...tab,

@@ -83,6 +83,13 @@ export async function getBehaviorContext(
 }
 
 // ============================================================================
+// CONTEXT WINDOWING LIMITS
+// ============================================================================
+// Prevent context bloat for long gaming sessions (100+ hour RPGs)
+const MAX_SUBTAB_CHARS = 500;      // Max chars per subtab in context
+const MAX_CONTEXT_CHARS = 15000;   // Max total context chars
+
+// ============================================================================
 // GAMING FOCUS GUARDRAILS
 // ============================================================================
 // Otagon is exclusively a gaming assistant. These guardrails ensure we politely
@@ -123,6 +130,14 @@ If a user asks about something unrelated to gaming:
 ✅ Streaming and content creation related to gaming
 ✅ Gaming news and reviews
 
+**HEALTH & WELLBEING IN GAMING CONTEXT:**
+✅ Gaming ergonomics (posture, wrist strain, eye care) - Answer helpfully!
+✅ Gaming session duration advice - Support healthy gaming habits
+✅ Break reminders and wellness tips for gamers - Be supportive
+✅ Gaming accessibility needs - Always help with this
+- If someone says "my wrist hurts" while gaming, offer ergonomic tips, NOT a redirect!
+- Be a supportive companion, not a robotic redirect machine
+
 **BE HELPFUL, NOT ANNOYING:**
 - Don't over-explain or be preachy about the limitation
 - Keep redirections brief and friendly (1-2 sentences)
@@ -134,7 +149,7 @@ If a user asks about something unrelated to gaming:
 const OTAKON_TAG_DEFINITIONS = `
 You MUST use the following tags to structure your response. Do not put them in a code block.
 - [OTAKON_GAME_ID: Game Name]: The full, official name of the game you've identified.
-- [OTAKON_CONFIDENCE: high|low]: Your confidence in the game identification.
+- [OTAKON_CONFIDENCE: high|low]: Your confidence in the game identification. Use "high" when the game is clearly identifiable, "low" when uncertain or could be multiple games.
 - [OTAKON_GENRE: Genre]: The primary genre of the identified game. Must be one of:
   • Action RPG - Action-focused RPGs with real-time combat (Dark Souls, God of War, etc.)
   • RPG - Traditional role-playing games with deep stories and character progression
@@ -295,10 +310,23 @@ const getGameCompanionPrompt = (
   isActiveSession: boolean,
   playerProfile?: PlayerProfile
 ): string => {
-  // Gather subtab context
+  // Gather subtab context with windowing to prevent context bloat
+  let totalChars = 0;
   const subtabContext = conversation.subtabs
     ?.filter(tab => tab.status === 'loaded' && tab.content)
-    .map(tab => `### ${tab.title} (ID: ${tab.id})\n${tab.content}`)
+    .map(tab => {
+      // Truncate each subtab to MAX_SUBTAB_CHARS, keeping most recent content
+      const content = tab.content || '';
+      const truncatedContent = content.length > MAX_SUBTAB_CHARS 
+        ? '...' + content.slice(-MAX_SUBTAB_CHARS) 
+        : content;
+      const entry = `### ${tab.title} (ID: ${tab.id})\n${truncatedContent}`;
+      totalChars += entry.length;
+      // Stop adding if we exceed total context limit
+      if (totalChars > MAX_CONTEXT_CHARS) return null;
+      return entry;
+    })
+    .filter(Boolean)
     .join('\n\n') || 'No subtabs available yet.';
 
   // Gather recent conversation history (last 10 messages for better context)
@@ -602,6 +630,7 @@ ${OTAKON_TAG_DEFINITIONS}
 /**
  * Determines the correct persona and returns the master prompt.
  * Now includes behavior context for non-repetitive responses and user corrections.
+ * Added timezone awareness for accurate release date handling.
  */
 export const getPromptForPersona = (
   conversation: Conversation,
@@ -610,11 +639,17 @@ export const getPromptForPersona = (
   isActiveSession: boolean,
   hasImages: boolean,
   playerProfile?: PlayerProfile,
-  behaviorContext?: BehaviorContext | null
+  behaviorContext?: BehaviorContext | null,
+  userTimezone?: string
 ): string => {
   // Build behavior context string
   const behaviorContextString = behaviorContext 
     ? buildBehaviorContextString(behaviorContext)
+    : '';
+  
+  // Build timezone context for release date accuracy
+  const timezoneContext = userTimezone 
+    ? `\n**User Timezone:** ${userTimezone}\nWhen discussing game release dates, provide times in the user's local timezone. For upcoming releases, be specific about exact date and time if known.\n`
     : '';
   
   let basePrompt: string;
@@ -627,9 +662,10 @@ export const getPromptForPersona = (
     basePrompt = getGeneralAssistantPrompt(userMessage);
   }
   
-  // Inject behavior context at the beginning of the prompt
-  if (behaviorContextString) {
-    return behaviorContextString + '\n\n' + basePrompt;
+  // Inject behavior context and timezone at the beginning of the prompt
+  const contextPrefix = [behaviorContextString, timezoneContext].filter(Boolean).join('\n');
+  if (contextPrefix) {
+    return contextPrefix + '\n\n' + basePrompt;
   }
   
   return basePrompt;

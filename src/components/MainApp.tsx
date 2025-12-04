@@ -165,6 +165,7 @@ const MainApp: React.FC<MainAppProps> = ({
   // ✅ NEW: Queued screenshot from WebSocket (manual mode)
   const [queuedScreenshot, setQueuedScreenshot] = useState<string | null>(null);
   
+  // ✅ NEW: Track image source for conditional migration
   // ✅ PERFORMANCE: Loading guards to prevent concurrent conversation loading
   const isLoadingConversationsRef = useRef(false);
   const hasLoadedConversationsRef = useRef(false);
@@ -234,6 +235,7 @@ const MainApp: React.FC<MainAppProps> = ({
         setLastSuccessfulConnection(new Date(lastConnection));
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Initialize TTS service on mount
@@ -388,14 +390,14 @@ const MainApp: React.FC<MainAppProps> = ({
       
       // Auto mode: Send the screenshot to the active conversation immediately
       if (activeConversation && handleSendMessageRef.current) {
-                handleSendMessageRef.current("", dataUrl);
+        handleSendMessageRef.current("", dataUrl);
         // Clear the queued screenshot immediately after sending in auto mode
         setQueuedScreenshot(null);
       } else {
                 toastService.warning('No active conversation. Please select or create a conversation first.');
       }
     }
-  }, [isManualUploadMode, activeConversation, propOnConnect, connectionCode]);
+  }, [isManualUploadMode, activeConversation]);
 
   // Clear queued screenshot when it's been used
   const handleScreenshotQueued = () => {
@@ -1029,6 +1031,7 @@ const MainApp: React.FC<MainAppProps> = ({
     };
 
     fetchGameData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeConversation?.gameTitle, activeConversation?.isGameHub]);
 
   // Function to refresh user data (for credit updates)
@@ -1083,6 +1086,7 @@ const MainApp: React.FC<MainAppProps> = ({
 
     // Note: Removed automatic disconnect on unmount to maintain persistent connection
     // WebSocket should only disconnect when user explicitly disconnects or logs out
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount
 
   // Global keyboard shortcuts
@@ -1126,6 +1130,7 @@ const MainApp: React.FC<MainAppProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversations, isLoading, abortController]);
 
   const handleConversationSelect = async (id: string) => {
@@ -1859,6 +1864,7 @@ const MainApp: React.FC<MainAppProps> = ({
       // Clear polling ref when subtabs are no longer loading
       pollingConversationRef.current = null;
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeConversation?.id, activeConversation?.subtabs]);
 
   // Placeholder for game tab creation - will be implemented in Week 3
@@ -3112,7 +3118,8 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
           // Move the user message and AI response to the game tab if we detected a DIFFERENT game
           // Allow migration from Game Hub OR from a different game tab
           const shouldMigrateMessages = targetConversationId && targetConversationId !== activeConversation.id;
-                              if (shouldMigrateMessages) {
+          
+          if (shouldMigrateMessages) {
             // ✅ FIX: Update local state IMMEDIATELY so messages appear in the new tab right away
             // This prevents the visual gap where messages disappear during migration
             // ✅ CRITICAL: Use database IDs for the messages to migrate (not temp client IDs)
@@ -3450,7 +3457,6 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
         toastService.info(`Sending ${pendingMessages.length} queued message(s)...`);
         
         // Process messages in order (sequential processing required for proper ordering)
-        // eslint-disable-next-line no-await-in-loop
         for (const pending of pendingMessages) {
           try {
             // Wait a bit between messages to avoid rate limiting
