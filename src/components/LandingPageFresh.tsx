@@ -8,6 +8,7 @@ import { WaitlistService } from '../services/waitlistService';
 import { toastService } from '../services/toastService';
 import useEmblaCarousel from 'embla-carousel-react';
 import Autoplay from 'embla-carousel-autoplay';
+import { AITextLoading } from './ui/AITextLoading';
 
 // Import feature images
 import feature1 from '../assets/images/feature-images/feature1.png';
@@ -533,6 +534,27 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
   const [scrollY, setScrollY] = useState(0);
   const backgroundRef = useRef<HTMLDivElement>(null);
 
+  // Interactive hint demo states
+  const [hintDemoState, setHintDemoState] = useState<'idle' | 'loading' | 'streaming' | 'revealed'>('idle');
+  const [streamedText, setStreamedText] = useState('');
+  const [currentDemoIndex, setCurrentDemoIndex] = useState(0);
+  
+  // Demo data - cycles through these on "Try Again"
+  const demoData = [
+    {
+      image: '/images/landing/hint.jpg',
+      query: 'What should I do here?',
+      hint: 'The immediate priority is to read the message from Takemura and proceed to the objective marker on Jig-Jig Street.'
+    },
+    {
+      image: '/images/landing/hint2.webp',
+      query: 'What am I looking at?',
+      hint: 'You are gazing upon the magnificent, yet menacing entrance to the Raya Lucaria Academy. Before attempting to breach the main gate, ensure you have secured the necessary Academy Glimstone Key.'
+    }
+  ];
+  
+  const currentDemo = demoData[currentDemoIndex];
+
   // Scroll animation states for mobile
   const [_chatHintVisible, setChatHintVisible] = useState(false);
   const [testimonialsVisible, setTestimonialsVisible] = useState<Record<number, boolean>>({});
@@ -540,6 +562,28 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
   // Refs for IntersectionObserver
   const chatHintRef = useRef<HTMLDivElement>(null);
   const testimonialRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Memoize random positions for particles to prevent re-randomizing on every render
+  const particlePositions = React.useMemo(() => 
+    [...Array(40)].map(() => ({
+      left: Math.random() * 100,
+      top: Math.random() * 100,
+      parallaxFactor: 0.2 + Math.random() * 0.4,
+      animationDelay: Math.random() * 3,
+      animationDuration: 4 + Math.random() * 4
+    })), []
+  );
+
+  // Memoize random positions for geometric shapes
+  const shapePositions = React.useMemo(() => 
+    [...Array(16)].map(() => ({
+      left: Math.random() * 100,
+      top: Math.random() * 100,
+      parallaxFactor: 0.1 + Math.random() * 0.3,
+      animationDelay: Math.random() * 4,
+      animationDuration: 6 + Math.random() * 4
+    })), []
+  );
 
     // Handle direct URL navigation on component mount
     useEffect(() => {
@@ -573,6 +617,111 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
+
+    // Interactive hint demo - F1 keyboard listener
+    const triggerHintDemo = useCallback(() => {
+        if (hintDemoState === 'loading' || hintDemoState === 'streaming') return;
+        
+        setHintDemoState('loading');
+        setStreamedText('');
+        
+        // After loading animation, start streaming the text
+        setTimeout(() => {
+            setHintDemoState('streaming');
+            let charIndex = 0;
+            const hint = currentDemo.hint;
+            const streamInterval = setInterval(() => {
+                if (charIndex < hint.length) {
+                    setStreamedText(hint.substring(0, charIndex + 1));
+                    charIndex++;
+                } else {
+                    clearInterval(streamInterval);
+                    setHintDemoState('revealed');
+                }
+            }, 25); // 25ms per character for smooth streaming
+        }, 1800); // Show loading animation for 1.8s
+    }, [hintDemoState, currentDemo.hint]);
+
+    const resetHintDemo = useCallback(() => {
+        // Cycle to next demo and immediately start loading/streaming
+        setCurrentDemoIndex(prev => {
+            const nextIdx = (prev + 1) % demoData.length;
+            setHintDemoState('loading');
+            setStreamedText('');
+            setTimeout(() => {
+                setHintDemoState('streaming');
+                let charIndex = 0;
+                const hint = demoData[nextIdx].hint;
+                const streamInterval = setInterval(() => {
+                    if (charIndex < hint.length) {
+                        setStreamedText(hint.substring(0, charIndex + 1));
+                        charIndex++;
+                    } else {
+                        clearInterval(streamInterval);
+                        setHintDemoState('revealed');
+                    }
+                }, 25);
+            }, 1800);
+            return nextIdx;
+        });
+    }, [demoData]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'F1' || e.code === 'F1' || e.keyCode === 112) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                setHintDemoState(prev => {
+                    if (prev === 'revealed') {
+                        // Cycle to next demo and immediately start loading/streaming
+                        setCurrentDemoIndex(prevIdx => {
+                            const nextIdx = (prevIdx + 1) % demoData.length;
+                            setHintDemoState('loading');
+                            setStreamedText('');
+                            setTimeout(() => {
+                                setHintDemoState('streaming');
+                                let charIndex = 0;
+                                const hint = demoData[nextIdx].hint;
+                                const streamInterval = setInterval(() => {
+                                    if (charIndex < hint.length) {
+                                        setStreamedText(hint.substring(0, charIndex + 1));
+                                        charIndex++;
+                                    } else {
+                                        clearInterval(streamInterval);
+                                        setHintDemoState('revealed');
+                                    }
+                                }, 25);
+                            }, 1800);
+                            return nextIdx;
+                        });
+                        return 'loading';
+                    } else if (prev === 'idle') {
+                        setStreamedText('');
+                        setTimeout(() => {
+                            setHintDemoState('streaming');
+                            const hint = demoData[currentDemoIndex].hint;
+                            let charIndex = 0;
+                            const streamInterval = setInterval(() => {
+                                if (charIndex < hint.length) {
+                                    setStreamedText(hint.substring(0, charIndex + 1));
+                                    charIndex++;
+                                } else {
+                                    clearInterval(streamInterval);
+                                    setHintDemoState('revealed');
+                                }
+                            }, 25);
+                        }, 1800);
+                        return 'loading';
+                    }
+                    return prev;
+                });
+                return false;
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown, true);
+        return () => document.removeEventListener('keydown', handleKeyDown, true);
+    }, [currentDemoIndex, demoData]);
 
     // Scroll animations for mobile only
     useEffect(() => {
@@ -686,16 +835,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
             
             {/* Animated Floating Particles with Parallax */}
             <div className="absolute inset-0 -z-12 pointer-events-none">
-                {[...Array(40)].map((_, i) => (
+                {particlePositions.map((particle, i) => (
                     <div
                         key={i}
                         className="absolute w-1 h-1 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] rounded-full opacity-40 animate-float"
                         style={{
-                            left: `${Math.random() * 100}%`,
-                            top: `${Math.random() * 100}%`,
-                            transform: `translateY(${scrollY * (0.2 + Math.random() * 0.4)}px)`,
-                            animationDelay: `${Math.random() * 3}s`,
-                            animationDuration: `${4 + Math.random() * 4}s`
+                            left: `${particle.left}%`,
+                            top: `${particle.top}%`,
+                            transform: `translateY(${scrollY * particle.parallaxFactor}px)`,
+                            animationDelay: `${particle.animationDelay}s`,
+                            animationDuration: `${particle.animationDuration}s`
                         }}
                     />
                 ))}
@@ -703,16 +852,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
           
             {/* Floating Geometric Shapes with Parallax */}
             <div className="absolute inset-0 -z-12 pointer-events-none">
-                {[...Array(16)].map((_, i) => (
+                {shapePositions.map((shape, i) => (
                     <div
                         key={`shape-${i}`}
                         className="absolute opacity-15 animate-drift"
                         style={{
-                            left: `${Math.random() * 100}%`,
-                            top: `${Math.random() * 100}%`,
-                            transform: `translateY(${scrollY * (0.1 + Math.random() * 0.3)}px)`,
-                            animationDelay: `${Math.random() * 4}s`,
-                            animationDuration: `${6 + Math.random() * 4}s`
+                            left: `${shape.left}%`,
+                            top: `${shape.top}%`,
+                            transform: `translateY(${scrollY * shape.parallaxFactor}px)`,
+                            animationDelay: `${shape.animationDelay}s`,
+                            animationDuration: `${shape.animationDuration}s`
                         }}
                     >
                         <div className="w-4 h-4 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] transform rotate-45"></div>
@@ -736,7 +885,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
             {/* Main Content */}
             <main>
       {/* Hero Section */}
-                <section className="relative pt-20 pb-6 md:pb-8 text-center">
+                <section className="relative pt-20 pb-16 md:pb-24 text-center">
                     
                     <div className="container mx-auto px-6 relative overflow-visible">
                         <div className="flex flex-col items-center justify-center gap-1 md:gap-4 mb-4 md:mb-10 overflow-visible">
@@ -796,28 +945,109 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
 
                         <div 
                             ref={chatHintRef}
-                            className={`relative mx-auto my-16 w-full max-w-2xl h-auto rounded-3xl bg-black/60 backdrop-blur-xl p-2 shadow-2xl animate-glow-pulse`}
+                            className="relative mx-auto my-16 w-full max-w-2xl h-auto rounded-3xl bg-black/60 backdrop-blur-xl p-2 shadow-2xl animate-glow-pulse"
                         >
-                            <div className="bg-transparent rounded-2xl p-6 space-y-6">
-                                {/* User Prompt */}
-                                <div className="flex justify-end">
-                                    <p className="text-base text-[#F5F5F5] bg-gradient-to-r from-rose-900/15 to-rose-800/15 py-3 px-6 rounded-2xl rounded-br-none border-2 border-rose-500/40 backdrop-blur-sm shadow-lg">
-                                        What should I do here?
-                                    </p>
-                                </div>
-                                {/* Model Response */}
-                                <div className="flex justify-start">
-                                    <div className="border-2 border-neutral-700/60 bg-gradient-to-r from-neutral-800/15 to-neutral-700/15 p-6 rounded-2xl rounded-bl-none max-w-[80%] text-left backdrop-blur-sm shadow-lg">
-                                        <p className="text-base font-bold text-white mb-2">Hint:</p>
-                                        <p className="text-base text-[#F5F5F5] leading-relaxed">
-                                        The contraption on the far wall seems to be missing a gear. Perhaps there's one nearby?
+                            <div className="bg-transparent rounded-2xl p-6 min-h-[320px] sm:min-h-[360px] relative">
+                                {/* Idle State - Prompt to interact */}
+                                <div className={`flex flex-col items-center justify-center py-10 px-6 text-center space-y-4 transition-all duration-300 ${hintDemoState === 'idle' ? 'opacity-100' : 'opacity-0 absolute inset-0 pointer-events-none'}`}>
+                                    <img
+                                        src="/images/mascot/4.png"
+                                        alt="Otagon Mascot"
+                                        className="w-56 h-56 sm:w-64 sm:h-64 object-contain aspect-square mx-auto"
+                                        onError={(e) => {
+                                            const target = e.target as HTMLImageElement;
+                                            target.style.display = 'none';
+                                        }}
+                                    />
+                                    <div className="space-y-2">
+                                        <p className="text-lg text-neutral-300">
+                                            Start a conversation with <span className="bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent font-semibold">Otagon</span>
                                         </p>
+                                        <p className="text-sm text-neutral-500 hidden md:block">Press <kbd className="px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-[#FFAB40] font-mono text-xs">F1</kbd> or click the button below to get a hint</p>
+                                        <p className="text-sm text-neutral-500 md:hidden">Tap the button below to get a hint</p>
                                     </div>
                                 </div>
-          </div>
-        </div>
+                                
+                                {/* Active State - Query and Response */}
+                                <div className={`space-y-6 transition-all duration-300 ${hintDemoState !== 'idle' ? 'opacity-100' : 'opacity-0 absolute inset-0 pointer-events-none p-6'}`}>
+                                    {/* User Prompt with Image */}
+                                    <div className="flex justify-end">
+                                        <div className="bg-gradient-to-r from-rose-900/15 to-rose-800/15 rounded-2xl rounded-br-none border-2 border-rose-500/40 backdrop-blur-sm shadow-lg overflow-hidden max-w-[85%]">
+                                            <img 
+                                                src={currentDemo.image} 
+                                                alt="Game screenshot needing help" 
+                                                className="w-full h-auto max-h-48 object-cover"
+                                            />
+                                            <p className="text-base text-[#F5F5F5] p-6 text-left">
+                                                {currentDemo.query}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Loading State */}
+                                    {hintDemoState === 'loading' && (
+                                        <div className="flex justify-start animate-fade-in">
+                                            <div className="border-2 border-neutral-700/60 bg-gradient-to-r from-neutral-800/15 to-neutral-700/15 p-6 rounded-2xl rounded-bl-none max-w-[80%] text-left backdrop-blur-sm shadow-lg">
+                                                <AITextLoading 
+                                                    texts={[
+                                                        "Analyzing screenshot...",
+                                                        "Identifying game elements...",
+                                                        "Crafting spoiler-free hint...",
+                                                    ]}
+                                                    interval={600}
+                                                    className="text-base"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    {/* Streaming/Revealed State */}
+                                    {(hintDemoState === 'streaming' || hintDemoState === 'revealed') && (
+                                        <div className="flex justify-start animate-fade-in">
+                                            <div className="border-2 border-neutral-700/60 bg-gradient-to-r from-neutral-800/15 to-neutral-700/15 p-6 rounded-2xl rounded-bl-none max-w-[80%] text-left backdrop-blur-sm shadow-lg">
+                                                <p className="text-base font-bold text-white mb-2">Hint:</p>
+                                                <p className="text-base text-[#F5F5F5] leading-relaxed">
+                                                    {streamedText}
+                                                    {hintDemoState === 'streaming' && (
+                                                        <span className="inline-block w-2 h-4 bg-[#FFAB40] ml-0.5 animate-pulse"></span>
+                                                    )}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                         
-                        <p className="text-xl md:text-2xl text-neutral-300 max-w-4xl mx-auto mb-8 leading-relaxed">
+                        {/* Interactive Demo Button */}
+                        <div className="w-full max-w-2xl mx-auto mb-14 mt-10">
+                            {hintDemoState === 'idle' ? (
+                                <button
+                                    onClick={triggerHintDemo}
+                                    className="w-full group flex items-center justify-center gap-3 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 transform md:hover:scale-[1.02] md:hover:shadow-2xl md:hover:shadow-[#E53A3A]/30 active:scale-[0.98]"
+                                >
+                                    <span className="hidden md:inline">Press</span>
+                                    <kbd className="hidden md:inline px-2 py-1 bg-white/20 border border-white/30 rounded text-sm font-mono">F1</kbd>
+                                    <span className="hidden md:inline">or Click to Get Hint</span>
+                                    <span className="md:hidden">Tap to Get Hint</span>
+                                    <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                    </svg>
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={resetHintDemo}
+                                    className="w-full group flex items-center justify-center gap-2 bg-transparent border-2 border-neutral-600 text-neutral-300 font-medium py-4 px-6 rounded-xl transition-all duration-300 hover:border-[#E53A3A] hover:text-white"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                    <span>Try Again</span>
+                                </button>
+                            )}
+                        </div>
+                        
+                        <p className="text-xl md:text-2xl text-neutral-300 max-w-4xl mx-auto mb-16 mt-14 leading-relaxed">
               Otagon sees your screen and gives you the perfect nudge to keep you playing—without ruining the surprise. The fastest way to snap a screenshot, share with friends, and get gaming hints in seconds. Stop searching, start playing.
             </p>
 
@@ -885,14 +1115,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                 </section>
 
                 {/* How It Works Section */}
-                <section className="py-10 md:py-14 bg-transparent relative">
+                <section className="py-16 md:py-24 bg-transparent relative">
                     <div className="container mx-auto px-8 max-w-6xl relative">
-                        <div className="text-center mb-8 md:mb-10 animate-fade-slide-up">
+                        <div className="text-center mb-12 md:mb-16 animate-fade-slide-up">
                             <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-white mb-6">How It Works</h2>
                             <p className="text-xl text-neutral-300 mt-6 leading-relaxed">Get unstuck, get smart, get back to gaming—all without leaving your game.</p>
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-16 md:gap-20">
                             {/* Step 1 */}
                             <div className="text-center animate-fade-slide-up">
                                 <div className="flex items-center justify-center mx-auto mb-6">
@@ -954,9 +1184,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                 </section>
 
                 {/* Features Section */}
-                <section id="features" className="py-10 md:py-14 bg-transparent relative">
+                <section id="features" className="py-16 md:py-24 bg-transparent relative">
                     <div className="container mx-auto px-8 max-w-6xl relative">
-                        <div className="text-center mb-8 md:mb-10 animate-fade-slide-up">
+                        <div className="text-center mb-12 md:mb-16 animate-fade-slide-up">
                             <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-white mb-6 leading-tight" style={{ lineHeight: '1.3', minHeight: '1.3em', height: 'auto', paddingTop: '0.5rem', paddingBottom: '0.5rem' }}>Your Journey From First Moment to Victory</h2>
                             <p className="text-xl text-neutral-300 mt-6 leading-relaxed">Features built to match your gaming style, not slow you down</p>
                         </div>
@@ -1005,10 +1235,83 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                     </div>
                 </section>
 
-                {/* Installation Section */}
-                <section id="installation" className="py-10 md:py-14 bg-transparent relative">
+                {/* Your Gaming Home Base Section */}
+                <section className="py-16 md:py-24 bg-transparent relative">
                     <div className="container mx-auto px-8 max-w-6xl relative">
-                        <div className="text-center mb-8 md:mb-10 animate-fade-slide-up">
+                        <div className="text-center mb-12 md:mb-16 animate-fade-slide-up">
+                            <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-white mb-6">
+                                Your Gaming <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40]">Home Base</span>
+                            </h2>
+                            <p className="text-xl text-neutral-300 mt-6 leading-relaxed">
+                                More than just hints—track your journey, organize your collection, and discover your next adventure
+                            </p>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
+                            {/* Timeline */}
+                            <div className="group bg-gradient-to-br from-[#1C1C1C]/60 to-[#0A0A0A]/60 backdrop-blur-xl border-2 border-neutral-800/60 rounded-2xl p-6 hover:border-[#E53A3A]/40 hover:shadow-2xl hover:shadow-[#E53A3A]/20 transition-all duration-500 animate-fade-slide-up">
+                                <div className="aspect-video rounded-xl overflow-hidden mb-5 bg-neutral-900/50">
+                                    <img 
+                                        src="/images/landing/timeline.png" 
+                                        alt="Timeline - Track your gaming journey" 
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        loading="lazy"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className="w-1.5 h-6 bg-gradient-to-b from-[#E53A3A] to-[#D98C1F] rounded-full"></div>
+                                    <h3 className="text-xl font-bold text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#FF4D4D] group-hover:to-[#FFAB40] transition-all duration-500">Timeline</h3>
+                                </div>
+                                <p className="text-neutral-300 leading-relaxed">
+                                    Visualize your entire gaming journey. Track every console, game, and memorable moment in a beautiful interactive timeline.
+                                </p>
+                            </div>
+
+                            {/* Library */}
+                            <div className="group bg-gradient-to-br from-[#1C1C1C]/60 to-[#0A0A0A]/60 backdrop-blur-xl border-2 border-neutral-800/60 rounded-2xl p-6 hover:border-[#E53A3A]/40 hover:shadow-2xl hover:shadow-[#E53A3A]/20 transition-all duration-500 animate-fade-slide-up">
+                                <div className="aspect-video rounded-xl overflow-hidden mb-5 bg-neutral-900/50">
+                                    <img 
+                                        src="/images/landing/library.png" 
+                                        alt="Library - Organize your game collection" 
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        loading="lazy"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className="w-1.5 h-6 bg-gradient-to-b from-[#E53A3A] to-[#D98C1F] rounded-full"></div>
+                                    <h3 className="text-xl font-bold text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#FF4D4D] group-hover:to-[#FFAB40] transition-all duration-500">Library</h3>
+                                </div>
+                                <p className="text-neutral-300 leading-relaxed">
+                                    Organize your collection with IGDB integration. Track owned games, wishlist, favorites, and completion progress all in one place.
+                                </p>
+                            </div>
+
+                            {/* Explore Games */}
+                            <div className="group bg-gradient-to-br from-[#1C1C1C]/60 to-[#0A0A0A]/60 backdrop-blur-xl border-2 border-neutral-800/60 rounded-2xl p-6 hover:border-[#E53A3A]/40 hover:shadow-2xl hover:shadow-[#E53A3A]/20 transition-all duration-500 animate-fade-slide-up">
+                                <div className="aspect-video rounded-xl overflow-hidden mb-5 bg-neutral-900/50">
+                                    <img 
+                                        src="/images/landing/home.png" 
+                                        alt="Explore Games - Discover your next adventure" 
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        loading="lazy"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className="w-1.5 h-6 bg-gradient-to-b from-[#E53A3A] to-[#D98C1F] rounded-full"></div>
+                                    <h3 className="text-xl font-bold text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#FF4D4D] group-hover:to-[#FFAB40] transition-all duration-500">Explore Games</h3>
+                                </div>
+                                <p className="text-neutral-300 leading-relaxed">
+                                    Discover new games, browse categories, and stay updated with the latest releases, trending titles, and gaming news.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Installation Section */}
+                <section id="installation" className="py-16 md:py-24 bg-transparent relative">
+                    <div className="container mx-auto px-8 max-w-6xl relative">
+                        <div className="text-center mb-12 md:mb-16 animate-fade-slide-up">
                             <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-white mb-6">Install Otagon Everywhere</h2>
                             <p className="text-xl text-neutral-300 mt-6 leading-relaxed">Access on mobile, sync with PC for seamless gaming</p>
                         </div>
@@ -1018,13 +1321,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                 </section>
 
                 {/* For Every Gamer, For Every Genre Section */}
-                <section className="py-10 md:py-14 bg-transparent relative">
+                <section className="py-16 md:py-24 bg-transparent relative">
                     <div className="container mx-auto px-8 max-w-6xl relative">
-                        <div className="text-center mb-8 md:mb-10 animate-fade-slide-up">
+                        <div className="text-center mb-12 md:mb-16 animate-fade-slide-up">
                             <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-white mb-6">For Every Challenge, In Every World</h2>
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12 lg:gap-16 py-6 md:py-10 lg:py-14">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 md:gap-14 lg:gap-16 py-8 md:py-12 lg:py-16">
                             {/* Souls-likes & Action RPGs */}
                             <div className="text-center animate-fade-slide-up">
                                 <div className="flex items-center justify-center mx-auto mb-4">

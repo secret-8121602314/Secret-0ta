@@ -332,9 +332,9 @@ const GamingExplorerLibrary: React.FC<GamingExplorerLibraryProps> = ({ user: _us
       </div>
 
       {/* Game Grid - Enhanced */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 pb-28 lg:pb-20">
         {games.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
             {games.map((game, index) => (
               <motion.div
                 key={game.id}
@@ -417,11 +417,11 @@ const GamingExplorerLibrary: React.FC<GamingExplorerLibraryProps> = ({ user: _us
                 </div>
 
                 {/* Game Info - Enhanced */}
-                <div className="p-3 bg-gradient-to-t from-[#0A0A0A] to-[#1C1C1C]">
-                  <h3 className="font-semibold text-[#F5F5F5] text-sm truncate">{game.gameName}</h3>
+                <div className="p-2 sm:p-3 bg-gradient-to-t from-[#0A0A0A] to-[#1C1C1C] min-w-0 overflow-hidden">
+                  <h3 className="font-semibold text-[#F5F5F5] text-xs sm:text-sm truncate">{game.gameName}</h3>
                   
                   {/* Your Rating - Enhanced */}
-                  <div className="flex items-center gap-0.5 mt-1.5">
+                  <div className="flex items-center gap-0.5 mt-1">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <motion.button
                         key={star}
@@ -431,7 +431,7 @@ const GamingExplorerLibrary: React.FC<GamingExplorerLibraryProps> = ({ user: _us
                           e.stopPropagation();
                           handleUpdateRating(game.id, star);
                         }}
-                        className={`text-base transition-colors ${
+                        className={`text-sm sm:text-base transition-colors ${
                           (game.personalRating || 0) >= star ? 'text-yellow-400' : 'text-[#424242] hover:text-yellow-400/50'
                         }`}
                       >
@@ -442,7 +442,7 @@ const GamingExplorerLibrary: React.FC<GamingExplorerLibraryProps> = ({ user: _us
 
                   {/* Genres - Enhanced */}
                   {game.igdbData?.genres && (
-                    <p className="text-xs text-[#6B7280] mt-1.5 truncate">
+                    <p className="text-[10px] sm:text-xs text-[#6B7280] mt-1 truncate">
                       {game.igdbData.genres.slice(0, 2).map(g => g.name).join(' • ')}
                     </p>
                   )}
@@ -498,14 +498,15 @@ const GamingExplorerLibrary: React.FC<GamingExplorerLibraryProps> = ({ user: _us
         )}
       </div>
 
-      {/* Floating Add Button - Enhanced with strong shadow */}
+      {/* Floating Add Button - Left side, aligned with Chat button */}
       {games.length > 0 && (
         <motion.button
           whileHover={{ scale: 1.1, rotate: 90 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setShowSearchModal(true)}
-          className="fixed bottom-20 lg:bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white rounded-full flex items-center justify-center z-30"
+          className="fixed bottom-24 lg:bottom-8 left-4 lg:left-8 w-14 h-14 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white rounded-full flex items-center justify-center z-[80]"
           style={{ boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5), 0 8px 32px rgba(229, 58, 58, 0.4)' }}
+          title="Add Game"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
