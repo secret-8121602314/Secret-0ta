@@ -322,6 +322,10 @@ const SubTabs: React.FC<SubTabsProps> = ({
           - z-50: SubTabs expanded panel (this)
           - z-40: SubTabs container (in ChatInterface)
           - z-30: Chat Thread Name header (in MainApp)
+          
+          POSITIONING FIX: Using fixed positioning with bottom offset calculated from
+          viewport to prevent clipping behind chat thread name header on mobile.
+          The panel grows upward from the toggle button but stops at top: 80px (safe area for header).
       */}
       {isExpanded && (
         <>
@@ -331,12 +335,14 @@ const SubTabs: React.FC<SubTabsProps> = ({
             onClick={() => setIsExpanded(false)}
           />
           <div
-            className="absolute bottom-full left-0 right-0 mb-2 z-50 animate-fade-in"
+            className="fixed left-3 right-3 z-50 animate-fade-in lg:absolute lg:left-0 lg:right-0 lg:bottom-full lg:mb-2"
             style={{
-              // Responsive max-height: mobile-friendly sizing
-              // Mobile: leaves 300px for header, input bar, button, and safe area
-              // Desktop: allows more content to be visible
-              maxHeight: 'min(calc(100vh - 300px), 500px)',
+              // Mobile: fixed positioning with safe top margin (80px for header + thread name)
+              // and bottom margin (120px for toggle button + input bar + safe area)
+              // Desktop (lg+): reverts to absolute positioning via Tailwind classes
+              top: 'max(80px, env(safe-area-inset-top, 20px) + 60px)',
+              bottom: '120px',
+              maxHeight: 'calc(100vh - 200px)',
             }}
           >
           <div className="bg-[#1C1C1C] border border-[#424242]/60 rounded-xl shadow-2xl h-full flex flex-col" style={{ maxHeight: 'inherit' }}>

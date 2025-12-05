@@ -738,6 +738,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
             rootMargin: '0px'
         };
 
+        // Wave animation observer for feature cards
+        const waveObserverOptions: IntersectionObserverInit = {
+            threshold: 0.3,
+            rootMargin: '-10% 0px -10% 0px'
+        };
+
         const handleIntersection = (
             entries: IntersectionObserverEntry[],
             setter: React.Dispatch<React.SetStateAction<boolean>> | React.Dispatch<React.SetStateAction<Record<number, boolean>>>,
@@ -755,14 +761,39 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
             });
         };
 
+        // Wave animation handler - adds wave-active class when entering, removes when leaving
+        const handleWaveIntersection = (entries: IntersectionObserverEntry[]) => {
+            entries.forEach((entry) => {
+                const card = entry.target as HTMLElement;
+                const delay = parseInt(card.style.animationDelay || '0', 10);
+                
+                if (entry.isIntersecting) {
+                    // Add wave-active class with staggered delay when entering viewport
+                    setTimeout(() => {
+                        card.classList.add('wave-active');
+                    }, delay);
+                } else {
+                    // Remove wave-active class when leaving viewport
+                    card.classList.remove('wave-active');
+                }
+            });
+        };
+
         const chatObserver = new IntersectionObserver(
             (entries) => handleIntersection(entries, setChatHintVisible),
             chatObserverOptions
         );
 
+        // Wave animation observer
+        const waveObserver = new IntersectionObserver(handleWaveIntersection, waveObserverOptions);
+
         if (chatHintRef.current) {
             chatObserver.observe(chatHintRef.current);
         }
+
+        // Observe all scroll-wave-card elements
+        const waveCards = document.querySelectorAll('.scroll-wave-card');
+        waveCards.forEach((card) => waveObserver.observe(card));
 
         const testimonialObservers = testimonialRefs.current.map((ref, index) => {
             if (!ref) {return null;}
@@ -776,6 +807,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
 
         return () => {
             chatObserver.disconnect();
+            waveObserver.disconnect();
             testimonialObservers.forEach((observer) => observer?.disconnect());
         };
     }, []);
@@ -959,7 +991,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                             target.style.display = 'none';
                                         }}
                                     />
-                                    <div className="space-y-2">
+                                    <div className="space-y-2 md:space-y-4">
                                         <p className="text-lg text-neutral-300">
                                             Start a conversation with <span className="bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent font-semibold">Otagon</span>
                                         </p>
@@ -1246,7 +1278,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                         
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
                             {/* Timeline */}
-                            <div className="group bg-gradient-to-br from-[#1C1C1C]/60 to-[#0A0A0A]/60 backdrop-blur-xl border-2 border-neutral-800/60 rounded-2xl p-6 hover:border-[#E53A3A]/40 hover:shadow-2xl hover:shadow-[#E53A3A]/20 transition-all duration-500 animate-fade-slide-up">
+                            <div className="group bg-gradient-to-br from-[#1C1C1C]/60 to-[#0A0A0A]/60 backdrop-blur-xl border-2 border-neutral-800/60 rounded-2xl p-6 hover:border-[#E53A3A]/40 hover:shadow-2xl hover:shadow-[#E53A3A]/20 transition-all duration-500 animate-fade-slide-up scroll-wave-card" style={{ animationDelay: '0ms' }}>
                                 <div className="aspect-video rounded-xl overflow-hidden mb-5 bg-neutral-900/50">
                                     <img 
                                         src="/images/landing/timeline.png" 
@@ -1256,7 +1288,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                     />
                                 </div>
                                 <div className="flex items-center gap-3 mb-3">
-                                    <div className="w-1.5 h-6 bg-gradient-to-b from-[#E53A3A] to-[#D98C1F] rounded-full"></div>
                                     <h3 className="text-xl font-bold text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#FF4D4D] group-hover:to-[#FFAB40] transition-all duration-500">Timeline</h3>
                                 </div>
                                 <p className="text-neutral-300 leading-relaxed">
@@ -1265,7 +1296,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                             </div>
 
                             {/* Library */}
-                            <div className="group bg-gradient-to-br from-[#1C1C1C]/60 to-[#0A0A0A]/60 backdrop-blur-xl border-2 border-neutral-800/60 rounded-2xl p-6 hover:border-[#E53A3A]/40 hover:shadow-2xl hover:shadow-[#E53A3A]/20 transition-all duration-500 animate-fade-slide-up">
+                            <div className="group bg-gradient-to-br from-[#1C1C1C]/60 to-[#0A0A0A]/60 backdrop-blur-xl border-2 border-neutral-800/60 rounded-2xl p-6 hover:border-[#E53A3A]/40 hover:shadow-2xl hover:shadow-[#E53A3A]/20 transition-all duration-500 animate-fade-slide-up scroll-wave-card" style={{ animationDelay: '100ms' }}>
                                 <div className="aspect-video rounded-xl overflow-hidden mb-5 bg-neutral-900/50">
                                     <img 
                                         src="/images/landing/library.png" 
@@ -1275,7 +1306,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                     />
                                 </div>
                                 <div className="flex items-center gap-3 mb-3">
-                                    <div className="w-1.5 h-6 bg-gradient-to-b from-[#E53A3A] to-[#D98C1F] rounded-full"></div>
                                     <h3 className="text-xl font-bold text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#FF4D4D] group-hover:to-[#FFAB40] transition-all duration-500">Library</h3>
                                 </div>
                                 <p className="text-neutral-300 leading-relaxed">
@@ -1284,7 +1314,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                             </div>
 
                             {/* Explore Games */}
-                            <div className="group bg-gradient-to-br from-[#1C1C1C]/60 to-[#0A0A0A]/60 backdrop-blur-xl border-2 border-neutral-800/60 rounded-2xl p-6 hover:border-[#E53A3A]/40 hover:shadow-2xl hover:shadow-[#E53A3A]/20 transition-all duration-500 animate-fade-slide-up">
+                            <div className="group bg-gradient-to-br from-[#1C1C1C]/60 to-[#0A0A0A]/60 backdrop-blur-xl border-2 border-neutral-800/60 rounded-2xl p-6 hover:border-[#E53A3A]/40 hover:shadow-2xl hover:shadow-[#E53A3A]/20 transition-all duration-500 animate-fade-slide-up scroll-wave-card" style={{ animationDelay: '200ms' }}>
                                 <div className="aspect-video rounded-xl overflow-hidden mb-5 bg-neutral-900/50">
                                     <img 
                                         src="/images/landing/home.png" 
@@ -1294,7 +1324,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                     />
                                 </div>
                                 <div className="flex items-center gap-3 mb-3">
-                                    <div className="w-1.5 h-6 bg-gradient-to-b from-[#E53A3A] to-[#D98C1F] rounded-full"></div>
                                     <h3 className="text-xl font-bold text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#FF4D4D] group-hover:to-[#FFAB40] transition-all duration-500">Explore Games</h3>
                                 </div>
                                 <p className="text-neutral-300 leading-relaxed">

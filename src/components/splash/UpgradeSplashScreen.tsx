@@ -65,18 +65,18 @@ const UpgradeSplashScreen: React.FC<UpgradeSplashScreenProps> = ({ onUpgrade, on
             <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
         </div>
-        <p className="text-neutral-300 text-base mb-8 leading-relaxed">Unlock your full potential and support the community.</p>
+        <p className="text-neutral-300 text-base mb-4 sm:mb-6 md:mb-8 leading-relaxed">Unlock your full potential and support the community.</p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mt-6 sm:mt-8 text-left">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mt-4 sm:mt-6 items-stretch text-left">
           {/* Pro Plan */}
-          <div className="bg-neutral-900/50 border border-neutral-700 rounded-xl p-6 flex flex-col">
+          <div className="bg-neutral-900/50 border border-neutral-700 rounded-xl p-4 sm:p-6 flex flex-col h-full">
             <h3 className="text-xl font-bold text-white">Pro</h3>
-            <p className="text-neutral-400 mt-1 mb-6">For serious gamers who want the best.</p>
-            <div className="mb-6">
-              <span className="text-4xl font-bold text-white">$3.99</span>
+            <p className="text-neutral-400 mt-1 mb-4 sm:mb-6">For serious gamers who want the best.</p>
+            <div className="mb-4 sm:mb-6">
+              <span className="text-3xl sm:text-4xl font-bold text-white">$3.99</span>
               <span className="text-base text-neutral-400">/month</span>
             </div>
-            <ul className="space-y-3 mb-8 text-sm">
+            <ul className="space-y-3 mb-6 sm:mb-8 text-sm flex-1">
               {proFeatures.map(feature => <CheckFeatureLine key={feature}>{feature}</CheckFeatureLine>)}
             </ul>
             <div className="mt-auto">
@@ -91,18 +91,18 @@ const UpgradeSplashScreen: React.FC<UpgradeSplashScreenProps> = ({ onUpgrade, on
           </div>
 
           {/* Vanguard Plan */}
-          <div className="relative border-2 border-[#FFAB40] rounded-xl p-6 bg-[#111] shadow-2xl shadow-[#D98C1F]/20 flex flex-col">
+          <div className="relative border-2 border-[#FFAB40] rounded-xl p-4 sm:p-6 bg-[#111] shadow-2xl shadow-[#D98C1F]/20 flex flex-col h-full">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-[#FF4D4D] to-[#D98C1F] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
               Best Value
             </div>
             <h3 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-orange-500">Pro Vanguard</h3>
-            <p className="text-neutral-400 mt-1 mb-6">Become a founding member.</p>
-            <div className="mb-6">
-              <span className="text-4xl font-bold text-white">$20</span>
+            <p className="text-neutral-400 mt-1 mb-4 sm:mb-6">Become a founding member.</p>
+            <div className="mb-4 sm:mb-6">
+              <span className="text-3xl sm:text-4xl font-bold text-white">$20</span>
               <span className="text-base text-neutral-400">/year</span>
               <p className="text-sm text-green-400 mt-1">Limited Offer - Price Locked Forever!</p>
             </div>
-            <ul className="space-y-3 mb-8 text-sm">
+            <ul className="space-y-3 mb-6 sm:mb-8 text-sm flex-1">
               <CheckFeatureLine><b>All Pro features, plus:</b></CheckFeatureLine>
               {vanguardFeatures.map(feature => <StarFeatureLine key={feature.text} {...(feature.comingSoon && { comingSoon: feature.comingSoon })}>{feature.text}</StarFeatureLine>)}
             </ul>

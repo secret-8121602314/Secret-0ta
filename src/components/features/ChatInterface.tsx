@@ -779,7 +779,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           ref={messagesContainerRef}
           className={`flex-1 p-3 sm:p-5 space-y-3 sm:space-y-5 min-h-0 overflow-y-auto custom-scrollbar ${
             conversation.messages.length === 0 ? 'overflow-y-hidden flex items-center justify-center' : ''
-          } ${conversation.isGameHub && conversation.messages.length > 0 ? 'pb-16' : ''}`}
+          } ${conversation.isGameHub && conversation.messages.length > 0 ? 'pb-24' : ''}`}
         >
         {conversation.messages.length === 0 ? (
           <div className="flex items-center justify-center h-full w-full pb-32">
@@ -829,6 +829,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               <TypingIndicator variant="dots" showText={false} />
             </div>
           </div>
+        )}
+        
+        {/* Scroll buffer spacer - allows users to scroll the last message up from the bottom
+            Standard practice in chat apps (Slack, Discord, WhatsApp) for readability
+            This ensures AI responses and feedback buttons aren't blocked by bottom overlays */}
+        {conversation.messages.length > 0 && (
+          <div className="min-h-[120px] flex-shrink-0" aria-hidden="true" />
         )}
         
         <div ref={messagesEndRef} />

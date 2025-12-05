@@ -270,6 +270,10 @@ const GamingExplorerTimeline: React.FC<GamingExplorerTimelineProps> = ({ user: _
   const [addEventYear, setAddEventYear] = useState<number | null>(null);
   const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Auto-collapse state: when true, only show years with events (collapses empty years)
+  // Automatically set to true when a new event is added
+  const [showOnlyEventYears, setShowOnlyEventYears] = useState(false);
 
   const profile = userProfileStorage.get();
   const currentYear = new Date().getFullYear();
@@ -373,6 +377,8 @@ const GamingExplorerTimeline: React.FC<GamingExplorerTimelineProps> = ({ user: _
     setShowAddModal(false);
     setAddEventYear(null);
     setAddEventType(null);
+    // Auto-collapse to show only years with events after adding
+    setShowOnlyEventYears(true);
   }, [addEventType, addEventYear, currentYear]);
 
   // Check if there are any events at all
@@ -413,10 +419,11 @@ const GamingExplorerTimeline: React.FC<GamingExplorerTimelineProps> = ({ user: _
         </div>
       </div>
 
-      {/* Main Timeline Content */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
-        {/* Stats Banner - Enhanced Grid Layout */}
-        <div className="sticky top-0 z-20 bg-[#0A0A0A]/95 backdrop-blur-md border-b border-[#424242]/40">
+      {/* Main Timeline Content - Restructured for proper fixed header behavior */}
+      {/* Stats Banner and Year Selector stay fixed at top, only timeline content scrolls */}
+      <div className="flex-1 flex flex-col min-h-0">
+        {/* Stats Banner - Fixed at top (flex-shrink-0 prevents it from scrolling) */}
+        <div className="flex-shrink-0 z-20 bg-[#0A0A0A]/95 backdrop-blur-md border-b border-[#424242]/40">
           <div className="px-3 sm:px-4 py-3 sm:py-4">
             {/* Mobile: 3 stat cards in grid, Add button below */}
             {/* Desktop: All stats + Add button in row */}
@@ -496,8 +503,8 @@ const GamingExplorerTimeline: React.FC<GamingExplorerTimelineProps> = ({ user: _
           </div>
         </div>
 
-        {/* Mobile Year Selector with Add Event Button */}
-        <div className="lg:hidden sticky top-[88px] z-10 bg-[#0A0A0A] border-b border-[#424242]/40 px-4 py-2">
+        {/* Mobile Year Selector with Add Event Button - Fixed at top (flex-shrink-0) */}
+        <div className="lg:hidden flex-shrink-0 z-10 bg-[#0A0A0A] border-b border-[#424242]/40 px-4 py-2">
           <div className="flex gap-2">
             <div className="relative flex-1">
               <select
@@ -532,6 +539,8 @@ const GamingExplorerTimeline: React.FC<GamingExplorerTimelineProps> = ({ user: _
           </div>
         </div>
 
+        {/* Scrollable Timeline Content Area */}
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0">
         {/* Empty State */}
         {!hasEvents && (
           <motion.div 
@@ -570,21 +579,50 @@ const GamingExplorerTimeline: React.FC<GamingExplorerTimelineProps> = ({ user: _
               </div>
             </div>
 
-            {/* Year Sections - Empty years show Add Event button */}
-            {allYears.map((year) => {
+            {/* Collapse/Expand Toggle - Show when collapsed and there are hidden years */}
+            {showOnlyEventYears && (() => {
+              const yearsWithEvents = allYears.filter(y => (eventsByYear[y]?.length || 0) > 0);
+              const hiddenYearsCount = allYears.length - yearsWithEvents.length;
+              if (hiddenYearsCount > 0) {
+                return (
+                  <motion.button
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    onClick={() => setShowOnlyEventYears(false)}
+                    className="mb-4 ml-12 sm:ml-[72px] inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-[#8F8F8F] hover:text-[#F5F5F5] bg-[#1C1C1C] hover:bg-[#252525] border border-[#424242]/40 rounded-lg transition-all"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                    Show {hiddenYearsCount} empty year{hiddenYearsCount > 1 ? 's' : ''}
+                  </motion.button>
+                );
+              }
+              return null;
+            })()}
+
+            {/* Year Sections - Filter based on showOnlyEventYears state */}
+            <AnimatePresence mode="popLayout">
+            {allYears
+              .filter(year => !showOnlyEventYears || (eventsByYear[year]?.length || 0) > 0)
+              .map((year) => {
               const yearEvents = eventsByYear[year] || [];
               const hasEventsThisYear = yearEvents.length > 0;
               
               // If year has events, show full section
-              // If year is empty, show Add Event button instead of collapse
+              // If year is empty (only shown when not collapsed), show Add Event button
               if (!hasEventsThisYear) {
                 // Empty year - show Add Event button
                 return (
-                  <div 
+                  <motion.div 
                     key={year} 
                     id={`timeline-year-${year}`} 
                     data-year={year}
                     className="mb-4"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
                   >
                     <div className="relative flex items-center h-8 group">
                       {/* Empty year dot */}
@@ -607,16 +645,21 @@ const GamingExplorerTimeline: React.FC<GamingExplorerTimelineProps> = ({ user: _
                         <span className="hidden sm:inline">Add Event</span>
                       </motion.button>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               }
               
               return (
-                <div 
+                <motion.div 
                   key={year} 
                   id={`timeline-year-${year}`} 
                   data-year={year}
                   className="mb-10"
+                  layout
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
                 >
                   {/* Year Header - Enhanced */}
                   <div className="relative flex items-center h-8 mb-6">
@@ -689,11 +732,36 @@ const GamingExplorerTimeline: React.FC<GamingExplorerTimelineProps> = ({ user: _
                       No events recorded - click + to add
                     </p>
                   )}
-                </div>
+                </motion.div>
               );
             })}
+            </AnimatePresence>
+            
+            {/* Collapse button at bottom when expanded (showing all years) */}
+            {!showOnlyEventYears && events.length > 0 && (() => {
+              const yearsWithEvents = allYears.filter(y => (eventsByYear[y]?.length || 0) > 0);
+              const emptyYearsCount = allYears.length - yearsWithEvents.length;
+              if (emptyYearsCount > 0) {
+                return (
+                  <motion.button
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    onClick={() => setShowOnlyEventYears(true)}
+                    className="mt-4 ml-12 sm:ml-[72px] inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-[#8F8F8F] hover:text-[#F5F5F5] bg-[#1C1C1C] hover:bg-[#252525] border border-[#424242]/40 rounded-lg transition-all"
+                  >
+                    <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                    Hide {emptyYearsCount} empty year{emptyYearsCount > 1 ? 's' : ''}
+                  </motion.button>
+                );
+              }
+              return null;
+            })()}
           </div>
         )}
+        </div>
+        {/* End of Scrollable Timeline Content Area */}
 
         {/* Floating Add Button - Hidden on mobile to avoid overlap with back-to-chat button */}
         <motion.button
