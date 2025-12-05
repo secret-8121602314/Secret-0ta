@@ -10,9 +10,10 @@ interface LogoProps {
   bounce?: boolean;
   userTier?: UserTier;
   isOnTrial?: boolean; // Optional: indicates user is on a pro trial
+  onClick?: () => void; // Optional: click handler for Gaming Explorer
 }
 
-const Logo: React.FC<LogoProps> = ({ className = '', size = 'md', spin = false, spinOnce = false, bounce = false, userTier, isOnTrial = false }) => {
+const Logo: React.FC<LogoProps> = ({ className = '', size = 'md', spin = false, spinOnce = false, bounce = false, userTier, isOnTrial = false, onClick }) => {
   const sizeClasses = {
     sm: 'w-8 h-8',
     md: 'w-12 h-12',
@@ -56,7 +57,7 @@ const Logo: React.FC<LogoProps> = ({ className = '', size = 'md', spin = false, 
   const logoSrc = getTierIcon();
   const altText = userTier ? `Otagon ${userTier} Logo` : 'Otagon Logo';
 
-  return (
+  const imgElement = (
     <img
       src={logoSrc}
       alt={altText}
@@ -68,6 +69,22 @@ const Logo: React.FC<LogoProps> = ({ className = '', size = 'md', spin = false, 
       }}
     />
   );
+
+  // Wrap in button if onClick is provided
+  if (onClick) {
+    return (
+      <button
+        onClick={onClick}
+        className="focus:outline-none hover:scale-105 transition-transform cursor-pointer"
+        aria-label="Open Gaming Explorer"
+        type="button"
+      >
+        {imgElement}
+      </button>
+    );
+  }
+
+  return imgElement;
 };
 
 export default Logo;

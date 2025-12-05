@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase';
 import { User, AuthResult, AuthState } from '../types';
 import type { Json } from '../types/database';
 import { cacheService } from './cacheService';
+import { supabaseService } from './supabaseService';
 import { ErrorService } from './errorService';
 import { toastService } from './toastService';
 import { isPWAMode } from '../utils/pwaDetection';
@@ -670,8 +671,8 @@ export class AuthService {
       
       // ✅ PWA FIX: Clear SupabaseService instance to prevent stale data
       try {
-        await import('./supabaseService');
-        // Force a new instance on next access by clearing any internal state
+        // supabaseService is already imported statically
+        void supabaseService; // Reference to ensure it's loaded
         console.log('🔒 [AuthService] SupabaseService ready for new user');
       } catch (error) {
         console.error('⚠️ [AuthService] Failed to reset SupabaseService:', error);

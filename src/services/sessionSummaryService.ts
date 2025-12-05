@@ -127,7 +127,7 @@ ${strategicNotes ? `**Strategic Notes:**\n${strategicNotes}\n` : ''}
     const patterns = mode === 'playing' ? playingPatterns : planningPatterns;
     
     for (const msg of messages) {
-      if (msg.role !== 'assistant') continue;
+      if (msg.role !== 'assistant') { continue; }
       
       for (const { pattern, template } of patterns) {
         if (pattern.test(msg.content)) {
@@ -138,12 +138,12 @@ ${strategicNotes ? `**Strategic Notes:**\n${strategicNotes}\n` : ''}
             seenTopics.add(topicKey);
             keyPoints.push(point);
             
-            if (keyPoints.length >= 5) break; // Limit to 5 key points
+            if (keyPoints.length >= 5) { break; } // Limit to 5 key points
           }
         }
       }
       
-      if (keyPoints.length >= 5) break;
+      if (keyPoints.length >= 5) { break; }
     }
     
     return keyPoints;
@@ -159,7 +159,7 @@ ${strategicNotes ? `**Strategic Notes:**\n${strategicNotes}\n` : ''}
     for (const sentence of sentences) {
       const trimmed = sentence.trim();
       // Skip very long sentences
-      if (trimmed.length > 150) continue;
+      if (trimmed.length > 150) { continue; }
       
       // Check if it's relevant based on type
       if (type === 'boss/enemy' && /defeat|kill|beat|boss|enemy/i.test(trimmed)) {
@@ -207,7 +207,7 @@ ${strategicNotes ? `**Strategic Notes:**\n${strategicNotes}\n` : ''}
     
     // Look for objective-related content in recent messages
     for (const msg of messages) {
-      if (msg.role !== 'assistant') continue;
+      if (msg.role !== 'assistant') { continue; }
       
       const objectivePatterns = [
         /next.*(?:step|objective|goal).*[:is]\s*([^.!?\n]+)/i,
@@ -221,12 +221,12 @@ ${strategicNotes ? `**Strategic Notes:**\n${strategicNotes}\n` : ''}
           const objective = match[1].trim().substring(0, 80);
           if (objective && !objectives.includes(objective)) {
             objectives.push(objective);
-            if (objectives.length >= 3) break;
+            if (objectives.length >= 3) { break; }
           }
         }
       }
       
-      if (objectives.length >= 3) break;
+      if (objectives.length >= 3) { break; }
     }
     
     return objectives;
@@ -239,17 +239,17 @@ ${strategicNotes ? `**Strategic Notes:**\n${strategicNotes}\n` : ''}
     const notes: string[] = [];
     
     for (const msg of messages) {
-      if (msg.role !== 'assistant') continue;
+      if (msg.role !== 'assistant') { continue; }
       
       // Look for bullet points or numbered lists
-      const listMatches = msg.content.match(/[•\-\*]\s+[^\n]+/g);
+      const listMatches = msg.content.match(/[•\-*]\s+[^\n]+/g);
       if (listMatches) {
         for (const item of listMatches.slice(0, 3)) {
           notes.push(item.trim());
         }
       }
       
-      if (notes.length >= 3) break;
+      if (notes.length >= 3) { break; }
     }
     
     return notes.join('\n');

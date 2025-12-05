@@ -3,13 +3,16 @@ import React from 'react';
 interface ConnectionSplashScreenProps {
   isOpen: boolean;
   onClose: () => void;
+  userTier?: string; // 'free', 'pro', 'vanguard_pro'
 }
 
 /**
  * Celebratory splash screen shown when a returning user connects their PC
  * for the first time in a session (from the chat screen, not during onboarding)
  */
-const ConnectionSplashScreen: React.FC<ConnectionSplashScreenProps> = ({ isOpen, onClose }) => {
+const ConnectionSplashScreen: React.FC<ConnectionSplashScreenProps> = ({ isOpen, onClose, userTier }) => {
+  const isPro = userTier === 'pro' || userTier === 'vanguard_pro';
+  
   if (!isOpen) {
     return null;
   }
@@ -52,6 +55,7 @@ const ConnectionSplashScreen: React.FC<ConnectionSplashScreenProps> = ({ isOpen,
           
           {/* Info card */}
           <div className="bg-[#1E1E1E]/80 border border-[#333333] rounded-xl p-3 sm:p-4 mb-4 sm:mb-6">
+            {/* F1 Screenshot shortcut */}
             <div className="flex items-center gap-3 mb-3">
               <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-[#FFAB40]/20 to-[#E53A3A]/20 rounded-xl flex items-center justify-center">
                 <svg className="w-5 h-5 sm:w-6 sm:h-6 text-[#FFAB40]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -64,6 +68,22 @@ const ConnectionSplashScreen: React.FC<ConnectionSplashScreenProps> = ({ isOpen,
                 </p>
               </div>
             </div>
+            
+            {/* F2 Auto-capture shortcut - Pro/Vanguard only */}
+            {isPro && (
+              <div className="flex items-center gap-3 mb-3 pt-3 border-t border-[#333333]/50">
+                <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-[#10B981]/20 to-[#059669]/20 rounded-xl flex items-center justify-center">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6 text-[#10B981]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs sm:text-sm text-[#A3A3A3]">
+                    Press <span className="font-mono bg-[#2E2E2E] px-1.5 py-0.5 rounded text-[#10B981] text-xs">F2</span> to toggle auto-capture mode
+                  </p>
+                </div>
+              </div>
+            )}
             
             {/* Connection status */}
             <div className="flex items-center justify-center gap-2 pt-2 border-t border-[#333333]">

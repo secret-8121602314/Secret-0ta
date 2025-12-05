@@ -3,6 +3,8 @@ import { parseOtakonTags } from './otakonTags';
 import { AIResponse, Conversation, User, insightTabsConfig, PlayerProfile } from '../types';
 import type { ViteImportMeta, UserProfileData } from '../types/enhanced';
 import { cacheService } from './cacheService';
+import { SupabaseService } from './supabaseService';
+import { authService } from './authService';
 import { aiCacheService } from './aiCacheService';
 import { getPromptForPersona, getBehaviorContext, type BehaviorContext, type QueryContext } from './promptSystem';
 import { errorRecoveryService } from './errorRecoveryService';
@@ -497,13 +499,11 @@ class AIService {
       };
       
       // ? QUERY TRACKING: Record usage in database (non-blocking)
-      const { SupabaseService } = await import('./supabaseService');
-      const supabaseService = SupabaseService.getInstance();
-      supabaseService.recordQuery(user.authUserId, hasImages ? 'image' : 'text')
+      const supabaseServiceInstance = SupabaseService.getInstance();
+      supabaseServiceInstance.recordQuery(user.authUserId, hasImages ? 'image' : 'text')
         .catch(error => console.warn('Failed to record query usage:', error));
       
       // Invalidate user cache so next request gets fresh usage data
-      const { authService } = await import('./authService');
       authService.refreshUser()
         .catch(error => console.warn('Failed to refresh user after query:', error));
       

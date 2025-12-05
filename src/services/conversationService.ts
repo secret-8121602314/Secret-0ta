@@ -47,8 +47,9 @@ export class ConversationService {
       if (user?.tier) {
         return user.tier;
       }
-    } catch {
-          }
+    } catch (_e) {
+      // Fall through to localStorage fallback
+    }
     
     // Fallback to localStorage
     const user = StorageService.get(STORAGE_KEYS.USER, null) as import('../types').User | null;
@@ -440,11 +441,12 @@ export class ConversationService {
         if (newId) {
           // Update conversation with Supabase-returned ID if different
           if (newId !== conversation.id) {
-                        delete conversations[conversation.id];
+            // ID changed - update local reference
+            delete conversations[conversation.id];
             conversation.id = newId;
             conversations[newId] = conversation;
-          } else {
-                      }
+          }
+          // else: ID matches, no action needed
         }
       } catch (error) {
         console.error('🔍 [ConversationService] Failed to create in Supabase:', error);
@@ -683,8 +685,9 @@ export class ConversationService {
     // ✅ SCALABILITY: Clear all conversation cache entries
     try {
       await cacheService.clear();
-    } catch {
-          }
+    } catch (_e) {
+      // Cache clear failed - non-critical
+    }
   }
 
   static async clearConversation(conversationId: string): Promise<void> {

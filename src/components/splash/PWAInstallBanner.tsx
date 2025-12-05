@@ -43,6 +43,10 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '', alw
       return; // Exit early - no need to set up event listeners
     }
     
+    // Track prompt status within this effect
+    let promptReceived = false;
+    let appIsInstalled = false;
+    
     // Check if app is already installed
     const checkIfInstalled = () => {
       // Check if running in standalone mode (PWA)
@@ -50,6 +54,7 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '', alw
         console.log('✅ [PWA Install Banner] App is already installed (running in PWA mode)');
         setIsInstalled(true);
         markAppAsInstalled();
+        appIsInstalled = true;
         return;
       }
       
@@ -57,6 +62,7 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '', alw
       if (localStorage.getItem('otakon_pwa_installed') === 'true') {
         console.log('✅ [PWA Install Banner] App was previously installed');
         setIsInstalled(true);
+        appIsInstalled = true;
         return;
       }
       
@@ -70,6 +76,7 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '', alw
       console.log('✅ [PWA Install Banner] Found existing beforeinstallprompt event');
       setDeferredPrompt(globalPrompt);
       setHasPrompt(true);
+      promptReceived = true;
     }
 
     // Listen for beforeinstallprompt event
@@ -80,6 +87,7 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '', alw
       setGlobalPrompt(installEvent);
       setDeferredPrompt(installEvent);
       setHasPrompt(true);
+      promptReceived = true;
     };
 
     // Listen for appinstalled event
@@ -90,6 +98,7 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '', alw
       setGlobalPrompt(null);
       setHasPrompt(false);
       setDeferredPrompt(null);
+      appIsInstalled = true;
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -97,7 +106,7 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ className = '', alw
 
     // Log installability status after 2 seconds
     setTimeout(() => {
-      if (!hasPrompt && !isInstalled) {
+      if (!promptReceived && !appIsInstalled) {
         console.log('❌ [PWA Install Banner] beforeinstallprompt event has NOT fired');
         console.log('🔍 Checking PWA installation criteria:');
         console.log('   1. HTTPS: ' + (window.location.protocol === 'https:' ? '✅' : '❌ REQUIRED'));

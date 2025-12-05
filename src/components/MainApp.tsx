@@ -21,6 +21,7 @@ import { MessageRoutingService } from '../services/messageRoutingService';
 import { sessionService } from '../services/sessionService';
 import { fetchIGDBGameData, IGDBGameData, getSidebarCoverUrl } from '../services/igdbService';
 import { offlineQueueService } from '../services/indexedDBService';
+import { libraryStorage } from '../services/gamingExplorerStorage';
 import Sidebar from './layout/Sidebar';
 import ChatInterface from './features/ChatInterface';
 import SettingsModal from './modals/SettingsModal';
@@ -43,6 +44,7 @@ import AdBanner from './ads/AdBanner';
 import WelcomeScreen from './welcome/WelcomeScreen';
 import ConnectionSplashScreen from './splash/ConnectionSplashScreen';
 import ProUpgradeSplashScreen from './splash/ProUpgradeSplashScreen';
+import GamingExplorerModal from './gaming-explorer/GamingExplorerModal';
 import { connect, disconnect, setHandlers } from '../services/websocketService';
 import { validateScreenshotDataUrl, getDataUrlSizeMB } from '../utils/imageValidation';
 
@@ -193,6 +195,9 @@ const MainApp: React.FC<MainAppProps> = ({
   const [currentGameIGDBData, setCurrentGameIGDBData] = useState<IGDBGameData | null>(null);
   const [isLoadingIGDBData, setIsLoadingIGDBData] = useState(false);
   const igdbFetchedForRef = useRef<string | null>(null); // Track which game we've fetched for
+  
+  // Gaming Explorer modal state
+  const [gamingExplorerOpen, setGamingExplorerOpen] = useState(false);
   
   // Helper function to deep clone conversations to force React re-renders
   const deepCloneConversations = (conversations: Conversations): Conversations => {
@@ -1599,6 +1604,34 @@ const MainApp: React.FC<MainAppProps> = ({
     }
   };
 
+  // Handle news query from Gaming Explorer - closes explorer and sends to Game Hub
+  const handleGamingExplorerNewsQuery = async (query: string) => {
+    // Close the Gaming Explorer
+    setGamingExplorerOpen(false);
+    
+    // Find Game Hub conversation
+    const gameHub = Object.values(conversations).find(
+      conv => conv.isGameHub || conv.title === 'Game Hub'
+    );
+    
+    if (gameHub) {
+      // Switch to Game Hub if not already active
+      if (activeConversation?.id !== gameHub.id) {
+        await handleConversationSelect(gameHub.id);
+      }
+      
+      // Small delay to ensure state is updated, then send the message
+      setTimeout(async () => {
+        try {
+          await handleSendMessage(query);
+        } catch (error) {
+          console.error('🎯 [MainApp] Error sending news query:', error);
+          setIsLoading(false);
+        }
+      }, 100);
+    }
+  };
+
   // Handle input message change
   const handleInputMessageChange = (message: string) => {
     setCurrentInputMessage(message);
@@ -1921,6 +1954,20 @@ const MainApp: React.FC<MainAppProps> = ({
       if (user.authUserId) {
         aiService.markGameHubTabCreated(user.authUserId, gameInfo.gameTitle, conversationId)
           .catch(error => console.warn('Failed to track Game Hub tab creation:', error));
+      }
+
+      // ✅ AUTO-ADD TO LIBRARY: Add game to "Owned" category when tab is created
+      try {
+        const igdbData = await fetchIGDBGameData(gameInfo.gameTitle);
+        if (igdbData && igdbData.id) {
+          libraryStorage.addGame(igdbData.id, igdbData.name || gameInfo.gameTitle, 'own', igdbData);
+          console.log('📚 [MainApp] Auto-added game to Owned library:', igdbData.name || gameInfo.gameTitle);
+        } else {
+          console.log('📚 [MainApp] Could not auto-add to library - no IGDB data found for:', gameInfo.gameTitle);
+        }
+      } catch (libraryError) {
+        console.warn('📚 [MainApp] Failed to auto-add game to library:', libraryError);
+        // Don't fail the tab creation if library addition fails
       }
 
             toastService.success(`Game tab "${gameInfo.gameTitle}" created!`);
@@ -2571,6 +2618,15 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
           
           finalImageUrl = uploadResult.publicUrl;
           
+          // ✅ CRITICAL FIX: AI-off screenshots should ALWAYS go to Game Hub
+          // Find or get the Game Hub conversation
+          const gameHubConv = Object.values(conversations).find(
+            conv => conv.isGameHub || conv.id === GAME_HUB_ID || conv.id === 'game-hub'
+          );
+          
+          const targetConversationId = gameHubConv?.id || GAME_HUB_ID;
+          const isNotOnGameHub = activeConversation.id !== targetConversationId;
+          
           // Add a simple acknowledgment message (no AI processing)
           const storageMessage = {
             id: `msg_${Date.now() + 1}`,
@@ -2579,22 +2635,50 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
             timestamp: Date.now(),
           };
           
-          // Update state with storage acknowledgment
-          setConversations(prev => {
-            const updated = { ...prev };
-            if (updated[activeConversation.id]) {
-              updated[activeConversation.id] = {
-                ...updated[activeConversation.id],
-                messages: [...updated[activeConversation.id].messages, storageMessage],
-                updatedAt: Date.now()
-              };
-              setActiveConversation(updated[activeConversation.id]);
-            }
-            return updated;
-          });
-          
-          // Save message
-          await ConversationService.addMessage(activeConversation.id, storageMessage);
+          // ✅ If not on Game Hub, switch to it and add message there
+          if (isNotOnGameHub && gameHubConv) {
+            console.log('🔄 [MainApp] AI mode OFF - migrating screenshot to Game Hub');
+            
+            // Update Game Hub conversation with the storage message
+            setConversations(prev => {
+              const updated = { ...prev };
+              if (updated[targetConversationId]) {
+                updated[targetConversationId] = {
+                  ...updated[targetConversationId],
+                  messages: [...updated[targetConversationId].messages, storageMessage],
+                  updatedAt: Date.now()
+                };
+              }
+              return updated;
+            });
+            
+            // Save message to Game Hub
+            await ConversationService.addMessage(targetConversationId, storageMessage);
+            
+            // Switch to Game Hub
+            await ConversationService.setActiveConversation(targetConversationId);
+            setActiveConversation(gameHubConv);
+            setSidebarOpen(false);
+            
+            toastService.info('Screenshot saved to Game Hub (AI mode off)');
+          } else {
+            // Already on Game Hub or no Game Hub exists - add to current conversation
+            setConversations(prev => {
+              const updated = { ...prev };
+              if (updated[activeConversation.id]) {
+                updated[activeConversation.id] = {
+                  ...updated[activeConversation.id],
+                  messages: [...updated[activeConversation.id].messages, storageMessage],
+                  updatedAt: Date.now()
+                };
+                setActiveConversation(updated[activeConversation.id]);
+              }
+              return updated;
+            });
+            
+            // Save message
+            await ConversationService.addMessage(activeConversation.id, storageMessage);
+          }
           
           // ✅ FIX: Clear suggested prompts for AI-off screenshot uploads (no follow-up needed)
           setSuggestedPrompts([]);
@@ -3573,6 +3657,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
           onUnpinConversation={handleUnpinConversation}
           onClearConversation={handleClearConversation}
           onAddGame={handleAddGame}
+          onOpenExplorer={() => setGamingExplorerOpen(true)}
         />
       </ErrorBoundary>
 
@@ -3595,6 +3680,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               bounce={false} 
               userTier={currentUser.tier} 
               isOnTrial={Boolean(currentUser.trialExpiresAt && currentUser.trialExpiresAt > Date.now())}
+              onClick={() => setGamingExplorerOpen(true)}
             />
           </div>
 
@@ -3845,6 +3931,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
       <ConnectionSplashScreen
         isOpen={connectionSplashOpen}
         onClose={() => setConnectionSplashOpen(false)}
+        userTier={currentUser.tier}
       />
 
       {/* Pro Upgrade Splash Screen */}
@@ -3926,6 +4013,14 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
           onAddGame={handleAddGame}
         />
       )}
+
+      {/* Gaming Explorer Modal */}
+      <GamingExplorerModal
+        isOpen={gamingExplorerOpen}
+        onClose={() => setGamingExplorerOpen(false)}
+        user={currentUser}
+        onSendNewsQuery={handleGamingExplorerNewsQuery}
+      />
     </div>
   );
 };

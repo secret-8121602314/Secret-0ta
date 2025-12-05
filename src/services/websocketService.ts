@@ -249,7 +249,8 @@ const disconnect = () => {
   
   // Clear any pending reconnection attempts
   if (process.env.NODE_ENV === 'development') {
-      }
+    // Development mode logging would go here
+  }
 };
 
 // ✅ FIX: Allow updating handlers without reconnecting to prevent stale closures

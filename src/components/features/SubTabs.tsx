@@ -130,7 +130,7 @@ const SubTabs: React.FC<SubTabsProps> = ({
   
   // Handle modify submit
   const handleModifySubmit = useCallback(() => {
-    if (!modifyModal || !modifySuggestion.trim() || isModifying) return;
+    if (!modifyModal || !modifySuggestion.trim() || isModifying) { return; }
     
     setIsModifying(true);
     
@@ -281,7 +281,7 @@ const SubTabs: React.FC<SubTabsProps> = ({
       {/* Collapsible Header - Matching Latest Gaming News style */}
       <button
         onClick={toggleExpanded}
-        className="w-full flex items-center justify-between mb-2 py-2 px-3 rounded-lg bg-[#1C1C1C]/50 hover:bg-[#1C1C1C] border border-[#424242]/30 hover:border-[#424242]/60 transition-all duration-200 relative z-10"
+        className="w-full flex items-center justify-between mb-2 py-2 px-3 rounded-lg bg-[#1C1C1C] hover:bg-[#252525] border border-[#424242]/30 hover:border-[#424242]/60 transition-all duration-200 relative z-10"
       >
         <div className="flex items-center gap-2">
           <div className={`text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
@@ -324,15 +324,21 @@ const SubTabs: React.FC<SubTabsProps> = ({
           - z-30: Chat Thread Name header (in MainApp)
       */}
       {isExpanded && (
-        <div
-          className="absolute bottom-full left-0 right-0 mb-2 z-50 animate-fade-in"
-          style={{
-            // Responsive max-height: mobile-friendly sizing
-            // Mobile: leaves 300px for header, input bar, button, and safe area
-            // Desktop: allows more content to be visible
-            maxHeight: 'min(calc(100vh - 300px), 500px)',
-          }}
-        >
+        <>
+          {/* Backdrop overlay - close on click (mobile only) */}
+          <div
+            className="lg:hidden fixed inset-0 z-40"
+            onClick={() => setIsExpanded(false)}
+          />
+          <div
+            className="absolute bottom-full left-0 right-0 mb-2 z-50 animate-fade-in"
+            style={{
+              // Responsive max-height: mobile-friendly sizing
+              // Mobile: leaves 300px for header, input bar, button, and safe area
+              // Desktop: allows more content to be visible
+              maxHeight: 'min(calc(100vh - 300px), 500px)',
+            }}
+          >
           <div className="bg-[#1C1C1C] border border-[#424242]/60 rounded-xl shadow-2xl h-full flex flex-col" style={{ maxHeight: 'inherit' }}>
           {/* Tab Headers - Grid layout on all screen sizes */}
           <div className="border-b border-[#424242]/40 flex-shrink-0">
@@ -438,6 +444,7 @@ const SubTabs: React.FC<SubTabsProps> = ({
           )}
         </div>
       </div>
+      </>
       )}
       
       {/* Right-click Context Menu */}

@@ -13,7 +13,7 @@ const SPEECH_RATE_KEY = 'otakonSpeechRate';
 
 // Detect iOS devices
 const isIOSDevice = (): boolean => {
-  if (typeof navigator === 'undefined') return false;
+  if (typeof navigator === 'undefined') { return false; }
   const userAgent = navigator.userAgent || navigator.vendor || '';
   return /iPad|iPhone|iPod/.test(userAgent) || 
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); // iPad on iOS 13+

@@ -37,10 +37,12 @@ class CacheService {
         });
       
       if (error) {
-              } else {
-              }
+        // Silently fail for cache writes - not critical
+        console.debug('[CacheService] Cache write failed:', error.message);
+      }
     } catch (_error) {
-          }
+      // Silently fail for cache writes - not critical
+    }
     
     // Cleanup memory cache if it gets too large
     if (this.memoryCache.size > this.MAX_MEMORY_CACHE_SIZE) {
@@ -152,9 +154,11 @@ class CacheService {
         .eq('key', key);
       
       if (error) {
-              }
+        console.debug('[CacheService] Delete failed:', error.message);
+      }
     } catch (_error) {
-          }
+      // Silently fail - not critical
+    }
     
     return memoryDeleted;
   }
@@ -177,9 +181,11 @@ class CacheService {
         .neq('key', 'never_delete'); // Delete all except this placeholder
       
       if (error) {
-              }
+        console.debug('[CacheService] Clear failed:', error.message);
+      }
     } catch (_error) {
-          }
+      // Silently fail - not critical
+    }
   }
 
   /**
@@ -199,9 +205,11 @@ class CacheService {
         .lt('expires_at', new Date(now).toISOString());
       
       if (error) {
-              }
+        console.debug('[CacheService] Cleanup failed:', error.message);
+      }
     } catch (_error) {
-          }
+      // Silently fail - not critical
+    }
   }
 
   /**

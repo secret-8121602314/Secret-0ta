@@ -17,13 +17,13 @@ const GameProgressBar: React.FC<GameProgressBarProps> = ({
   
   // Get progress stage label
   const getProgressStage = (p: number): string => {
-    if (p === 0) return 'Not Started';
-    if (p < 15) return 'Beginning';
-    if (p < 35) return 'Early Game';
-    if (p < 55) return 'Mid Game';
-    if (p < 75) return 'Late Game';
-    if (p < 90) return 'Endgame';
-    if (p < 100) return 'Almost Done';
+    if (p === 0) { return 'Not Started'; }
+    if (p < 15) { return 'Beginning'; }
+    if (p < 35) { return 'Early Game'; }
+    if (p < 55) { return 'Mid Game'; }
+    if (p < 75) { return 'Late Game'; }
+    if (p < 90) { return 'Endgame'; }
+    if (p < 100) { return 'Almost Done'; }
     return 'Complete!';
   };
   

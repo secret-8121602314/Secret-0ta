@@ -47,10 +47,12 @@ const InitialSplashScreen: React.FC<InitialSplashScreenProps> = ({ onComplete, u
             .eq('auth_user_id', user.authUserId);
             
           if (error) {
-                      } else {
-                      }
-        } catch {
-                  }
+            // Silently handle - user can still proceed
+            console.debug('[InitialSplashScreen] Update error:', error.message);
+          }
+        } catch (_e) {
+          // Non-critical - user can still proceed
+        }
       }
       
       onComplete();

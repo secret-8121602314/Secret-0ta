@@ -1,8 +1,7 @@
 import React from 'react';
 import { useNavigate, useLoaderData } from 'react-router-dom';
 import SplashScreen from '../../components/splash/SplashScreen';
-import { ConnectionStatus } from '../../types';
-import type { User } from '../../types';
+import { ConnectionStatus, type User } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { connect as connectWebSocket, disconnect as disconnectWebSocket } from '../../services/websocketService';
 

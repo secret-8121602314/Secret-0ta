@@ -37,7 +37,9 @@ const LayoutDebugOverlay: React.FC = () => {
     
     const measureEl = (selector: string, name: string) => {
       const el = document.querySelector(selector);
-      if (!el) return;
+      if (!el) {
+        return;
+      }
       const rect = el.getBoundingClientRect();
       const style = window.getComputedStyle(el);
       elements.push({
@@ -75,9 +77,11 @@ const LayoutDebugOverlay: React.FC = () => {
     // Check if debug mode should be enabled
     const urlParams = new URLSearchParams(window.location.search);
     const debugEnabled = urlParams.get('debug') === 'layout' || 
-                         (window as any).__DEBUG_LAYOUT__ === true;
+                         (window as unknown as { __DEBUG_LAYOUT__?: boolean }).__DEBUG_LAYOUT__ === true;
     
-    if (!debugEnabled) return;
+    if (!debugEnabled) {
+      return;
+    }
     
     setIsVisible(true);
     
@@ -94,7 +98,9 @@ const LayoutDebugOverlay: React.FC = () => {
     };
   }, [measureLayout]);
 
-  if (!isVisible || !data) return null;
+  if (!isVisible || !data) {
+    return null;
+  }
 
   const hasSpaceIssue = data.spaceBelow > 20;
 
@@ -188,8 +194,8 @@ export default LayoutDebugOverlay;
 
 // Export a function to enable debug from console
 if (typeof window !== 'undefined') {
-  (window as any).enableLayoutDebug = () => {
-    (window as any).__DEBUG_LAYOUT__ = true;
+  (window as unknown as { enableLayoutDebug: () => void }).enableLayoutDebug = () => {
+    (window as unknown as { __DEBUG_LAYOUT__: boolean }).__DEBUG_LAYOUT__ = true;
     console.log('Layout debug enabled. Refresh the page to see the overlay.');
   };
 }

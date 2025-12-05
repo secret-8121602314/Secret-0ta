@@ -11,7 +11,7 @@ import { chatMemoryService } from './chatMemoryService';
 // ============================================================================
 // Prevent subtabs from growing indefinitely during long sessions
 const MAX_SUBTAB_CONTENT_LENGTH = 3000;  // Characters before summarization
-const SUBTAB_SUMMARY_TARGET = 1500;       // Target length after summarization
+// Note: SUBTAB_SUMMARY_TARGET (1500 chars) is the target length after summarization
 
 // ✅ UUID generator utility
 function generateUUID(): string {
@@ -391,7 +391,7 @@ class GameTabService {
               .join('\n\n');
             console.error(`🤖 [GameTabService] [${conversationId}] Using last 10 messages (no summary available)`);
           }
-        } catch (err) {
+        } catch (_err) {
           // Fallback to last 10 messages
           conversationContext = freshConv.messages.slice(-10)
             .map(msg => `${msg.role === 'user' ? 'User' : 'AI'}: ${msg.content}`)
@@ -935,9 +935,6 @@ class GameTabService {
       try {
         console.log(`🔄 [GameTabService] Generating subtabs for "${conv.gameTitle}" (${i + 1}/${gameTabs.length})`);
         
-        // Report progress
-        onProgress?.(i, gameTabs.length, conv.gameTitle || conv.title);
-
         // Generate initial subtabs
         const subTabs = this.generateInitialSubTabs(conv.genre || 'Default', playerProfile);
         
@@ -951,13 +948,17 @@ class GameTabService {
         // Save subtabs to database
         await subtabsService.setSubtabs(conv.id, subTabs);
 
-        // Generate insights in background
+        // Generate insights - this updates subtabs with actual content
         await this.generateInitialInsights(
           { ...conv, subtabs: subTabs },
           playerProfile
         );
 
         console.log(`✅ [GameTabService] Successfully generated subtabs for "${conv.gameTitle}"`);
+        
+        // ✅ CRITICAL FIX: Report progress AFTER insights are generated
+        // This ensures the UI refresh picks up the loaded subtab content
+        onProgress?.(i, gameTabs.length, conv.gameTitle || conv.title);
 
         // Small delay between games to avoid rate limiting
         if (i < gameTabs.length - 1) {

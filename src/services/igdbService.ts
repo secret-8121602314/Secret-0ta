@@ -208,7 +208,10 @@ export async function fetchIGDBGameData(gameName: string): Promise<IGDBGameData 
   // Check if there's already a pending request for this game
   if (pendingRequests.has(cacheKey)) {
     console.log('[IGDBService] Waiting for pending request:', gameName);
-    return pendingRequests.get(cacheKey)!;
+    const pending = pendingRequests.get(cacheKey);
+    if (pending) {
+      return pending;
+    }
   }
 
   // Create new request
@@ -299,6 +302,59 @@ export async function fetchIGDBGameById(gameId: number): Promise<IGDBGameData | 
 }
 
 /**
+ * Search for multiple games (for autocomplete)
+ * Returns up to 8 results for fast autocomplete experience
+ */
+export async function searchIGDBGames(query: string): Promise<IGDBGameData[]> {
+  if (!query || query.trim().length < 2) {
+    return [];
+  }
+
+  try {
+    console.log('[IGDBService] Searching games:', query);
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`;
+    }
+
+    const response = await supabase.functions.invoke('igdb-proxy', {
+      body: JSON.stringify({ gameName: query, searchMode: 'multi' }),
+      headers
+    });
+
+    if (response.error) {
+      console.error('[IGDBService] Search error:', response.error);
+      return [];
+    }
+
+    const result = response.data;
+    
+    if (!result.success || !result.data) {
+      return [];
+    }
+
+    const games = result.data as IGDBGameData[];
+    console.log('[IGDBService] Search found', games.length, 'games');
+    
+    // Cache individual games in session cache
+    for (const game of games) {
+      const cacheKey = game.name.toLowerCase().trim();
+      sessionCache.set(cacheKey, { data: game, timestamp: Date.now() });
+    }
+    
+    return games;
+  } catch (error) {
+    console.error('[IGDBService] Search error:', error);
+    return [];
+  }
+}
+
+/**
  * Clear session cache (useful for testing)
  */
 export function clearIGDBSessionCache(): void {
@@ -385,7 +441,9 @@ export function getAgeRatingDisplay(category: number, rating: number): string {
  * Format release date from Unix timestamp
  */
 export function formatReleaseDate(timestamp?: number): string {
-  if (!timestamp) return 'TBA';
+  if (!timestamp) {
+    return 'TBA';
+  }
   const date = new Date(timestamp * 1000);
   return date.toLocaleDateString('en-US', { 
     year: 'numeric', 
@@ -398,7 +456,9 @@ export function formatReleaseDate(timestamp?: number): string {
  * Get developers from involved companies
  */
 export function getDevelopers(companies?: IGDBGameData['involved_companies']): string[] {
-  if (!companies) return [];
+  if (!companies) {
+    return [];
+  }
   return companies
     .filter(c => c.developer)
     .map(c => c.company.name);
@@ -408,7 +468,9 @@ export function getDevelopers(companies?: IGDBGameData['involved_companies']): s
  * Get publishers from involved companies
  */
 export function getPublishers(companies?: IGDBGameData['involved_companies']): string[] {
-  if (!companies) return [];
+  if (!companies) {
+    return [];
+  }
   return companies
     .filter(c => c.publisher)
     .map(c => c.company.name);

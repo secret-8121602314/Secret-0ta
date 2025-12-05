@@ -4,8 +4,7 @@ import MainApp from '../../components/MainApp';
 import AboutModal from '../../components/modals/AboutModal';
 import PrivacyModal from '../../components/modals/PrivacyModal';
 import TermsModal from '../../components/modals/TermsModal';
-import { ConnectionStatus } from '../../types';
-import type { User } from '../../types';
+import { ConnectionStatus, type User } from '../../types';
 import { connect as connectWebSocket, disconnect as disconnectWebSocket } from '../../services/websocketService';
 
 /**

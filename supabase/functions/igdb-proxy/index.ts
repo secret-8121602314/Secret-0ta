@@ -31,6 +31,7 @@ let tokenRefreshPromise: Promise<string> | null = null; // Mutex to prevent conc
 
 interface IGDBRequest {
   gameName: string;
+  searchMode?: 'single' | 'multi'; // 'multi' returns up to 8 results for autocomplete
   includeScreenshots?: boolean;
   includeArtworks?: boolean;
   includeSimilarGames?: boolean;
@@ -199,6 +200,56 @@ async function searchGame(gameName: string, token: string): Promise<IGDBGameData
   }
 }
 
+// Search for multiple games (for autocomplete) - returns up to 8 results
+async function searchGamesMulti(gameName: string, token: string): Promise<IGDBGameData[]> {
+  const escapedName = gameName.replace(/"/g, '\\"');
+  
+  // Simpler query for autocomplete - just need basic info + cover
+  const body = `
+    fields id, name, summary, rating, aggregated_rating, first_release_date, 
+           genres.*, platforms.*, cover.*;
+    search "${escapedName}";
+    limit 8;
+  `;
+
+  console.log('IGDB multi-search for:', gameName);
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+  try {
+    const response = await fetch('https://api.igdb.com/v4/games', {
+      method: 'POST',
+      headers: {
+        'Client-ID': IGDB_CLIENT_ID!,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'text/plain'
+      },
+      body,
+      signal: controller.signal
+    });
+
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      console.error('IGDB multi-search failed:', response.status);
+      return [];
+    }
+
+    const games = await response.json();
+    console.log('IGDB multi-search results count:', games?.length || 0);
+    return games || [];
+  } catch (error) {
+    clearTimeout(timeout);
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.error('IGDB multi-search timed out for:', gameName);
+    } else {
+      console.error('IGDB multi-search error:', error);
+    }
+    return [];
+  }
+}
+
 // Get game by ID (for similar games, with timeout)
 async function getGameById(gameId: number, token: string): Promise<IGDBGameData | null> {
   const body = `
@@ -335,13 +386,35 @@ serve(async (req: Request) => {
       );
     }
     
-    const { gameName } = body;
+    const { gameName, searchMode } = body;
 
     if (!gameName) {
       return new Response(
         JSON.stringify({ error: 'Game name is required', success: false }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Handle multi-search mode for autocomplete (no caching for speed)
+    if (searchMode === 'multi') {
+      try {
+        const token = await getTwitchToken();
+        const games = await searchGamesMulti(gameName, token);
+        
+        // Process each game for high-quality images
+        const processedGames = games.map(processGameData);
+        
+        return new Response(
+          JSON.stringify({ success: true, data: processedGames, cached: false }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (error) {
+        console.error('Multi-search error:', error);
+        return new Response(
+          JSON.stringify({ success: true, data: [], message: 'Search failed' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     // Check cache first (24 hour TTL) - don't block on cache errors

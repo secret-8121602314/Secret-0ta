@@ -129,8 +129,9 @@ class MemoryManager {
     if (typeof window !== 'undefined' && 'gc' in window) {
       try {
         (window as ExtendedWindow).gc?.();
-              } catch {
-              }
+      } catch (_e) {
+        // GC not available
+      }
     }
   }
 
@@ -155,12 +156,11 @@ class MemoryManager {
 
   // ✅ SCALABILITY: Emergency cleanup when memory is high
   private performEmergencyCleanup(): void {
-        // Clear old intervals
+    // Clear old intervals
     this.intervals.forEach(interval => {
       try {
         clearInterval(interval);
-      } catch {
-              }
+      } catch (_e) { /* Already cleared */ }
     });
     this.intervals.clear();
     
@@ -168,8 +168,7 @@ class MemoryManager {
     this.timeouts.forEach(timeout => {
       try {
         clearTimeout(timeout);
-      } catch {
-              }
+      } catch (_e) { /* Already cleared */ }
     });
     this.timeouts.clear();
     
@@ -177,15 +176,13 @@ class MemoryManager {
     this.abortControllers.forEach(controller => {
       try {
         controller.abort();
-      } catch {
-              }
+      } catch (_e) { /* Already aborted */ }
     });
     this.abortControllers.clear();
     
     // Force garbage collection
     this.forceGarbageCollection();
-    
-      }
+  }
 
   // ✅ SCALABILITY: Setup global cleanup
   private setupGlobalCleanup(): void {
@@ -217,8 +214,7 @@ class MemoryManager {
     this.intervals.forEach(interval => {
       try {
         clearInterval(interval);
-      } catch {
-              }
+      } catch (_e) { /* Already cleared */ }
     });
     this.intervals.clear();
     
@@ -226,8 +222,7 @@ class MemoryManager {
     this.timeouts.forEach(timeout => {
       try {
         clearTimeout(timeout);
-      } catch {
-              }
+      } catch (_e) { /* Already cleared */ }
     });
     this.timeouts.clear();
     
@@ -235,8 +230,7 @@ class MemoryManager {
     this.eventListeners.forEach(({ element, event, handler }) => {
       try {
         element.removeEventListener(event, handler);
-      } catch {
-              }
+      } catch (_e) { /* Already removed */ }
     });
     this.eventListeners.clear();
     
@@ -244,8 +238,7 @@ class MemoryManager {
     this.abortControllers.forEach(controller => {
       try {
         controller.abort();
-      } catch {
-              }
+      } catch (_e) { /* Already aborted */ }
     });
     this.abortControllers.clear();
     

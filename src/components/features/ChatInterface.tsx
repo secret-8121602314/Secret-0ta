@@ -226,8 +226,8 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
             {/* TTS Controls for AI messages */}
             {message.role === 'assistant' && <TTSControls isLatestMessage={isLatestAIMessage} />}
             
-            {/* Show suggested prompts after AI response */}
-            {message.role === 'assistant' && suggestedPrompts.length > 0 && onSuggestedPromptClick && !isLoading && (
+            {/* Show suggested prompts ONLY after the LATEST AI response */}
+            {message.role === 'assistant' && isLatestAIMessage && suggestedPrompts.length > 0 && onSuggestedPromptClick && !isLoading && (
               <div className="mt-4">
                 <SuggestedPrompts
                   prompts={suggestedPrompts}
@@ -409,7 +409,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     return window.innerWidth > 640; // Collapsed on mobile (<=640px), expanded on desktop
   });
   // Track if subtabs are expanded to control chat scrollbar visibility
-  const [isSubtabsExpanded, setIsSubtabsExpanded] = useState(false);
+  const [_isSubtabsExpanded, setIsSubtabsExpanded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -864,7 +864,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           {/* Collapsible Header */}
           <button
             onClick={() => setIsQuickActionsExpanded(!isQuickActionsExpanded)}
-            className="w-full flex items-center justify-between mb-2 py-2 px-3 rounded-lg bg-[#1C1C1C]/50 hover:bg-[#1C1C1C] border border-[#424242]/30 hover:border-[#424242]/60 transition-all duration-200 relative z-10"
+            className="w-full flex items-center justify-between mb-2 py-2 px-3 rounded-lg bg-[#1C1C1C] hover:bg-[#252525] border border-[#424242]/30 hover:border-[#424242]/60 transition-all duration-200 relative z-10"
           >
             <div className={`text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
               isQuickActionsExpanded 
@@ -889,9 +889,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
           {/* Collapsible Content - Overlay positioned above the button */}
           {isQuickActionsExpanded && (
-            <div
-              className="absolute bottom-full left-0 right-0 mb-2 z-50 animate-fade-in"
-            >
+            <>
+              {/* Backdrop overlay - close on click (mobile only) */}
+              <div
+                className="lg:hidden fixed inset-0 z-40"
+                onClick={() => setIsQuickActionsExpanded(false)}
+              />
+              <div
+                className="absolute bottom-full left-0 right-0 mb-2 z-50 animate-fade-in"
+              >
               <div className="grid grid-cols-2 gap-2 p-3 rounded-xl bg-[#1C1C1C]/95 backdrop-blur-md border border-[#424242]/60 shadow-2xl">
                 {[
                   { text: "What's the latest gaming news?", shape: "✕" },
@@ -919,6 +925,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 ))}
               </div>
             </div>
+            </>
           )}
             </div>
           </div>

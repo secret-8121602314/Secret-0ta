@@ -139,7 +139,7 @@ function extractProgress(rawContent: string): number | null {
  * Extracts simple [OTAKON_TAG: value] tags
  */
 function extractSimpleTags(content: string, rawContent: string, tags: Map<string, unknown>): string {
-  const simpleTagRegex = /\[OTAKON_([A-Z_]+):\s*([^\[\]]+?)\]/g;
+  const simpleTagRegex = /\[OTAKON_([A-Z_]+):\s*([^[\]]+?)\]/g;
   let match;
   
   while ((match = simpleTagRegex.exec(rawContent)) !== null) {
@@ -246,9 +246,9 @@ function fixFormatting(content: string): string {
     .replace(/\*\*\s*\*\*/g, '')
     
     // Remove stray brackets
-    .replace(/[\[\]]\s*$/gm, '')
-    .replace(/^\s*[\[\]]/gm, '')
-    .replace(/\s+[\[\]]\s+/g, ' ')
+    .replace(/[[\]]\s*$/gm, '')
+    .replace(/^\s*[[\]]/gm, '')
+    .replace(/\s+[[\]]\s+/g, ' ')
     
     // Fix list formatting
     .replace(/\.\s*(\d+\.\s*\*\*)/g, '.\n\n$1')

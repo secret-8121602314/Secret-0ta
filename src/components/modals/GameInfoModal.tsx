@@ -1,16 +1,20 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import Modal from '../ui/Modal';
 import { 
   IGDBGameData, 
   fetchIGDBGameById,
   formatReleaseDate, 
-  getDevelopers, 
-  getPublishers,
+  getDevelopers,
   getCombinedRating,
   getWebsiteCategoryName,
   getAgeRatingDisplay,
   getYouTubeThumbnailUrl
 } from '../../services/igdbService';
+import { 
+  libraryStorage, 
+  LibraryCategory 
+} from '../../services/gamingExplorerStorage';
+import { toastService } from '../../services/toastService';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface GameInfoModalProps {
@@ -22,12 +26,113 @@ interface GameInfoModalProps {
 
 type TabType = 'overview' | 'media' | 'similar';
 
-const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData: initialGameData, gameName }) => {
+const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData: initialGameData, gameName: _gameName }) => {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [currentGameData, setCurrentGameData] = useState<IGDBGameData | null>(initialGameData);
   const [gameHistory, setGameHistory] = useState<IGDBGameData[]>([]);
   const [isLoadingSimilar, setIsLoadingSimilar] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
+  // Force re-render when library changes
+  const [libraryVersion, setLibraryVersion] = useState(0);
+
+  // Library action definitions
+  const libraryActions: { id: LibraryCategory; label: string; activeLabel: string; icon: JSX.Element; activeIcon: JSX.Element }[] = [
+    {
+      id: 'own',
+      label: 'Own',
+      activeLabel: 'Owned',
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        </svg>
+      ),
+      activeIcon: (
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+        </svg>
+      ),
+    },
+    {
+      id: 'wishlist',
+      label: 'Wishlist',
+      activeLabel: 'Wishlisted',
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+        </svg>
+      ),
+      activeIcon: (
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+        </svg>
+      ),
+    },
+    {
+      id: 'favorite',
+      label: 'Favorite',
+      activeLabel: 'Favorited',
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+        </svg>
+      ),
+      activeIcon: (
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+        </svg>
+      ),
+    },
+    {
+      id: 'disliked',
+      label: 'Dislike',
+      activeLabel: 'Disliked',
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
+        </svg>
+      ),
+      activeIcon: (
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v2c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L9.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z" />
+        </svg>
+      ),
+    },
+  ];
+
+  // Get current library categories for this game
+  const gameCategories = useMemo(() => {
+    if (!currentGameData) {
+      return [];
+    }
+    // Use libraryVersion to trigger recalculation
+    console.log('[GameInfoModal] Checking categories, version:', libraryVersion);
+    return libraryStorage.getGameCategories(currentGameData.id);
+  }, [currentGameData, libraryVersion]);
+
+  // Handle adding/removing game from library
+  const handleLibraryAction = useCallback((category: LibraryCategory) => {
+    if (!currentGameData) {
+      return;
+    }
+
+    const isInCategory = gameCategories.includes(category);
+    
+    if (isInCategory) {
+      libraryStorage.removeGame(currentGameData.id, category);
+      toastService.success(`Removed from ${category}`);
+    } else {
+      libraryStorage.addGame(
+        currentGameData.id,
+        currentGameData.name,
+        category,
+        currentGameData
+      );
+      toastService.success(`Added to ${category}`);
+    }
+    
+    // Force re-render
+    setLibraryVersion(v => v + 1);
+  }, [currentGameData, gameCategories]);
 
   // Update current game data when initial data changes
   useEffect(() => {
@@ -114,14 +219,13 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
   }
 
   const developers = getDevelopers(currentGameData.involved_companies);
-  const publishers = getPublishers(currentGameData.involved_companies);
   const combinedRating = getCombinedRating(currentGameData);
 
   return (
     <Modal 
       isOpen={isOpen} 
       onClose={handleClose} 
-      title={gameName || 'Game Info'}
+      title=""
       maxWidth="lg"
     >
       {/* Back button if we have history */}
@@ -136,7 +240,7 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
           </svg>
         </button>
       )}
-      <div className="space-y-2 max-h-[70vh] overflow-hidden flex flex-col">
+      <div className="max-h-[85vh] overflow-hidden flex flex-col">
         {/* Loading overlay for similar games */}
         <AnimatePresence>
           {isLoadingSimilar && (
@@ -154,81 +258,105 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
           )}
         </AnimatePresence>
 
-        {/* Cover and Quick Info */}
-        <div className="flex gap-2 sm:gap-4">
+        {/* Header Section (~30%) - Cover + Game Info Side by Side */}
+        <div className="flex gap-3 sm:gap-4 pb-3 border-b border-neutral-700/50 flex-shrink-0">
+          {/* Cover Image */}
           {currentGameData.cover?.url && (
             <img
               src={currentGameData.cover.url}
               alt={currentGameData.name}
-              className="w-20 h-28 sm:w-48 sm:h-64 md:w-64 md:h-80 object-cover rounded-lg shadow-lg flex-shrink-0"
+              className="w-20 sm:w-24 md:w-28 aspect-[3/4] object-cover rounded-lg shadow-lg flex-shrink-0"
             />
           )}
-          <div className="flex-1 min-w-0">
-            <h3 className="text-base sm:text-lg font-bold text-text-primary truncate">{currentGameData.name}</h3>
-            
-            {/* Rating */}
-            <div className="mt-1">
-              {renderRating(combinedRating)}
-            </div>
-            
-            {/* Release Date */}
-            <p className="text-text-secondary text-xs sm:text-sm mt-1 sm:mt-2">
-              <span className="font-medium">Released:</span> {formatReleaseDate(currentGameData.first_release_date)}
-            </p>
-            
-            {/* Developer/Publisher */}
-            {developers.length > 0 && (
-              <p className="text-text-secondary text-xs sm:text-sm">
-                <span className="font-medium">Developer:</span> {developers.slice(0, 2).join(', ')}
-              </p>
-            )}
-            {publishers.length > 0 && (
-              <p className="text-text-secondary text-xs sm:text-sm">
-                <span className="font-medium">Publisher:</span> {publishers.slice(0, 2).join(', ')}
-              </p>
-            )}
-            
-            {/* Genres */}
-            {currentGameData.genres && currentGameData.genres.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-1 sm:mt-2">
-                {currentGameData.genres.slice(0, 4).map(genre => (
-                  <span
-                    key={genre.id}
-                    className="px-2 py-0.5 text-xs rounded-full bg-primary/20 text-primary"
-                  >
-                    {genre.name}
-                  </span>
-                ))}
+          
+          {/* Game Info */}
+          <div className="flex-1 min-w-0 flex flex-col justify-between">
+            <div>
+              {/* Title */}
+              <h3 className="text-base sm:text-lg font-bold text-text-primary line-clamp-2">{currentGameData.name}</h3>
+              
+              {/* Rating */}
+              <div className="mt-0.5">
+                {renderRating(combinedRating)}
               </div>
-            )}
+              
+              {/* Quick Info Row */}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-xs text-text-secondary">
+                <span>{formatReleaseDate(currentGameData.first_release_date)}</span>
+                {developers.length > 0 && (
+                  <>
+                    <span className="text-neutral-600">•</span>
+                    <span className="truncate max-w-[120px]">{developers[0]}</span>
+                  </>
+                )}
+              </div>
+              
+              {/* Genres */}
+              {currentGameData.genres && currentGameData.genres.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  {currentGameData.genres.slice(0, 3).map(genre => (
+                    <span
+                      key={genre.id}
+                      className="px-1.5 py-0.5 text-[10px] rounded-md bg-primary/15 text-primary"
+                    >
+                      {genre.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Library Action Buttons - Compact */}
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {libraryActions.map((action) => {
+                const isActive = gameCategories.includes(action.id);
+                return (
+                  <motion.button
+                    key={action.id}
+                    onClick={() => handleLibraryAction(action.id)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-all ${
+                      isActive
+                        ? 'bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white shadow-sm'
+                        : 'bg-neutral-800/80 text-text-secondary hover:bg-neutral-700 hover:text-text-primary'
+                    }`}
+                    title={isActive ? `Remove from ${action.label}` : `Add to ${action.label}`}
+                  >
+                    <span className="w-3.5 h-3.5 flex items-center justify-center">{isActive ? action.activeIcon : action.icon}</span>
+                    <span className="hidden sm:inline">{isActive ? action.activeLabel : action.label}</span>
+                  </motion.button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex gap-2 border-b border-neutral-700">
+        <div className="flex gap-1 pt-2 pb-1 flex-shrink-0">
           {(['overview', 'media', 'similar'] as TabType[]).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 text-sm font-medium transition-colors capitalize ${
+              className={`flex-1 px-3 py-2 text-xs sm:text-sm font-medium transition-all rounded-lg capitalize ${
                 activeTab === tab
-                  ? 'text-primary border-b-2 border-primary -mb-px'
-                  : 'text-text-secondary hover:text-text-primary'
+                  ? 'bg-gradient-to-r from-[#E53A3A]/20 to-[#D98C1F]/20 text-primary border border-primary/30'
+                  : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
               }`}
             >
-              {tab === 'similar' ? 'Similar Games' : tab}
+              {tab === 'similar' ? 'Similar' : tab}
               {tab === 'media' && allMedia.length > 0 && (
-                <span className="ml-1 text-xs text-text-secondary">({allMedia.length})</span>
+                <span className="ml-1 text-[10px] opacity-70">({allMedia.length})</span>
               )}
               {tab === 'similar' && currentGameData.similar_games && (
-                <span className="ml-1 text-xs text-text-secondary">({currentGameData.similar_games.length})</span>
+                <span className="ml-1 text-[10px] opacity-70">({currentGameData.similar_games.length})</span>
               )}
             </button>
           ))}
         </div>
 
-        {/* Tab Content */}
-        <div className="flex-1 overflow-y-auto min-h-0">
+        {/* Tab Content (~70%) */}
+        <div className="flex-1 overflow-y-auto min-h-0 pt-2">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}

@@ -142,7 +142,7 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
 
   // Third pass: Handle remaining simple tags (non-JSON values)
   // Uses negative lookahead to avoid matching inside JSON already processed
-  const simpleTagRegex = /\[OTAKON_([A-Z_]+):\s*([^\[\]]+?)\]/g;
+  const simpleTagRegex = /\[OTAKON_([A-Z_]+):\s*([^[\]]+?)\]/g;
   let match;
 
   // ✅ ROBUST PROGRESS DETECTION - Look for multiple formats
@@ -363,7 +363,7 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
     // Fix common camelCase issues (but preserve gaming terms)
     .replace(/([a-z])([A-Z][a-z]{2,})/g, (match, lower, upper) => {
       const preserveTerms = ['PlayStation', 'GamePass', 'GameStop', 'YouTube', 'OpenWorld'];
-      if (preserveTerms.some(term => (lower + upper).includes(term))) return match;
+      if (preserveTerms.some(term => (lower + upper).includes(term))) { return match; }
       return lower + ' ' + upper;
     })
     // Fix common preposition + capital (likeContagion → like Contagion)

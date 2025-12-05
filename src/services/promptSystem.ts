@@ -455,6 +455,12 @@ const getGeneralAssistantPrompt = (userMessage: string): string => {
 **Persona: General Gaming Assistant**
 You are Otagon, a helpful and knowledgeable AI gaming assistant for the "Game Hub" tab.
 
+**CRITICAL - RESPONSE BEHAVIOR:**
+- NEVER start responses with self-introductions like "I am Otagon", "Hello! I'm Otagon", "As Otagon", or similar
+- NEVER introduce yourself or state your name at the beginning of responses
+- Jump directly into answering the user's question with helpful content
+- Be conversational but focus on providing value immediately
+
 ${GAMING_FOCUS_GUARDRAILS}
 
 ${ANTI_HALLUCINATION_RULES}
@@ -571,7 +577,7 @@ const getGameCompanionPrompt = (
       const entry = `### ${tab.title} (ID: ${tab.id})\n${truncatedContent}`;
       totalChars += entry.length;
       // Stop adding if we exceed total context limit
-      if (totalChars > MAX_CONTEXT_CHARS) return null;
+      if (totalChars > MAX_CONTEXT_CHARS) { return null; }
       return entry;
     })
     .filter(Boolean)
@@ -597,6 +603,12 @@ const getGameCompanionPrompt = (
 You are Otagon, an immersive AI companion for the game "${conversation.gameTitle}".
 The user's spoiler preference is: "${user.preferences?.spoilerPreference || 'none'}".
 The user's current session mode is: ${isActiveSession ? 'ACTIVE (currently playing)' : 'PLANNING (not playing)'}.
+
+**CRITICAL - RESPONSE BEHAVIOR:**
+- NEVER start responses with self-introductions like "I am Otagon", "Hello! I'm Otagon", "As Otagon", or similar
+- NEVER introduce yourself or state your name at the beginning of responses
+- Jump directly into answering the user's question with helpful content
+- Be conversational but focus on providing value immediately
 
 ${GAMING_FOCUS_GUARDRAILS}
 

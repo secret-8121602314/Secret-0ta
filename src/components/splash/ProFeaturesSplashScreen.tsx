@@ -95,76 +95,49 @@ const ProFeaturesSplashScreen: React.FC<ProFeaturesSplashScreenProps> = ({ onCom
               exit={{ opacity: 0, x: activeTab === 'pro' ? 20 : -20 }}
               transition={{ duration: 0.2 }}
             >
-              {/* Mobile Layout - Mascot and header above, then list */}
-              <div className="lg:hidden flex flex-col items-center justify-center h-full">
-                {/* Evenly distributed mascot+header, badge, and list for Vanguard; fallback for Pro */}
-                {isVanguard ? (
-                  <div className="flex flex-col flex-1 w-full items-center justify-center h-full gap-3 sm:gap-4 py-4">
-                    {/* Mascot + header */}
-                    <div className="flex flex-col items-center">
-                      <div className="relative">
-                        <img 
-                          src="/images/mascot/vanguard-user.png"
-                          alt="Vanguard Mascot"
-                          className="w-36 h-36 sm:w-44 sm:h-44 md:w-52 md:h-52 object-contain rounded-xl"
-                        />
-                      </div>
-                      <h2 className="mt-3 sm:mt-4 text-lg sm:text-xl md:text-2xl font-bold text-center text-amber-300">
-                        Founding Member
-                      </h2>
-                      <p className="text-xs sm:text-sm text-neutral-400 text-center mt-1 px-2">
-                        Shape the future
-                      </p>
-                    </div>
-                    {/* Badge */}
-                    <div className="py-1.5 px-2.5 sm:py-2 sm:px-3 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/40 rounded-lg">
-                      <p className="text-xs sm:text-sm font-semibold text-amber-300 text-center">✨ All Pro features included!</p>
-                    </div>
-                    {/* List */}
-                    <div className="space-y-1.5 sm:space-y-2 w-full max-w-xs mx-auto overflow-y-auto max-h-[35vh] px-1">
-                      {currentFeatures.map(f => (
-                        <div key={f.title} className="flex items-center gap-2 sm:gap-3 py-1.5 sm:py-2 px-2 rounded-lg bg-[#181818]/60 border border-neutral-800/40">
-                          <svg className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                          <span className="text-sm sm:text-base text-neutral-200 font-medium">{f.title}</span>
-                        </div>
-                      ))}
-                    </div>
+              {/* Mobile Layout - Consistent structure for both tabs */}
+              <div className="lg:hidden flex flex-col items-center justify-between h-full py-3 sm:py-4">
+                {/* Top: Mascot and header */}
+                <div className="flex flex-col items-center flex-shrink-0">
+                  <div className="relative">
+                    <img 
+                      src={isVanguard ? '/images/mascot/vanguard-user.png' : '/images/mascot/pro-user.png'}
+                      alt={isVanguard ? 'Vanguard Mascot' : 'Pro Mascot'}
+                      className="w-28 h-28 sm:w-36 sm:h-36 md:w-44 md:h-44 object-contain rounded-xl"
+                    />
                   </div>
-                ) : (
-                  <div className="flex flex-col flex-1 w-full items-center justify-center h-full gap-3 sm:gap-4 py-4">
-                    {/* Mascot and header */}
-                    <div className="flex flex-col items-center justify-center">
-                      <div className="relative">
-                        <img 
-                          src="/images/mascot/pro-user.png"
-                          alt="Pro Mascot"
-                          className="w-36 h-36 sm:w-44 sm:h-44 md:w-52 md:h-52 object-contain rounded-xl"
-                        />
-                      </div>
-                      <h2 className="mt-3 sm:mt-4 text-lg sm:text-xl md:text-2xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40]">
-                        Otagon Pro
-                      </h2>
-                      <p className="text-xs sm:text-sm text-neutral-400 text-center mt-1 px-2">
-                        Ultimate companion
-                      </p>
-                    </div>
-                    {/* Features list */}
-                    <div className="w-full flex flex-col items-center justify-center">
-                      <div className="space-y-1.5 sm:space-y-2 w-full max-w-xs mx-auto overflow-y-auto max-h-[35vh] px-1">
-                        {currentFeatures.map(f => (
-                          <div key={f.title} className="flex items-center gap-2 sm:gap-3 py-1.5 sm:py-2 px-2 rounded-lg bg-[#181818]/60 border border-neutral-800/40">
-                            <svg className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 text-[#FFAB40]" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                            <span className="text-sm sm:text-base text-neutral-200 font-medium">{f.title}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                  <h2 className={`mt-2 sm:mt-3 text-base sm:text-lg md:text-xl font-bold text-center ${
+                    isVanguard 
+                      ? 'text-amber-300' 
+                      : 'bg-clip-text text-transparent bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40]'
+                  }`}>
+                    {isVanguard ? 'Founding Member' : 'Otagon Pro'}
+                  </h2>
+                  <p className="text-xs sm:text-sm text-neutral-400 text-center mt-0.5 px-2">
+                    {isVanguard ? 'Shape the future' : 'Ultimate companion'}
+                  </p>
+                </div>
+
+                {/* Middle: Badge (Vanguard only) or spacer */}
+                {isVanguard && (
+                  <div className="py-1.5 px-3 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/40 rounded-lg flex-shrink-0 my-2">
+                    <p className="text-xs sm:text-sm font-semibold text-amber-300 text-center">✨ All Pro features included!</p>
                   </div>
                 )}
+
+                {/* Bottom: Features list */}
+                <div className="flex-1 w-full flex flex-col justify-center overflow-hidden min-h-0">
+                  <div className="space-y-1.5 sm:space-y-2 w-full max-w-xs mx-auto overflow-y-auto px-1" style={{ maxHeight: isVanguard ? '32vh' : '38vh' }}>
+                    {currentFeatures.map(f => (
+                      <div key={f.title} className="flex items-center gap-2 sm:gap-3 py-1.5 sm:py-2 px-2.5 rounded-lg bg-[#181818]/60 border border-neutral-800/40">
+                        <svg className={`w-5 h-5 flex-shrink-0 ${isVanguard ? 'text-amber-400' : 'text-[#FFAB40]'}`} fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        <span className="text-sm sm:text-base text-neutral-200 font-medium">{f.title}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               {/* Desktop Layout - Full cards with mascot */}

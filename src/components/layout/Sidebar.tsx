@@ -13,6 +13,7 @@ interface SidebarProps {
   onUnpinConversation?: (id: string) => void;
   onClearConversation?: (id: string) => void;
   onAddGame?: () => void;
+  onOpenExplorer?: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -26,6 +27,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onUnpinConversation,
   onClearConversation,
   onAddGame,
+  onOpenExplorer,
 }) => {
   // Context menu state
   const [contextMenu, setContextMenu] = useState<{
@@ -166,13 +168,29 @@ const Sidebar: React.FC<SidebarProps> = ({
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`} style={{ zIndex: 60 }}>
         <div className="flex flex-col h-full">
-          {/* Header */}
+          {/* Header with Explorer Button */}
           <div className="p-4 sm:p-6 border-b border-surface-light/20 flex-shrink-0 relative" style={{ zIndex: 10 }}>
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl sm:text-2xl font-bold text-text-primary">Conversations</h2>
+            <div className="flex items-center justify-between gap-2 mb-4">
+              {/* Explorer/Home Button - Larger and Responsive */}
+              {onOpenExplorer ? (
+                <button
+                  onClick={onOpenExplorer}
+                  className="group flex-1 flex items-center gap-3 px-4 py-3 sm:py-3.5 bg-[#1A1A1A] hover:bg-[#242424] rounded-xl transition-all border border-[#424242]/40 hover:border-[#E53A3A]/40 min-h-[48px] sm:min-h-[52px]"
+                >
+                  {/* Otagon Logo Icon */}
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-[#E53A3A] to-[#D98C1F] flex items-center justify-center shadow-lg flex-shrink-0">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                    </svg>
+                  </div>
+                  <span className="text-base sm:text-lg font-semibold text-[#F5F5F5] group-hover:text-white transition-colors">Home</span>
+                </button>
+              ) : (
+                <h2 className="text-xl sm:text-2xl font-bold text-text-primary flex-1">Conversations</h2>
+              )}
               <button
                 onClick={onClose}
-                className="lg:hidden btn-icon p-3 text-text-muted hover:text-text-primary active:scale-95 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                className="lg:hidden btn-icon p-2.5 sm:p-3 text-text-muted hover:text-text-primary active:scale-95 min-h-[44px] min-w-[44px] flex items-center justify-center flex-shrink-0"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

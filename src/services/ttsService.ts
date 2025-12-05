@@ -40,7 +40,8 @@ const releaseWakeLock = async () => {
             wakeLock = null;
         }
     } catch (_err) {
-            }
+        // Wake lock release failed - non-critical
+    }
 };
 
 // Initialize Audio Context with silent audio to maintain background session
@@ -265,7 +266,8 @@ const init = async () => {
             synth.speak(new SpeechSynthesisUtterance(''));
         }
     } else {
-            }
+        // TTS not supported - non-critical
+    }
 };
 
 const getAvailableVoices = (): SpeechSynthesisVoice[] => {

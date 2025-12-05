@@ -119,7 +119,7 @@ const FormattedContent: React.FC<{ content: string }> = ({ content }) => {
       <ul className="space-y-2.5">
         {lines.map((line, index) => {
           const cleanLine = line.replace(/^[•\-*]\s*/, '').replace(/^\d+[.)]\s*/, '').trim();
-          if (!cleanLine) return null;
+          if (!cleanLine) { return null; }
           return (
             <li key={index} className="flex items-start gap-2.5">
               <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 bg-white/40" />
@@ -151,7 +151,7 @@ export const parseSessionSummaryMessage = (content: string): SessionSummaryCardP
   const isPlayingSessionSummary = content.includes('**Playing Session Summary for');
   const isPlanningSessionSummary = content.includes('**Planning Session Summary for');
   
-  if (!isPlayingSessionSummary && !isPlanningSessionSummary) return null;
+  if (!isPlayingSessionSummary && !isPlanningSessionSummary) { return null; }
 
   // Playing Session Summary = user was PLAYING, now switching TO PLANNING
   // Planning Session Summary = user was PLANNING, now switching TO PLAYING
@@ -174,9 +174,9 @@ export const parseSessionSummaryMessage = (content: string): SessionSummaryCardP
   const keyPoints: string[] = [];
   const keyPointsSection = content.match(/\*\*(Key Achievements|Strategies Discussed)[^:]*:\*\*\n([\s\S]*?)(?=\n\n\*\*|\n\*Switching|\*\*Goals|\*\*Current Objectives)/);
   if (keyPointsSection) {
-    const points = keyPointsSection[2].match(/[•\-]\s*([^\n]+)/g);
+    const points = keyPointsSection[2].match(/[•-]\s*([^\n]+)/g);
     if (points) {
-      keyPoints.push(...points.map(p => p.replace(/^[•\-]\s*/, '').trim()));
+      keyPoints.push(...points.map(p => p.replace(/^[•-]\s*/, '').trim()));
     }
   }
 
@@ -184,9 +184,9 @@ export const parseSessionSummaryMessage = (content: string): SessionSummaryCardP
   const objectives: string[] = [];
   const objectivesSection = content.match(/\*\*(Current Objectives|Goals for Next Session)[^:]*:\*\*\n([\s\S]*?)(?=\n\n\*\*|\n\*Switching|$)/);
   if (objectivesSection) {
-    const objs = objectivesSection[2].match(/[•\-]\s*([^\n]+)/g);
+    const objs = objectivesSection[2].match(/[•-]\s*([^\n]+)/g);
     if (objs) {
-      objectives.push(...objs.map(o => o.replace(/^[•\-]\s*/, '').trim()));
+      objectives.push(...objs.map(o => o.replace(/^[•-]\s*/, '').trim()));
     }
   }
 

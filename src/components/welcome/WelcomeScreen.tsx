@@ -21,17 +21,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStartChat, onAddGame: _
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4">
       {/* Modal Container */}
-      <div className="relative w-full max-w-5xl h-[95vh] sm:max-h-[90vh] bg-background rounded-xl sm:rounded-2xl shadow-2xl border border-transparent bg-clip-padding flex flex-col overflow-hidden" style={{ backgroundImage: 'linear-gradient(#1a1a1a, #1a1a1a), linear-gradient(135deg, #FF4D4D, #FFAB40)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box' }}>
-        {/* Close Button */}
-        <button
-          onClick={onStartChat}
-          className="absolute top-2 right-2 sm:top-4 sm:right-4 z-10 p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
-          aria-label="Close guide"
-        >
-          <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+      <div className="relative w-full max-w-5xl h-[95vh] sm:max-h-[90vh] bg-background rounded-xl sm:rounded-2xl shadow-2xl bg-clip-padding flex flex-col overflow-hidden" style={{ backgroundImage: 'linear-gradient(#1a1a1a, #1a1a1a), linear-gradient(135deg, #FF4D4D, #FFAB40)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box' }}>
 
         {/* Tabs */}
         <div className="flex-shrink-0 border-b border-gray-700 px-2 sm:px-3 md:px-6 pt-3 sm:pt-6">

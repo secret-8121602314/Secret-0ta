@@ -19,7 +19,8 @@ class SuggestedPromptsService {
         this.usedPrompts = new Set(prompts);
       }
     } catch (_error) {
-            this.usedPrompts = new Set();
+      // Load failed - start with empty set
+      this.usedPrompts = new Set();
     }
   }
 
@@ -28,7 +29,8 @@ class SuggestedPromptsService {
       const prompts = Array.from(this.usedPrompts);
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(prompts));
     } catch (_error) {
-          }
+      // Save failed - non-critical
+    }
   }
 
   /**
@@ -40,11 +42,12 @@ class SuggestedPromptsService {
       const now = Date.now();
       
       if (!lastResetTime || (now - parseInt(lastResetTime)) >= this.RESET_INTERVAL_MS) {
-                this.resetUsedPrompts();
+        this.resetUsedPrompts();
         localStorage.setItem(this.LAST_RESET_KEY, now.toString());
       }
     } catch (_error) {
-          }
+      // Check failed - non-critical
+    }
   }
 
   /**

@@ -117,7 +117,8 @@ export class SupabaseService {
       } else if (gameHubError) {
         console.log('❌ [Supabase] Game Hub .single() error:', gameHubError.message);
       } else {
-              }
+        // No Game Hub found - will be created later
+      }
       
       // ✅ RLS WORKAROUND: Try query without filter - RLS should auto-filter by auth.uid()
       // This bypasses potential issues with the auth_user_id column
@@ -411,8 +412,8 @@ export class SupabaseService {
             rowAuthUserId: rowAuthUserId,
             match: false
           });
-        } else {
-                  }
+        }
+        // else: IDs match as expected
       }
       
       return data.id;
