@@ -1030,9 +1030,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                     <kbd className="hidden md:inline px-2 py-1 bg-white/20 border border-white/30 rounded text-sm font-mono">F1</kbd>
                                     <span className="hidden md:inline">or Click to Get Hint</span>
                                     <span className="md:hidden">Tap to Get Hint</span>
-                                    <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                                    </svg>
                                 </button>
                             ) : (
                                 <button
