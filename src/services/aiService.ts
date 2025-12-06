@@ -414,7 +414,7 @@ class AIService {
           prompt,
           image: imageBase64,
           temperature: optimalTemperature,
-          maxTokens: 2048,
+          maxTokens: 8192, // Increased to prevent response truncation
           requestType: hasImages ? 'image' : 'text',
           model: modelName,
           tools: tools.length > 0 ? tools : undefined,
@@ -905,7 +905,7 @@ In addition to your regular response, provide structured data in the following o
           prompt,
           image: imageBase64,
           temperature: optimalTemperature,
-          maxTokens: 2048,
+          maxTokens: 8192, // Increased to prevent response truncation
           requestType: hasImages ? 'image' : 'text',
           model: modelName,
           tools: tools,
@@ -1326,7 +1326,7 @@ In addition to your regular response, provide structured data in the following o
           const edgeResponse = await this.callEdgeFunction({
             prompt,
             temperature: 0.7,
-            maxTokens: 2048,
+            maxTokens: 8192, // Increased to prevent response truncation
             requestType: 'text',
             model: 'gemini-2.5-flash'
           });

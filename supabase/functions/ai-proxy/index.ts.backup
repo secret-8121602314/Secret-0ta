@@ -99,7 +99,7 @@ serve(async (req: Request) => {
       image, 
       systemPrompt, 
       temperature = 0.7, 
-      maxTokens = 2048, 
+      maxTokens = 8192, // Increased to prevent response truncation
       requestType,
       model = 'gemini-2.5-flash-preview-09-2025',
       tools = []
