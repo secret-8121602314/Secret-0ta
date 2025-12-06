@@ -19,12 +19,8 @@ export default defineConfig(({ mode }) => ({
         manualChunks: (id) => {
           // Vendor chunks - Core libraries
           if (id.includes('node_modules')) {
-            // React DOM - separate chunk (largest React piece ~130KB)
-            if (id.includes('react-dom')) {
-              return 'react-dom-vendor';
-            }
-            // React core (without router/markdown)
-            if (id.includes('react') && !id.includes('react-router') && !id.includes('react-markdown')) {
+            // React core + DOM together to avoid initialization race conditions
+            if (id.includes('react-dom') || (id.includes('react') && !id.includes('react-router') && !id.includes('react-markdown'))) {
               return 'react-vendor';
             }
             // Framer Motion - separate chunk (~100KB, lazy loadable)

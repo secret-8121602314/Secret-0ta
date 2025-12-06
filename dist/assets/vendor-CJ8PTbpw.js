@@ -1,4 +1,4 @@
-import{a as Ta,g as en}from"./react-dom-vendor-Bh8Q44uq.js";var it={exports:{}},lt={};/**
+import{c as Ta,g as en}from"./react-vendor-JBKW6UM3.js";var it={exports:{}},lt={};/**
  * @license React
  * scheduler.production.min.js
  *
