@@ -35,7 +35,7 @@ import Logo from './ui/Logo';
 import CreditIndicator from './ui/CreditIndicator';
 import HandsFreeToggle from './ui/HandsFreeToggle';
 import AIToggleButton from './ui/AIToggleButton';
-import { LoadingSpinner } from './ui/LoadingSpinner';
+import { AppLoadingScreen } from './ui/AppLoadingScreen';
 import SettingsContextMenu from './ui/SettingsContextMenu';
 import ProfileSetupBanner from './ui/ProfileSetupBanner';
 import GameProgressBar from './features/GameProgressBar';
@@ -178,6 +178,9 @@ const MainApp: React.FC<MainAppProps> = ({
   // ✅ RATE LIMITING: Track last request time to prevent rapid-fire duplicate requests
   const lastRequestTimeRef = useRef<number>(0);
   const RATE_LIMIT_DELAY_MS = 500; // Minimum 500ms between requests (prevents duplicate clicks)
+  
+  // ✅ F2 MULTI-SCREENSHOT: Store pending screenshots for sequential processing in manual mode
+  const pendingScreenshotsRef = useRef<string[]>([]);
   
   // ✅ TIER UPGRADE: Track previous tier to detect upgrades
   const previousTierRef = useRef<string | null>(null);
@@ -332,32 +335,61 @@ const MainApp: React.FC<MainAppProps> = ({
       if (images && Array.isArray(images) && images.length > 0) {
         console.log('📸 [MainApp] Processing', images.length, 'buffered screenshots from F2');
         
-        images.forEach((dataUrl: string, index: number) => {
-          console.log('📸 [MainApp] Processing screenshot', index + 1, 'of', images.length);
-          
-          const validation = validateScreenshotDataUrl(dataUrl);
-          if (!validation.valid) {
-            console.error('📸 [MainApp] Screenshot', index + 1, 'validation failed:', validation.error);
-            return;
-          }
-          
-          // Process each screenshot
-          if (isManualUploadMode) {
-            // In manual mode, only queue the first screenshot (to avoid overwhelming UI)
-            if (index === 0) {
-              setQueuedScreenshot(dataUrl);
-              toastService.info(`${images.length} screenshots received. First one queued.`);
-            }
-          } else {
-            // Auto mode: Send each screenshot
-            if (activeConversation && handleSendMessageRef.current) {
-              const handler = handleSendMessageRef.current;
-              setTimeout(() => {
-                handler("", dataUrl);
-              }, index * 500); // Stagger by 500ms to avoid overwhelming AI
+        // Process each screenshot
+        if (isManualUploadMode) {
+          // ✅ FIX: In manual mode, queue all screenshots (user can send one by one)
+          // Store all screenshots and let user send them sequentially
+          if (images.length > 0) {
+            setQueuedScreenshot(images[0]); // Queue first one for immediate review
+            // Store remaining screenshots in a ref for sequential processing
+            if (images.length > 1) {
+              toastService.info(`${images.length} screenshots received. First one queued - send it to queue the next!`);
+              // Store remaining screenshots for later
+              pendingScreenshotsRef.current = images.slice(1);
+            } else {
+              toastService.info('Screenshot queued. Review and send when ready.');
             }
           }
-        });
+        } else {
+          // ✅ FIX: Auto mode - Process screenshots SEQUENTIALLY, waiting for each response
+          // This ensures cumulative context is built as each screenshot is analyzed
+          console.log('📸 [MainApp] Starting sequential screenshot processing...');
+          
+          // Sequential processing is intentional here - each screenshot needs AI response before next
+          const processScreenshotsSequentially = async () => {
+            for (let i = 0; i < images.length; i++) {
+              const dataUrl = images[i];
+              console.log('📸 [MainApp] Processing screenshot', i + 1, 'of', images.length);
+              
+              const validation = validateScreenshotDataUrl(dataUrl);
+              if (!validation.valid) {
+                console.error('📸 [MainApp] Screenshot', i + 1, 'validation failed:', validation.error);
+                continue;
+              }
+              
+              if (activeConversation && handleSendMessageRef.current) {
+                const handler = handleSendMessageRef.current;
+                
+                // Wait for the message to be sent and processed
+                // The handler returns a promise, so we await it
+                try {
+                  await handler(`[Screenshot ${i + 1} of ${images.length}]`, dataUrl); // eslint-disable-line no-await-in-loop
+                  
+                  // Add a small delay between screenshots to let state settle
+                  if (i < images.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 300)); // eslint-disable-line no-await-in-loop
+                  }
+                } catch (err) {
+                  console.error('📸 [MainApp] Error processing screenshot', i + 1, ':', err);
+                }
+              }
+            }
+            console.log('📸 [MainApp] Finished processing all screenshots');
+          };
+          
+          // Start processing (async, non-blocking)
+          processScreenshotsSequentially();
+        }
       } else {
         console.warn('📸 [MainApp] screenshot-multi received but no images in payload');
       }
@@ -404,9 +436,25 @@ const MainApp: React.FC<MainAppProps> = ({
     }
   }, [isManualUploadMode, activeConversation]);
 
-  // Clear queued screenshot when it's been used
+  // Clear queued screenshot when it's been used and queue next pending one
   const handleScreenshotQueued = () => {
     setQueuedScreenshot(null);
+    
+    // ✅ FIX: If there are pending screenshots from F2 batch, queue the next one
+    if (pendingScreenshotsRef.current.length > 0) {
+      const nextScreenshot = pendingScreenshotsRef.current.shift(); // Remove and get first
+      if (nextScreenshot) {
+        // Small delay to let UI update before showing next screenshot
+        setTimeout(() => {
+          setQueuedScreenshot(nextScreenshot);
+          if (pendingScreenshotsRef.current.length > 0) {
+            toastService.info(`${pendingScreenshotsRef.current.length + 1} screenshots remaining.`);
+          } else {
+            toastService.info('Last screenshot in batch queued.');
+          }
+        }, 100);
+      }
+    }
   };
 
   // Debug: Log when queuedScreenshot changes
@@ -2723,7 +2771,8 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
         session.isActive && session.currentGameId === activeConversation.id,
         !!finalImageUrl,
         finalImageUrl,
-        controller.signal
+        controller.signal,
+        currentGameIGDBData?.first_release_date // Pass IGDB release date for accurate post-cutoff grounding detection
       );
 
       // Check if request was aborted before adding response to conversation
@@ -3608,14 +3657,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
   }, [activeConversation]);
 
   if (isInitializing && (!user || Object.keys(conversations).length === 0)) {
-    return (
-      <div className="h-full bg-background flex items-center justify-center">
-        <div className="text-center">
-          <LoadingSpinner size="lg" className="mx-auto mb-4" />
-          <p className="text-text-muted">{!user ? 'Loading...' : 'Initializing chat...'}</p>
-        </div>
-      </div>
-    );
+    return <AppLoadingScreen size="md" fullScreen={false} />;
   }
 
   // If no user but we have initialization done, still show error or redirect
@@ -3658,13 +3700,15 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
           onClearConversation={handleClearConversation}
           onAddGame={handleAddGame}
           onOpenExplorer={() => setGamingExplorerOpen(true)}
+          userTier={currentUser.tier}
+          isOnTrial={Boolean(currentUser.trialExpiresAt && currentUser.trialExpiresAt > Date.now())}
         />
       </ErrorBoundary>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="chat-header-fixed bg-surface backdrop-blur-sm border-b border-surface-light/20 px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-6 flex items-center justify-between">
+        <header className="chat-header-fixed bg-background backdrop-blur-sm border-b border-surface-light/20 px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-6 flex items-center justify-between">
           <div className="flex items-center space-x-1">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -3675,13 +3719,16 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               </svg>
             </button>
             
-            <Logo 
-              size="md" 
-              bounce={false} 
-              userTier={currentUser.tier} 
-              isOnTrial={Boolean(currentUser.trialExpiresAt && currentUser.trialExpiresAt > Date.now())}
-              onClick={() => setGamingExplorerOpen(true)}
-            />
+            {/* Logo only visible on mobile/tablet - hidden on desktop where sidebar is always open */}
+            <div className="lg:hidden">
+              <Logo 
+                size="md" 
+                bounce={false} 
+                userTier={currentUser.tier} 
+                isOnTrial={Boolean(currentUser.trialExpiresAt && currentUser.trialExpiresAt > Date.now())}
+                onClick={() => setGamingExplorerOpen(true)}
+              />
+            </div>
           </div>
 
           <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4">
@@ -3790,7 +3837,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
 
           {/* Game Progress Bar with Game Info Button - Show for game conversations (not Game Hub) */}
           {activeConversation && !activeConversation.isGameHub && activeConversation.gameTitle && (
-            <div className="px-3 sm:px-4 lg:px-6 pb-3 sm:pb-4 flex-shrink-0">
+            <div className="px-3 sm:px-4 lg:px-6 pt-3 pb-3 sm:pb-4 flex-shrink-0">
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="flex-1">
                   <GameProgressBar 

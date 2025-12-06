@@ -86,8 +86,20 @@ const SubTabs: React.FC<SubTabsProps> = ({
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [hasUserInteracted, setHasUserInteracted] = useState<boolean>(false);
   
+  // Ref for the subtabs container to calculate available space
+  const containerRef = useRef<HTMLDivElement>(null);
+  
   // Track previous content to detect actual updates
   const prevContentRef = useRef<string>('');
+  
+  // Track if this is the initial mount (to prevent auto-expand on page refresh)
+  const isInitialMountRef = useRef<boolean>(true);
+  
+  // Track if subtabs have been auto-expanded at least once (first generation complete)
+  const hasAutoExpandedOnceRef = useRef<boolean>(false);
+  
+  // Track if there are unread updates (show dot notification)
+  const [hasUnreadUpdates, setHasUnreadUpdates] = useState<boolean>(false);
   
   // Context menu state
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tabId: string; tabTitle: string } | null>(null);
@@ -231,6 +243,7 @@ const SubTabs: React.FC<SubTabsProps> = ({
       contentChanged,
       isExpanded,
       hasUserInteracted,
+      isInitialMount: isInitialMountRef.current,
       currentContentSignature: currentContentSignature.substring(0, 50),
       prevContentSignature: prevContentRef.current.substring(0, 50)
     });
@@ -241,12 +254,30 @@ const SubTabs: React.FC<SubTabsProps> = ({
       onExpandedChange?.(false);
     }
     
-    // ✅ FIX: Only expand when content is NEWLY generated or updated
-    // This prevents re-expanding when just switching conversations or re-rendering
-    if (contentChanged && hasLoadedContent && !isExpanded) {
-      console.log('📂 [SubTabs] Auto-expanding: new content detected');
-      setIsExpanded(true);
-      onExpandedChange?.(true);
+    // Mark initial mount as complete after first render with content
+    if (isInitialMountRef.current && hasLoadedContent) {
+      console.log('📂 [SubTabs] Initial mount complete - content already exists, NOT auto-expanding');
+      isInitialMountRef.current = false;
+      // Store the initial content signature so we don't expand for existing content
+      prevContentRef.current = currentContentSignature;
+      return;
+    }
+    
+    // ✅ NEW BEHAVIOR: Auto-expand ONLY on first generation completion (during session)
+    // Show dot notification for subsequent updates
+    // Skip if user has manually interacted with the panel
+    if (contentChanged && hasLoadedContent && !isExpanded && !hasUserInteracted) {
+      if (!hasAutoExpandedOnceRef.current) {
+        // First time generation complete - auto-expand
+        console.log('📂 [SubTabs] Auto-expanding: first generation complete');
+        setIsExpanded(true);
+        onExpandedChange?.(true);
+        hasAutoExpandedOnceRef.current = true;
+      } else {
+        // Subsequent updates - show dot notification instead of auto-expanding
+        console.log('📂 [SubTabs] New updates detected - showing notification dot');
+        setHasUnreadUpdates(true);
+      }
     }
     
     // Update the previous content reference
@@ -254,6 +285,32 @@ const SubTabs: React.FC<SubTabsProps> = ({
       prevContentRef.current = currentContentSignature;
     }
   }, [subtabs, isExpanded, hasUserInteracted, onExpandedChange]);
+
+  // Calculate the bottom position for the fixed panel
+  const [panelBottom, setPanelBottom] = useState<number>(180);
+  
+  // Calculate panel position when expanded
+  useEffect(() => {
+    if (isExpanded && containerRef.current) {
+      const calculatePanelPosition = () => {
+        const container = containerRef.current;
+        if (!container) return;
+        
+        // Get the container's position relative to viewport
+        const rect = container.getBoundingClientRect();
+        
+        // Calculate the bottom position: distance from viewport bottom to top of button + margin
+        const bottomFromViewport = window.innerHeight - rect.top + 8;
+        setPanelBottom(bottomFromViewport);
+      };
+      
+      calculatePanelPosition();
+      
+      // Recalculate on resize
+      window.addEventListener('resize', calculatePanelPosition);
+      return () => window.removeEventListener('resize', calculatePanelPosition);
+    }
+  }, [isExpanded]);
 
   const handleTabClick = (tabId: string) => {
     setLocalActiveTab(tabId);
@@ -264,6 +321,12 @@ const SubTabs: React.FC<SubTabsProps> = ({
     const newExpanded = !isExpanded;
     setIsExpanded(newExpanded);
     setHasUserInteracted(true); // Mark that user has manually controlled the accordion
+    
+    // Clear unread updates notification when user manually opens
+    if (newExpanded) {
+      setHasUnreadUpdates(false);
+    }
+    
     onExpandedChange?.(newExpanded); // Notify parent of expanded state change
   };
 
@@ -277,11 +340,11 @@ const SubTabs: React.FC<SubTabsProps> = ({
   const allSubtabsLoading = subtabs.every(tab => tab.status === 'loading' || tab.content === 'Loading...');
 
   return (
-    <div className="mb-4 relative">
+    <div ref={containerRef} className="mb-4 relative">
       {/* Collapsible Header - Matching Latest Gaming News style */}
       <button
         onClick={toggleExpanded}
-        className="w-full flex items-center justify-between mb-2 py-2 px-3 rounded-lg bg-[#1C1C1C] hover:bg-[#252525] border border-[#424242]/30 hover:border-[#424242]/60 transition-all duration-200 relative z-10"
+        className="w-full flex items-center justify-between py-2 px-3 rounded-lg bg-[#1C1C1C] hover:bg-[#252525] border border-[#424242]/30 hover:border-[#424242]/60 transition-all duration-200 relative z-[51]"
       >
         <div className="flex items-center gap-2">
           <div className={`text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
@@ -291,6 +354,13 @@ const SubTabs: React.FC<SubTabsProps> = ({
           }`}>
             Lore & Insights
           </div>
+          {/* Unread updates notification dot */}
+          {hasUnreadUpdates && !isExpanded && !hasLoadingSubtabs && (
+            <div className="relative">
+              <div className="w-2 h-2 rounded-full bg-[#FF4D4D] animate-pulse" />
+              <div className="absolute inset-0 w-2 h-2 rounded-full bg-[#FF4D4D] animate-ping opacity-75" />
+            </div>
+          )}
           {/* Loading indicator when subtabs are being generated */}
           {hasLoadingSubtabs && (
             <div className="flex items-center gap-1.5">
@@ -315,7 +385,7 @@ const SubTabs: React.FC<SubTabsProps> = ({
         </svg>
       </button>
 
-      {/* Collapsible Content - Overlay positioned above the button
+      {/* Collapsible Content - Overlay positioned ABOVE the button on ALL screen sizes
           Z-INDEX STACKING ORDER (mobile):
           - z-[60]: Sidebar (when open)
           - z-[55]: Sidebar backdrop (when open)
@@ -323,29 +393,45 @@ const SubTabs: React.FC<SubTabsProps> = ({
           - z-40: SubTabs container (in ChatInterface)
           - z-30: Chat Thread Name header (in MainApp)
           
-          POSITIONING FIX: Using fixed positioning with bottom offset calculated from
-          viewport to prevent clipping behind chat thread name header on mobile.
-          The panel grows upward from the toggle button but stops at top: 80px (safe area for header).
+          POSITIONING: Fixed positioning on mobile to ensure it doesn't overflow.
+          Uses CSS top/bottom constraints to stay within visible area.
+          Top accounts for: header bar + progress bar + chat thread name (~150px total on mobile)
       */}
       {isExpanded && (
         <>
-          {/* Backdrop overlay - close on click (mobile only) */}
+          {/* Backdrop overlay - close on click (mobile/tablet only) */}
           <div
-            className="lg:hidden fixed inset-0 z-40"
+            className="lg:hidden fixed inset-0 z-40 bg-black/20"
             onClick={() => setIsExpanded(false)}
           />
+          {/* 
+            Fixed panel on mobile: Positioned between header elements and the button area.
+            Top: 150px accounts for header + progress bar + chat thread name
+            Bottom: dynamically calculated from button position
+            
+            Desktop (lg+): Uses absolute positioning with bottom-full to appear above the button.
+            
+            CRITICAL: Using CSS classes for ALL positioning to avoid JS/CSS breakpoint mismatch.
+            The mobile styles (top/bottom) are applied via a style tag inside, only when NOT at lg breakpoint.
+          */}
           <div
-            className="fixed left-3 right-3 z-50 animate-fade-in lg:absolute lg:left-0 lg:right-0 lg:bottom-full lg:mb-2"
+            className="subtabs-panel z-50 animate-fade-in fixed left-3 right-3 lg:absolute lg:left-0 lg:right-0 lg:bottom-full lg:mb-2 lg:max-h-[60vh] lg:top-auto"
             style={{
-              // Mobile: fixed positioning with safe top margin (80px for header + thread name)
-              // and bottom margin (120px for toggle button + input bar + safe area)
-              // Desktop (lg+): reverts to absolute positioning via Tailwind classes
-              top: 'max(80px, env(safe-area-inset-top, 20px) + 60px)',
-              bottom: '120px',
-              maxHeight: 'calc(100vh - 200px)',
-            }}
+              // Mobile/tablet positioning - will be overridden by lg: classes on desktop
+              '--mobile-top': '150px',
+              '--mobile-bottom': `${panelBottom}px`,
+            } as React.CSSProperties}
           >
-          <div className="bg-[#1C1C1C] border border-[#424242]/60 rounded-xl shadow-2xl h-full flex flex-col" style={{ maxHeight: 'inherit' }}>
+            {/* Apply mobile positioning via inline style that only affects non-lg screens */}
+            <style>{`
+              @media (max-width: 1023px) {
+                .subtabs-panel {
+                  top: var(--mobile-top) !important;
+                  bottom: var(--mobile-bottom) !important;
+                }
+              }
+            `}</style>
+            <div className="h-full bg-[#1C1C1C] border border-[#424242]/60 rounded-xl shadow-2xl flex flex-col overflow-hidden">
           {/* Tab Headers - Grid layout on all screen sizes */}
           <div className="border-b border-[#424242]/40 flex-shrink-0">
             {/* Mobile: 3-4 cols | Tablet (sm/md): 4 cols | Desktop (lg+): 5 cols */}
@@ -390,7 +476,7 @@ const SubTabs: React.FC<SubTabsProps> = ({
           {/* Tab Content - Scrollable area that fills available space */}
           {activeTab && (
             <div 
-              className="p-4 flex-1 min-h-0 overflow-y-auto custom-scrollbar transition-all duration-300 rounded-b-xl bg-[#2E2E2E]/40"
+              className="p-3 sm:p-4 flex-1 min-h-0 overflow-y-auto custom-scrollbar transition-all duration-300 rounded-b-xl bg-[#2E2E2E]/40"
             >
               {activeTab.status === 'loading' || (!activeTab.content && isLoading) ? (
                 <div className="flex items-center justify-center py-8">

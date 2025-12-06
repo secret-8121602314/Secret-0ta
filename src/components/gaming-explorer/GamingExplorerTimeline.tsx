@@ -109,72 +109,71 @@ const TimelineEventCard: React.FC<{
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, x: -30, scale: 0.95 }}
+      initial={{ opacity: 0, x: -20, scale: 0.98 }}
       animate={isInView ? { opacity: 1, x: 0, scale: 1 } : {}}
-      transition={{ duration: 0.4, ease: "easeOut" }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
       className="relative group"
     >
-      {/* Timeline connector dot */}
-      <div className="absolute -left-[38px] sm:-left-[42px] top-5 sm:top-6 z-10">
+      {/* Timeline connector dot - improved positioning */}
+      <div className="absolute -left-[34px] sm:-left-[40px] top-4 sm:top-5 z-10">
         <motion.div
           initial={{ scale: 0 }}
           animate={isInView ? { scale: 1 } : {}}
-          transition={{ delay: 0.2, type: "spring" }}
-          className="relative"
+          transition={{ delay: 0.15, type: "spring", stiffness: 300 }}
+          className="relative flex items-center justify-center"
         >
           {/* Outer glow ring */}
-          <div className={`absolute -inset-1 rounded-full bg-gradient-to-br ${config.gradient} opacity-40 blur-sm`} />
+          <div className={`absolute w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-br ${config.gradient} opacity-30 blur-[3px]`} />
           {/* Main dot */}
-          <div className={`relative w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-gradient-to-br ${config.gradient} border-2 border-[#1a1a1a]`} />
+          <div className={`relative w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-gradient-to-br ${config.gradient} ring-2 ring-[#1a1a1a]`} />
         </motion.div>
       </div>
       
       {/* Event Card */}
       <motion.div
-        whileHover={{ scale: 1.01, y: -2 }}
-        transition={{ type: "spring", stiffness: 400, damping: 25 }}
-        className={`relative overflow-hidden bg-gradient-to-br ${config.bgGradient} backdrop-blur-sm rounded-xl border border-[#424242]/40 hover:border-[#424242]/80 transition-all cursor-pointer`}
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.995 }}
+        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+        className={`relative overflow-hidden bg-gradient-to-br ${config.bgGradient} backdrop-blur-sm rounded-xl sm:rounded-2xl border border-[#424242]/30 hover:border-[#424242]/60 transition-all cursor-pointer shadow-sm hover:shadow-md`}
         onClick={onToggle}
       >
-        {/* Top accent bar */}
-        <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${config.gradient}`} />
+        {/* Top accent bar - thinner for cleaner look */}
+        <div className={`absolute top-0 left-0 right-0 h-0.5 sm:h-1 bg-gradient-to-r ${config.gradient}`} />
         
-        <div className="p-3 sm:p-4">
-          <div className="flex items-start gap-2 sm:gap-3">
-            {/* Event type icon - smaller on mobile */}
+        <div className="p-3 sm:p-4 lg:p-5">
+          <div className="flex items-start gap-3 sm:gap-4">
+            {/* Event type icon - better sizing and alignment */}
             <motion.div 
-              whileHover={{ rotate: 5 }}
-              className={`flex-shrink-0 p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl bg-gradient-to-br ${config.gradient} text-white shadow-lg [&>svg]:w-4 [&>svg]:h-4 sm:[&>svg]:w-5 sm:[&>svg]:h-5`}
+              whileHover={{ rotate: 3, scale: 1.05 }}
+              className={`flex-shrink-0 p-2 sm:p-2.5 rounded-xl bg-gradient-to-br ${config.gradient} text-white shadow-md [&>svg]:w-4 [&>svg]:h-4 sm:[&>svg]:w-5 sm:[&>svg]:h-5`}
             >
               {config.icon}
             </motion.div>
             
-            {/* Content */}
-            <div className="flex-1 min-w-0 overflow-hidden">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-[#F5F5F5] text-sm sm:text-lg leading-tight line-clamp-2 sm:line-clamp-1">{event.title}</h4>
-                  <div className="flex items-center mt-1">
-                    <span className="text-[10px] sm:text-xs font-medium px-1.5 sm:px-2 py-0.5 rounded-full bg-[#424242]/50 text-[#CFCFCF]">
-                      {config.label}
-                    </span>
-                  </div>
+            {/* Content - improved layout */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  <h4 className="font-semibold text-[#F5F5F5] text-[15px] sm:text-base lg:text-lg leading-snug line-clamp-2">{event.title}</h4>
+                  <span className="inline-block text-[10px] sm:text-[11px] font-medium px-2 py-0.5 sm:py-1 rounded-full bg-[#424242]/40 text-[#CFCFCF] tracking-wide uppercase">
+                    {config.label}
+                  </span>
                 </div>
                 
-                {/* Game cover thumbnail - smaller on mobile */}
+                {/* Game cover thumbnail - better responsive sizing */}
                 {event.igdbData?.cover?.url && (
                   <motion.img 
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     src={getCoverUrl(event.igdbData.cover.url, 'cover_small')} 
                     alt={event.title}
-                    className="w-10 h-14 sm:w-14 sm:h-18 object-cover rounded-md sm:rounded-lg shadow-lg flex-shrink-0"
+                    className="w-11 h-[60px] sm:w-14 sm:h-[76px] object-cover rounded-lg shadow-lg flex-shrink-0 ring-1 ring-black/20"
                   />
                 )}
               </div>
               
               {event.description && (
-                <p className="text-xs sm:text-sm text-[#8F8F8F] line-clamp-2 mt-1.5 sm:mt-2">{event.description}</p>
+                <p className="text-[13px] sm:text-sm text-[#8F8F8F] line-clamp-2 mt-2 sm:mt-2.5 leading-relaxed">{event.description}</p>
               )}
             </div>
           </div>
@@ -186,22 +185,22 @@ const TimelineEventCard: React.FC<{
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-[#424242]/40 overflow-hidden"
+                transition={{ duration: 0.25 }}
+                className="mt-4 sm:mt-5 pt-4 sm:pt-5 border-t border-[#424242]/30 overflow-hidden"
               >
                 {event.specs && Object.keys(event.specs).length > 0 && (
-                  <div className="mb-3 sm:mb-4">
-                    <h5 className="text-xs sm:text-sm font-medium text-[#CFCFCF] mb-2 flex items-center gap-2">
-                      <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="mb-4 sm:mb-5">
+                    <h5 className="text-xs sm:text-sm font-semibold text-[#CFCFCF] mb-2.5 sm:mb-3 flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
                       Specs
                     </h5>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2 text-xs sm:text-sm">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-2.5">
                       {Object.entries(event.specs).map(([key, value]) => (
-                        <div key={key} className="bg-[#0A0A0A]/50 rounded-lg px-2.5 sm:px-3 py-1.5 sm:py-2">
-                          <span className="text-[#8F8F8F] text-[10px] sm:text-xs">{key}</span>
-                          <p className="text-[#F5F5F5] font-medium truncate text-xs sm:text-sm">{value}</p>
+                        <div key={key} className="bg-[#0A0A0A]/60 rounded-lg px-3 py-2 sm:py-2.5">
+                          <span className="text-[#8F8F8F] text-[10px] sm:text-xs uppercase tracking-wider">{key}</span>
+                          <p className="text-[#F5F5F5] font-medium truncate text-xs sm:text-sm mt-0.5">{value}</p>
                         </div>
                       ))}
                     </div>
@@ -209,36 +208,37 @@ const TimelineEventCard: React.FC<{
                 )}
                 
                 {event.photos && event.photos.length > 0 && (
-                  <div className="mb-3 sm:mb-4">
-                    <h5 className="text-xs sm:text-sm font-medium text-[#CFCFCF] mb-2 flex items-center gap-2">
-                      <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="mb-4 sm:mb-5">
+                    <h5 className="text-xs sm:text-sm font-semibold text-[#CFCFCF] mb-2.5 sm:mb-3 flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                       Photos
                     </h5>
-                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                    <div className="flex gap-2.5 sm:gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
                       {event.photos.map((photo, i) => (
                         <motion.img
                           key={i}
-                          whileHover={{ scale: 1.05 }}
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.98 }}
                           src={photo}
                           alt={`${event.title} photo ${i + 1}`}
-                          className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg flex-shrink-0"
+                          className="w-[72px] h-[72px] sm:w-24 sm:h-24 object-cover rounded-lg sm:rounded-xl flex-shrink-0 ring-1 ring-white/10"
                         />
                       ))}
                     </div>
                   </div>
                 )}
                 
-                {/* Delete button */}
+                {/* Delete button - better touch target */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onDelete();
                   }}
-                  className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-red-400 hover:text-red-300 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 text-xs sm:text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all"
                 >
-                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
                   Remove Event
@@ -248,12 +248,13 @@ const TimelineEventCard: React.FC<{
           </AnimatePresence>
         </div>
         
-        {/* Expand indicator */}
+        {/* Expand indicator - always visible on mobile, hover on desktop */}
         <motion.div 
           animate={{ rotate: isExpanded ? 180 : 0 }}
-          className="absolute bottom-2 right-2 p-1 text-[#6B7280] opacity-0 group-hover:opacity-100 transition-opacity"
+          transition={{ duration: 0.2 }}
+          className="absolute bottom-2 right-2 sm:bottom-3 sm:right-3 p-1.5 rounded-full bg-[#2a2a2a]/60 text-[#8F8F8F] opacity-60 sm:opacity-0 group-hover:opacity-100 transition-all"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </motion.div>
@@ -570,12 +571,12 @@ const GamingExplorerTimeline: React.FC<GamingExplorerTimelineProps> = ({ user: _
 
         {/* Timeline */}
         {hasEvents && (
-          <div className="relative px-4 sm:px-6 py-6">
-            {/* Vertical Timeline Line */}
-            <div className="absolute left-[22px] sm:left-9 top-0 bottom-0 flex flex-col items-center">
+          <div className="relative px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
+            {/* Vertical Timeline Line - adjusted for new layout */}
+            <div className="absolute left-[18px] sm:left-[34px] lg:left-[42px] top-0 bottom-0 flex flex-col items-center">
               {/* Gradient line with glow effect */}
-              <div className="w-0.5 sm:w-[3px] h-full rounded-full bg-gradient-to-b from-[#E53A3A] via-[#E53A3A]/50 via-40% to-[#2a2a2a] relative">
-                <div className="absolute inset-0 w-full h-full bg-gradient-to-b from-[#E53A3A] via-[#E53A3A]/30 to-transparent blur-sm opacity-60" />
+              <div className="w-0.5 sm:w-[2px] h-full rounded-full bg-gradient-to-b from-[#E53A3A] via-[#E53A3A]/40 via-50% to-[#2a2a2a]/60 relative">
+                <div className="absolute inset-0 w-full h-full bg-gradient-to-b from-[#E53A3A] via-[#E53A3A]/20 to-transparent blur-sm opacity-50" />
               </div>
             </div>
 
@@ -589,7 +590,7 @@ const GamingExplorerTimeline: React.FC<GamingExplorerTimelineProps> = ({ user: _
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     onClick={() => setShowOnlyEventYears(false)}
-                    className="mb-4 ml-12 sm:ml-[72px] inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-[#8F8F8F] hover:text-[#F5F5F5] bg-[#1C1C1C] hover:bg-[#252525] border border-[#424242]/40 rounded-lg transition-all"
+                    className="mb-4 ml-10 sm:ml-16 lg:ml-[72px] inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-[#8F8F8F] hover:text-[#F5F5F5] bg-[#1C1C1C] hover:bg-[#252525] border border-[#424242]/40 rounded-lg transition-all"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -618,28 +619,28 @@ const GamingExplorerTimeline: React.FC<GamingExplorerTimelineProps> = ({ user: _
                     key={year} 
                     id={`timeline-year-${year}`} 
                     data-year={year}
-                    className="mb-4"
+                    className="mb-3 sm:mb-4"
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <div className="relative flex items-center h-8 group">
+                    <div className="relative flex items-center h-9 sm:h-10 group">
                       {/* Empty year dot */}
-                      <div className="absolute left-[14px] sm:left-[27px] w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[#2a2a2a] border-2 border-[#424242] flex items-center justify-center">
-                        <div className="w-1.5 h-1.5 rounded-full bg-[#6B7280]" />
+                      <div className="absolute left-[8px] sm:left-[20px] w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[#2a2a2a] ring-2 ring-[#424242]/60 flex items-center justify-center">
+                        <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-[#6B7280]" />
                       </div>
-                      <span className="ml-12 sm:ml-[72px] text-lg font-medium text-[#6B7280] min-w-[52px]">{year}</span>
+                      <span className="ml-10 sm:ml-16 lg:ml-[72px] text-base sm:text-lg font-medium text-[#6B7280] min-w-[48px]">{year}</span>
                       <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
                         onClick={() => {
                           setAddEventYear(year);
                           setShowAddModal(true);
                         }}
-                        className="ml-4 inline-flex items-center justify-center gap-1.5 px-3 h-8 min-w-[44px] sm:min-w-[110px] bg-[#1C1C1C] hover:bg-gradient-to-r hover:from-[#E53A3A] hover:to-[#D98C1F] text-[#8F8F8F] hover:text-white text-sm font-medium rounded-lg transition-all border border-[#424242]/40 hover:border-transparent"
+                        className="ml-3 sm:ml-4 inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 h-7 sm:h-8 min-w-[40px] sm:min-w-[100px] bg-[#1C1C1C]/80 hover:bg-gradient-to-r hover:from-[#E53A3A] hover:to-[#D98C1F] text-[#8F8F8F] hover:text-white text-xs sm:text-sm font-medium rounded-lg transition-all border border-[#424242]/30 hover:border-transparent opacity-60 group-hover:opacity-100"
                       >
-                        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
                         <span className="hidden sm:inline">Add Event</span>
@@ -662,44 +663,44 @@ const GamingExplorerTimeline: React.FC<GamingExplorerTimelineProps> = ({ user: _
                   transition={{ duration: 0.2 }}
                 >
                   {/* Year Header - Enhanced */}
-                  <div className="relative flex items-center h-8 mb-6">
+                  <div className="relative flex items-center h-10 sm:h-12 mb-4 sm:mb-5">
                     <motion.div 
                       initial={{ scale: 0 }}
                       whileInView={{ scale: 1 }}
                       viewport={{ once: true }}
-                      className="absolute left-[10px] sm:left-[21px] flex items-center justify-center"
+                      className="absolute left-[6px] sm:left-[18px] flex items-center justify-center"
                     >
                       {/* Outer glow */}
-                      <div className={`absolute w-8 h-8 sm:w-9 sm:h-9 rounded-full ${
+                      <div className={`absolute w-7 h-7 sm:w-8 sm:h-8 rounded-full ${
                         hasEventsThisYear 
                           ? 'bg-gradient-to-r from-[#E53A3A]/30 to-[#D98C1F]/30 blur-md' 
                           : 'bg-[#424242]/20 blur-sm'
                       }`} />
                       {/* Main circle */}
-                      <div className={`relative w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center border-[3px] border-[#1a1a1a] ${
+                      <div className={`relative w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center ring-[3px] ring-[#1a1a1a] ${
                         hasEventsThisYear 
                           ? 'bg-gradient-to-br from-[#E53A3A] to-[#D98C1F]' 
-                          : 'bg-[#2a2a2a] border-[#424242]'
+                          : 'bg-[#2a2a2a] ring-[#424242]'
                       }`}
-                      style={hasEventsThisYear ? { boxShadow: '0 0 16px rgba(229, 58, 58, 0.5)' } : {}}
+                      style={hasEventsThisYear ? { boxShadow: '0 0 14px rgba(229, 58, 58, 0.4)' } : {}}
                       >
-                        <div className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full ${hasEventsThisYear ? 'bg-white' : 'bg-[#6B7280]'}`} />
+                        <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${hasEventsThisYear ? 'bg-white' : 'bg-[#6B7280]'}`} />
                       </div>
                     </motion.div>
-                    <h3 className="ml-12 sm:ml-[72px] text-xl sm:text-2xl font-bold text-[#F5F5F5] min-w-[52px]">{year}</h3>
+                    <h3 className="ml-10 sm:ml-16 lg:ml-[72px] text-lg sm:text-xl lg:text-2xl font-bold text-[#F5F5F5] min-w-[48px]">{year}</h3>
                     
                     {/* Add Event Button for this year */}
                     <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
                       onClick={() => {
                         setAddEventYear(year);
                         setShowAddModal(true);
                       }}
-                      className="ml-4 inline-flex items-center justify-center gap-1.5 px-3 h-8 min-w-[44px] sm:min-w-[110px] bg-[#1C1C1C] hover:bg-gradient-to-r hover:from-[#E53A3A] hover:to-[#D98C1F] text-[#8F8F8F] hover:text-white text-sm font-medium rounded-lg transition-all border border-[#424242]/40 hover:border-transparent"
+                      className="ml-3 sm:ml-4 inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 h-7 sm:h-8 min-w-[40px] sm:min-w-[100px] bg-[#1C1C1C]/80 hover:bg-gradient-to-r hover:from-[#E53A3A] hover:to-[#D98C1F] text-[#8F8F8F] hover:text-white text-xs sm:text-sm font-medium rounded-lg transition-all border border-[#424242]/30 hover:border-transparent"
                       title={`Add event to ${year}`}
                     >
-                      <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                       </svg>
                       <span className="hidden sm:inline">Add Event</span>
@@ -707,15 +708,15 @@ const GamingExplorerTimeline: React.FC<GamingExplorerTimelineProps> = ({ user: _
                     
                     {/* Event count badge */}
                     {hasEventsThisYear && (
-                      <span className="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-[#424242] text-[#CFCFCF]">
-                        {yearEvents.length} event{yearEvents.length > 1 ? 's' : ''}
+                      <span className="ml-2 px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium rounded-full bg-[#424242]/60 text-[#CFCFCF]">
+                        {yearEvents.length}
                       </span>
                     )}
                   </div>
 
                   {/* Events */}
                   {hasEventsThisYear ? (
-                    <div className="space-y-4 ml-12 sm:ml-[72px]">
+                    <div className="space-y-3 sm:space-y-4 ml-10 sm:ml-16 lg:ml-[72px]">
                       {yearEvents.map((event) => (
                         <TimelineEventCard
                           key={event.id}
@@ -727,7 +728,7 @@ const GamingExplorerTimeline: React.FC<GamingExplorerTimelineProps> = ({ user: _
                       ))}
                     </div>
                   ) : (
-                    <p className="ml-12 sm:ml-[72px] text-[#6B7280] text-sm italic flex items-center gap-2">
+                    <p className="ml-10 sm:ml-16 lg:ml-[72px] text-[#6B7280] text-sm italic flex items-center gap-2">
                       <span className="w-6 h-px bg-[#424242]" />
                       No events recorded - click + to add
                     </p>
@@ -747,7 +748,7 @@ const GamingExplorerTimeline: React.FC<GamingExplorerTimelineProps> = ({ user: _
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     onClick={() => setShowOnlyEventYears(true)}
-                    className="mt-4 ml-12 sm:ml-[72px] inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-[#8F8F8F] hover:text-[#F5F5F5] bg-[#1C1C1C] hover:bg-[#252525] border border-[#424242]/40 rounded-lg transition-all"
+                    className="mt-4 ml-10 sm:ml-16 lg:ml-[72px] inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-[#8F8F8F] hover:text-[#F5F5F5] bg-[#1C1C1C] hover:bg-[#252525] border border-[#424242]/40 rounded-lg transition-all"
                   >
                     <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />

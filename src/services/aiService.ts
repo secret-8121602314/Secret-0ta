@@ -15,6 +15,7 @@ import { supabase } from '../lib/supabase';
 import { ConversationService } from './conversationService';
 import { behaviorService } from './ai/behaviorService';
 import { correctionService } from './ai/correctionService';
+import { groundingControlService, type GroundingQueryType } from './groundingControlService';
 
 // ? SECURITY FIX: Use Edge Function proxy instead of exposed API key
 const USE_EDGE_FUNCTION = true; // Set to true to use secure server-side proxy
@@ -485,11 +486,39 @@ class AIService {
       }
       const { cleanContent, tags } = parseOtakonTags(rawContent);
 
+      // Build gamePillData from OTAKON tags if game was detected
+      const gameId = tags.get('GAME_ID') as string | undefined;
+      const gameTitle = tags.get('GAME_TITLE') as string | undefined;
+      const genre = tags.get('GENRE') as string | undefined;
+      const gameStatus = tags.get('GAME_STATUS') as string | undefined;
+      const confidence = tags.get('CONFIDENCE') as string | undefined;
+      
+      let gamePillData: AIResponse['gamePillData'] | undefined;
+      if (gameId || gameTitle) {
+        // Determine if we should create a new tab:
+        // 1. Always create if in Game Hub
+        // 2. Create if detected game is different from current game tab
+        // 3. Don't create if in game tab (including unreleased) and same game
+        const detectedGameName = gameId || gameTitle || '';
+        const isDifferentGame = conversation.gameTitle && 
+          detectedGameName.toLowerCase() !== conversation.gameTitle.toLowerCase();
+        
+        gamePillData = {
+          shouldCreate: conversation.isGameHub || isDifferentGame,
+          gameName: detectedGameName,
+          genre: genre || 'Action RPG',
+          wikiContent: {}, // Empty for now - will be populated by generateInitialInsights
+          confidence: confidence === 'high' ? 0.9 : 0.6,
+          gameStatus: gameStatus
+        };
+      }
+
       const aiResponse: AIResponse = {
         content: cleanContent,
         suggestions: [],
         otakonTags: tags,
         rawContent: rawContent,
+        gamePillData,
         metadata: {
           model: 'gemini-flash',
           timestamp: Date.now(),
@@ -615,6 +644,8 @@ class AIService {
    * Enhanced method to get AI chat response with structured data
    * Returns enhanced AIResponse with optional fields for better integration
    * Falls back to OTAKON_TAG parsing if JSON mode fails
+   * 
+   * @param igdbReleaseDate - Optional IGDB first_release_date (Unix seconds) for accurate post-cutoff detection
    */
   public async getChatResponseWithStructure(
     conversation: Conversation,
@@ -623,7 +654,8 @@ class AIService {
     isActiveSession: boolean,
     hasImages: boolean = false,
     imageData?: string,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
+    igdbReleaseDate?: number | null
   ): Promise<AIResponse> {
     // Create cache key for this request - use full message hash to avoid collisions
     const hashString = (str: string) => {
@@ -746,7 +778,33 @@ In addition to your regular response, provide structured data in the following o
    - GAME HUB MODE: Generate follow-ups about the SPECIFIC games/topics you just discussed
    - Example: If you explained a game's story, ask about specific characters or plot points from that game
    - DO NOT use generic gaming questions - tie them to what you just said`}
-2. **progressiveInsightUpdates** (array): If conversation provides new info, update existing subtabs (e.g., story_so_far, characters)
+2. **progressiveInsightUpdates** (array): ${!conversation.isGameHub ? `
+   **MANDATORY FOR GAME TABS**: Update subtabs when the conversation reveals new information!
+   
+   WHEN TO UPDATE SUBTABS:
+   - User defeats a boss/enemy → Update "story_so_far" with new progress
+   - User asks about story/lore → Update "story_so_far" or "game_lore"  
+   - User discovers an area → Update "points_of_interest" or "hidden_paths"
+   - User asks about builds/stats → Update "build_optimization" or "build_guide"
+   - User mentions items/gear → Update "missed_items" or relevant strategy tab
+   - User asks about quests → Update "quest_log" or "quest_guide"
+   - User discusses NPCs → Update "npc_interactions" or "npc_questlines"
+   - User shares progress screenshots → Update relevant tabs with what's shown
+   
+   AVAILABLE SUBTAB IDs (use these exact IDs):
+   story_so_far, game_lore, missed_items, build_guide, quest_log, build_optimization,
+   boss_strategy, hidden_paths, points_of_interest, npc_interactions, pro_tips,
+   combat_strategies, quest_guide, lore_exploration, exploration_tips
+   
+   FORMAT:
+   [{ "tabId": "story_so_far", "title": "Story So Far", "content": "Updated content here..." }]
+   
+   CONTENT GUIDELINES:
+   - Write 1-2 paragraphs of relevant, specific information
+   - Include details from what was just discussed
+   - Use markdown formatting (bold, bullets, etc.)
+   - Keep content game-specific and actionable
+   ` : 'Not applicable for Game Hub - subtabs exist only in game-specific tabs'}
 3. **stateUpdateTags** (array of strings): Track game state changes. ALWAYS include these for game conversations:
    - "PROGRESS: XX" (0-100) - **REQUIRED for game tabs**: Estimate player's game completion percentage
      * Consider: story chapter/act, areas unlocked, bosses defeated, main quest progress, abilities obtained
@@ -795,21 +853,32 @@ In addition to your regular response, provide structured data in the following o
     }
     
     try {
-      // ? NEW: Also use grounding for structured requests when appropriate
-      const needsWebSearch = 
-        userMessage.toLowerCase().includes('release') ||
-        userMessage.toLowerCase().includes('new games') ||
-        userMessage.toLowerCase().includes('latest') ||
-        userMessage.toLowerCase().includes('news') ||
-        userMessage.toLowerCase().includes('announced') ||
-        userMessage.toLowerCase().includes('update') ||
-        userMessage.toLowerCase().includes('patch') ||
-        userMessage.toLowerCase().includes('current') ||
-        userMessage.toLowerCase().includes('recent') ||
-        (conversation.gameTitle && (
-          conversation.gameTitle.toLowerCase().includes('2025') ||
-          conversation.gameTitle.toLowerCase().includes('2024')
-        ));
+      // 🎯 COST OPTIMIZATION: Tier-aware grounding control
+      // Instead of expensive web searches for every query, leverage Gemini's training knowledge
+      // Web search only for: latest news (free: 4x/mo), patch notes, release dates (pro+)
+      let useGrounding = false;
+      let groundingQueryType: GroundingQueryType = 'general_knowledge';
+      
+      if (user?.authUserId) {
+        const groundingCheck = await groundingControlService.checkGroundingEligibility(
+          user.authUserId,
+          user.tier,
+          userMessage,
+          conversation.gameTitle,
+          igdbReleaseDate // Pass IGDB release date for accurate post-cutoff detection
+        );
+        useGrounding = groundingCheck.useGrounding;
+        groundingQueryType = groundingCheck.queryType;
+        
+        console.log('🔍 [AIService] Grounding eligibility:', {
+          tier: user.tier,
+          queryType: groundingQueryType,
+          useGrounding,
+          reason: groundingCheck.reason,
+          remaining: groundingCheck.remainingQuota,
+          igdbReleaseDate: igdbReleaseDate ? new Date(igdbReleaseDate * 1000).toISOString() : 'N/A'
+        });
+      }
       
       // ? SECURITY: Use Edge Function for structured responses
       if (USE_EDGE_FUNCTION) {
@@ -821,9 +890,8 @@ In addition to your regular response, provide structured data in the following o
 
         const modelName = 'gemini-2.5-flash';
         
-        // ? Enable Google Search grounding for current game information
-        // Works with both text and images in Gemini 2.5
-        const tools = needsWebSearch
+        // 🎯 Enable Google Search grounding ONLY when tier-approved
+        const tools = useGrounding
           ? [{ google_search: {} }]  // ? Gemini 2.5 syntax, works for images too
           : [];
 
@@ -846,6 +914,13 @@ In addition to your regular response, provide structured data in the following o
 
         if (!edgeResponse.success) {
           throw new Error(edgeResponse.response || 'AI request failed');
+        }
+        
+        // 🎯 Track grounding usage if it was used
+        if (useGrounding && user?.authUserId) {
+          groundingControlService.incrementGroundingUsage(user.authUserId).catch(err => {
+            console.warn('[AIService] Failed to track grounding usage:', err);
+          });
         }
 
         const rawContent = edgeResponse.response;
@@ -920,14 +995,14 @@ In addition to your regular response, provide structured data in the following o
         return aiResponse;
       }
 
-      // Legacy: Direct API mode
-      // ? ENHANCEMENT: Enable grounding for both text and images in Gemini 2.5
-      const modelToUse = needsWebSearch
+      // Legacy: Direct API mode (when Edge Function is disabled)
+      // Use the same grounding decision from above
+      const modelToUse = useGrounding
         ? this.flashModelWithGrounding 
         : this.flashModel;
       
-      if (needsWebSearch) {
-        console.log('?? [AIService] Using Google Search grounding for structured response:', {
+      if (useGrounding) {
+        console.log('🔍 [AIService] Using Google Search grounding for structured response:', {
           gameTitle: conversation.gameTitle,
           query: userMessage.substring(0, 50) + '...',
           hasImages: hasImages
@@ -1335,7 +1410,7 @@ In addition to your regular response, provide structured data in the following o
       
       if (recoveryAction.type === 'retry') {
         errorRecoveryService.incrementRetryCount(context);
-        return this.getChatResponseWithStructure(conversation, user, userMessage, isActiveSession, hasImages, imageData, abortSignal);
+        return this.getChatResponseWithStructure(conversation, user, userMessage, isActiveSession, hasImages, imageData, abortSignal, igdbReleaseDate);
       } else if (recoveryAction.type === 'user_notification') {
         errorRecoveryService.resetRetryCount(context);
         return {
@@ -1363,13 +1438,15 @@ In addition to your regular response, provide structured data in the following o
     gameTitle: string, 
     genre: string,
     playerProfile?: PlayerProfile,
-    conversationContext?: string // ? NEW: Actual conversation messages for context-aware generation
+    conversationContext?: string, // ? Actual conversation messages for context-aware generation
+    gameProgress?: number // ? NEW: Player's game completion percentage for progress-aware subtabs
   ): Promise<Record<string, string>> {
-    // ? CRITICAL: Use conversation context in cache key if provided
+    // ? CRITICAL: Use conversation context AND progress in cache key
     const contextHash = conversationContext 
       ? conversationContext.substring(0, 50).replace(/[^a-z0-9]/gi, '') 
       : 'default';
-    const cacheKey = `insights_${gameTitle.toLowerCase().replace(/\s+/g, '-')}_${contextHash}`;
+    const progressKey = gameProgress !== undefined ? `_p${gameProgress}` : '';
+    const cacheKey = `insights_${gameTitle.toLowerCase().replace(/\s+/g, '-')}_${contextHash}${progressKey}`;
     
     // Check cache first
     const cachedInsights = await cacheService.get<Record<string, string>>(cacheKey);
@@ -1391,12 +1468,45 @@ In addition to your regular response, provide structured data in the following o
       ? `\nConversation Context:\n${conversationContext}\n\n? USE THIS CONTEXT to generate relevant subtab content based on what was discussed!\n` 
       : '';
 
+    // ? CRITICAL: Build progress-aware guidance for subtab content
+    const progress = gameProgress ?? 0;
+    const progressSection = `
+PLAYER PROGRESS: ${progress}% completion
+${progress < 20 ? `⚠️ EARLY GAME (${progress}%): Player is just starting out.
+- Focus on basics, fundamentals, and getting-started content
+- Avoid spoilers for mid-game or late-game content
+- Explain core mechanics and beginner-friendly strategies
+- For story tabs: Only cover introductory/prologue content
+- For build tabs: Focus on early-game accessible options` : ''}
+${progress >= 20 && progress < 50 ? `📈 MID-EARLY GAME (${progress}%): Player has learned basics.
+- Can discuss intermediate mechanics and strategies
+- Reference early-game content they've experienced
+- Still avoid major mid-late game spoilers
+- For story tabs: Cover content through ~1/3 of the game
+- For build tabs: Include some mid-tier options and upgrades` : ''}
+${progress >= 50 && progress < 75 ? `🎯 MID-LATE GAME (${progress}%): Player is experienced.
+- Discuss advanced strategies and optimizations
+- Can reference most story elements they've seen
+- For story tabs: Cover content through ~2/3 of the game
+- For build tabs: Focus on powerful late-game setups
+- Still avoid endgame/final boss spoilers` : ''}
+${progress >= 75 ? `🏆 LATE/END GAME (${progress}%): Player is nearing completion.
+- Can discuss endgame content, final challenges
+- Reference full story elements (still avoid major twists if <90%)
+- For story tabs: Full story coverage appropriate
+- For build tabs: Focus on end-game optimization and post-game content
+- Can mention secret areas and hidden challenges` : ''}
+
+CRITICAL: Generate ALL subtab content appropriate to the player's ${progress}% progress level. NEVER spoil content ahead of their progress!`;
+
     const prompt = `
 You are a gaming assistant generating initial content for ${gameTitle} (${genre} game).
 
 Player Profile:
 ${profileContext}
 ${contextSection}
+${progressSection}
+
 Instructions for each tab:
 ${instructions}
 
@@ -1406,6 +1516,7 @@ CRITICAL ACCURACY RULES (MUST FOLLOW):
 3. NEVER confuse characters within the same game - if a character is mentioned, only describe what is explicitly known from context.
 4. NEVER invent character details, relationships, or plot points not provided in the context.
 5. If context is insufficient, provide general genre-appropriate guidance rather than inventing specifics.
+6. ALWAYS respect the player's progress level (${progress}%) - never spoil ahead!
 
 CRITICAL FORMATTING RULES:
 1. Return ONLY valid JSON, nothing else (no markdown fences, no explanations)
@@ -1536,6 +1647,17 @@ NOW generate COMPREHENSIVE valid JSON for ALL these tab IDs (MUST include every 
             return acc;
           }, {} as Record<string, string>);
         }
+      }
+
+      // ? CRITICAL: Ensure ALL subtabs have content
+      const configForValidation = insightTabsConfig[genre] || insightTabsConfig['Default'];
+      const missingAfterParse = configForValidation.filter(tab => !insights[tab.id] || insights[tab.id].trim().length < 20);
+      if (missingAfterParse.length > 0) {
+        console.error(`🔧 [generateInitialInsights] Filling ${missingAfterParse.length} missing/empty subtabs with fallback`);
+        missingAfterParse.forEach(tab => {
+          const progressHint = progress < 20 ? 'early-game' : progress < 50 ? 'mid-game' : progress >= 75 ? 'late-game' : 'mid-to-late-game';
+          insights[tab.id] = `**${tab.title}** for ${gameTitle}\n\nBased on your ${progressHint} progress (${progress}%), here's what you should know:\n\n${tab.instruction}\n\nChat with Otakon to populate this section with specific insights!`;
+        });
       }
 
       // Cache for 24 hours

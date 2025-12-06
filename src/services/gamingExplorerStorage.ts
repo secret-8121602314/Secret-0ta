@@ -14,6 +14,7 @@
  */
 
 import { IGDBGameData } from './igdbService';
+import { triggerGameKnowledgeFetch } from './gameKnowledgeFetcher';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -226,6 +227,15 @@ export const libraryStorage = {
   },
 
   /**
+   * Get a game by title (case-insensitive) - useful when only game title is known
+   */
+  getByGameTitle(gameTitle: string): GameLibraryItem | undefined {
+    const all = this.getAll();
+    const normalizedTitle = gameTitle.toLowerCase().trim();
+    return all.find(item => item.gameName.toLowerCase().trim() === normalizedTitle);
+  },
+
+  /**
    * Check if a game is in any library category
    */
   getGameCategories(igdbGameId: number): LibraryCategory[] {
@@ -293,6 +303,13 @@ export const libraryStorage = {
     all.push(newItem);
     safeSetItem(STORAGE_KEYS.LIBRARY, all);
     this.updateStats();
+    
+    // 🎮 BACKGROUND KNOWLEDGE FETCH: When game is added as "owned", 
+    // trigger non-blocking Gemini call to fetch game knowledge
+    if (category === 'own') {
+      triggerGameKnowledgeFetch(igdbGameId, gameName);
+    }
+    
     return newItem;
   },
 

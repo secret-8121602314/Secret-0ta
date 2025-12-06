@@ -28,6 +28,12 @@ declare module '*.svg' {
   export default value;
 }
 
+declare module 'rehype-raw' {
+  import { Plugin } from 'unified';
+  const rehypeRaw: Plugin;
+  export default rehypeRaw;
+}
+
 declare module '*.jpg' {
   const value: string;
   export default value;

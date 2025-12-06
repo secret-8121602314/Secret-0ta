@@ -37,12 +37,19 @@ async function convertPngToWebp(pngPath) {
     }
   }
   try {
+    // First validate the image can be read
+    const metadata = await sharp(pngPath).metadata();
+    if (!metadata.width || !metadata.height) {
+      console.log(`[SKIP] ${pngPath} - unable to read image metadata, keeping original PNG`);
+      return;
+    }
     await sharp(pngPath)
       .webp({ quality: 82 })
       .toFile(webpPath);
     console.log(`[OK] Converted: ${pngPath} -> ${webpPath}`);
   } catch (err) {
-    console.error(`[ERROR] Failed to convert ${pngPath}:`, err);
+    // Silently skip files that can't be converted - they'll be served as PNG
+    console.log(`[SKIP] ${pngPath} - format not supported by sharp, keeping original PNG`);
   }
 }
 

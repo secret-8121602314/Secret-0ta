@@ -404,10 +404,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   // Two-step command flow: first select tab, then select command
   const [selectedTab, setSelectedTab] = useState<{ id: string; title: string } | null>(null);
   const [commandStep, setCommandStep] = useState<'selectTab' | 'selectCommand'>('selectTab');
-  // Mobile: collapsed by default, Desktop: expanded by default
-  const [isQuickActionsExpanded, setIsQuickActionsExpanded] = useState(() => {
-    return window.innerWidth > 640; // Collapsed on mobile (<=640px), expanded on desktop
-  });
+  // Always start collapsed - users can expand if they want
+  const [isQuickActionsExpanded, setIsQuickActionsExpanded] = useState(false);
   // Track if subtabs are expanded to control chat scrollbar visibility
   const [_isSubtabsExpanded, setIsSubtabsExpanded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -674,6 +672,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   }, [isSidebarOpen]);
 
+  // ✅ FIX: Ensure quick actions is collapsed on conversation change/page refresh
+  useEffect(() => {
+    setIsQuickActionsExpanded(false);
+  }, [conversation?.id]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -907,10 +910,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               >
               <div className="grid grid-cols-2 gap-2 p-3 rounded-xl bg-[#1C1C1C]/95 backdrop-blur-md border border-[#424242]/60 shadow-2xl">
                 {[
-                  { text: "What's the latest gaming news?", shape: "✕" },
-                  { text: "Which games are releasing soon?", shape: "■" },
-                  { text: "What are the latest game reviews?", shape: "▲" },
-                  { text: "Show me the hottest new game trailers.", shape: "◯" }
+                  { text: "What's the latest gaming news?", shape: "cross" },
+                  { text: "Which games are releasing soon?", shape: "square" },
+                  { text: "What are the latest game reviews?", shape: "triangle" },
+                  { text: "Show me the hottest new game trailers.", shape: "circle" }
                 ].map((prompt) => (
                   <button
                     key={prompt.text}
@@ -919,12 +922,34 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       onSuggestedPromptClick?.(prompt.text);
                     }}
                     disabled={isLoading}
-                    className="group relative px-3 py-3 rounded-xl bg-gradient-to-br from-[#1C1C1C] to-[#0F0F0F] hover:from-[#252525] hover:to-[#1A1A1A] border border-[#424242]/30 hover:border-[#E53A3A]/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-left overflow-hidden"
+                    className="group relative px-3 py-3 rounded-xl bg-gradient-to-br from-[#1C1C1C] to-[#0F0F0F] hover:from-[#252525] hover:to-[#1A1A1A] border border-[#424242]/30 hover:border-[#E53A3A]/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-left overflow-hidden min-h-[88px]"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-[#E53A3A]/10 to-[#FF6B35]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                    <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-2">
-                      <span className="text-lg flex-shrink-0 text-[#E53A3A] font-bold leading-none">{prompt.shape}</span>
-                      <span className="text-xs sm:text-sm text-[#E5E5E5] font-medium group-hover:text-white transition-colors leading-tight">
+                    <div className="relative flex flex-col items-start justify-start h-full gap-2">
+                      {/* PlayStation-style icons - aligned to left */}
+                      <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center">
+                        {prompt.shape === "cross" && (
+                          <svg className="w-5 h-5 text-[#E53A3A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                            <path d="M18 6L6 18M6 6l12 12" />
+                          </svg>
+                        )}
+                        {prompt.shape === "square" && (
+                          <svg className="w-5 h-5 text-[#E53A3A]" viewBox="0 0 24 24" fill="currentColor">
+                            <rect x="4" y="4" width="16" height="16" rx="1" />
+                          </svg>
+                        )}
+                        {prompt.shape === "triangle" && (
+                          <svg className="w-5 h-5 text-[#E53A3A]" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 4L22 20H2L12 4Z" />
+                          </svg>
+                        )}
+                        {prompt.shape === "circle" && (
+                          <svg className="w-5 h-5 text-[#E53A3A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                            <circle cx="12" cy="12" r="8" />
+                          </svg>
+                        )}
+                      </div>
+                      <span className="text-xs text-[#E5E5E5] font-medium group-hover:text-white transition-colors leading-tight text-left">
                         {prompt.text}
                       </span>
                     </div>

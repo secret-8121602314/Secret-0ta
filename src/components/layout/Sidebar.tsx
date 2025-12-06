@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { Conversations, Conversation } from '../../types';
+import { Conversations, Conversation, UserTier } from '../../types';
 import ContextMenu from '../ui/ContextMenu';
+import Logo from '../ui/Logo';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -14,6 +15,8 @@ interface SidebarProps {
   onClearConversation?: (id: string) => void;
   onAddGame?: () => void;
   onOpenExplorer?: () => void;
+  userTier?: UserTier;
+  isOnTrial?: boolean;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -28,6 +31,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   onClearConversation,
   onAddGame,
   onOpenExplorer,
+  userTier,
+  isOnTrial = false,
 }) => {
   // Context menu state
   const [contextMenu, setContextMenu] = useState<{
@@ -168,22 +173,26 @@ const Sidebar: React.FC<SidebarProps> = ({
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`} style={{ zIndex: 60 }}>
         <div className="flex flex-col h-full">
-          {/* Header with Explorer Button */}
-          <div className="p-4 sm:p-6 border-b border-surface-light/20 flex-shrink-0 relative" style={{ zIndex: 10 }}>
-            <div className="flex items-center justify-between gap-2 mb-4">
-              {/* Explorer/Home Button - Larger and Responsive */}
+          {/* Header with Explorer Button - matches main header padding */}
+          <div className="px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-6 border-b border-surface-light/20 flex-shrink-0 relative" style={{ zIndex: 10 }}>
+            <div className="flex items-center justify-between gap-2">
+              {/* Explorer/HQ Button - Gaming-centric design */}
               {onOpenExplorer ? (
                 <button
                   onClick={onOpenExplorer}
-                  className="group flex-1 flex items-center gap-3 px-4 py-3 sm:py-3.5 bg-[#1A1A1A] hover:bg-[#242424] rounded-xl transition-all border border-[#424242]/40 hover:border-[#E53A3A]/40 min-h-[48px] sm:min-h-[52px]"
+                  className="group flex-1 flex items-center gap-3 px-4 py-2.5 sm:px-5 sm:py-3 bg-gradient-to-r from-[#1A1A1A] to-[#141414] hover:from-[#E53A3A]/10 hover:to-[#D98C1F]/10 rounded-xl transition-all duration-300 border border-[#424242]/40 hover:border-[#E53A3A]/60 hover:shadow-[0_0_20px_rgba(229,58,58,0.15)]"
                 >
-                  {/* Otagon Logo Icon */}
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-[#E53A3A] to-[#D98C1F] flex items-center justify-center shadow-lg flex-shrink-0">
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                    </svg>
+                  {/* Tier-based Logo Icon */}
+                  <Logo 
+                    size="sm" 
+                    userTier={userTier} 
+                    isOnTrial={isOnTrial}
+                    className="flex-shrink-0"
+                  />
+                  <div className="flex flex-col items-start">
+                    <span className="text-base sm:text-lg font-bold bg-gradient-to-r from-[#F5F5F5] to-[#CFCFCF] group-hover:from-[#FF6B6B] group-hover:to-[#FFAB40] bg-clip-text text-transparent transition-all duration-300">HQ</span>
+                    <span className="text-[10px] sm:text-xs text-neutral-500 group-hover:text-neutral-400 transition-colors">Command Center</span>
                   </div>
-                  <span className="text-base sm:text-lg font-semibold text-[#F5F5F5] group-hover:text-white transition-colors">Home</span>
                 </button>
               ) : (
                 <h2 className="text-xl sm:text-2xl font-bold text-text-primary flex-1">Conversations</h2>
@@ -201,7 +210,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Add Game Button */}
           {onAddGame && (
-            <div className="px-4 sm:px-6 pt-4 pb-2">
+            <div className="px-3 sm:px-4 lg:px-6 pt-4 pb-0">
               <button
                 onClick={onAddGame}
                 className="w-full px-4 py-3 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] md:hover:from-[#D42A2A] md:hover:to-[#C87A1A] text-white font-medium rounded-lg transition-all shadow-lg md:hover:shadow-xl active:scale-95 flex items-center justify-center gap-2"
@@ -215,8 +224,8 @@ const Sidebar: React.FC<SidebarProps> = ({
           )}
 
           {/* Conversation List */}
-          <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-4 sm:pb-6 custom-scrollbar" style={{ minHeight: 0, maxHeight: '100%' }}>
-            <div className="space-y-2 sm:space-y-3 pt-2">
+          <div className="flex-1 overflow-y-auto px-3 sm:px-4 lg:px-6 pt-4 pb-3 sm:pb-4 lg:pb-6" style={{ minHeight: 0, maxHeight: '100%' }}>
+            <div className="space-y-4">
               {conversationList.map((conversation) => {
                 const isGameHub = conversation.isGameHub || conversation.id === 'game-hub' || conversation.title === 'Game Hub';
                 const isUnreleased = conversation.isUnreleased || false;

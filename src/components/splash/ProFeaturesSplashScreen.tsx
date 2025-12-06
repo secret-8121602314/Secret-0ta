@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { HandsFreeIcon } from '../ui/HandsFreeIcon';
 import KeyboardIcon from '../ui/KeyboardIcon';
+import { AppLoadingScreen } from '../ui/AppLoadingScreen';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ProFeaturesSplashScreenProps {
@@ -51,11 +52,7 @@ const ProFeaturesSplashScreen: React.FC<ProFeaturesSplashScreenProps> = ({ onCom
   }, []);
 
   if (!isMounted) {
-    return (
-      <div className="h-screen bg-gradient-to-br from-[#111111] to-[#0A0A0A] flex items-center justify-center">
-        <div className="animate-pulse text-[#FFAB40]">Loading...</div>
-      </div>
-    );
+    return <AppLoadingScreen size="md" />;
   }
 
   const currentFeatures = activeTab === 'pro' ? proFeatures : vanguardFeatures;

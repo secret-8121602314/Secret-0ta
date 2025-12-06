@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { authService } from '../../services/authService';
+import { AppLoadingScreen } from '../ui/AppLoadingScreen';
 
 interface AuthCallbackProps {
   onAuthSuccess: () => void;
@@ -210,14 +211,7 @@ const AuthCallback: React.FC<AuthCallbackProps> = ({ onAuthSuccess, onAuthError 
   }, []); // Empty deps - only run once on mount
 
   if (status === 'loading') {
-    return (
-      <div className="h-screen bg-gradient-to-br from-[#111111] to-[#0A0A0A] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF4D4D] mx-auto mb-4"></div>
-          <p className="text-[#CFCFCF] text-lg">Completing authentication...</p>
-        </div>
-      </div>
-    );
+    return <AppLoadingScreen size="md" />;
   }
 
   if (status === 'error') {
@@ -258,15 +252,7 @@ const AuthCallback: React.FC<AuthCallbackProps> = ({ onAuthSuccess, onAuthError 
     );
   }
 
-  return (
-    <div className="h-screen bg-gradient-to-br from-[#111111] to-[#0A0A0A] flex items-center justify-center">
-      <div className="text-center">
-        <div className="text-green-500 text-6xl mb-4">✅</div>
-        <h2 className="text-2xl font-bold text-[#F5F5F5] mb-2">Authentication Successful</h2>
-        <p className="text-[#CFCFCF]">Redirecting to the app...</p>
-      </div>
-    </div>
-  );
+  return <AppLoadingScreen size="md" />;
 };
 
 export default AuthCallback;

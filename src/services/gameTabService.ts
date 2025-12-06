@@ -168,10 +168,19 @@ class GameTabService {
       // This ensures the conversation exists with auth_user_id set before subtab insert
       await new Promise(resolve => setTimeout(resolve, 200));
       
-      const success = await subtabsService.setSubtabs(conversation.id, subTabs);
+      let success = await subtabsService.setSubtabs(conversation.id, subTabs);
+      
+      // ✅ FIX: Retry once if initial write fails (RLS policy timing issue)
       if (!success) {
-        console.error('❌ [GameTabService] Failed to save subtabs - conversation may not exist yet');
-        // Don't throw - let background insights retry
+        console.error('⚠️ [GameTabService] First setSubtabs attempt failed, waiting and retrying...');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        success = await subtabsService.setSubtabs(conversation.id, subTabs);
+        
+        if (!success) {
+          console.error('❌ [GameTabService] Retry also failed - subtabs will be created by generateInitialInsights');
+        } else {
+          console.error('✅ [GameTabService] Retry succeeded');
+        }
       }
     } else if (!isPro) {
       console.error('🔒 [GameTabService] Skipping subtabs save for free tier user');
@@ -417,7 +426,8 @@ class GameTabService {
         gameTitle || 'Unknown Game',
         conversation.genre || 'Action RPG',
         playerProfile,
-        conversationContext
+        conversationContext,
+        freshConv.gameProgress || 0 // ✅ Pass game progress for progress-aware subtabs
       );
       console.error(`🤖 [GameTabService] [${conversationId}] 📥 AI returned:`, Object.keys(insights).length, 'insights');
 
@@ -439,107 +449,73 @@ class GameTabService {
 
       // ✅ CRITICAL: Read subtabs from database (not from cached conversation object)
       // The conversation object has the old "loading" subtabs, we need the actual database subtabs with types
-      const dbSubtabs = await subtabsService.getSubtabs(conversationId);
+      let dbSubtabs = await subtabsService.getSubtabs(conversationId);
       console.error(`🤖 [GameTabService] [${conversationId}] 📖 Read ${dbSubtabs.length} subtabs from database`);
       
-      // Replace freshConversation.subtabs with actual database subtabs
+      // ✅ FIX: If no subtabs in DB but we have them in memory, the initial write may have failed
+      // Re-try writing the subtabs to DB before proceeding
+      if (dbSubtabs.length === 0 && conversation.subtabs && conversation.subtabs.length > 0) {
+        console.error(`🤖 [GameTabService] [${conversationId}] ⚠️ No subtabs in DB but ${conversation.subtabs.length} in memory - retrying write`);
+        
+        // Wait a bit for any pending DB operations
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Retry the write
+        const retrySuccess = await subtabsService.setSubtabs(conversationId, conversation.subtabs);
+        if (retrySuccess) {
+          console.error(`🤖 [GameTabService] [${conversationId}] ✅ Retry write succeeded`);
+          dbSubtabs = await subtabsService.getSubtabs(conversationId);
+          console.error(`🤖 [GameTabService] [${conversationId}] 📖 Re-read ${dbSubtabs.length} subtabs from database`);
+        } else {
+          console.error(`🤖 [GameTabService] [${conversationId}] ❌ Retry write failed - using memory subtabs as fallback`);
+          // Use memory subtabs as last resort
+          dbSubtabs = conversation.subtabs;
+        }
+      }
+      
+      // Replace freshConversation.subtabs with actual database subtabs (or memory fallback)
       freshConversation.subtabs = dbSubtabs;
 
       // 🔥 MAP insight keys to subtab IDs
       // AI returns keys like "story_so_far" but subtabs have UUID ids
       // ✅ FIX: Map by TITLE instead of type (all tab_type = 'chat')
+      // ✅ COMPLETE MAPPING: All titles from all genres in insightTabsConfig
       const titleToKeyMap: Record<string, string> = {
-        // Story/Lore tabs
+        // === Default/Common tabs ===
         'Story So Far': 'story_so_far',
+        'Items You May Have Missed': 'missed_items',
         'Relevant Lore': 'game_lore',
-        'Lore Exploration': 'lore_exploration',
-        'Environmental Storytelling': 'environmental_storytelling',
-        
-        // Quest/Progression tabs
-        'Active Quests': 'quest_log',
-        'Story Progression': 'story_progression',
-        'Quest Guide': 'quest_guide',
-        
-        // Strategy tabs (Action RPG, RPG)
-        'Build Optimization': 'build_optimization',
         'Build Guide': 'build_guide',
-        'Character Building': 'character_building',
-        'Combat Strategies': 'combat_strategies',
-        'Boss Strategy': 'boss_strategy',
+        'Plan Your Next Session': 'next_session_plan',
+        
+        // === Action RPG tabs ===
+        'Active Quests': 'quest_log',
+        'Build Optimization': 'build_optimization',
         'Upcoming Boss Strategy': 'boss_strategy',
+        'Boss Strategy': 'boss_strategy',
+        'Hidden Paths & Secrets': 'hidden_paths',
+        'Points of Interest': 'points_of_interest',
+        'NPC Interactions': 'npc_interactions',
         'Consumable Strategy': 'consumable_strategy',
         
-        // Tips/Secrets tabs
-        'Hidden Paths & Secrets': 'hidden_paths',
-        'Pro Tips': 'pro_tips',
-        'Exploration Tips': 'exploration_tips',
-        'Hidden Secrets': 'hidden_secrets',
-        
-        // Items/Collectibles tabs
-        'Items You May Have Missed': 'missed_items',
-        'Collectible Hunting': 'collectible_hunting',
-        
-        // Points of Interest
-        'Points of Interest': 'points_of_interest',
-        'Region Guide': 'points_of_interest',
-        
-        // Planning/Objectives
-        'Plan Your Next Session': 'next_session_plan',
-        'Activity Checklist': 'next_session_plan',
-        
-        // World/Exploration
-        'Dynamic World Events': 'points_of_interest',
-        'Exploration Route': 'exploration_route',
-        
-        // Optimization/Efficiency
-        'Fast Travel Optimization': 'pro_tips',
-        'Progression Balance': 'next_session_plan',
-        
-        // Souls-like specific tabs
-        'Death Recovery Strategy': 'death_recovery',
-        'NPC Questlines': 'npc_questlines',
-        'Level Layout Insights': 'level_layout',
-        
-        // RPG-specific tabs
+        // === RPG tabs ===
+        'Character Building': 'character_building',
+        'Combat Strategies': 'combat_strategies',
+        'Quest Guide': 'quest_guide',
+        'Lore Exploration': 'lore_exploration',
         'Companion Management': 'companion_management',
         'Side Activity Guide': 'side_activity_guide',
-        'NPC Interactions': 'npc_interactions',
         
-        // Metroidvania-specific tabs
-        'New Ability Unlocked': 'ability_unlocks',
-        'Backtracking Guide': 'backtracking_guide',
-        'Map Completion': 'map_completion',
-        'Sequence Breaking Options': 'sequence_breaking',
-        'Upgrade Priority': 'upgrade_priority',
-        
-        // Open-World specific tabs (already defined above, removed duplicates)
-        
-        // Survival-Crafting specific tabs
-        'Resource Locations': 'resource_locations',
-        'Base Building Guide': 'base_building',
-        'Crafting Priority': 'crafting_priority',
-        'Survival Tips': 'survival_tips',
-        'Exploration Targets': 'exploration_targets',
-        'Progression Roadmap': 'progression_roadmap',
-        'Danger Warnings': 'danger_warnings',
-        'Multiplayer Synergy': 'multiplayer_synergy',
-        'Seasonal Preparation': 'seasonal_preparation',
-        
-        // Horror specific tabs
-        'Resource Management': 'resource_management',
-        'Safe Zone Mapping': 'safe_zone_mapping',
-        'Sanity Management': 'sanity_management',
-        'Progressive Fear Adaptation': 'fear_adaptation',
-        
-        // FPS-specific tabs
+        // === First-Person Shooter tabs ===
         'Loadout Analysis': 'loadout_analysis',
         'Map Strategies': 'map_strategies',
         'Enemy Intel': 'enemy_intel',
+        'Pro Tips': 'pro_tips',
         'Weapon Mastery': 'weapon_mastery',
         'Audio Cues Guide': 'audio_cues',
         'Progression Tracker': 'progression_tracker',
         
-        // Strategy game tabs
+        // === Strategy tabs ===
         'Current State Analysis': 'current_board_state',
         'Opening Builds': 'opening_moves',
         'Unit Counters': 'unit_counters',
@@ -548,12 +524,138 @@ class GameTabService {
         'Map Control Points': 'map_control_points',
         'Opponent Analysis': 'opponent_analysis',
         
-        // Adventure game tabs
+        // === Adventure tabs ===
+        'Exploration Tips': 'exploration_tips',
         'Puzzle Solving': 'puzzle_solving',
-        'Inventory Optimization': 'inventory_optimization'
+        'Story Progression': 'story_progression',
+        'Hidden Secrets': 'hidden_secrets',
+        'Inventory Optimization': 'inventory_optimization',
+        'Environmental Storytelling': 'environmental_storytelling',
+        
+        // === Simulation tabs ===
+        'Goal Suggestions': 'goal_suggestions',
+        'Efficiency & Optimization': 'efficiency_tips',
+        'Hidden Mechanics': 'hidden_mechanics',
+        'Disaster Prep': 'disaster_prep',
+        'Milestone Roadmap': 'milestone_roadmap',
+        'System Bottleneck Analysis': 'bottleneck_analysis',
+        'Expansion Strategy': 'expansion_strategy',
+        
+        // === Sports tabs ===
+        'Team Management': 'team_management',
+        'Training Focus': 'training_focus',
+        'Tactical Analysis': 'tactical_analysis',
+        'Season Progression': 'season_progression',
+        'Transfer Market Insights': 'transfer_market_insights',
+        'Injury & Fatigue Management': 'injury_fatigue_management',
+        'Opposition Scouting': 'opposition_scouting',
+        
+        // === Multiplayer Shooter tabs ===
+        'Meta Analysis': 'meta_analysis',
+        'Team Coordination': 'team_coordination',
+        'Map Control': 'map_control',
+        'Skill Development': 'skill_development',
+        'Ranked Climbing Guide': 'ranked_climbing_guide',
+        'Warm-up Routine': 'warmup_routine',
+        'Counter-Meta Strategies': 'counter_meta_strategies',
+        
+        // === Multiplayer Sports tabs ===
+        'Competitive Strategy': 'competitive_strategy',
+        'Team Synergy': 'team_synergy',
+        'Performance Optimization': 'performance_optimization',
+        'Ranked Progression': 'ranked_progression',
+        'Seasonal Meta Shifts': 'seasonal_meta_shifts',
+        'Communication Protocols': 'communication_protocols',
+        'VOD Review Focus Points': 'vod_review_focus',
+        
+        // === Racing tabs ===
+        'Vehicle Tuning': 'vehicle_tuning',
+        'Track Strategy': 'track_strategy',
+        'Race Craft': 'race_craft',
+        'Championship Focus': 'championship_focus',
+        'Weather Adaptation': 'weather_adaptation',
+        'Qualifying Strategy': 'qualifying_strategy',
+        'Rival Analysis': 'rival_analysis',
+        
+        // === Fighting tabs ===
+        'Character Analysis': 'character_analysis',
+        'Matchup Strategy': 'matchup_strategy',
+        'Execution Training': 'execution_training',
+        'Tournament Prep': 'tournament_prep',
+        'Frame Data Insights': 'frame_data_insights',
+        'Mid-Match Adaptation': 'adaptation_tactics',
+        'Character Lab Work': 'character_lab_work',
+        
+        // === Battle Royale tabs ===
+        'Drop Strategy': 'drop_strategy',
+        'Positioning Tactics': 'positioning_tactics',
+        'Loadout Optimization': 'loadout_optimization',
+        'Endgame Strategy': 'endgame_strategy',
+        'Rotation Management': 'rotation_management',
+        'Audio Warfare': 'audio_warfare',
+        'Inventory Economy': 'inventory_economy',
+        
+        // === MMORPG tabs ===
+        'Class Optimization': 'class_optimization',
+        'Content Progression': 'content_progression',
+        'Social Strategies': 'social_strategies',
+        'Alt Character Strategy': 'alt_character_strategy',
+        'Reputation & Faction Guide': 'reputation_faction_guide',
+        'Raid Preparation': 'raid_preparation',
+        
+        // === Puzzle tabs ===
+        'Puzzle Patterns': 'puzzle_patterns',
+        'Logical Reasoning': 'logical_reasoning',
+        'Time Optimization': 'time_optimization',
+        'Difficulty Progression': 'difficulty_progression',
+        'Mental Breaks Strategy': 'mental_breaks_strategy',
+        'Pattern Library': 'pattern_library',
+        'Achievement & Challenge Guide': 'achievement_guide',
+        
+        // === Horror tabs ===
+        'Survival Strategies': 'survival_strategies',
+        'Enemy Behavior': 'enemy_behavior',
+        'Atmosphere Navigation': 'atmosphere_navigation',
+        'Resource Management': 'resource_management',
+        'Safe Zone Mapping': 'safe_zone_mapping',
+        'Sanity Management': 'sanity_management',
+        'Progressive Fear Adaptation': 'fear_adaptation',
+        
+        // === Souls-like tabs ===
+        'Death Recovery Strategy': 'death_recovery',
+        'Level Layout Insights': 'level_layout',
+        'NPC Questlines': 'npc_questlines',
+        
+        // === Metroidvania tabs ===
+        'New Ability Unlocked': 'ability_unlocks',
+        'Backtracking Guide': 'backtracking_guide',
+        'Map Completion': 'map_completion',
+        'Sequence Breaking Options': 'sequence_breaking',
+        'Upgrade Priority': 'upgrade_priority',
+        
+        // === Open-World tabs ===
+        'Region Guide': 'region_guide',
+        'Activity Checklist': 'activity_checklist',
+        'Collectible Hunting': 'collectible_hunting',
+        'Dynamic World Events': 'world_events',
+        'Exploration Route': 'exploration_route',
+        'Fast Travel Optimization': 'fast_travel_optimization',
+        'Progression Balance': 'progression_balance',
+        
+        // === Survival-Crafting tabs ===
+        'Resource Locations': 'resource_locations',
+        'Base Building Guide': 'base_building',
+        'Crafting Priority': 'crafting_priority',
+        'Survival Tips': 'survival_tips',
+        'Exploration Targets': 'exploration_targets',
+        'Progression Roadmap': 'progression_roadmap',
+        'Danger Warnings': 'danger_warnings',
+        'Multiplayer Synergy': 'multiplayer_synergy',
+        'Seasonal Preparation': 'seasonal_preparation'
       };
       
       console.error('🤖 [GameTabService] Building content mapping for subtabs...');
+      console.error('🤖 [GameTabService] AI returned insight keys:', Object.keys(insights));
       
       // Update sub-tabs with generated content OR meaningful fallback
       const updatedSubTabs = freshConversation.subtabs?.map(subTab => {
@@ -562,10 +664,16 @@ class GameTabService {
         // ✅ FIX: Map subtab TITLE to insight key (not type)
         const insightKey = titleToKeyMap[subTab.title];
         
+        if (!insightKey) {
+          console.error(`⚠️ [GameTabService] MISSING MAPPING: No titleToKeyMap entry for "${subTab.title}" - will use fallback`);
+        }
+        
         if (hasInsights && insightKey && insights[insightKey]) {
           // Use AI-generated content
           content = insights[insightKey];
-          console.error(`🤖 [GameTabService] Subtab "${subTab.title}" using AI content from key "${insightKey}" (${content.length} chars)`);
+          console.error(`✅ [GameTabService] Subtab "${subTab.title}" → key "${insightKey}" → AI content (${content.length} chars)`);
+        } else if (hasInsights && insightKey) {
+          console.error(`⚠️ [GameTabService] Subtab "${subTab.title}" → key "${insightKey}" → NOT FOUND in AI response`);
         }
         
         if (!content) {
@@ -601,6 +709,12 @@ class GameTabService {
           type: subTab.type
         };
       }) || [];
+
+      // ✅ FIX: Check if we have any subtabs to update
+      if (updatedSubTabs.length === 0) {
+        console.error(`🤖 [GameTabService] [${conversationId}] ⚠️ No subtabs to update - aborting`);
+        return;
+      }
 
       // 🔥 CRITICAL FIX: Dual-write to both normalized table AND JSONB
       // The initial subtab creation uses setSubtabs (dual-write), but updates must too!
@@ -810,6 +924,7 @@ class GameTabService {
     updates: Array<{ tabId: string; title: string; content: string }>
   ): Promise<void> {
     console.error(`📝 [GameTabService] [${conversationId}] Updating subtabs from AI response:`, updates.length);
+    console.error(`📝 [GameTabService] [${conversationId}] Updates to apply:`, updates.map(u => ({ tabId: u.tabId, title: u.title, contentLength: u.content?.length || 0 })));
 
     try {
       // ✅ RACE CONDITION SAFEGUARD: Get fresh conversation data
@@ -821,17 +936,184 @@ class GameTabService {
         return;
       }
 
+      console.error(`📝 [GameTabService] [${conversationId}] Found ${conversation.subtabs.length} subtabs:`, 
+        conversation.subtabs.map(s => ({ id: s.id, title: s.title })));
+
+      // ✅ Build mapping from title/key to subtab (same as titleToKeyMap but reversed)
+      // AI sends updates with tabId like "story_so_far" but subtabs have UUID ids
+      const titleToKeyMap: Record<string, string> = {
+        'Story So Far': 'story_so_far',
+        'Items You May Have Missed': 'missed_items',
+        'Relevant Lore': 'game_lore',
+        'Build Guide': 'build_guide',
+        'Plan Your Next Session': 'next_session_plan',
+        'Active Quests': 'quest_log',
+        'Build Optimization': 'build_optimization',
+        'Upcoming Boss Strategy': 'boss_strategy',
+        'Boss Strategy': 'boss_strategy',
+        'Hidden Paths & Secrets': 'hidden_paths',
+        'Points of Interest': 'points_of_interest',
+        'NPC Interactions': 'npc_interactions',
+        'Consumable Strategy': 'consumable_strategy',
+        'Character Building': 'character_building',
+        'Combat Strategies': 'combat_strategies',
+        'Quest Guide': 'quest_guide',
+        'Lore Exploration': 'lore_exploration',
+        'Companion Management': 'companion_management',
+        'Side Activity Guide': 'side_activity_guide',
+        'Loadout Analysis': 'loadout_analysis',
+        'Map Strategies': 'map_strategies',
+        'Enemy Intel': 'enemy_intel',
+        'Pro Tips': 'pro_tips',
+        'Weapon Mastery': 'weapon_mastery',
+        'Audio Cues Guide': 'audio_cues',
+        'Progression Tracker': 'progression_tracker',
+        'Current State Analysis': 'current_board_state',
+        'Opening Builds': 'opening_moves',
+        'Unit Counters': 'unit_counters',
+        'Economy Management': 'economy_guide',
+        'Tech Tree Priority': 'tech_tree_priority',
+        'Map Control Points': 'map_control_points',
+        'Opponent Analysis': 'opponent_analysis',
+        'Exploration Tips': 'exploration_tips',
+        'Puzzle Solving': 'puzzle_solving',
+        'Story Progression': 'story_progression',
+        'Hidden Secrets': 'hidden_secrets',
+        'Inventory Optimization': 'inventory_optimization',
+        'Environmental Storytelling': 'environmental_storytelling',
+        'Goal Suggestions': 'goal_suggestions',
+        'Efficiency & Optimization': 'efficiency_tips',
+        'Hidden Mechanics': 'hidden_mechanics',
+        'Disaster Prep': 'disaster_prep',
+        'Milestone Roadmap': 'milestone_roadmap',
+        'System Bottleneck Analysis': 'bottleneck_analysis',
+        'Expansion Strategy': 'expansion_strategy',
+        'Team Management': 'team_management',
+        'Training Focus': 'training_focus',
+        'Tactical Analysis': 'tactical_analysis',
+        'Season Progression': 'season_progression',
+        'Transfer Market Insights': 'transfer_market_insights',
+        'Injury & Fatigue Management': 'injury_fatigue_management',
+        'Opposition Scouting': 'opposition_scouting',
+        'Meta Analysis': 'meta_analysis',
+        'Team Coordination': 'team_coordination',
+        'Map Control': 'map_control',
+        'Skill Development': 'skill_development',
+        'Ranked Climbing Guide': 'ranked_climbing_guide',
+        'Warm-up Routine': 'warmup_routine',
+        'Counter-Meta Strategies': 'counter_meta_strategies',
+        'Competitive Strategy': 'competitive_strategy',
+        'Team Synergy': 'team_synergy',
+        'Performance Optimization': 'performance_optimization',
+        'Ranked Progression': 'ranked_progression',
+        'Seasonal Meta Shifts': 'seasonal_meta_shifts',
+        'Communication Protocols': 'communication_protocols',
+        'VOD Review Focus Points': 'vod_review_focus',
+        'Vehicle Tuning': 'vehicle_tuning',
+        'Track Strategy': 'track_strategy',
+        'Race Craft': 'race_craft',
+        'Championship Focus': 'championship_focus',
+        'Weather Adaptation': 'weather_adaptation',
+        'Qualifying Strategy': 'qualifying_strategy',
+        'Rival Analysis': 'rival_analysis',
+        'Character Analysis': 'character_analysis',
+        'Matchup Strategy': 'matchup_strategy',
+        'Execution Training': 'execution_training',
+        'Tournament Prep': 'tournament_prep',
+        'Frame Data Insights': 'frame_data_insights',
+        'Mid-Match Adaptation': 'adaptation_tactics',
+        'Character Lab Work': 'character_lab_work',
+        'Drop Strategy': 'drop_strategy',
+        'Positioning Tactics': 'positioning_tactics',
+        'Loadout Optimization': 'loadout_optimization',
+        'Endgame Strategy': 'endgame_strategy',
+        'Rotation Management': 'rotation_management',
+        'Audio Warfare': 'audio_warfare',
+        'Inventory Economy': 'inventory_economy',
+        'Class Optimization': 'class_optimization',
+        'Content Progression': 'content_progression',
+        'Social Strategies': 'social_strategies',
+        'Alt Character Strategy': 'alt_character_strategy',
+        'Reputation & Faction Guide': 'reputation_faction_guide',
+        'Raid Preparation': 'raid_preparation',
+        'Puzzle Patterns': 'puzzle_patterns',
+        'Logical Reasoning': 'logical_reasoning',
+        'Time Optimization': 'time_optimization',
+        'Difficulty Progression': 'difficulty_progression',
+        'Mental Breaks Strategy': 'mental_breaks_strategy',
+        'Pattern Library': 'pattern_library',
+        'Achievement & Challenge Guide': 'achievement_guide',
+        'Survival Strategies': 'survival_strategies',
+        'Enemy Behavior': 'enemy_behavior',
+        'Atmosphere Navigation': 'atmosphere_navigation',
+        'Resource Management': 'resource_management',
+        'Safe Zone Mapping': 'safe_zone_mapping',
+        'Sanity Management': 'sanity_management',
+        'Progressive Fear Adaptation': 'fear_adaptation',
+        'Death Recovery Strategy': 'death_recovery',
+        'Level Layout Insights': 'level_layout',
+        'NPC Questlines': 'npc_questlines',
+        'New Ability Unlocked': 'ability_unlocks',
+        'Backtracking Guide': 'backtracking_guide',
+        'Map Completion': 'map_completion',
+        'Sequence Breaking Options': 'sequence_breaking',
+        'Upgrade Priority': 'upgrade_priority',
+        'Region Guide': 'region_guide',
+        'Activity Checklist': 'activity_checklist',
+        'Collectible Hunting': 'collectible_hunting',
+        'Dynamic World Events': 'world_events',
+        'Exploration Route': 'exploration_route',
+        'Fast Travel Optimization': 'fast_travel_optimization',
+        'Progression Balance': 'progression_balance',
+        'Resource Locations': 'resource_locations',
+        'Base Building Guide': 'base_building',
+        'Crafting Priority': 'crafting_priority',
+        'Survival Tips': 'survival_tips',
+        'Exploration Targets': 'exploration_targets',
+        'Progression Roadmap': 'progression_roadmap',
+        'Danger Warnings': 'danger_warnings',
+        'Multiplayer Synergy': 'multiplayer_synergy',
+        'Seasonal Preparation': 'seasonal_preparation'
+      };
+
+      // Build reverse mapping: key -> title (for matching AI's tabId to subtab title)
+      const keyToTitleMap: Record<string, string> = {};
+      for (const [title, key] of Object.entries(titleToKeyMap)) {
+        keyToTitleMap[key] = title;
+      }
+
       // Update the specific subtabs with linear progression (append, not overwrite)
       let updatedCount = 0;
       const updatedSubTabs = conversation.subtabs.map(tab => {
-        const update = updates.find(u => u.tabId === tab.id);
+        // ✅ FIX: Match by multiple methods:
+        // 1. Direct UUID match (if update.tabId is a UUID)
+        // 2. Title match (if update.tabId matches tab.title)
+        // 3. Key-to-title match (if update.tabId like "story_so_far" maps to "Story So Far")
+        const update = updates.find(u => {
+          // Method 1: Direct UUID match
+          if (u.tabId === tab.id) return true;
+          
+          // Method 2: Title match (case-insensitive)
+          if (u.tabId.toLowerCase() === tab.title.toLowerCase()) return true;
+          if (u.title && u.title.toLowerCase() === tab.title.toLowerCase()) return true;
+          
+          // Method 3: Key-to-title map (AI sends "story_so_far", subtab has title "Story So Far")
+          const expectedTitle = keyToTitleMap[u.tabId];
+          if (expectedTitle && expectedTitle === tab.title) return true;
+          
+          // Method 4: Title-to-key map (subtab title -> key -> match update.tabId)
+          const subtabKey = titleToKeyMap[tab.title];
+          if (subtabKey && subtabKey === u.tabId) return true;
+          
+          return false;
+        });
+        
         if (update) {
           updatedCount++;
-          console.error(`📝 [GameTabService] [${conversationId}] Updating subtab: ${tab.id} - ${update.title}`);
+          console.error(`📝 [GameTabService] [${conversationId}] ✅ Matched subtab "${tab.title}" (${tab.id}) with update.tabId="${update.tabId}"`);
           
-          // ✅ LINEAR PROGRESSION: Append new content with timestamp separator
+          // ✅ COLLAPSIBLE UPDATES: New updates are visible, old ones are collapsed
           const timestamp = new Date().toLocaleString();
-          const separator = '\n\n---\n**Updated: ' + timestamp + '**\n\n';
           
           // Only append if there's existing content (not "Loading...")
           const shouldAppend = tab.content && 
@@ -839,29 +1121,80 @@ class GameTabService {
                                tab.content !== 'Loading...' &&
                                tab.status === 'loaded';
           
-          let newContent = shouldAppend
-            ? tab.content + separator + update.content  // ✅ Append to existing
-            : update.content;  // First update or loading state
+          let newContent: string;
+          
+          if (shouldAppend) {
+            // Parse existing content to extract previous updates
+            const existingContent = tab.content;
+            
+            // Check if content already has our collapsible structure with LATEST_UPDATE marker
+            const latestMarker = '<!-- LATEST_UPDATE -->';
+            const hasProgressiveStructure = existingContent.includes(latestMarker);
+            
+            if (hasProgressiveStructure) {
+              // Structure: [collapsed history] + LATEST_UPDATE marker + [previous latest content]
+              // We need to: collapse previous latest -> add to history -> append new content at bottom
+              
+              const markerIndex = existingContent.indexOf(latestMarker);
+              const historySection = existingContent.substring(0, markerIndex).trim(); // Collapsed history at top
+              const previousLatest = existingContent.substring(markerIndex + latestMarker.length).trim(); // Previous "latest" content
+              
+              // Collapse the previous latest content and add to history
+              const newCollapsedEntry = `<details>\n<summary>📋 Update from ${timestamp}</summary>\n\n${previousLatest}\n\n</details>\n`;
+              
+              // Build new structure: history (including new collapsed) + marker + new content
+              const updatedHistory = historySection 
+                ? historySection + '\n\n' + newCollapsedEntry
+                : newCollapsedEntry;
+              
+              newContent = updatedHistory + '\n\n' + latestMarker + '\n\n' + update.content;
+            } else {
+              // First time converting to progressive structure
+              // Existing content becomes collapsed history, new update is the latest
+              const collapsedExisting = `<details>\n<summary>📋 Initial Content</summary>\n\n${existingContent}\n\n</details>\n`;
+              
+              newContent = collapsedExisting + '\n\n' + latestMarker + '\n\n' + update.content;
+            }
+          } else {
+            // First update or loading state - just set the content with the marker
+            newContent = '<!-- LATEST_UPDATE -->\n\n' + update.content;
+          }
           
           // ✅ CONTENT LIMIT CHECK: Prevent indefinite growth
           if (newContent.length > MAX_SUBTAB_CONTENT_LENGTH) {
-            console.error(`📝 [GameTabService] [${conversationId}] Subtab ${tab.id} exceeds ${MAX_SUBTAB_CONTENT_LENGTH} chars, needs summarization`);
-            // For now, keep most recent content by trimming oldest entries
-            // TODO: In future, use AI to summarize the content
-            const entries = newContent.split('\n\n---\n');
-            if (entries.length > 2) {
-              // Keep first entry (original context) and last few entries (most recent)
-              const firstEntry = entries[0];
-              const recentEntries = entries.slice(-3).join('\n\n---\n');
-              newContent = firstEntry + '\n\n---\n**[Earlier entries summarized]**\n\n---\n' + recentEntries;
-              console.error(`📝 [GameTabService] [${conversationId}] Subtab ${tab.id} content trimmed to ${newContent.length} chars`);
+            console.error(`📝 [GameTabService] [${conversationId}] Subtab ${tab.id} exceeds ${MAX_SUBTAB_CONTENT_LENGTH} chars, trimming old collapsed sections`);
+            
+            // Remove oldest collapsed sections to stay under limit
+            // With new structure, oldest collapsed sections are at the TOP (first in order)
+            const collapsedPattern = /<details>\s*<summary>.*?<\/summary>[\s\S]*?<\/details>/g;
+            const detailsBlocks = newContent.match(collapsedPattern) || [];
+            
+            if (detailsBlocks.length > 2) {
+              let trimmedContent = newContent;
+              
+              // Remove oldest blocks (FIRST ones in array since history is at top, oldest first)
+              const blocksToRemove = detailsBlocks.slice(0, detailsBlocks.length - 2);
+              blocksToRemove.forEach(block => {
+                trimmedContent = trimmedContent.replace(block, '');
+              });
+              
+              // Add a note about removed history at the top
+              const latestMarker = '<!-- LATEST_UPDATE -->';
+              if (!trimmedContent.includes('Earlier history removed') && trimmedContent.includes(latestMarker)) {
+                const historyNote = `<details>\n<summary>ℹ️ Earlier history removed to save space</summary>\n\nOlder updates have been automatically removed. Recent updates are preserved.\n\n</details>\n\n`;
+                trimmedContent = historyNote + trimmedContent;
+              }
+              
+              newContent = trimmedContent;
             }
+            
+            console.error(`📝 [GameTabService] [${conversationId}] Subtab ${tab.id} content trimmed to ${newContent.length} chars`);
           }
           
           return {
             ...tab,
             title: update.title || tab.title, // Update title if provided
-            content: newContent,  // ✅ Accumulated history
+            content: newContent,  // ✅ Collapsible history
             isNew: true, // Mark as new to show indicator
             status: 'loaded' as const
           };
@@ -872,8 +1205,34 @@ class GameTabService {
       // Only update if something changed
       if (updatedCount === 0) {
         console.error(`📝 [GameTabService] [${conversationId}] ⚠️ No subtabs matched for update`);
+        // Log what updates we tried to apply for debugging
+        updates.forEach(u => {
+          console.error(`📝 [GameTabService] [${conversationId}] ⚠️ Unmatched update: tabId="${u.tabId}", title="${u.title}"`);
+        });
         return;
       }
+
+      // Log any unmatched updates for debugging
+      const matchedTabIds = new Set<string>();
+      conversation.subtabs.forEach(tab => {
+        const matched = updates.find(u => {
+          if (u.tabId === tab.id) return true;
+          if (u.tabId.toLowerCase() === tab.title.toLowerCase()) return true;
+          if (u.title && u.title.toLowerCase() === tab.title.toLowerCase()) return true;
+          const expectedTitle = keyToTitleMap[u.tabId];
+          if (expectedTitle && expectedTitle === tab.title) return true;
+          const subtabKey = titleToKeyMap[tab.title];
+          if (subtabKey && subtabKey === u.tabId) return true;
+          return false;
+        });
+        if (matched) matchedTabIds.add(matched.tabId);
+      });
+      
+      updates.forEach(u => {
+        if (!matchedTabIds.has(u.tabId)) {
+          console.error(`📝 [GameTabService] [${conversationId}] ⚠️ Update not matched to any subtab: tabId="${u.tabId}", title="${u.title}"`);
+        }
+      });
 
       // 🔥 CRITICAL FIX: Use subtabsService.setSubtabs() to write to normalized table!
       // The old code used ConversationService.updateConversation() which IGNORES subtabs

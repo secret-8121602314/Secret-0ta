@@ -1,5 +1,6 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 
 export type MarkdownVariant = 'chat' | 'subtab';
 
@@ -29,10 +30,14 @@ export function MarkdownRenderer({
 }: MarkdownRendererProps) {
   const isChat = variant === 'chat';
 
+  // Clean content: remove HTML comments (used as markers)
+  const cleanedContent = content.replace(/<!--[\s\S]*?-->/g, '');
+
   return (
     <div className={className}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeRaw]}
         components={{
           h1: ({ children }) => (
             <h1 className={isChat 
@@ -126,10 +131,29 @@ export function MarkdownRenderer({
               {children}
             </a>
           ),
-          br: () => <br className="my-1" />
+          br: () => <br className="my-1" />,
+          // Styled collapsible sections for update history
+          details: ({ children, ...props }) => (
+            <details 
+              className="my-3 rounded-lg border border-[#424242]/50 bg-[#1C1C1C]/50 overflow-hidden group"
+              {...props}
+            >
+              {children}
+            </details>
+          ),
+          summary: ({ children, ...props }) => (
+            <summary 
+              className="px-3 py-2 cursor-pointer text-sm text-[#A3A3A3] hover:text-[#F5F5F5] hover:bg-[#2E2E2E]/50 transition-colors select-none list-none flex items-center gap-2"
+              style={{ listStyle: 'none' }}
+              {...props}
+            >
+              <span className="text-xs transition-transform group-open:rotate-90">▶</span>
+              {children}
+            </summary>
+          )
         }}
       >
-        {content}
+        {cleanedContent}
       </ReactMarkdown>
     </div>
   );

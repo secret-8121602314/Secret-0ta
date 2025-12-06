@@ -14,6 +14,7 @@ import TermsModal from './modals/TermsModal';
 import RefundPolicyModal from './modals/RefundPolicyModal';
 import ContactUsModal from './modals/ContactUsModal';
 import SettingsModal from './modals/SettingsModal';
+import { AppLoadingScreen } from './ui/AppLoadingScreen';
 import { authService } from '../services/authService';
 import { onboardingService } from '../services/onboardingService';
 
@@ -99,14 +100,7 @@ const AppRouter: React.FC<AppRouterProps> = ({
     !(appState.view === 'landing' && !hasEverLoggedIn && !authState.isLoading);
 
     if (shouldShowLoading) {
-    return (
-      <div className="h-screen bg-gradient-to-br from-[#111111] to-[#0A0A0A] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF4D4D] mx-auto mb-4"></div>
-          <p className="text-[#CFCFCF] text-lg">Loading Otagon...</p>
-        </div>
-      </div>
-    );
+    return <AppLoadingScreen size="md" />;
   }
 
   if (appState.view === 'landing' && !authState.user && !authState.isLoading) {
@@ -152,14 +146,7 @@ const AppRouter: React.FC<AppRouterProps> = ({
   }
 
   if (appState.onboardingStatus === 'loading') {
-    return (
-      <div className="h-screen bg-gradient-to-br from-[#111111] to-[#0A0A0A] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF4D4D] mx-auto mb-4"></div>
-          <p className="text-[#CFCFCF] text-lg">Signing you in...</p>
-        </div>
-      </div>
-    );
+    return <AppLoadingScreen size="md" />;
   }
 
   if (authState.user && appState.view === 'app') {
