@@ -1061,7 +1061,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                     <span className="hidden md:inline">Press</span>
                                     <kbd className="hidden md:inline px-2 py-1 bg-white/20 border border-white/30 rounded text-sm font-mono">F1</kbd>
                                     <span className="hidden md:inline">or Click to Get Hint</span>
-                                    <span className="md:hidden">Tap to Get Hint</span>
+                                    <span className="md:hidden">Tap or press F1 on keyboard to get hint</span>
                                 </button>
                             ) : (
                                 <button
@@ -1817,8 +1817,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                     </div>
                                     <div className={`overflow-hidden transition-all duration-300 ${expandedFaq === 1 ? 'max-h-40 mt-4' : 'max-h-0'}`}>
                                         <p className="text-neutral-400 leading-relaxed">
-                                            Absolutely! Our AI is trained to understand context and provide hints that guide you 
-                                            without revealing plot points, solutions, or surprises. We give you just enough to get unstuck.
+                                            Yes! Otagon is designed to give you just the right nudge to keep you moving forward, without spoiling story moments, puzzles, or surprises. Our system carefully analyzes your progress and only provides hints relevant to your current situation—never the full solution or future events. You stay in control of your experience.
                                         </p>
                                     </div>
                                 </div>
