@@ -504,7 +504,7 @@ class AIService {
           detectedGameName.toLowerCase() !== conversation.gameTitle.toLowerCase();
         
         gamePillData = {
-          shouldCreate: conversation.isGameHub || isDifferentGame,
+          shouldCreate: Boolean(conversation.isGameHub || isDifferentGame),
           gameName: detectedGameName,
           genre: genre || 'Action RPG',
           wikiContent: {}, // Empty for now - will be populated by generateInitialInsights

@@ -53,6 +53,29 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
     tags.set('SUBTAB_UPDATE', subtabUpdates);
   }
 
+  // 1b2. Handle SUBTAB_CONSOLIDATE with nested JSON object (full replacement)
+  // This is used when AI consolidates old collapsed content into a summary
+  const subtabConsolidateRegex = /\[OTAKON_SUBTAB_CONSOLIDATE:\s*\{[^\]]*\}\s*\]/g;
+  let consolidateMatch;
+  const consolidateUpdates: unknown[] = [];
+  while ((consolidateMatch = subtabConsolidateRegex.exec(rawContent)) !== null) {
+    try {
+      const jsonMatch = consolidateMatch[0].match(/\{[^\]]*\}/);
+      if (jsonMatch) {
+        const update = JSON.parse(jsonMatch[0]);
+        consolidateUpdates.push(update);
+        console.log(`📦 [otakonTags] Extracted SUBTAB_CONSOLIDATE:`, update);
+      }
+    } catch (_e) {
+      console.warn('[OtakonTags] Failed to parse SUBTAB_CONSOLIDATE JSON:', consolidateMatch[0]);
+    }
+    // Always remove the tag from content
+    cleanContent = cleanContent.replace(consolidateMatch[0], '');
+  }
+  if (consolidateUpdates.length > 0) {
+    tags.set('SUBTAB_CONSOLIDATE', consolidateUpdates);
+  }
+
   // 1c. ROBUST PROGRESS DETECTION - Look for multiple formats
   let progressValue: number | null = null;
   

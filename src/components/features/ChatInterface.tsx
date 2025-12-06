@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, memo } from 'react';
+import React, { useState, useRef, useEffect, memo, useCallback } from 'react';
 import { Conversation, ActiveSessionState, ChatMessage } from '../../types';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import SessionSummaryCard, { parseSessionSummaryMessage } from './SessionSummaryCard';
@@ -104,11 +104,11 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
     const messageElement = document.querySelector(`[data-message-id="${message.id}"]`);
     if (messageElement) {
       (messageElement as HTMLElement).dataset.confirmFeedback = 'ready';
-      (messageElement as any).__confirmFeedback = setFeedbackConfirmed;
+      (messageElement as HTMLElement & { __confirmFeedback?: (type: 'up' | 'down') => void }).__confirmFeedback = setFeedbackConfirmed;
     }
     return () => {
       if (messageElement) {
-        delete (messageElement as any).__confirmFeedback;
+        delete (messageElement as HTMLElement & { __confirmFeedback?: (type: 'up' | 'down') => void }).__confirmFeedback;
       }
     };
   }, [message.id]);
@@ -421,7 +421,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   // ✅ NEW: Scroll to show the START of new AI messages instead of the end
-  const scrollToLatestMessage = () => {
+  const scrollToLatestMessage = useCallback(() => {
     if (!conversation || !messagesContainerRef.current) {
       return;
     }
@@ -458,7 +458,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       lastMessageCountRef.current = messageCount;
       lastMessageIdRef.current = lastMessage.id;
     }
-  };
+  }, [conversation]);
 
   // Auto-resize textarea functionality
   const adjustTextareaHeight = () => {
@@ -618,13 +618,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
+  // Extract complex expression for dependency tracking
+  const messageCount = conversation?.messages?.length;
+  const lastMessageId = conversation?.messages?.[messageCount ? messageCount - 1 : 0]?.id;
+  
   useEffect(() => {
     // Add delay to ensure DOM is updated before scrolling (longer for session summaries)
     const timeoutId = setTimeout(() => {
       scrollToLatestMessage();
     }, 200);
     return () => clearTimeout(timeoutId);
-  }, [conversation?.messages?.length, conversation?.messages?.[conversation?.messages?.length - 1]?.id]);
+  }, [messageCount, lastMessageId, scrollToLatestMessage]);
 
   // Adjust textarea height when message changes
   useEffect(() => {
@@ -670,7 +674,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     if (isSidebarOpen && isQuickActionsExpanded) {
       setIsQuickActionsExpanded(false);
     }
-  }, [isSidebarOpen]);
+  }, [isSidebarOpen, isQuickActionsExpanded]);
 
   // ✅ FIX: Ensure quick actions is collapsed on conversation change/page refresh
   useEffect(() => {

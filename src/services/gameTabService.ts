@@ -122,13 +122,13 @@ class GameTabService {
             console.error('🎮 [GameTabService] Created', subTabs.length, 'subtabs from INSIGHT_UPDATE tags');
           } else {
             // ✅ FALLBACK: Create template subtabs and populate them via background AI call
-            subTabs = this.generateInitialSubTabs(data.genre || 'Default', data.playerProfile);
+            subTabs = this.generateInitialSubTabs(data.genre || 'Default', data.playerProfile, { gameTitle: data.gameTitle });
             console.error('🎮 [GameTabService] Created', subTabs.length, 'template subtabs (will populate via background AI using conversation context)');
           }
         }
       } else {
         // No AI response - create template subtabs for pro users
-        subTabs = this.generateInitialSubTabs(data.genre || 'Default', data.playerProfile);
+        subTabs = this.generateInitialSubTabs(data.genre || 'Default', data.playerProfile, { gameTitle: data.gameTitle });
         console.error('🎮 [GameTabService] Created', subTabs.length, 'initial template subtabs (no AI response)');
       }
     } else if (data.isUnreleased) {
@@ -217,19 +217,331 @@ class GameTabService {
    * Generate initial sub-tabs based on game genre and player profile
    * Note: Currently unused - tab generation now handled via Edge Function
    */
+  /**
+   * Get game-specific subtab customizations
+   * Returns custom tab titles/instructions for specific games, or null to use genre defaults
+   * Types: 'chat' | 'walkthrough' | 'tips' | 'strategies' | 'story' | 'characters' | 'items'
+   */
+  private getGameSpecificTabCustomizations(gameTitle: string): ProfileSpecificTab[] | null {
+    const gameLower = gameTitle.toLowerCase();
+    
+    // Elden Ring - customize for Sites of Grace, bosses, remembrances
+    if (gameLower.includes('elden ring')) {
+      return [
+        { 
+          title: 'Story So Far', 
+          type: 'story',
+          instruction: 'Track the Tarnished\'s journey through the Lands Between, major demigod encounters, and story progression.',
+          priority: 'high',
+          isProfileSpecific: false
+        },
+        { 
+          title: 'Sites of Grace Nearby', 
+          type: 'tips',
+          instruction: 'List nearby Sites of Grace, their locations, and what areas they unlock.',
+          priority: 'high',
+          isProfileSpecific: false
+        },
+        { 
+          title: 'Boss Strategy', 
+          type: 'strategies',
+          instruction: 'Detailed strategies for Great Rune bearers, remembrance bosses, and field bosses.',
+          priority: 'high',
+          isProfileSpecific: false
+        },
+        { 
+          title: 'Character Questlines', 
+          type: 'characters',
+          instruction: 'Track NPC questlines like Ranni, Fia, Millicent, and their current progress.',
+          priority: 'high',
+          isProfileSpecific: false
+        },
+        { 
+          title: 'Remembrances & Items', 
+          type: 'items',
+          instruction: 'Track collected remembrances, Great Runes, and legendary armaments/ashes of war.',
+          priority: 'high',
+          isProfileSpecific: false
+        }
+      ];
+    }
+    
+    // Cyberpunk 2077 - customize for fixers, gigs, cyberware
+    if (gameLower.includes('cyberpunk')) {
+      return [
+        { 
+          title: 'Story Progress', 
+          type: 'story',
+          instruction: 'Track main story missions, relationship with Johnny Silverhand, and key choices made.',
+          priority: 'high',
+          isProfileSpecific: false
+        },
+        { 
+          title: 'Fixers & Gigs', 
+          type: 'walkthrough',
+          instruction: 'List available fixers in current district, active gigs, and completed contracts.',
+          priority: 'high',
+          isProfileSpecific: false
+        },
+        { 
+          title: 'Cyberware Build', 
+          type: 'strategies',
+          instruction: 'Current cyberware loadout, recommended upgrades, and build synergies.',
+          priority: 'high',
+          isProfileSpecific: false
+        },
+        { 
+          title: 'Characters & Relationships', 
+          type: 'characters',
+          instruction: 'Track relationships with Panam, Judy, River, Kerry, and romance options.',
+          priority: 'high',
+          isProfileSpecific: false
+        },
+        { 
+          title: 'Night City Secrets', 
+          type: 'tips',
+          instruction: 'Hidden legendary weapons, iconic gear locations, and easter eggs in current area.',
+          priority: 'high',
+          isProfileSpecific: false
+        }
+      ];
+    }
+    
+    // Dark Souls series - customize for bonfires, covenant, boss souls
+    if (gameLower.includes('dark souls')) {
+      return [
+        { 
+          title: 'Story So Far', 
+          type: 'story',
+          instruction: 'Track the Chosen Undead\'s journey, Lords of Cinder defeated, and covenant allegiances.',
+          priority: 'high',
+          isProfileSpecific: false
+        },
+        { 
+          title: 'Nearby Bonfires', 
+          type: 'tips',
+          instruction: 'List nearby bonfires, their locations, and connectivity to other areas.',
+          priority: 'high',
+          isProfileSpecific: false
+        },
+        { 
+          title: 'Boss Strategy', 
+          type: 'strategies',
+          instruction: 'Strategies for Lord Souls, required bosses, and optional powerful enemies.',
+          priority: 'high',
+          isProfileSpecific: false
+        },
+        { 
+          title: 'Covenant Progress', 
+          type: 'walkthrough',
+          instruction: 'Track covenant memberships, offering progress, and covenant-specific rewards.',
+          priority: 'high',
+          isProfileSpecific: false
+        },
+        { 
+          title: 'Upgrade Paths', 
+          type: 'items',
+          instruction: 'Weapon upgrade materials, blacksmith locations, and recommended upgrade paths for current build.',
+          priority: 'high',
+          isProfileSpecific: false
+        }
+      ];
+    }
+    
+    // Baldur's Gate 3 - customize for companions, choices, D&D mechanics
+    if (gameLower.includes('baldur') || gameLower.includes('bg3')) {
+      return [
+        { 
+          title: 'Story & Choices', 
+          type: 'story',
+          instruction: 'Track main story progress, major decisions made, and their consequences. Note which companions were recruited and key story branches taken.',
+          priority: 'high',
+          isProfileSpecific: false
+        },
+        { 
+          title: 'Companion Approval', 
+          type: 'characters',
+          instruction: 'Track companion relationships, approval ratings, personal quests, and romance progress.',
+          priority: 'high',
+          isProfileSpecific: false
+        },
+        { 
+          title: 'Build & Multiclass', 
+          type: 'strategies',
+          instruction: 'Current character build, multiclass options, and synergistic spell/ability combinations.',
+          priority: 'high',
+          isProfileSpecific: false
+        },
+        { 
+          title: 'Active Quests', 
+          type: 'walkthrough',
+          instruction: 'List active main quests and important side quests in current act, with quest objectives.',
+          priority: 'high',
+          isProfileSpecific: false
+        },
+        { 
+          title: 'Secrets & Items', 
+          type: 'items',
+          instruction: 'Hidden legendary items, secret areas, and missable content in current region.',
+          priority: 'high',
+          isProfileSpecific: false
+        }
+      ];
+    }
+    
+    // The Witcher 3 - customize for contracts, potions, Gwent
+    if (gameLower.includes('witcher')) {
+      return [
+        { 
+          title: 'Story Progress', 
+          type: 'story',
+          instruction: 'Track main story, key decisions, Ciri\'s journey, and major political developments.',
+          priority: 'high',
+          isProfileSpecific: false
+        },
+        { 
+          title: 'Contracts & Quests', 
+          type: 'walkthrough',
+          instruction: 'Active witcher contracts, treasure hunts, and important side quests in current region.',
+          priority: 'high',
+          isProfileSpecific: false
+        },
+        { 
+          title: 'Combat & Alchemy', 
+          type: 'strategies',
+          instruction: 'Best potions, oils, and decoctions for current enemies. Sign usage tips and combat strategies.',
+          priority: 'high',
+          isProfileSpecific: false
+        },
+        { 
+          title: 'Characters & Romance', 
+          type: 'characters',
+          instruction: 'Track relationships with Yennefer, Triss, and other key characters. Romance quest progress.',
+          priority: 'high',
+          isProfileSpecific: false
+        },
+        { 
+          title: 'Gear & Diagrams', 
+          type: 'items',
+          instruction: 'Witcher gear sets available, diagram locations, and upgrade materials needed.',
+          priority: 'high',
+          isProfileSpecific: false
+        }
+      ];
+    }
+    
+    // Hollow Knight - customize for charms, area exploration, boss challenges
+    if (gameLower.includes('hollow knight')) {
+      return [
+        { 
+          title: 'Exploration Progress', 
+          type: 'story',
+          instruction: 'Track areas explored, lore discovered, and connections between regions.',
+          priority: 'high',
+          isProfileSpecific: false
+        },
+        { 
+          title: 'Boss Strategies', 
+          type: 'strategies',
+          instruction: 'Detailed strategies for current and nearby bosses, including dream versions and optional challenges.',
+          priority: 'high',
+          isProfileSpecific: false
+        },
+        { 
+          title: 'Charm Builds', 
+          type: 'items',
+          instruction: 'Recommended charm combinations for current playstyle, and where to find new charms.',
+          priority: 'high',
+          isProfileSpecific: false
+        },
+        { 
+          title: 'Hidden Secrets', 
+          type: 'tips',
+          instruction: 'Secret paths, hidden rooms, and breakable walls in current and nearby areas.',
+          priority: 'high',
+          isProfileSpecific: false
+        },
+        { 
+          title: 'NPC Questlines', 
+          type: 'characters',
+          instruction: 'Track NPC locations, quest progress for characters like Hornet, Quirrel, and Bretta.',
+          priority: 'high',
+          isProfileSpecific: false
+        }
+      ];
+    }
+    
+    // God of War (2018/Ragnarok) - customize for realms, collectibles, upgrades
+    if (gameLower.includes('god of war')) {
+      return [
+        { 
+          title: 'Story & Mythology', 
+          type: 'story',
+          instruction: 'Track main story progress, realm visits, and Norse mythology lore discovered.',
+          priority: 'high',
+          isProfileSpecific: false
+        },
+        { 
+          title: 'Boss & Enemy Tactics', 
+          type: 'strategies',
+          instruction: 'Strategies for bosses and tough enemies, including optimal runic attacks and Spartan Rage usage.',
+          priority: 'high',
+          isProfileSpecific: false
+        },
+        { 
+          title: 'Gear & Upgrades', 
+          type: 'items',
+          instruction: 'Best armor sets for current level, weapon upgrades, and where to find crafting materials.',
+          priority: 'high',
+          isProfileSpecific: false
+        },
+        { 
+          title: 'Realm Exploration', 
+          type: 'tips',
+          instruction: 'Areas to explore in current realm, hidden chests, and optional content.',
+          priority: 'high',
+          isProfileSpecific: false
+        },
+        { 
+          title: 'Collectibles', 
+          type: 'walkthrough',
+          instruction: 'Track Odin\'s Ravens, Nornir Chests, artifacts, and other collectibles in current regions.',
+          priority: 'high',
+          isProfileSpecific: false
+        }
+      ];
+    }
+    
+    // Return null for unmapped games - will fall back to genre-based tabs
+    return null;
+  }
+
   // @ts-ignore - Kept for future reference
   private generateInitialSubTabs(
     genre: string,
     playerProfile?: PlayerProfile,
     gameContext?: GameContext
   ): SubTab[] {
-    // Get base genre tabs
-    const config = insightTabsConfig[genre] || insightTabsConfig['Default'];
-    let baseTabs: ProfileSpecificTab[] = config.map(tabConfig => ({
-      ...tabConfig,
-      priority: 'medium' as const,
-      isProfileSpecific: false
-    }));
+    // Check for game-specific customizations first
+    const gameTitle = gameContext?.gameTitle || '';
+    const gameCustomizations = this.getGameSpecificTabCustomizations(gameTitle);
+    
+    // Get base tabs (game-specific or genre-based)
+    let baseTabs: ProfileSpecificTab[];
+    if (gameCustomizations) {
+      // Use game-specific tabs with proper types already configured
+      baseTabs = gameCustomizations;
+      console.error('🎮 [GameTabService] Using game-specific subtabs for:', gameTitle);
+    } else {
+      // Use genre-based tabs
+      const config = insightTabsConfig[genre] || insightTabsConfig['Default'];
+      baseTabs = config.map(tabConfig => ({
+        ...tabConfig,
+        priority: 'medium' as const,
+        isProfileSpecific: false
+      }));
+      console.error('🎮 [GameTabService] Using genre-based subtabs for genre:', genre);
+    }
     
     // If player profile exists, add profile-specific tabs
     if (playerProfile) {
@@ -1295,7 +1607,7 @@ class GameTabService {
         console.log(`🔄 [GameTabService] Generating subtabs for "${conv.gameTitle}" (${i + 1}/${gameTabs.length})`);
         
         // Generate initial subtabs
-        const subTabs = this.generateInitialSubTabs(conv.genre || 'Default', playerProfile);
+        const subTabs = this.generateInitialSubTabs(conv.genre || 'Default', playerProfile, { gameTitle: conv.gameTitle || '' });
         
         // Update conversation with subtabs
         await ConversationService.updateConversation(conv.id, {

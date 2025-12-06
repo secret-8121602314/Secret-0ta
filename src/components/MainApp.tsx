@@ -2814,31 +2814,32 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
           // Extract only the Hint section for TTS - stop at any section header
           let textToSpeak = '';
           
-          // Check if content has a Hint section
-          const hintStartMatch = response.content.match(/\*?\*?Hint:?\*?\*?\s*/i);
+          // TTS ALWAYS reads the Hint section if present
+          // For game-specific tabs, responses should always include a Hint section as the first section
+          const hintMatch = response.content.match(/\*?\*?Hint:?\*?\*?\s*/i);
           
-          if (hintStartMatch) {
-            // Get the index where Hint content starts
-            const hintStartIndex = (hintStartMatch.index || 0) + hintStartMatch[0].length;
+          if (hintMatch) {
+            // Found explicit Hint section - extract its content
+            const hintStartIndex = (hintMatch.index || 0) + hintMatch[0].length;
             const contentAfterHint = response.content.substring(hintStartIndex);
             
-            // Find where the next section starts (Lore, Strategy, Places of Interest, etc.)
-            const nextSectionMatch = contentAfterHint.match(/\n\s*\*?\*?(?:Lore|Places of Interest|Strategy|Characters|Items|Walkthrough|Tips):?\*?\*?/i);
+            // Find where the next section starts (any capitalized header)
+            // Universal pattern: matches any section header like "Lore:", "Weak Points:", "Story Context:", etc.
+            const nextSectionMatch = contentAfterHint.match(/\n\s*\*?\*?([A-Z][A-Za-z\s&'-]{2,40}):?\*?\*?/);
             
             if (nextSectionMatch && nextSectionMatch.index !== undefined) {
               // Extract only the Hint content up to the next section
               textToSpeak = contentAfterHint.substring(0, nextSectionMatch.index).trim();
             } else {
-              // No next section found, but limit to first paragraph or reasonable length
-              const paragraphs = contentAfterHint.split(/\n\n/);
-              textToSpeak = paragraphs[0].trim();
+              // No next section found, use all remaining content
+              textToSpeak = contentAfterHint.trim();
             }
-          } else if (!response.content.match(/\*?\*?(?:Lore|Places of Interest|Strategy):?\*?\*?/i)) {
-            // No structured sections detected at all, read the first paragraph only
-            const paragraphs = response.content.split(/\n\n/);
-            textToSpeak = paragraphs[0].trim();
+          } else {
+            // No Hint section found - this is likely Game Hub or unreleased game
+            // For these cases, don't read anything via TTS (they're conversational, not structured)
+            textToSpeak = '';
           }
-          // If there's Lore but no Hint, don't read anything
+          // TTS only activates when a Hint section is present (game-specific responses)
           
           if (textToSpeak) {
             // Strip markdown and special formatting for better TTS
@@ -3037,27 +3038,50 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
           const currentSubtabs = activeConversation.subtabs || [];
           const tabNameToId: Record<string, string> = {};
           
-          // Build mapping from tab title/type to ID
+          // Build comprehensive mapping from various formats to subtab ID
           currentSubtabs.forEach(subtab => {
+            // Exact title match (case-insensitive)
+            tabNameToId[subtab.title.toLowerCase()] = subtab.id;
+            
+            // Normalized with underscores (e.g., "sites_of_grace_nearby")
             const normalizedTitle = subtab.title.toLowerCase().replace(/\s+/g, '_');
             tabNameToId[normalizedTitle] = subtab.id;
+            
+            // Normalized without special chars (e.g., "sitesofgracenearby")
+            const cleanTitle = subtab.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+            tabNameToId[cleanTitle] = subtab.id;
+            
+            // Type-based matching (e.g., "story", "tips", "strategies")
             if (subtab.type) {
               tabNameToId[subtab.type] = subtab.id;
             }
           });
           
+          console.log('📝 [MainApp] Built subtab mapping:', Object.keys(tabNameToId));
+          
           // Convert SUBTAB_UPDATE format to progressiveInsightUpdates format
           const mappedUpdates = subtabUpdates
             .map(update => {
-              const tabId = tabNameToId[update.tab] || tabNameToId[update.tab.toLowerCase().replace(/\s+/g, '_')];
+              // Try multiple matching strategies
+              const tabKey = update.tab.toLowerCase();
+              const tabKeyUnderscore = tabKey.replace(/\s+/g, '_');
+              const tabKeyClean = tabKey.replace(/[^a-z0-9]/g, '');
+              
+              const tabId = tabNameToId[tabKey] || 
+                           tabNameToId[tabKeyUnderscore] || 
+                           tabNameToId[tabKeyClean] ||
+                           tabNameToId[update.tab]; // Try original case
+              
               if (tabId) {
+                // Find the actual subtab to get its correct title
+                const actualTab = currentSubtabs.find(t => t.id === tabId);
                 return {
                   tabId,
-                  title: update.tab.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+                  title: actualTab?.title || update.tab,
                   content: update.content
                 };
               }
-              console.warn(`📝 [MainApp] Could not find subtab for: ${update.tab}`);
+              console.warn(`📝 [MainApp] Could not find subtab for: "${update.tab}". Available tabs:`, Object.keys(tabNameToId));
               return null;
             })
             .filter(Boolean) as Array<{tabId: string; title: string; content: string}>;
@@ -3077,6 +3101,70 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               })
               .catch(error => console.error('📝 [MainApp] Failed to update subtabs:', error));
           }
+        }
+      }
+
+      // ✅ Handle OTAKON_SUBTAB_CONSOLIDATE for full subtab content replacement (AI-powered summarization)
+      if (response.otakonTags.has('SUBTAB_CONSOLIDATE')) {
+        const consolidateUpdates = response.otakonTags.get('SUBTAB_CONSOLIDATE') as Array<{tab: string; content: string}>;
+        if (Array.isArray(consolidateUpdates) && consolidateUpdates.length > 0) {
+          console.log(`📦 [MainApp] OTAKON_SUBTAB_CONSOLIDATE detected:`, consolidateUpdates.length, 'consolidations');
+          
+          // Map tab names to subtab IDs
+          const currentSubtabs = activeConversation.subtabs || [];
+          const tabNameToId: Record<string, string> = {};
+          
+          currentSubtabs.forEach(subtab => {
+            const normalizedTitle = subtab.title.toLowerCase().replace(/\s+/g, '_');
+            tabNameToId[normalizedTitle] = subtab.id;
+            tabNameToId[subtab.id] = subtab.id; // Also allow direct ID matching
+            if (subtab.type) {
+              tabNameToId[subtab.type] = subtab.id;
+            }
+          });
+          
+          // Apply consolidations - these REPLACE content entirely (not append)
+          // Process all consolidations in parallel to avoid await in loop
+          await Promise.all(consolidateUpdates.map(async (consolidation) => {
+            const tabId = tabNameToId[consolidation.tab] || tabNameToId[consolidation.tab.toLowerCase().replace(/\s+/g, '_')];
+            if (tabId) {
+              console.log(`📦 [MainApp] Consolidating subtab "${consolidation.tab}" (${tabId})`);
+              
+              // Find the subtab and replace its content
+              const updatedSubtabs = currentSubtabs.map(subtab => {
+                if (subtab.id === tabId) {
+                  return {
+                    ...subtab,
+                    // Set consolidated content with fresh LATEST_UPDATE marker
+                    content: '<!-- LATEST_UPDATE -->\n\n' + consolidation.content,
+                    isNew: true,
+                    status: 'loaded' as const
+                  };
+                }
+                return subtab;
+              });
+              
+              // Update the conversation with consolidated subtabs
+              await ConversationService.updateConversation(activeConversation.id, {
+                ...activeConversation,
+                subtabs: updatedSubtabs
+              });
+              
+              console.log(`📦 [MainApp] ✅ Subtab "${consolidation.tab}" consolidated successfully`);
+            } else {
+              console.warn(`📦 [MainApp] Could not find subtab for consolidation: ${consolidation.tab}`);
+            }
+          }));
+          
+          // Refresh UI after consolidations
+          ConversationService.getConversations().then(updatedConversations => {
+            const freshConversations = deepCloneConversations(updatedConversations);
+            setConversations(freshConversations);
+            const refreshedConversation = freshConversations[activeConversation.id];
+            if (refreshedConversation) {
+              setActiveConversation(refreshedConversation);
+            }
+          });
         }
       }
 
