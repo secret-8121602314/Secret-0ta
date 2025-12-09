@@ -1009,15 +1009,17 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 <div className={`space-y-6 transition-all duration-300 ${hintDemoState !== 'idle' ? 'opacity-100' : 'opacity-0 absolute inset-0 pointer-events-none p-6'}`}>
                                     {/* User Prompt with Image */}
                                     <div className="flex justify-end">
-                                        <div className="bg-gradient-to-r from-rose-900/15 to-rose-800/15 rounded-2xl rounded-br-none border-2 border-rose-500/40 backdrop-blur-sm shadow-lg overflow-hidden max-w-[85%]">
+                                        <div className="bg-gradient-to-r from-rose-900/15 to-rose-800/15 rounded-2xl rounded-br-none border-2 border-rose-500/40 backdrop-blur-sm shadow-lg overflow-hidden max-w-[80%]">
                                             <img 
                                                 src={currentDemo.image} 
                                                 alt="Game screenshot needing help" 
                                                 className="w-full h-auto max-h-48 object-cover"
                                             />
-                                            <p className="text-base text-[#F5F5F5] p-6 text-left">
-                                                {currentDemo.query}
-                                            </p>
+                                            <div className="p-6 text-left">
+                                                <p className="text-base text-[#F5F5F5]">
+                                                    {currentDemo.query}
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
                                     
