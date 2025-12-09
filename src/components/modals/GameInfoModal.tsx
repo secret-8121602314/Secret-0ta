@@ -248,19 +248,6 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
       maxWidth="lg"
       className="p-3 sm:p-4 md:p-6"
     >
-      {/* Close button - positioned top left */}
-      <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10">
-        <button
-          onClick={handleClose}
-          className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
-          title="Close modal"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-
       <div className="max-h-[85vh] overflow-hidden flex flex-col">
         {/* Loading overlay for similar games */}
         <AnimatePresence>
@@ -283,11 +270,13 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
         <div className="flex gap-3 sm:gap-4 md:gap-5 pb-3 sm:pb-4 border-b border-neutral-700/50 flex-shrink-0">
           {/* Cover Image */}
           {currentGameData.cover?.url && (
-            <img
-              src={currentGameData.cover.url}
-              alt={currentGameData.name}
-              className="w-32 sm:w-40 md:w-48 lg:w-56 aspect-[3/4] object-cover rounded-lg shadow-lg flex-shrink-0"
-            />
+            <div className="w-32 sm:w-40 md:w-48 lg:w-56 bg-neutral-900 rounded-lg shadow-lg flex-shrink-0 overflow-hidden flex items-center justify-center self-stretch">
+              <img
+                src={currentGameData.cover.url}
+                alt={currentGameData.name}
+                className="w-full h-full object-contain"
+              />
+            </div>
           )}
           
           {/* Game Info */}
@@ -335,14 +324,14 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
                   <motion.button
                     key={action.id}
                     onClick={() => handleLibraryAction(action.id)}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className={`flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 sm:py-2.5 rounded-lg text-[11px] sm:text-xs font-medium transition-all min-h-[40px] ${
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 sm:py-2.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all min-h-[40px] ${
                       isActive
-                        ? 'bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white shadow-md'
-                        : 'bg-neutral-800/80 text-text-secondary hover:bg-neutral-700 hover:text-text-primary'
+                        ? 'bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white shadow-lg shadow-[#E53A3A]/30 border border-[#E53A3A]/50'
+                        : 'bg-neutral-800/80 text-text-secondary hover:bg-neutral-700/80 hover:text-text-primary border border-transparent hover:border-neutral-600'
                     }`}
-                    title={isActive ? `Remove from ${action.label}` : `Add to ${action.label}`}
+                    title={isActive ? `Click to remove from ${action.activeLabel}` : `Click to add to ${action.label}`}
                   >
                     <span className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center">{isActive ? action.activeIcon : action.icon}</span>
                     <span className="truncate">{isActive ? action.activeLabel : action.label}</span>
