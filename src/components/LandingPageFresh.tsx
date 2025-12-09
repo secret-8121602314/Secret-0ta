@@ -1968,7 +1968,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
 
       {/* Footer */}
             <footer className="bg-transparent border-t border-neutral-800/50">
-                <div className="container mx-auto px-6 py-8">
+                <div className="container mx-auto px-6 py-8 pb-16 md:pb-8">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-6">
                         {/* Footer Links - Two rows on mobile, single row on desktop */}
                         <div className="flex flex-col md:flex-row items-center gap-3 md:gap-6 text-sm font-medium text-neutral-400 order-1 md:order-2">
