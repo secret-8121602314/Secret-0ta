@@ -259,7 +259,7 @@ const FeaturesCarousel = ({ features }: { features: Array<{ title: React.ReactNo
         <div className="relative px-4 md:px-0">
             {/* Embla Container */}
             <div className="overflow-hidden" ref={emblaRef}>
-                <div className="flex touch-pan-y touch-pinch-zoom -ml-4">
+                <div className="flex -ml-4" style={{ touchAction: 'pan-x' }}>
                     {isMobile ? (
                         // Mobile: 1 item per slide
                         features.map((feature, index) => (
@@ -452,7 +452,7 @@ const TestimonialsCarousel = ({ testimonials }: { testimonials: Array<{ quote: s
         <div className="relative overflow-hidden">
             {/* Carousel Container */}
             <div className="overflow-hidden" ref={emblaRef}>
-                <div className="flex touch-pan-y touch-pinch-zoom -ml-4">
+                <div className="flex -ml-4" style={{ touchAction: 'pan-x' }}>
                     {testimonials.map((testimonial, index) => (
                         <div 
                             key={index}
@@ -856,9 +856,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                 backgroundColor: '#111111',
                 minHeight: '100vh',
                 height: 'auto',
+                width: '100%',
+                position: 'relative',
                 overflowX: 'hidden',
                 overflowY: 'auto',
-                WebkitOverflowScrolling: 'touch'
+                WebkitOverflowScrolling: 'touch',
+                touchAction: 'pan-y pinch-zoom'
             }}
         >
             {/* Enhanced Background Glows */}

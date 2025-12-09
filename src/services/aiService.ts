@@ -495,7 +495,7 @@ class AIService {
           prompt,
           image: imageBase64,
           temperature: optimalTemperature,
-          maxTokens: 8192, // Increased to prevent response truncation
+          maxTokens: 8192, // Output tokens limit (input supports 1M tokens)
           requestType: hasImages ? 'image' : 'text',
           model: modelName,
           tools: tools.length > 0 ? tools : undefined,
@@ -1015,7 +1015,7 @@ In addition to your regular response, provide structured data in the following o
           prompt,
           image: imageBase64,
           temperature: optimalTemperature,
-          maxTokens: 8192, // Increased to prevent response truncation
+          maxTokens: 8192, // Output tokens limit (input supports 1M tokens)
           requestType: hasImages ? 'image' : 'text',
           model: modelName,
           tools: tools,
@@ -1050,10 +1050,12 @@ In addition to your regular response, provide structured data in the following o
           tagCount: tags.size,
           tagKeys: Array.from(tags.keys()),
           progressValue: tags.get('PROGRESS'),
-          objectiveValue: tags.get('OBJECTIVE')
+          objectiveValue: tags.get('OBJECTIVE'),
+          suggestionsValue: tags.get('SUGGESTIONS')
         });
 
         const suggestions = (tags.get('SUGGESTIONS') as string[]) || [];
+        console.log('🎯 [AIService] Suggestions from parseOtakonTags:', suggestions, 'Length:', suggestions.length);
         
         // ✅ FIX: Build stateUpdateTags from otakonTags for consistency with JSON mode
         const stateUpdateTags: string[] = [];
@@ -1664,7 +1666,7 @@ NOW generate COMPREHENSIVE valid JSON for ALL these tab IDs (MUST include every 
         const edgeResponse = await this.callEdgeFunction({
           prompt,
           temperature: 0.7,
-          maxTokens: 5000, // ? Increased to 5000 to accommodate comprehensive 150-250 word insights per tab
+          maxTokens: 5000, // Output tokens for subtab content (input supports 1M tokens)
           requestType: 'text',
           model: 'gemini-2.5-flash', // Back to Flash model
           callType: 'subtabs' // Subtab content generation
