@@ -56,11 +56,13 @@ export const galleryService = {
    */
   async fetchGalleryData(authUserId: string): Promise<GalleryData> {
     try {
+      console.log('🖼️ [GalleryService] Fetching gallery data for user:', authUserId);
+      
       // First get all conversations for the user
       const { data: conversations, error: convError } = await supabase
         .from('conversations')
         .select('id, title, game_title')
-        .eq('user_id', authUserId);
+        .eq('auth_user_id', authUserId);
 
       if (convError) {
         console.error('[GalleryService] Error fetching conversations:', convError);
@@ -68,8 +70,11 @@ export const galleryService = {
       }
 
       if (!conversations || conversations.length === 0) {
+        console.log('🖼️ [GalleryService] No conversations found');
         return { albums: [], totalImages: 0, loading: false };
       }
+
+      console.log('🖼️ [GalleryService] Found', conversations.length, 'conversations');
 
       // Get conversation IDs
       const conversationIds = conversations.map(c => c.id);
@@ -86,6 +91,9 @@ export const galleryService = {
         console.error('[GalleryService] Error fetching messages:', msgError);
         return { albums: [], totalImages: 0, loading: false, error: msgError.message };
       }
+
+      console.log('🖼️ [GalleryService] Found', messages?.length || 0, 'messages with images');
+      console.log('🖼️ [GalleryService] Sample image URLs:', messages?.slice(0, 3).map(m => m.image_url));
 
       // Create a map of conversation details
       const convMap = new Map(conversations.map(c => [c.id, {
@@ -205,7 +213,7 @@ export const galleryService = {
       const { data: conversations } = await supabase
         .from('conversations')
         .select('id')
-        .eq('user_id', authUserId);
+        .eq('auth_user_id', authUserId);
 
       if (!conversations || conversations.length === 0) {
         return 0;

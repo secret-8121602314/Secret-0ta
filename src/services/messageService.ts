@@ -91,14 +91,19 @@ export class MessageService {
         return [];
       }
 
-      return (data || []).map(msg => ({
-        id: msg.id,
-        role: msg.role as 'user' | 'assistant' | 'system',
-        content: msg.content,
-        timestamp: new Date(msg.created_at).getTime(),
-        imageUrl: msg.image_url || undefined,
-        metadata: jsonToRecord(msg.metadata),
-      }));
+      return (data || []).map(msg => {
+        const metadata = jsonToRecord(msg.metadata);
+        return {
+          id: msg.id,
+          role: msg.role as 'user' | 'assistant' | 'system',
+          content: msg.content,
+          timestamp: new Date(msg.created_at).getTime(),
+          imageUrl: msg.image_url || undefined,
+          metadata: metadata,
+          // ✅ Restore suggestedPrompts from metadata for UI display
+          suggestedPrompts: metadata?.suggestedPrompts as string[] | undefined,
+        };
+      });
     } catch (error) {
       console.error('Error getting messages from table:', error);
       return [];
@@ -156,13 +161,16 @@ export class MessageService {
           throw new Error('Message not found after insert - database inconsistency');
         }
 
+        const metadata = jsonToRecord(newMessage.metadata);
         return {
           id: newMessage.id,
           role: newMessage.role as 'user' | 'assistant' | 'system',
           content: newMessage.content,
           timestamp: safeParseDate(newMessage.created_at),
           imageUrl: safeString(newMessage.image_url, undefined),
-          metadata: jsonToRecord(newMessage.metadata),
+          metadata: metadata,
+          // ✅ Restore suggestedPrompts from metadata for UI display
+          suggestedPrompts: metadata?.suggestedPrompts as string[] | undefined,
         };
       } catch (error) {
         if (attempt === maxRetries - 1) {

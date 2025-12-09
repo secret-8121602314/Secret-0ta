@@ -124,7 +124,12 @@ class SuggestedPromptsService {
    */
   public processAISuggestions(suggestions: unknown): string[] {
         // Handle different types of suggestions
+    console.log('🔧 [SuggestedPromptsService] processAISuggestions INPUT:', suggestions);
+    console.log('🔧 [SuggestedPromptsService] INPUT type:', typeof suggestions);
+    console.log('🔧 [SuggestedPromptsService] INPUT is Array:', Array.isArray(suggestions));
+    
     if (!suggestions) {
+            console.log('🔧 [SuggestedPromptsService] No suggestions - returning []');
             return [];
     }
     
@@ -183,7 +188,11 @@ class SuggestedPromptsService {
       .map(suggestion => suggestion.trim())
       .slice(0, 3); // Limit to 3 suggestions
     
-        return result;
+        console.log('🔧 [SuggestedPromptsService] suggestionsArray before filter:', suggestionsArray);
+    console.log('🔧 [SuggestedPromptsService] RESULT after filter/map/slice:', result);
+    console.log('🔧 [SuggestedPromptsService] RESULT length:', result.length);
+    
+    return result;
   }
 
   /**

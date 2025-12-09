@@ -194,7 +194,7 @@ class PaymentService implements IPaymentService {
         id: 'pro-monthly',
         name: 'Pro (Monthly)',
         tier: 'pro' as const,
-        price: 3.99,
+        price: 4.99,
         currency: 'USD',
         interval: 'month' as const,
         features: [
@@ -211,7 +211,7 @@ class PaymentService implements IPaymentService {
         id: 'vanguard-yearly',
         name: 'Pro Vanguard (Yearly)',
         tier: 'vanguard_pro' as const,
-        price: 20,
+        price: 30,
         currency: 'USD',
         interval: 'year' as const,
         features: [

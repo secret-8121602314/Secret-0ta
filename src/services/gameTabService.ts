@@ -5,6 +5,9 @@ import { profileAwareTabService, GameContext, ProfileSpecificTab } from './profi
 import { toastService } from './toastService';
 import { subtabsService } from './subtabsService';
 import { chatMemoryService } from './chatMemoryService';
+import { unreleasedTabLimitService } from './unreleasedTabLimitService';
+import { triggerGameKnowledgeFetch } from './gameKnowledgeFetcher';
+import { libraryStorage } from './gamingExplorerStorage';
 
 // ============================================================================
 // SUBTAB CONTENT LIMITS
@@ -68,6 +71,14 @@ class GameTabService {
     // 🔒 TIER-GATING: Check if subtabs should be generated based on user tier
     const userTier = data.userTier || 'free';
     const isPro = userTier === 'pro' || userTier === 'vanguard_pro';
+    
+    // 🔒 UNRELEASED TAB LIMIT: Check if user can create unreleased game tab
+    if (data.isUnreleased) {
+      const limitCheck = await unreleasedTabLimitService.canCreateUnreleasedTab(data.userId, userTier);
+      if (!limitCheck.canCreate) {
+        throw new Error(`You've reached your limit of ${limitCheck.limit} unreleased game tabs. ${isPro ? 'Delete an existing unreleased tab to add a new one.' : 'Upgrade to Pro for up to 10 unreleased game tabs.'}`);
+      }
+    }
     
     console.log('🎮 [GameTabService] Creating new game tab:', {
       gameTitle: data.gameTitle,
@@ -158,6 +169,30 @@ class GameTabService {
 
     // Save to database
     await ConversationService.addConversation(conversation);
+    
+    // ✅ CRITICAL FIX: Invalidate cache immediately after creating new tab
+    // This prevents stale cache from overwriting the new tab when switching
+    ConversationService.clearCache();
+    console.log('🎮 [GameTabService] Cache invalidated after creating new tab:', conversation.id);
+    
+    // 🎮 BACKGROUND GAME KNOWLEDGE: Trigger non-blocking fetch for game knowledge
+    // This runs in background and populates cache for future use
+    if (!data.isUnreleased && isPro) {
+      const libraryGame = libraryStorage.getByGameTitle(data.gameTitle);
+      if (libraryGame?.igdbGameId) {
+        console.log(`🎮 [GameTabService] Triggering background game knowledge fetch for ${data.gameTitle} (IGDB: ${libraryGame.igdbGameId})`);
+        triggerGameKnowledgeFetch(libraryGame.igdbGameId, data.gameTitle);
+      } else {
+        console.log(`🎮 [GameTabService] No IGDB ID for ${data.gameTitle}, skipping knowledge fetch`);
+      }
+    }
+    
+    // 🔒 UNRELEASED TAB TRACKING: Track unreleased tab creation
+    if (data.isUnreleased) {
+      // Extract IGDB game ID from conversationId or use a placeholder
+      const gameId = 0; // Will be updated when we have IGDB data
+      await unreleasedTabLimitService.trackUnreleasedTab(data.userId, conversation.id, gameId, data.gameTitle);
+    }
 
     // Save subtabs using the subtabsService (handles both JSONB and normalized approaches)
     if (subTabs.length > 0 && isPro) {
@@ -189,8 +224,12 @@ class GameTabService {
     }
 
     // 🔒 TIER-GATING: Generate AI insights in background only for Pro users
-    // Only generate if we didn't already get them from the response
-    if (isPro) {
+    // ✅ OPTIMIZED: Only generate insights on FIRST message in a game tab (not subsequent messages)
+    // This prevents extra Gemini calls on every message
+    const isFirstMessage = conversation.messages.length <= 2; // User message + AI response = 2
+    
+    if (isPro && isFirstMessage) {
+      console.log(`🎯 [GameTabService] First message detected - will generate initial insights for: ${conversation.gameTitle}`);
       if (!data.aiResponse) {
         this.generateInitialInsights(conversation, data.playerProfile, data.aiResponse).catch(error => 
           console.error('Background insight generation failed:', error)
@@ -205,6 +244,8 @@ class GameTabService {
           );
         }
       }
+    } else if (isPro && !isFirstMessage) {
+      console.log(`📝 [GameTabService] Subsequent message (${conversation.messages.length} msgs) - skipping insight generation to save Gemini calls`);
     } else {
       console.error('🔒 [GameTabService] Skipping AI insight generation for free tier user');
     }

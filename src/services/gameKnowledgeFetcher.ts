@@ -1,12 +1,21 @@
 /**
  * Background Game Knowledge Fetcher Service
  * 
- * When a game is added as "owned", this service makes a NON-BLOCKING parallel
- * Gemini call to fetch comprehensive game knowledge and stores it for future context.
+ * When a game tab is created by Pro/Vanguard users, this service makes a NON-BLOCKING
+ * Gemini call WITH GROUNDING to fetch comprehensive game knowledge (32K+ tokens) and
+ * stores it in the GLOBAL Supabase cache for ALL users to benefit from.
+ * 
+ * Key Changes (Dec 2025):
+ * - Uses Supabase global cache instead of LocalStorage
+ * - Enables Google Search grounding for real-time accuracy
+ * - Increased token limit: 4096 → 32000 for comprehensive knowledge
+ * - Removed truncation - store full knowledge for RAG context
+ * - One-time LocalStorage → Supabase migration on init
  * 
  * This runs in the background and does not block any UI operations.
  */
 
+import { gameKnowledgeCacheService } from './gameKnowledgeCacheService';
 import { gameKnowledgeStorage, type GameKnowledgeBase } from './gamingExplorerStorage';
 import { supabase } from '../lib/supabase';
 import type { ViteImportMeta } from '../types/enhanced';
@@ -14,143 +23,227 @@ import type { ViteImportMeta } from '../types/enhanced';
 // Track in-progress fetches to avoid duplicates
 const pendingFetches = new Set<number>();
 
-// Edge Function URL
+// Track if LocalStorage migration has been attempted
+let migrationAttempted = false;
+
+// Track retry counts for each game
+const retryTracking = new Map<number, number>();
+
+// Edge Function URL - Use ai-background for knowledge fetching (lower priority)
 const getEdgeFunctionUrl = () => {
   const supabaseUrl = (import.meta as ViteImportMeta).env.VITE_SUPABASE_URL;
-  return `${supabaseUrl}/functions/v1/ai-proxy`;
+  return `${supabaseUrl}/functions/v1/ai-background`;
 };
 
 /**
- * Knowledge extraction prompt for owned games
+ * Enhanced knowledge extraction prompt for owned games
+ * Designed to produce comprehensive, RAG-friendly content
  */
 const getKnowledgePrompt = (gameName: string): string => `
-You are a comprehensive gaming knowledge base. Provide detailed, structured information about "${gameName}".
+You are a comprehensive gaming knowledge expert. Provide extremely detailed, encyclopedic information about "${gameName}".
 
-Please provide the following in a clear, organized format:
+Your response will be used as a knowledge base for an AI gaming assistant. Be thorough and cover EVERYTHING a player might ask about.
 
-**GAME MECHANICS:**
-- Core gameplay loop
-- Key systems and how they interact
-- Combat/movement mechanics (if applicable)
-- Progression systems
+## CORE GAME MECHANICS
+- Complete gameplay systems breakdown
+- All progression mechanics (leveling, skills, upgrades)
+- Combat system (if applicable) - every attack type, combo, counter
+- Movement and traversal mechanics
+- Resource management and economy
+- Crafting/building systems (if applicable)
 
-**TIPS AND TRICKS:**
-- Essential beginner tips (5-7 tips)
-- Advanced strategies
-- Common mistakes to avoid
-- Efficiency tips
+## COMPLETE WALKTHROUGH FRAMEWORK
+- Main story progression points
+- All major areas/chapters in order
+- Key objectives and how to complete them
+- Recommended level/gear for each section
+- Points of no return warnings
 
-**BOSS/CHALLENGE STRATEGIES:**
-- Key boss fights or challenging encounters
-- Recommended approaches for each
-- Equipment/loadout suggestions
+## DETAILED BOSS/CHALLENGE GUIDE
+- Every major boss with full strategies
+- Attack patterns and telegraphs
+- Recommended builds/loadouts for each
+- Cheese strategies and easy methods
+- No-hit or challenge run tips
 
-**COLLECTIBLES & SECRETS:**
-- Types of collectibles in the game
-- Notable secrets or hidden content
-- Achievement/trophy guidance
+## COMPREHENSIVE TIPS AND TRICKS
+- Essential beginner knowledge
+- Intermediate optimization strategies
+- Advanced/expert techniques
+- Hidden mechanics most players miss
+- Efficiency and speedrun tips
 
-**CHARACTER BUILDS (if applicable):**
-- Popular/meta builds
-- Build archetypes
-- Stat priorities
+## COLLECTIBLES AND SECRETS
+- All collectible types and locations
+- Hidden areas and secret content
+- Easter eggs and references
+- Achievement/trophy guide
+- 100% completion requirements
 
-**STORY CONTEXT (spoiler-free):**
-- Main themes
-- Setting overview
-- Key factions/characters (no plot spoilers)
+## CHARACTER BUILDS AND LOADOUTS
+- All viable build archetypes
+- Meta/optimal builds with explanations
+- Fun/unique build ideas
+- Stat allocation priorities
+- Equipment recommendations per build
 
-Keep information practical and actionable. Focus on helping players succeed and enjoy the game.
-Format with clear headers and bullet points for easy reference.
+## STORY AND LORE
+- Complete world lore (spoiler-tagged context)
+- Character backgrounds and motivations
+- Timeline of events
+- Faction information
+- Ending explanations (MAJOR SPOILERS clearly marked)
+
+## MULTIPLAYER/ONLINE (if applicable)
+- PvP strategies and meta
+- Co-op tips and etiquette
+- Server/region information
+- Community resources
+
+## TECHNICAL INFORMATION
+- Known bugs and workarounds
+- Performance optimization tips
+- PC-specific settings recommendations
+- Save management
+
+Be comprehensive. This knowledge base will help players with ANY question about the game.
+Use clear headers, bullet points, and organize information for easy searching.
 `;
 
 /**
- * Parse the AI response into structured knowledge
+ * One-time migration: Move existing LocalStorage knowledge to Supabase
+ * Runs once per session, non-blocking
  */
-function parseKnowledgeResponse(gameName: string, igdbGameId: number, response: string): GameKnowledgeBase {
-  // Extract sections by looking for headers
-  const sections = {
-    gameMechanics: '',
-    tipsAndTricks: '',
-    bossStrategies: {} as Record<string, unknown>,
-    collectibles: {} as Record<string, unknown>,
-    characterBuilds: {} as Record<string, unknown>,
-    storyProgression: {} as Record<string, unknown>,
-  };
-
-  // Simple section extraction based on headers
-  const mechanicsMatch = response.match(/\*\*GAME MECHANICS:\*\*[\s\S]*?(?=\*\*TIPS AND TRICKS:|$)/i);
-  if (mechanicsMatch) {
-    sections.gameMechanics = mechanicsMatch[0].replace(/\*\*GAME MECHANICS:\*\*/i, '').trim();
+async function migrateLocalStorageToSupabase(): Promise<void> {
+  if (migrationAttempted) {
+    return;
   }
+  migrationAttempted = true;
 
-  const tipsMatch = response.match(/\*\*TIPS AND TRICKS:\*\*[\s\S]*?(?=\*\*BOSS|$)/i);
-  if (tipsMatch) {
-    sections.tipsAndTricks = tipsMatch[0].replace(/\*\*TIPS AND TRICKS:\*\*/i, '').trim();
+  try {
+    // Use the gameKnowledgeStorage to get all items
+    const storageKey = 'otagon_game_knowledge';
+    const stored = localStorage.getItem(storageKey);
+    if (!stored) {
+      return;
+    }
+
+    const parsed = JSON.parse(stored) as GameKnowledgeBase[];
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return;
+    }
+
+    console.log(`🎮 [GameKnowledge] Found ${parsed.length} items in LocalStorage to migrate`);
+
+    // Process items sequentially to avoid rate limiting
+    for (const item of parsed) {
+      // Check if already in Supabase (intentionally sequential)
+      // eslint-disable-next-line no-await-in-loop
+      const exists = await gameKnowledgeCacheService.exists(item.igdbGameId);
+      if (exists) {
+        console.log(`🎮 [GameKnowledge] ${item.gameName} already in Supabase, skipping`);
+        continue;
+      }
+
+      // Convert to comprehensive knowledge string
+      const sections: string[] = [];
+      if (item.gameMechanics) {
+        sections.push(`## Game Mechanics\n${item.gameMechanics}`);
+      }
+      if (item.tipsAndTricks) {
+        sections.push(`## Tips and Tricks\n${item.tipsAndTricks}`);
+      }
+      if (item.bossStrategies) {
+        const content = typeof item.bossStrategies === 'object' 
+          ? JSON.stringify(item.bossStrategies, null, 2)
+          : String(item.bossStrategies);
+        sections.push(`## Boss Strategies\n${content}`);
+      }
+      if (item.collectibles) {
+        const content = typeof item.collectibles === 'object'
+          ? JSON.stringify(item.collectibles, null, 2)
+          : String(item.collectibles);
+        sections.push(`## Collectibles\n${content}`);
+      }
+      if (item.characterBuilds) {
+        const content = typeof item.characterBuilds === 'object'
+          ? JSON.stringify(item.characterBuilds, null, 2)
+          : String(item.characterBuilds);
+        sections.push(`## Character Builds\n${content}`);
+      }
+
+      if (sections.length === 0) {
+        continue;
+      }
+
+      const comprehensiveKnowledge = sections.join('\n\n');
+
+      // Store in Supabase (intentionally sequential for migration)
+      // eslint-disable-next-line no-await-in-loop
+      await gameKnowledgeCacheService.store(
+        item.igdbGameId,
+        item.gameName,
+        comprehensiveKnowledge,
+        {
+          fetchedWithGrounding: false, // Old data wasn't fetched with grounding
+          isPostCutoff: false
+        }
+      );
+
+      console.log(`🎮 [GameKnowledge] Migrated ${item.gameName} to Supabase`);
+    }
+
+    console.log(`🎮 [GameKnowledge] ✅ Migration complete`);
+  } catch (error) {
+    console.warn(`🎮 [GameKnowledge] Migration failed (non-critical):`, error);
   }
-
-  const bossMatch = response.match(/\*\*BOSS[\s\S]*?(?=\*\*COLLECTIBLES|$)/i);
-  if (bossMatch) {
-    sections.bossStrategies = { content: bossMatch[0].trim() };
-  }
-
-  const collectiblesMatch = response.match(/\*\*COLLECTIBLES[\s\S]*?(?=\*\*CHARACTER|$)/i);
-  if (collectiblesMatch) {
-    sections.collectibles = { content: collectiblesMatch[0].trim() };
-  }
-
-  const buildsMatch = response.match(/\*\*CHARACTER BUILDS[\s\S]*?(?=\*\*STORY|$)/i);
-  if (buildsMatch) {
-    sections.characterBuilds = { content: buildsMatch[0].trim() };
-  }
-
-  const storyMatch = response.match(/\*\*STORY CONTEXT[\s\S]*$/i);
-  if (storyMatch) {
-    sections.storyProgression = { context: storyMatch[0].trim() };
-  }
-
-  return {
-    igdbGameId,
-    gameName,
-    gameMechanics: sections.gameMechanics || undefined,
-    tipsAndTricks: sections.tipsAndTricks || undefined,
-    bossStrategies: Object.keys(sections.bossStrategies).length > 0 ? sections.bossStrategies : undefined,
-    collectibles: Object.keys(sections.collectibles).length > 0 ? sections.collectibles : undefined,
-    characterBuilds: Object.keys(sections.characterBuilds).length > 0 ? sections.characterBuilds : undefined,
-    storyProgression: Object.keys(sections.storyProgression).length > 0 ? sections.storyProgression : undefined,
-    extractedAt: Date.now(),
-    lastUpdated: Date.now(),
-  };
 }
 
 /**
- * Fetch game knowledge from Gemini API (non-blocking)
- * This runs in the background and stores results for future use
+ * Fetch game knowledge from Gemini API WITH GROUNDING (non-blocking)
+ * Stores results in global Supabase cache for all users
  */
 async function fetchGameKnowledge(igdbGameId: number, gameName: string): Promise<void> {
-  // Skip if already fetching or already have knowledge
+  // Run migration on first fetch (non-blocking)
+  migrateLocalStorageToSupabase().catch(() => {});
+
+  // Skip if already fetching
   if (pendingFetches.has(igdbGameId)) {
     console.log(`🎮 [GameKnowledge] Already fetching knowledge for ${gameName}`);
     return;
   }
 
+  // Check global Supabase cache first
+  const exists = await gameKnowledgeCacheService.exists(igdbGameId);
+  if (exists) {
+    console.log(`🎮 [GameKnowledge] Knowledge already exists in global cache for ${gameName}`);
+    return;
+  }
+
+  // Also check legacy LocalStorage (will be migrated)
   if (gameKnowledgeStorage.exists(igdbGameId)) {
-    console.log(`🎮 [GameKnowledge] Knowledge already exists for ${gameName}`);
+    console.log(`🎮 [GameKnowledge] Knowledge exists in LocalStorage for ${gameName}, will migrate`);
+    // Migration will handle this
     return;
   }
 
   pendingFetches.add(igdbGameId);
-  console.log(`🎮 [GameKnowledge] Starting background fetch for ${gameName}...`);
+  console.log(`🎮 [GameKnowledge] Starting background fetch WITH GROUNDING for ${gameName}...`);
 
   try {
     // Get user session for auth
+    console.log(`🎮 [GameKnowledge] 🔑 Checking for auth session...`);
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      console.warn(`🎮 [GameKnowledge] No auth session, skipping knowledge fetch`);
+      console.warn(`🎮 [GameKnowledge] ❌ No auth session found - user not logged in!`);
+      console.warn(`🎮 [GameKnowledge] 💡 Knowledge fetch requires authenticated user`);
       return;
     }
+    console.log(`🎮 [GameKnowledge] ✅ Auth session found, proceeding with fetch...`);
 
-    // Make non-blocking API call
+    console.log(`📡 [GEMINI CALL #1] 🎮 Game Knowledge Fetch | Game: ${gameName} | Type: BACKGROUND | Grounding: YES | Max Tokens: 32000`);
+    
+    // Make API call with GROUNDING ENABLED and 32K tokens
     const response = await fetch(getEdgeFunctionUrl(), {
       method: 'POST',
       headers: {
@@ -162,115 +255,206 @@ async function fetchGameKnowledge(igdbGameId: number, gameName: string): Promise
         requestType: 'text',
         model: 'gemini-2.5-flash',
         temperature: 0.7,
-        maxTokens: 4096,
-        systemPrompt: 'You are a helpful gaming knowledge assistant. Provide accurate, practical gaming information.'
+        maxTokens: 32000, // Increased from 4096 for comprehensive knowledge
+        systemPrompt: 'You are a comprehensive gaming knowledge expert. Provide extremely detailed, accurate, and practical gaming information. Use Google Search grounding to ensure all information is up-to-date and accurate.',
+        // Enable Google Search grounding for real-time accuracy
+        useGrounding: true,
+        groundingConfig: {
+          dynamicRetrievalConfig: {
+            mode: 'MODE_DYNAMIC',
+            dynamicThreshold: 0.3 // Lower threshold = more likely to use grounding
+          }
+        }
       })
     });
 
     if (!response.ok) {
       const error = await response.json();
+      console.error(`🎮 [GameKnowledge] ❌ Edge function error:`, error);
       throw new Error(error.error || 'Failed to fetch game knowledge');
     }
 
     const result = await response.json();
+    console.log(`🎮 [GameKnowledge] 📦 Received response:`, {
+      success: result.success,
+      responseLength: result.response?.length || 0,
+      tokensUsed: result.tokensUsed || 0
+    });
+    
+    console.log(`✅ [GEMINI CALL] Game Knowledge Fetch SUCCESS | Game: ${gameName} | Response Length: ${result.response?.length || 0} chars`);
     
     if (result.success && result.response) {
-      // Parse and store the knowledge
-      const knowledge = parseKnowledgeResponse(gameName, igdbGameId, result.response);
-      gameKnowledgeStorage.save(knowledge);
-      console.log(`🎮 [GameKnowledge] ✅ Stored knowledge for ${gameName}`);
+      // Store comprehensive knowledge in global Supabase cache
+      // NO TRUNCATION - store full response for RAG context
+      const stored = await gameKnowledgeCacheService.store(
+        igdbGameId,
+        gameName,
+        result.response, // Full response, no parsing/truncation
+        {
+          tokensUsed: result.tokensUsed || 0,
+          fetchedWithGrounding: true,
+          isPostCutoff: false, // TODO: Check release date
+          knowledgeSummary: result.response.slice(0, 500) // First 500 chars as summary
+        }
+      );
+
+      if (stored) {
+        console.log(`🎮 [GameKnowledge] ✅ Stored ${result.response.length} chars in global cache for ${gameName}`);
+        // Show success toast
+        import('./toastService').then(({ toastService }) => {
+          toastService.success(`Game knowledge created for ${gameName}`);
+        });
+        // Reset retry count on success
+        retryTracking.delete(igdbGameId);
+      } else {
+        // Fallback: Store in LocalStorage
+        const legacyKnowledge = parseKnowledgeResponseLegacy(gameName, igdbGameId, result.response);
+        gameKnowledgeStorage.save(legacyKnowledge);
+        console.log(`🎮 [GameKnowledge] ⚠️ Stored in LocalStorage fallback for ${gameName}`);
+        // Reset retry count on success
+        retryTracking.delete(igdbGameId);
+      }
     } else {
       console.warn(`🎮 [GameKnowledge] Empty response for ${gameName}`);
     }
 
   } catch (error) {
     console.error(`🎮 [GameKnowledge] Failed to fetch for ${gameName}:`, error);
-    // Don't throw - this is background work, shouldn't break anything
+    
+    // ✅ RETRY LOGIC: Add 1 second delay and retry up to 3 times
+    const currentRetries = retryTracking.get(igdbGameId) || 0;
+    const maxRetries = 3;
+    
+    if (currentRetries < maxRetries) {
+      retryTracking.set(igdbGameId, currentRetries + 1);
+      console.log(`🔄 [GameKnowledge] Retry ${currentRetries + 1}/${maxRetries} for ${gameName} in 1 second...`);
+      
+      // Wait 1 second then retry
+      setTimeout(() => {
+        pendingFetches.delete(igdbGameId); // Allow new fetch
+        fetchGameKnowledge(igdbGameId, gameName).catch(() => {
+          // Final failure - reset retry count
+          retryTracking.delete(igdbGameId);
+        });
+      }, 1000);
+    } else {
+      // Max retries reached
+      console.error(`❌ [GameKnowledge] Max retries reached for ${gameName}`);
+      retryTracking.delete(igdbGameId);
+    }
   } finally {
-    pendingFetches.delete(igdbGameId);
+    // Only delete from pendingFetches if not retrying
+    const currentRetries = retryTracking.get(igdbGameId) || 0;
+    if (currentRetries === 0) {
+      pendingFetches.delete(igdbGameId);
+    }
   }
 }
 
 /**
- * Trigger background knowledge fetch for an owned game
- * This is called when a game is added to the "own" category
+ * Legacy parser for LocalStorage fallback
+ */
+function parseKnowledgeResponseLegacy(gameName: string, igdbGameId: number, response: string): GameKnowledgeBase {
+  return {
+    igdbGameId,
+    gameName,
+    gameMechanics: response.slice(0, 2000), // Simplified - just store what we can
+    tipsAndTricks: undefined,
+    extractedAt: Date.now(),
+    lastUpdated: Date.now(),
+  };
+}
+
+/**
+ * Trigger background knowledge fetch for a game
+ * Called when Pro/Vanguard user creates a game tab
  * 
  * IMPORTANT: This is NON-BLOCKING - fires and forgets
  */
 export function triggerGameKnowledgeFetch(igdbGameId: number, gameName: string): void {
+  console.log(`🎮 [GameKnowledge] 🚀 TRIGGER called for: ${gameName} (IGDB ID: ${igdbGameId})`);
+  
   // Fire and forget - don't await
   // This runs completely in the background
   fetchGameKnowledge(igdbGameId, gameName).catch(err => {
-    // Silently handle errors - this is background work
-    console.error(`🎮 [GameKnowledge] Background fetch failed:`, err);
+    // Log errors so we can debug
+    console.error(`🎮 [GameKnowledge] ❌ Background fetch FAILED for ${gameName}:`, err);
+    console.error(`🎮 [GameKnowledge] ❌ Error details:`, {
+      message: err.message,
+      stack: err.stack,
+      igdbGameId,
+      gameName
+    });
   });
-}
-
-// ============================================================================
-// TOKEN LIMITS FOR CONTEXT INJECTION
-// ============================================================================
-// Prevent context bloat - game knowledge should be helpful but not overwhelming
-const MAX_SECTION_CHARS = 800;       // Max chars per section (mechanics, tips, etc.)
-const MAX_TOTAL_KNOWLEDGE_CHARS = 2500; // Max total knowledge context (~600 tokens)
-
-/**
- * Truncate text to limit, keeping most useful content (beginning)
- */
-function truncateSection(text: string, maxChars: number): string {
-  if (text.length <= maxChars) {
-    return text;
-  }
-  // Keep the beginning (most important), add ellipsis
-  return text.slice(0, maxChars - 3) + '...';
+  
+  console.log(`🎮 [GameKnowledge] ✅ Background fetch initiated for ${gameName}`);
 }
 
 /**
  * Get game knowledge for context injection
  * Returns formatted knowledge string or null if none exists
  * 
- * ⚠️ TRUNCATED: Each section limited to ~800 chars, total ~2500 chars
- * This prevents token bloat while still providing useful context
+ * NEW: Uses global Supabase cache first, falls back to LocalStorage
+ * NO TRUNCATION: Returns full knowledge for RAG context
  */
-export function getGameKnowledgeContext(igdbGameId: number): string | null {
-  const knowledge = gameKnowledgeStorage.get(igdbGameId);
-  if (!knowledge) {
+export async function getGameKnowledgeContext(igdbGameId: number): Promise<string | null> {
+  // Check global Supabase cache first
+  const cached = await gameKnowledgeCacheService.getForContext(igdbGameId);
+  if (cached) {
+    console.log(`🎮 [GameKnowledge] Using Supabase cache for context (${cached.length} chars)`);
+    return `\n\n=== GAME KNOWLEDGE BASE ===\n${cached}\n=== END KNOWLEDGE BASE ===`;
+  }
+
+  // Fallback to LocalStorage (legacy)
+  const legacy = gameKnowledgeStorage.get(igdbGameId);
+  if (legacy) {
+    console.log(`🎮 [GameKnowledge] Using LocalStorage fallback for context`);
+    
+    const sections: string[] = [];
+    if (legacy.gameMechanics) {
+      sections.push(`**Game Mechanics:**\n${legacy.gameMechanics}`);
+    }
+    if (legacy.tipsAndTricks) {
+      sections.push(`**Tips & Tricks:**\n${legacy.tipsAndTricks}`);
+    }
+    if (legacy.bossStrategies && typeof legacy.bossStrategies === 'object') {
+      const content = (legacy.bossStrategies as { content?: string }).content;
+      if (content) {
+        sections.push(`**Boss Strategies:**\n${content}`);
+      }
+    }
+    
+    if (sections.length > 0) {
+      return `\n\n=== GAME KNOWLEDGE (${legacy.gameName}) ===\n${sections.join('\n\n')}\n===`;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Sync version for backward compatibility
+ * Uses LocalStorage only (for sync contexts)
+ */
+export function getGameKnowledgeContextSync(igdbGameId: number): string | null {
+  const legacy = gameKnowledgeStorage.get(igdbGameId);
+  if (!legacy) {
     return null;
   }
 
   const sections: string[] = [];
-  let totalChars = 0;
-  
-  // Add sections with truncation, stop if we hit total limit
-  if (knowledge.gameMechanics && totalChars < MAX_TOTAL_KNOWLEDGE_CHARS) {
-    const content = truncateSection(knowledge.gameMechanics, MAX_SECTION_CHARS);
-    sections.push(`**Game Mechanics:**\n${content}`);
-    totalChars += content.length + 20;
+  if (legacy.gameMechanics) {
+    sections.push(`**Game Mechanics:**\n${legacy.gameMechanics.slice(0, 800)}`);
+  }
+  if (legacy.tipsAndTricks) {
+    sections.push(`**Tips & Tricks:**\n${legacy.tipsAndTricks.slice(0, 800)}`);
   }
   
-  if (knowledge.tipsAndTricks && totalChars < MAX_TOTAL_KNOWLEDGE_CHARS) {
-    const content = truncateSection(knowledge.tipsAndTricks, MAX_SECTION_CHARS);
-    sections.push(`**Tips & Tricks:**\n${content}`);
-    totalChars += content.length + 20;
-  }
-  
-  if (knowledge.bossStrategies && typeof knowledge.bossStrategies === 'object' && totalChars < MAX_TOTAL_KNOWLEDGE_CHARS) {
-    const rawContent = (knowledge.bossStrategies as { content?: string }).content;
-    if (rawContent) {
-      const content = truncateSection(rawContent, MAX_SECTION_CHARS);
-      sections.push(`**Boss Strategies:**\n${content}`);
-      totalChars += content.length + 20;
-    }
-  }
-
   if (sections.length === 0) {
     return null;
   }
 
-  const result = `\n\n=== GAME KNOWLEDGE (${knowledge.gameName}) ===\n${sections.join('\n\n')}\n===`;
-  
-  console.log(`🎮 [GameKnowledge] Injecting ${result.length} chars of context for ${knowledge.gameName}`);
-  
-  return result;
+  return `\n\n=== GAME KNOWLEDGE (${legacy.gameName}) ===\n${sections.join('\n\n')}\n===`;
 }
 
 /**
@@ -281,8 +465,22 @@ export function isKnowledgeFetching(igdbGameId: number): boolean {
 }
 
 /**
- * Check if knowledge exists for a game
+ * Check if knowledge exists for a game (async - checks Supabase)
  */
-export function hasGameKnowledge(igdbGameId: number): boolean {
+export async function hasGameKnowledge(igdbGameId: number): Promise<boolean> {
+  // Check Supabase first
+  const exists = await gameKnowledgeCacheService.exists(igdbGameId);
+  if (exists) {
+    return true;
+  }
+
+  // Fallback to LocalStorage
+  return gameKnowledgeStorage.exists(igdbGameId);
+}
+
+/**
+ * Sync version for backward compatibility
+ */
+export function hasGameKnowledgeSync(igdbGameId: number): boolean {
   return gameKnowledgeStorage.exists(igdbGameId);
 }

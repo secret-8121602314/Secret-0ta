@@ -1,7 +1,7 @@
 import { Conversation, User, PlayerProfile } from '../types';
 import { profileAwareTabService } from './profileAwareTabService';
 import { behaviorService, type AICorrection } from './ai/behaviorService';
-import { getGameKnowledgeContext } from './gameKnowledgeFetcher';
+import { gameKnowledgeCacheService } from './gameKnowledgeCacheService';
 import { libraryStorage } from './gamingExplorerStorage';
 
 // ============================================================================
@@ -254,8 +254,20 @@ export async function getBehaviorContext(
 // CONTEXT WINDOWING LIMITS
 // ============================================================================
 // Prevent context bloat for long gaming sessions (100+ hour RPGs)
-const MAX_SUBTAB_CHARS = 500;      // Max chars per subtab in context
-const MAX_CONTEXT_CHARS = 15000;   // Max total context chars
+// Strategy: Give AI FULL subtab content (matching what user sees), but limit total context
+const MAX_SUBTAB_CHARS = 3000;     // Match storage limit - AI sees same content as user
+const MAX_CONTEXT_CHARS = 20000;   // Increased total budget to accommodate fuller subtabs
+
+// Priority order for subtabs when context is limited (most important first)
+const SUBTAB_PRIORITY = [
+  'story_so_far',      // Critical for continuity
+  'quest_log',         // Current objectives
+  'characters',        // Important NPCs
+  'boss_strategy',     // Combat help
+  'tips',              // General guidance
+  'hidden_secrets',    // Optional content
+  'points_of_interest' // Exploration
+];
 
 // ============================================================================
 // KNOWLEDGEABLE GAMING COMPANION MODE
@@ -457,9 +469,142 @@ These terms are GAME-SPECIFIC. Using the wrong term is a critical error:
 **CRITICAL RULE:** Before using ANY game-specific term, verify it belongs to the game you're discussing. If discussing Elden Ring, NEVER say "bonfire" - it's "Site of Grace".
 `;
 
+// ============================================================================
+// DYNAMIC SECTION HEADERS - Context-aware response formatting
+// ============================================================================
+
+/**
+ * Query type detection for contextual section headers
+ */
+export type QueryType = 
+  | 'boss_fight'
+  | 'exploration' 
+  | 'story_question'
+  | 'item_location'
+  | 'character_info'
+  | 'build_advice'
+  | 'general_help';
+
+/**
+ * Detect query type from user message for dynamic header selection
+ */
+export function detectQueryType(userMessage: string): QueryType {
+  const msg = userMessage.toLowerCase();
+  
+  // Boss fight detection
+  if (msg.match(/boss|defeat|kill|beat|fight|attack|strategy|phase|weak/i)) {
+    return 'boss_fight';
+  }
+  
+  // Item/collectible location
+  if (msg.match(/find|where|location|item|weapon|armor|collectible|treasure/i)) {
+    return 'item_location';
+  }
+  
+  // Character/NPC info
+  if (msg.match(/who is|character|npc|backstory|relationship|motivation/i)) {
+    return 'character_info';
+  }
+  
+  // Build/loadout advice
+  if (msg.match(/build|loadout|stats|level|skill|attribute|upgrade|best gear/i)) {
+    return 'build_advice';
+  }
+  
+  // Story/lore questions
+  if (msg.match(/story|lore|plot|what happened|why|explain|meaning|significance/i)) {
+    return 'story_question';
+  }
+  
+  // Exploration focus
+  if (msg.match(/explore|area|zone|region|map|secret|hidden|next|should i go/i)) {
+    return 'exploration';
+  }
+  
+  // Default to general help
+  return 'general_help';
+}
+
+/**
+ * Get dynamic section headers based on query type and game context
+ * Returns header suggestions that the AI can adapt naturally
+ */
+export function getDynamicSectionHeaders(
+  queryType: QueryType,
+  _gameTitle?: string
+): { primary: string; secondary: string; tertiary: string; guidance: string } {
+  
+  switch (queryType) {
+    case 'boss_fight':
+      return {
+        primary: 'Strategy',
+        secondary: 'Weak Points',
+        tertiary: 'Phase Guide',
+        guidance: 'Focus on combat tactics, attack patterns, and winning strategies. Use headers like "Strategy:", "Weak Points:", "Phase Guide:", or adapt as needed.'
+      };
+      
+    case 'exploration':
+      return {
+        primary: 'Hint',
+        secondary: 'Hidden Areas',
+        tertiary: 'Secrets Nearby',
+        guidance: 'Focus on navigation, discovery, and exploration. Use headers like "Hint:", "Hidden Areas:", "Secrets Nearby:", or adapt as needed.'
+      };
+      
+    case 'story_question':
+      return {
+        primary: 'Story Context',
+        secondary: 'Character Info',
+        tertiary: 'What This Means',
+        guidance: 'Focus on narrative, lore, and story significance. Use headers like "Story Context:", "Character Info:", "What This Means:", or adapt as needed.'
+      };
+      
+    case 'item_location':
+      return {
+        primary: 'Where to Find It',
+        secondary: 'How to Get There',
+        tertiary: 'What You Need',
+        guidance: 'Focus on location, access requirements, and preparation. Use headers like "Where to Find It:", "How to Get There:", "What You Need:", or adapt as needed.'
+      };
+      
+    case 'character_info':
+      return {
+        primary: 'Character Background',
+        secondary: 'Role in Story',
+        tertiary: 'How to Interact',
+        guidance: 'Focus on character details, relationships, and interactions. Use headers like "Character Background:", "Role in Story:", "How to Interact:", or adapt as needed.'
+      };
+      
+    case 'build_advice':
+      return {
+        primary: 'Build Recommendation',
+        secondary: 'Key Stats',
+        tertiary: 'Gear & Upgrades',
+        guidance: 'Focus on optimization, stats, and equipment. Use headers like "Build Recommendation:", "Key Stats:", "Gear & Upgrades:", or adapt as needed.'
+      };
+      
+    case 'general_help':
+    default:
+      return {
+        primary: 'Hint',
+        secondary: 'Lore',
+        tertiary: 'Places of Interest',
+        guidance: 'Use versatile headers like "Hint:", "Lore:", "Places of Interest:", or adapt based on what the user needs most.'
+      };
+  }
+}
+
 // OTAKON tag definitions for the AI
 const OTAKON_TAG_DEFINITIONS = `
-You MUST use the following tags to structure your response. Do not put them in a code block.
+**⚠️ CRITICAL: Place game identification tags at the VERY START of your response!**
+When responding to a query about a specific game, your response MUST begin with these tags (before any other text):
+[OTAKON_GAME_ID: Game Name]
+[OTAKON_CONFIDENCE: high|low]
+[OTAKON_GENRE: Genre]
+
+This ensures the tags are always captured even if the response is truncated. Do not put them in a code block.
+
+**Tag Definitions:**
 - [OTAKON_GAME_ID: Game Name]: The full, official name of the game you've identified.
 - [OTAKON_CONFIDENCE: high|low]: Your confidence in the game identification. Use "high" when the game is clearly identifiable, "low" when uncertain or could be multiple games.
 - [OTAKON_GENRE: Genre]: The primary genre of the identified game. Must be one of:
@@ -496,7 +641,8 @@ You MUST use the following tags to structure your response. Do not put them in a
 - [OTAKON_TRIUMPH: {"type": "boss_defeated", "name": "Boss Name"}]: When analyzing a victory screen.
 - [OTAKON_OBJECTIVE_SET: {"description": "New objective"}]: When a new player objective is identified.
 - [OTAKON_INSIGHT_UPDATE: {"id": "sub_tab_id", "content": "content"}]: To update a specific sub-tab with NEW information discovered in this conversation.
-- [OTAKON_SUBTAB_UPDATE: {"tab": "story_so_far|characters|tips|boss_strategy|quest_log", "content": "New content to append"}]: ALWAYS include this when you provide information that should be saved to a subtab. This ensures subtabs stay updated with the latest information.
+- [OTAKON_SUBTAB_UPDATE: {"tab": "exact_tab_title", "content": "New content to append"}]: ALWAYS include this when you provide information that should be saved to a subtab. Use the EXACT subtab title you see in "Current Subtabs" section above (e.g., "Sites of Grace Nearby", "Boss Strategy", "Story So Far", etc.). The system will match this to the correct subtab automatically. This ensures subtabs stay updated with the latest information.
+- [OTAKON_SUBTAB_CONSOLIDATE: {"tab": "tab_id", "content": "consolidated content"}]: Use when a subtab needs consolidation (prompted by system). Provide a COMPLETE replacement that includes: 1) A "📜 Previous Updates" summary section consolidating old collapsed content, 2) The current/latest content. This REPLACES all subtab content, so make it comprehensive.
 - [OTAKON_INSIGHT_MODIFY_PENDING: {"id": "sub_tab_id", "title": "New Title", "content": "New content"}]: When user asks to modify a subtab via @command.
 - [OTAKON_INSIGHT_DELETE_REQUEST: {"id": "sub_tab_id"}]: When user asks to delete a subtab via @command.
 - [OTAKON_SUGGESTIONS: ["suggestion1", "suggestion2", "suggestion3"]]: Three contextual follow-up prompts for the user. Make these short, specific questions that help the user learn more about the current situation, get tips, or understand what to do next.
@@ -569,12 +715,13 @@ ${CROSS_GAME_TERMINOLOGY_GUARD}
 
 **Task:**
 1. Thoroughly answer the user's query: "${userMessage}".
-2. If the query is about a SPECIFIC RELEASED GAME that the user mentions by name, you MUST include these tags:
+2. **If the query is about a SPECIFIC RELEASED GAME that the user mentions by name, START your response with these tags:**
    - [OTAKON_GAME_ID: Full Game Name] - The complete, official name of the game
    - [OTAKON_CONFIDENCE: high|low] - Your confidence in the identification
    - [OTAKON_GENRE: Genre] - The primary genre (e.g., Action RPG, FPS, Strategy)
    - [OTAKON_GAME_STATUS: unreleased] - ONLY if the game is NOT YET RELEASED
-3. Generate three SPECIFIC follow-up prompts using [OTAKON_SUGGESTIONS: ["prompt1", "prompt2", "prompt3"]]
+   **Place these tags at the VERY BEGINNING of your response, before any other text.**
+3. At the end, generate three SPECIFIC follow-up prompts using [OTAKON_SUGGESTIONS: ["prompt1", "prompt2", "prompt3"]]
    - These MUST relate to the specific content of YOUR response
    - Reference specific games, features, or topics you mentioned
    - ❌ BAD: "What games are coming out?" (generic)
@@ -631,17 +778,32 @@ Description paragraph here...
 **IMPORTANT - When to use game tags:**
 ✅ User asks: "How do I beat the first boss in Elden Ring?" → Include [OTAKON_GAME_ID: Elden Ring] [OTAKON_CONFIDENCE: high] [OTAKON_GENRE: Action RPG]
 ✅ User asks: "What's the best build for Cyberpunk 2077?" → Include [OTAKON_GAME_ID: Cyberpunk 2077] [OTAKON_CONFIDENCE: high] [OTAKON_GENRE: Action RPG]
+✅ User asks: "What can I find in Jig Jig Street?" → Include [OTAKON_GAME_ID: Cyberpunk 2077] [OTAKON_CONFIDENCE: high] (location name identifies game)
+✅ User asks: "How do I get the Moonlight Greatsword?" → Detect game from context/item name
+✅ User mentions game-specific locations, items, characters, or mechanics → Include game tags
 ❌ User asks: "What's a good RPG to play?" → NO game tags (general question)
 ❌ User asks: "Tell me about open world games" → NO game tags (general question)
+
+**CRITICAL: Game Detection from Context**
+- If user mentions a location name (e.g., "Jig Jig Street", "Raya Lucaria", "Diamond City"), identify which game it's from
+- If user mentions an item name (e.g., "Mantis Blades", "Rivers of Blood", "Pip-Boy"), identify the game
+- If user mentions a character or quest name specific to a game, identify that game
+- **GAME SWITCHING**: If user is in Game A's tab but asks about Game B's content, include Game B's tags (not Game A's)
+  * Example: User in Elden Ring tab asks "What's in Jig Jig Street?" → Include [OTAKON_GAME_ID: Cyberpunk 2077] [OTAKON_CONFIDENCE: high]
+  * **IMPORTANT**: Answer the question about Game B - don't say "that's from a different game" or redirect back to Game A
+  * The system will automatically switch tabs - your job is to provide helpful information about the detected game
+- ALWAYS include game tags when you can identify the game from ANY context clues
 
 **Tag Definitions:**
 ${OTAKON_TAG_DEFINITIONS}
 
-**Response Style:**
+**Response Style - GAME HUB (NO HINT SECTION):**
+- Be conversational and natural - respond directly to the user's question
+- NO structured "Hint:" sections in Game Hub - this is for general gaming discussion
+- Use natural paragraphs and flowing prose
 - Be helpful and knowledgeable about gaming
 - Keep responses concise but informative
 - Use gaming terminology appropriately
-- For game-specific queries, start with "Hint:" and provide actionable advice
 - Focus on useful information, not obvious descriptions
 - Make responses engaging and immersive
 - NEVER include underscore lines (___), horizontal rules, or timestamps at the end of responses
@@ -651,31 +813,75 @@ ${OTAKON_TAG_DEFINITIONS}
 `;
 };
 
-const getGameCompanionPrompt = (
-  conversation: Conversation, 
-  userMessage: string, 
-  user: User, 
+const getGameCompanionPrompt = async (
+  conversation: Conversation,
+  userMessage: string,
+  user: User,
   isActiveSession: boolean,
   playerProfile?: PlayerProfile
-): string => {
-  // Gather subtab context with windowing to prevent context bloat
+): Promise<string> => {
+  // Gather subtab context with smart prioritization
+  // Strategy: Include FULL content of priority subtabs first, then others if space remains
   let totalChars = 0;
-  const subtabContext = conversation.subtabs
-    ?.filter(tab => tab.status === 'loaded' && tab.content)
+  
+  // Track subtabs that need consolidation (near storage limit)
+  const subtabsNeedingConsolidation: string[] = [];
+  const CONSOLIDATION_THRESHOLD = 2500; // Trigger consolidation hint at 83% of 3000 limit
+  
+  // Sort subtabs by priority (important ones first)
+  const sortedSubtabs = [...(conversation.subtabs || [])]
+    .filter(tab => tab.status === 'loaded' && tab.content)
+    .sort((a, b) => {
+      const priorityA = SUBTAB_PRIORITY.indexOf(a.id);
+      const priorityB = SUBTAB_PRIORITY.indexOf(b.id);
+      // Lower index = higher priority; unknown tabs go last
+      return (priorityA === -1 ? 999 : priorityA) - (priorityB === -1 ? 999 : priorityB);
+    });
+  
+  const subtabContext = sortedSubtabs
     .map(tab => {
-      // Truncate each subtab to MAX_SUBTAB_CHARS, keeping most recent content
       const content = tab.content || '';
-      const truncatedContent = content.length > MAX_SUBTAB_CHARS 
-        ? '...' + content.slice(-MAX_SUBTAB_CHARS) 
+      
+      // Check if this subtab is approaching storage limit and has collapsed history
+      // If so, flag it for AI consolidation (smarter than just deleting old content)
+      if (content.length > CONSOLIDATION_THRESHOLD && content.includes('<details>')) {
+        subtabsNeedingConsolidation.push(tab.id);
+      }
+      
+      // Include full content up to storage limit (no arbitrary truncation)
+      const includedContent = content.length > MAX_SUBTAB_CHARS 
+        ? content.slice(0, MAX_SUBTAB_CHARS) + '...[truncated]'
         : content;
-      const entry = `### ${tab.title} (ID: ${tab.id})\n${truncatedContent}`;
+      const entry = `### ${tab.title} (ID: ${tab.id})\n${includedContent}`;
+      
+      // Check if adding this subtab would exceed total budget
+      if (totalChars + entry.length > MAX_CONTEXT_CHARS) {
+        // For high-priority tabs, include a summary instead of skipping
+        const priorityIndex = SUBTAB_PRIORITY.indexOf(tab.id);
+        if (priorityIndex !== -1 && priorityIndex < 3) {
+          // Include first 500 chars of high-priority tabs even when over budget
+          const summaryEntry = `### ${tab.title} (ID: ${tab.id}) [SUMMARY]\n${content.slice(0, 500)}...`;
+          totalChars += summaryEntry.length;
+          return summaryEntry;
+        }
+        return null; // Skip lower priority tabs when over budget
+      }
+      
       totalChars += entry.length;
-      // Stop adding if we exceed total context limit
-      if (totalChars > MAX_CONTEXT_CHARS) { return null; }
       return entry;
     })
     .filter(Boolean)
     .join('\n\n') || 'No subtabs available yet.';
+  
+  // Build consolidation hint if any subtabs need it
+  // This asks the AI to compress old content as part of its natural response
+  const consolidationHint = subtabsNeedingConsolidation.length > 0 
+    ? `\n\n**📦 SUBTAB CONSOLIDATION REQUEST:**
+The following subtabs have grown large with historical content: ${subtabsNeedingConsolidation.join(', ')}
+When updating these subtabs, please CONSOLIDATE older collapsed sections (<details> blocks) into a brief summary.
+Instead of keeping multiple old updates, merge them into a single "📜 Previous Updates Summary" that captures key points.
+This keeps subtabs useful without losing important context.`
+    : '';
 
   // Gather recent conversation history (last 10 messages for better context)
   const recentMessages = conversation.messages
@@ -692,13 +898,22 @@ const getGameCompanionPrompt = (
   const profile = playerProfile || profileAwareTabService.getDefaultProfile();
   const profileContext = profileAwareTabService.buildProfileContext(profile);
 
-  // 🎮 Inject pre-fetched game knowledge context if available (from background fetch)
+  // 🎮 Inject FULL 32K game knowledge context if available (from global cache)
   // Look up IGDB ID from library by game title
   let gameKnowledgeContext = '';
   if (conversation.gameTitle) {
     const libraryGame = libraryStorage.getByGameTitle(conversation.gameTitle);
-    if (libraryGame) {
-      gameKnowledgeContext = getGameKnowledgeContext(libraryGame.igdbGameId) || '';
+    if (libraryGame?.igdbGameId) {
+      try {
+        const knowledge = await gameKnowledgeCacheService.getForContext(libraryGame.igdbGameId);
+        if (knowledge) {
+          gameKnowledgeContext = `\n\n=== GAME KNOWLEDGE DATABASE ===\nThe following is comprehensive, up-to-date information about ${conversation.gameTitle}. You can reference any part of this knowledge base to answer the user's questions accurately.\n\n${knowledge}\n\n=== END KNOWLEDGE DATABASE ===\n\n`;
+          console.log(`🎮 [PromptSystem] Injecting ${knowledge.length} chars of FULL game knowledge (no truncation)`);
+        }
+      } catch (error) {
+        console.warn(`🎮 [PromptSystem] Failed to fetch game knowledge:`, error);
+        // Continue without knowledge - graceful degradation
+      }
     }
   }
 
@@ -754,6 +969,7 @@ ${profileContext}
 ${gameKnowledgeContext}
 **Current Subtabs (Your Knowledge Base):**
 ${subtabContext}
+${consolidationHint}
 
 ${historicalContext}**Recent Conversation History:**
 ${recentMessages}
@@ -761,34 +977,46 @@ ${recentMessages}
 **User Query:** "${userMessage}"
 
 **Task:**
-1. Respond to the user's query in an immersive, in-character way that matches the tone of the game.
-2. Use the subtab context above to provide informed, consistent answers.
-3. **IMPORTANT: Adapt your response style based on the Player Profile above.**
-4. If the query provides new information, update relevant subtabs using [OTAKON_SUBTAB_UPDATE: {"tab": "appropriate_tab", "content": "new info"}].
-5. If the query implies progress, identify new objectives using [OTAKON_OBJECTIVE_SET].
-6. **⚠️ MANDATORY PROGRESS TRACKING - You MUST include [OTAKON_PROGRESS: X] at the END of every response:**
+1. **CRITICAL - GAME DETECTION OVERRIDE:**
+   - **IF the user's query mentions content from a DIFFERENT game** (location, item, character, quest from another game):
+     * Include: [OTAKON_GAME_ID: Name of the Detected Game] [OTAKON_CONFIDENCE: high]
+     * **ANSWER THE QUESTION about that game** - don't refuse or redirect to current game
+     * Provide helpful information about the detected game's content
+     * Example: User asks "What's in Jig Jig Street?" → Detect Cyberpunk 2077 → Answer about Jig Jig Street in Cyberpunk
+   - **IF the query is about the current game (${conversation.gameTitle})**:
+     * Include [OTAKON_GAME_ID: ${conversation.gameTitle}] [OTAKON_CONFIDENCE: high] [OTAKON_GENRE: ${conversation.genre}]
+     * Answer using the current game's context
+
+2. **START YOUR RESPONSE WITH CRITICAL TAGS (before any other content):**
+   - [OTAKON_GAME_ID: Game Name] - Current game OR detected different game
+   - [OTAKON_CONFIDENCE: high]
+   - [OTAKON_GENRE: Genre]
+   - [OTAKON_PROGRESS: X] - Estimate completion (0-100) based on current context
+   - [OTAKON_OBJECTIVE: "description"] - Current main objective
+
+3. Then respond to the user's query in an immersive, in-character way that matches the tone of the game.
+4. Use the subtab context above to provide informed, consistent answers.
+5. **IMPORTANT: Adapt your response style based on the Player Profile above.**
+6. If the query provides new information, update relevant subtabs using [OTAKON_SUBTAB_UPDATE: {"tab": "Exact Tab Title From Above", "content": "new info"}]. Use the EXACT subtab title shown in "Current Subtabs" section.
+7. If the query implies progress, identify new objectives using [OTAKON_OBJECTIVE_SET].
+8. **PROGRESS ESTIMATION GUIDE:**
    * Current stored progress: ${conversation.gameProgress || 0}%
    * ALWAYS update based on what the player tells you or what you see in screenshots
    * Use these estimates:
-     - Tutorial/beginning area → [OTAKON_PROGRESS: 5]
-     - First dungeon/boss → [OTAKON_PROGRESS: 15]
-     - Exploring early regions → [OTAKON_PROGRESS: 25]
-     - Mid-game content → [OTAKON_PROGRESS: 40]
-     - Late-game areas → [OTAKON_PROGRESS: 65]
-     - Final areas/boss → [OTAKON_PROGRESS: 85]
-     - Post-game → [OTAKON_PROGRESS: 95]
+     - Tutorial/beginning area → 5
+     - First dungeon/boss → 15
+     - Exploring early regions → 25
+     - Mid-game content → 40
+     - Late-game areas → 65
+     - Final areas/boss → 85
+     - Post-game → 95
    * For Elden Ring specifically:
-     - Limgrave → [OTAKON_PROGRESS: 10]
-     - Liurnia of the Lakes → [OTAKON_PROGRESS: 25]
-     - Raya Lucaria Academy → [OTAKON_PROGRESS: 30]
-     - Altus Plateau → [OTAKON_PROGRESS: 45]
-     - Leyndell → [OTAKON_PROGRESS: 55]
-     - Mountaintops of the Giants → [OTAKON_PROGRESS: 70]
-     - Crumbling Farum Azula → [OTAKON_PROGRESS: 80]
-     - Elden Throne → [OTAKON_PROGRESS: 90]
-7. **ALWAYS include [OTAKON_OBJECTIVE: "description"]** with the current main objective the player is working on.
-8. ${isActiveSession ? 'Provide concise, actionable advice for immediate use.' : 'Provide more detailed, strategic advice for planning.'}
-9. Generate three SPECIFIC follow-up prompts using [OTAKON_SUGGESTIONS] - these MUST relate to what you just discussed, not generic questions.
+     - Limgrave → 10, Liurnia → 25, Raya Lucaria Academy → 30
+     - Altus Plateau → 45, Leyndell → 55
+     - Mountaintops of the Giants → 70, Crumbling Farum Azula → 80
+     - Elden Throne → 90
+9. ${isActiveSession ? 'Provide concise, actionable advice for immediate use.' : 'Provide more detailed, strategic advice for planning.'}
+10. At the end, generate three SPECIFIC follow-up prompts using [OTAKON_SUGGESTIONS] - these MUST relate to what you just discussed, not generic questions.
 
 **CRITICAL - Context-Aware Follow-ups:**
 - Your suggestions MUST reference specific content from YOUR response (bosses, items, locations, characters you mentioned)
@@ -829,12 +1057,34 @@ ${OTAKON_TAG_DEFINITIONS}
    **Label:** Value
    Description paragraph...
 
+**Response Format - DYNAMIC HEADERS WITH HINT FIRST:**
+For this query "${userMessage}", use structured sections with bold headers:
+
+1. **ALWAYS start with "Hint:" section** - This is MANDATORY for all game-specific queries (text, image, or both)
+   - Provide immediate, actionable guidance
+   - Keep it concise and practical
+   - This is the ONLY section read aloud by TTS
+
+2. **Add 1-2 additional contextual sections** based on query type:
+   - **Boss fights**: Add "Weak Points:", "Phase Guide:", or "Strategy:"
+   - **Exploration**: Add "Hidden Areas:", "Secrets Nearby:", or "Places of Interest:"
+   - **Story questions**: Add "Story Context:", "Character Info:", or "Lore:"
+   - **Item locations**: Add "How to Get There:", "What You Need:"
+   - **Character info**: Add "Character Background:", "Role in Story:"
+   - **Build advice**: Add "Key Stats:", "Gear & Upgrades:"
+   - **General help**: Add "Lore:", "Places of Interest:", or other relevant sections
+
+**CRITICAL FORMATTING RULES:**
+- Bold headers must be on same line: "**Hint:**" NOT "**Hint:\n**"
+- No spaces after opening **: "**Hint:**" NOT "** Hint:**"
+- Always close bold markers properly
+- Vary the 2nd/3rd sections based on query context to prevent repetition
+
 **Response Style:**
 - Match the tone and atmosphere of ${conversation.gameTitle}
 - Be spoiler-free beyond current progress
-- Provide practical, actionable advice
+- Provide practical, actionable advice in Hint section
 - Use game-specific terminology and references
-- Start with "Hint:" for game-specific queries
 - Include lore and story context appropriate to player's progress
 - When updating subtabs, seamlessly integrate the update into your response
 - Use clean, consistent markdown formatting throughout
@@ -923,12 +1173,15 @@ ${recentMessages}
 ❌ BAD: "How do I beat the first boss?" (game isn't out!)
 ❌ BAD: "What's the best build?" (no one knows yet!)
 
-**Response Style:**
+**Response Style - UNRELEASED GAMES (NO HINT SECTION):**
+- Be conversational and natural - no structured "Hint:" sections for unreleased games
+- Use natural paragraphs and flowing prose
 - Be enthusiastic but accurate about pre-release content
 - Share excitement while maintaining factual grounding
 - Recommend ways to prepare (play previous games, check system requirements)
 - Keep users informed about latest news and updates
 - Use clean, consistent markdown formatting
+- Focus on confirmed information, speculation, and preparation advice
 
 **Tag Definitions:**
 ${OTAKON_TAG_DEFINITIONS}
@@ -992,7 +1245,7 @@ Before claiming you know what game this is, verify you can see AT LEAST 2 of the
 
 **Task:**
 1. Analyze the screenshot to identify the game
-2. **CRITICAL TAG REQUIREMENTS - Include ALL of these tags AT THE END OF YOUR RESPONSE:**
+2. **CRITICAL TAG REQUIREMENTS - Include ALL of these tags AT THE VERY START OF YOUR RESPONSE (before any other content):**
    - [OTAKON_GAME_ID: Full Game Name] - The complete, official name of the game
    - [OTAKON_CONFIDENCE: high|low] - Your confidence in the identification
    - [OTAKON_GENRE: Genre] - The primary genre (e.g., Action RPG, FPS, Strategy)
@@ -1001,7 +1254,7 @@ Before claiming you know what game this is, verify you can see AT LEAST 2 of the
    - **[OTAKON_PROGRESS: XX]** - ⚠️ MANDATORY: Estimate player's game completion percentage (0-100)
    - [OTAKON_OBJECTIVE: "current goal"] - What the player appears to be doing
 3. Answer: "${userMessage}" with focus on game lore, significance, and useful context
-4. Provide 3 contextual suggestions using [OTAKON_SUGGESTIONS: ["suggestion1", "suggestion2", "suggestion3"]]
+4. At the end, provide 3 contextual suggestions using [OTAKON_SUGGESTIONS: ["suggestion1", "suggestion2", "suggestion3"]]
 
 **⚠️ PROGRESS TAG IS MANDATORY - NEVER SKIP THIS:**
 Every response MUST include [OTAKON_PROGRESS: XX] where XX is 0-100.
@@ -1039,57 +1292,53 @@ Users can provide images in several ways:
 - Very blurry or unclear images where game can't be identified
 - Character creation screens at game startup
 
-**Response Style for Text Queries:**
-- Be conversational and contextual - respond naturally to the user's question
-- Build on previous conversation context progressively
-- NO structured headers (Hint/Lore/Places) for text conversations
-- Use natural paragraphs and flowing prose
-- Reference previous messages when relevant
-- Adapt tone to match user's question (casual question = casual response, serious question = detailed response)
+**Response Format - DYNAMIC HEADERS WITH HINT ALWAYS FIRST:**
 
-**Response Style for Image Uploads ONLY:**
-- Use structured format with section headers
-- Focus on GAME LORE, SIGNIFICANCE, and USEFUL CONTEXT rather than describing obvious UI elements
-- Make the response immersive and engaging
+For the query: "${userMessage}"
 
-**CRITICAL MARKDOWN FORMATTING RULES - FOLLOW EXACTLY:**
-1. Bold text must be on the SAME LINE: "**Hint:**" NOT "**Hint:\n**"
-2. NO spaces after opening bold markers: "**Lore:**" NOT "** Lore:**"
-3. NO spaces before closing bold markers: "**Text**" NOT "**Text **"
-4. Keep bold markers and their content on a single line
-5. Use line breaks BETWEEN sections, not INSIDE bold markers
-6. ALWAYS close bold markers: "**Title:**" NOT "**Title:"
-7. Section headers must be EXACTLY: "**Hint:**", "**Lore:**", "**Places of Interest:**"
+**MANDATORY STRUCTURE:**
+1. **ALWAYS start with "Hint:" section** - This is REQUIRED for all game-specific screenshots
+   - Provide immediate, actionable guidance about what the player should do
+   - This is the ONLY section read aloud by TTS
+   - Keep it concise and practical
 
-**🚨 DO NOT - COMMON FORMATTING MISTAKES TO AVOID:**
-❌ WRONG: "** Lore:**" (space after opening **)
-❌ WRONG: "**Lore: **" (space before closing **)  
-❌ WRONG: "**Lore:\n**" (newline inside bold)
-❌ WRONG: "**Jig-Jig Street:" (missing closing **)
-❌ WRONG: Starting with "Alright, let me..." or "Sure, I can..." - just provide the content directly
-✅ CORRECT: "**Lore:**" (no spaces, same line)
-✅ CORRECT: "**Jig-Jig Street:**" (properly closed)
+2. **Add 1-2 additional contextual sections** based on what the screenshot shows and the query asks:
+   - **Boss fights**: Add "Weak Points:", "Phase Guide:", or "Combat Strategy:"
+   - **Exploration/Navigation**: Add "Hidden Areas:", "Secrets Nearby:", or "Places of Interest:"
+   - **Story scenes**: Add "Story Context:", "Character Info:", or "Lore:"
+   - **Item locations**: Add "How to Get There:", "What You Need:"
+   - **Character interactions**: Add "Character Background:", "Dialogue Options:"
+   - **Build/Stats screens**: Add "Build Recommendation:", "Key Stats:"
+   - **General gameplay**: Add "Lore:", "What This Means:", or other relevant sections
 
-**MANDATORY FORMAT FOR IMAGES - Use this exact structure with bold section headers:**
-**Hint:** [Game Name] - [Brief, actionable hint about what the player should do or focus on]
+**CRITICAL FORMATTING RULES:**
+1. **First section MUST be "Hint:"** - no exceptions for game screenshots
+2. Bold text must be on SAME LINE: "**Hint:**" NOT "**Hint:\n**"
+3. NO spaces after opening **: "**Hint:**" NOT "** Hint:**"
+4. NO spaces before closing **: "**Lore:**" NOT "**Lore: **"
+5. Always close bold markers properly
+6. Vary the 2nd/3rd sections to prevent repetition - adapt to query context
 
-**Lore:** [Rich lore explanation about the current situation, characters, story significance, or world-building context]
-
-**Places of Interest:** [Nearby locations, shops, NPCs, or areas where the player can find useful items, quests, or important interactions]
+**🚨 DO NOT - COMMON MISTAKES:**
+❌ WRONG: "** Hint:**" (space after **)
+❌ WRONG: "**Hint:\n**" (newline inside bold)
+❌ WRONG: Not starting with Hint section
+❌ WRONG: Using same "Hint/Lore/Places" every time - vary based on context
+✅ CORRECT: Always start with "**Hint:**" then add contextual sections
 
 **What to focus on:**
+- Immediate actionable guidance in Hint section
 - Story significance and lore implications
 - Character relationships and motivations
 - Location importance and world-building
 - Gameplay mechanics and strategic advice
 - Narrative context and plot relevance
-- Cultural or thematic elements
 
 **What to avoid:**
 - Describing obvious UI elements (health bars, buttons, etc.)
-- Stating the obvious ("you can see buildings", "there's text on screen")
+- Stating the obvious ("you can see buildings")
 - Generic descriptions that don't add value
-- Deviating from the mandatory format above
+- Repetitive section headers - adapt to query type
 
 **Genre Classification Confirmation:**
 After providing your response, if there's ANY ambiguity about the genre classification, add a brief confirmation question:
@@ -1123,17 +1372,21 @@ YOU MUST include [OTAKON_PROGRESS: X] in your response. This is NON-NEGOTIABLE.
    - Open-world: Map fog percentage, waypoints unlocked
    - Linear games: Level/mission number
 
-**OUTPUT FORMAT (include at END of response):**
+**OUTPUT FORMAT (include at VERY START of response, before your main content):**
+[OTAKON_GAME_ID: Game Name]
+[OTAKON_CONFIDENCE: high|low]
+[OTAKON_GENRE: Genre]
 [OTAKON_PROGRESS: XX]
 [OTAKON_OBJECTIVE: "What player is currently doing"]
 
 **If you cannot determine exact progress, estimate based on visual complexity - NEVER leave progress at 0 if you can see gameplay.**
 
 **CRITICAL - Subtab Updates (Include when providing valuable info):**
-- Use **[OTAKON_SUBTAB_UPDATE: {"tab": "tab_name", "content": "content"}]** to save important info to subtabs
-- Valid tabs: story_so_far, characters, tips, boss_strategy, quest_log, points_of_interest, hidden_secrets
-- Example: Explaining boss mechanics → [OTAKON_SUBTAB_UPDATE: {"tab": "boss_strategy", "content": "**Boss Name**: Attack patterns include..."}]
-- Example: Explaining character → [OTAKON_SUBTAB_UPDATE: {"tab": "characters", "content": "**Character Name**: Role in story..."}]
+- Use **[OTAKON_SUBTAB_UPDATE: {"tab": "Exact Tab Title", "content": "content"}]** to save important info to subtabs
+- Use the EXACT subtab titles shown in the screenshot analysis above (look for "### [Title]" in subtab context)
+- For game-specific tabs like "Sites of Grace Nearby", "Cyberware Build", use those exact titles
+- Example for Elden Ring: [OTAKON_SUBTAB_UPDATE: {"tab": "Sites of Grace Nearby", "content": "**Stormveil Castle**: Main Gate grace found..."}]
+- Example for generic: [OTAKON_SUBTAB_UPDATE: {"tab": "Boss Strategy", "content": "**Boss Name**: Attack patterns include..."}]
 
 **Suggestions Guidelines:**
 Generate 3 short, SPECIFIC follow-up questions based on YOUR response:
@@ -1158,8 +1411,9 @@ ${OTAKON_TAG_DEFINITIONS}
  * Determines the correct persona and returns the master prompt.
  * Now includes behavior context for non-repetitive responses and user corrections.
  * Added timezone awareness for accurate release date handling.
+ * NOTE: This is now an ASYNC function to support full 32K game knowledge injection
  */
-export const getPromptForPersona = (
+export const getPromptForPersona = async (
   conversation: Conversation,
   userMessage: string,
   user: User,
@@ -1169,7 +1423,7 @@ export const getPromptForPersona = (
   behaviorContext?: BehaviorContext | null,
   userTimezone?: string,
   queryContext?: QueryContext
-): string => {
+): Promise<string> => {
   // Build behavior context string
   const behaviorContextString = behaviorContext 
     ? buildBehaviorContextString(behaviorContext)
@@ -1198,7 +1452,7 @@ export const getPromptForPersona = (
     if (conversation.isUnreleased) {
       basePrompt = getUnreleasedGamePrompt(conversation, userMessage, user, playerProfile);
     } else {
-      basePrompt = getGameCompanionPrompt(conversation, userMessage, user, isActiveSession, playerProfile);
+      basePrompt = await getGameCompanionPrompt(conversation, userMessage, user, isActiveSession, playerProfile);
     }
   } else {
     basePrompt = getGeneralAssistantPrompt(userMessage);

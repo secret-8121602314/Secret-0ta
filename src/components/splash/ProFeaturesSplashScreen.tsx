@@ -100,7 +100,7 @@ const ProFeaturesSplashScreen: React.FC<ProFeaturesSplashScreenProps> = ({ onCom
                     <img 
                       src={isVanguard ? '/images/mascot/vanguard-user.png' : '/images/mascot/pro-user.png'}
                       alt={isVanguard ? 'Vanguard Mascot' : 'Pro Mascot'}
-                      className="w-28 h-28 sm:w-36 sm:h-36 md:w-44 md:h-44 object-contain rounded-xl"
+                      className="w-56 h-56 sm:w-64 sm:h-64 md:w-72 md:h-72 object-contain rounded-xl"
                     />
                   </div>
                   <h2 className={`mt-2 sm:mt-3 text-base sm:text-lg md:text-xl font-bold text-center ${
@@ -110,21 +110,28 @@ const ProFeaturesSplashScreen: React.FC<ProFeaturesSplashScreenProps> = ({ onCom
                   }`}>
                     {isVanguard ? 'Founding Member' : 'Otagon Pro'}
                   </h2>
-                  <p className="text-xs sm:text-sm text-neutral-400 text-center mt-0.5 px-2">
+                  <p className="text-xs sm:text-sm text-neutral-400 text-center mt-1 px-2 mb-2">
                     {isVanguard ? 'Shape the future' : 'Ultimate companion'}
                   </p>
                 </div>
 
-                {/* Middle: Badge (Vanguard only) or spacer */}
-                {isVanguard && (
-                  <div className="py-1.5 px-3 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/40 rounded-lg flex-shrink-0 my-2">
-                    <p className="text-xs sm:text-sm font-semibold text-amber-300 text-center">✨ All Pro features included!</p>
-                  </div>
-                )}
+                {/* Middle: Badge (Vanguard only) with consistent spacing */}
+                <div className="flex-shrink-0 my-2" style={{ minHeight: '40px' }}>
+                  {isVanguard && (
+                    <div className="py-1.5 px-3 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/40 rounded-lg">
+                      <p className="text-xs sm:text-sm font-semibold text-amber-300 text-center">✨ All Pro features included!</p>
+                    </div>
+                  )}
+                  {!isVanguard && (
+                    <div className="py-1.5 px-3 bg-gradient-to-r from-[#FF4D4D]/20 to-[#FFAB40]/20 border border-[#FFAB40]/40 rounded-lg">
+                      <p className="text-xs sm:text-sm font-semibold text-[#FFAB40] text-center">✨ Pro features included!</p>
+                    </div>
+                  )}
+                </div>
 
-                {/* Bottom: Features list */}
-                <div className="flex-1 w-full flex flex-col justify-center overflow-hidden min-h-0">
-                  <div className="space-y-1.5 sm:space-y-2 w-full max-w-xs mx-auto overflow-y-auto px-1" style={{ maxHeight: isVanguard ? '32vh' : '38vh' }}>
+                {/* Bottom: Features list - aligned at same height */}
+                <div className="flex-1 w-full flex flex-col justify-start overflow-hidden min-h-0">
+                  <div className="space-y-1.5 sm:space-y-2 w-full max-w-xs mx-auto overflow-y-auto px-1" style={{ maxHeight: '35vh' }}>
                     {currentFeatures.map(f => (
                       <div key={f.title} className="flex items-center gap-2 sm:gap-3 py-1.5 sm:py-2 px-2.5 rounded-lg bg-[#181818]/60 border border-neutral-800/40">
                         <svg className={`w-5 h-5 flex-shrink-0 ${isVanguard ? 'text-amber-400' : 'text-[#FFAB40]'}`} fill="currentColor" viewBox="0 0 20 20">
@@ -145,7 +152,7 @@ const ProFeaturesSplashScreen: React.FC<ProFeaturesSplashScreenProps> = ({ onCom
                     <img 
                       src={isVanguard ? '/images/mascot/vanguard-user.png' : '/images/mascot/pro-user.png'} 
                       alt={isVanguard ? 'Vanguard Mascot' : 'Pro Mascot'}
-                      className="w-48 h-48 xl:w-56 xl:h-56 object-contain rounded-2xl"
+                      className="w-96 h-96 xl:w-[28rem] xl:h-[28rem] object-contain rounded-2xl"
                     />
                   </div>
                   <h2 className={`mt-4 text-2xl xl:text-3xl font-bold text-center bg-clip-text text-transparent ${
@@ -192,20 +199,29 @@ const ProFeaturesSplashScreen: React.FC<ProFeaturesSplashScreenProps> = ({ onCom
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
-            Coming Soon
+            {activeTab === 'pro' ? '$4.99/month - Coming Soon' : '$30/year - Coming Soon'}
           </motion.button>
           
           {/* Maybe Later Button */}
           <motion.button
             onClick={onComplete}
-            className="w-full text-neutral-400 font-medium py-2.5 px-4 rounded-xl border border-neutral-700/50 bg-neutral-800/30 hover:bg-neutral-700/40 hover:text-neutral-200 hover:border-neutral-600/60 transition-all duration-200 text-xs flex items-center justify-center gap-2"
+            className="w-full font-medium py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#FF4D4D]/30 to-[#FFAB40]/30 border border-transparent hover:border-transparent transition-all duration-200 text-xs flex items-center justify-center gap-2 relative overflow-hidden group"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {/* Gradient border effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-[#FF4D4D] via-[#FFAB40] to-[#FF4D4D] opacity-40 group-hover:opacity-60 transition-opacity duration-200 rounded-xl -z-10"></div>
+            <div className="absolute inset-[1px] bg-gradient-to-br from-[#111111] to-[#0A0A0A] rounded-xl group-hover:from-[#1A1A1A] group-hover:to-[#0F0F0F] transition-colors duration-200"></div>
+            <svg className="w-3.5 h-3.5 relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40]" fill="none" stroke="url(#gradient)" viewBox="0 0 24 24">
+              <defs>
+                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#FF4D4D" />
+                  <stop offset="100%" stopColor="#FFAB40" />
+                </linearGradient>
+              </defs>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            Maybe Later
+            <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40]">Maybe Later</span>
           </motion.button>
         </div>
       </footer>

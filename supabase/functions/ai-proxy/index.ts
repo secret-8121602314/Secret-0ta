@@ -6,7 +6,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
 
 // ✅ SECURITY: API key stored in Supabase secrets (not exposed to client)
-const GEMINI_KEY = Deno.env.get('GEMINI_KEY');
+const GEMINI_KEY = Deno.env.get('GEMINI_KEY_CHAT_PROXY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
@@ -68,14 +68,15 @@ serve(async (req: Request) => {
       );
     }
 
-    // ✅ SECURITY: Server-side rate limiting (10 requests per minute)
+    // ✅ SECURITY: Server-side rate limiting (30 requests per minute)
+    // Increased from 10 to handle game tab creation burst (subtabs + knowledge + chat)
     const userId = user.id;
     const now = Date.now();
     const userLimit = rateLimits.get(userId);
 
     if (userLimit) {
       if (now < userLimit.resetTime) {
-        if (userLimit.count >= 10) {
+        if (userLimit.count >= 30) {
           return new Response(
             JSON.stringify({ 
               error: 'Rate limit exceeded. Try again in 1 minute.', 

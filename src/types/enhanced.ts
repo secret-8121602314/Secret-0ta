@@ -156,6 +156,7 @@ export interface MessageObject {
   timestamp: number;
   imageUrl?: string;
   metadata?: MessageMetadata;
+  suggestedPrompts?: string[]; // AI-generated follow-up prompts for this message
 }
 
 /**
@@ -169,6 +170,7 @@ export interface MessageMetadata {
   regenerated?: boolean;
   edited?: boolean;
   otakonTags?: Record<string, unknown>;
+  suggestedPrompts?: string[]; // Store AI-generated follow-up prompts in metadata for database persistence
   [key: string]: unknown;
 }
 

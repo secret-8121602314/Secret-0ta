@@ -17,11 +17,11 @@ import { tabManagementService } from '../services/tabManagementService';
 import { subtabsService } from '../services/subtabsService';
 import { ttsService } from '../services/ttsService';
 import { toastService } from '../services/toastService';
-import { MessageRoutingService } from '../services/messageRoutingService';
+// import { MessageRoutingService } from '../services/messageRoutingService'; // Not currently used
 import { sessionService } from '../services/sessionService';
 import { fetchIGDBGameData, IGDBGameData, getSidebarCoverUrl } from '../services/igdbService';
 import { offlineQueueService } from '../services/indexedDBService';
-import { libraryStorage } from '../services/gamingExplorerStorage';
+import { libraryStorage, timelineStorage } from '../services/gamingExplorerStorage';
 import Sidebar from './layout/Sidebar';
 import ChatInterface from './features/ChatInterface';
 import SettingsModal from './modals/SettingsModal';
@@ -175,6 +175,13 @@ const MainApp: React.FC<MainAppProps> = ({
   // ✅ Ref to store latest handleSendMessage function
   const handleSendMessageRef = useRef<((message: string, imageUrl?: string) => Promise<void>) | null>(null);
   
+  // ✅ Processing lock to prevent race conditions during AI response handling
+  const [isProcessingResponse, setIsProcessingResponse] = useState(false);
+  const targetConversationIdRef = useRef<string | null>(null);
+  
+  // ✅ Flag to prevent useEffect from overwriting AI-generated suggestions
+  const isSettingSuggestionsFromAI = useRef(false);
+  
   // ✅ RATE LIMITING: Track last request time to prevent rapid-fire duplicate requests
   const lastRequestTimeRef = useRef<number>(0);
   const RATE_LIMIT_DELAY_MS = 500; // Minimum 500ms between requests (prevents duplicate clicks)
@@ -256,6 +263,49 @@ const MainApp: React.FC<MainAppProps> = ({
   useEffect(() => {
     localStorage.setItem('otakon_manual_upload_mode', String(isManualUploadMode));
   }, [isManualUploadMode]);
+
+  // ✅ CRITICAL: Load suggested prompts from last AI message when conversation changes
+  useEffect(() => {
+    // Skip if we're currently setting suggestions from an AI response
+    if (isSettingSuggestionsFromAI.current) {
+      console.log('📌 [MainApp] Skipping useEffect - AI is setting suggestions');
+      return;
+    }
+    
+    if (!activeConversation) {
+      setSuggestedPrompts([]);
+      return;
+    }
+
+    // Find the last assistant message with suggestions (check both field and metadata)
+    const lastAIMessage = [...activeConversation.messages]
+      .reverse()
+      .find(msg => {
+        if (msg.role !== 'assistant') { return false; }
+        // Check metadata for suggestedPrompts
+        const prompts = msg.metadata?.suggestedPrompts;
+        return prompts && (Array.isArray(prompts) ? prompts.length > 0 : false);
+      });
+
+    if (lastAIMessage) {
+      // Get suggestions from metadata
+      const savedPrompts = lastAIMessage.metadata?.suggestedPrompts;
+      if (savedPrompts && Array.isArray(savedPrompts) && savedPrompts.length > 0) {
+        console.log('📌 [MainApp] Loading saved suggestions from last AI message:', savedPrompts);
+        setSuggestedPrompts(savedPrompts);
+        return;
+      }
+    }
+    
+    // No saved suggestions - use fallback
+    const fallbackSuggestions = suggestedPromptsService.getFallbackSuggestions(
+      activeConversation.id,
+      activeConversation.isGameHub ?? false
+    );
+    console.log('📌 [MainApp] No saved suggestions - using fallback:', fallbackSuggestions);
+    setSuggestedPrompts(fallbackSuggestions);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeConversation?.id]); // Only re-run when conversation ID changes (intentional)
 
   // Handle WebSocket messages for screenshot processing
   // Note: Connection confirmation (partner_connected) is handled by MainAppRoute
@@ -623,6 +673,19 @@ const MainApp: React.FC<MainAppProps> = ({
           setUser(currentUser);
           // Also sync to UserService for compatibility
           UserService.setCurrentUser(currentUser);
+          
+          // ☁️ HQ SUPABASE SYNC: Load HQ data from Supabase on app init
+          if (currentUser.authUserId) {
+            // Load library
+            libraryStorage.loadFromSupabase(currentUser.authUserId).catch(err => {
+              console.error('[MainApp] Failed to load library from Supabase:', err);
+            });
+            
+            // Load timeline
+            timelineStorage.loadFromSupabase(currentUser.authUserId).catch(err => {
+              console.error('[MainApp] Failed to load timeline from Supabase:', err);
+            });
+          }
           
           // ✅ FIX: Update currentUserId if not set (initial mount case)
           if (!currentUserId) {
@@ -1196,24 +1259,21 @@ const MainApp: React.FC<MainAppProps> = ({
     
     // ✅ CRITICAL FIX: ALWAYS use local state as source of truth
     // Reloading from service can cause race conditions where newly created tabs disappear
-    // because background sync hasn't completed yet
     const targetConversation = conversations[id];
     if (!targetConversation) {
       console.error('🔄 [MainApp] ⚠️ Conversation not found in local state:', id);
       console.error('🔄 [MainApp] Available conversations:', Object.keys(conversations));
-      console.error('🔄 [MainApp] This should NOT happen - conversation should exist in state');
       
-      // Last resort: reload from service, but this indicates a bug
-      const updatedConversations = await ConversationService.getConversations();
+      // ✅ FIX: Use merge strategy - keep local tabs and add anything from DB
+      const updatedConversations = await ConversationService.getConversations(true); // Skip cache
       const mergedConversations = {
-        ...conversations, // Keep existing local state
-        ...updatedConversations // Add anything from DB
+        ...conversations, // Keep existing local state (preserves new tabs)
+        ...updatedConversations // Add anything from DB (recovers missing tabs)
       };
       setConversations(mergedConversations);
       setActiveConversation(mergedConversations[id]);
       
       // Auto-enable Playing mode ONLY when switching to a DIFFERENT game tab
-      // Don't reset session if staying on the same tab
       const targetConv = mergedConversations[id];
       const isCurrentTab = session.currentGameId === id;
       if (!isCurrentTab && targetConv && gameTabService.isGameTab(targetConv) && !targetConv.isGameHub && !targetConv.isUnreleased) {
@@ -1230,7 +1290,6 @@ const MainApp: React.FC<MainAppProps> = ({
       setSidebarOpen(false);
       
       // ✅ Auto-enable Playing mode ONLY when switching to a DIFFERENT game tab
-      // Don't reset session if staying on the same tab (preserves user's toggle choice)
       const isCurrentTab = session.currentGameId === id;
       if (!isCurrentTab && gameTabService.isGameTab(targetConversation) && !targetConversation.isGameHub && !targetConversation.isUnreleased) {
         setActiveSession(id, true);
@@ -1245,7 +1304,6 @@ const MainApp: React.FC<MainAppProps> = ({
       });
       
       // Update active conversation in service in background (don't await)
-      // This prevents blocking the UI while syncing to Supabase
       ConversationService.setActiveConversation(id).catch(error => {
         console.error('🔄 [MainApp] Failed to sync active conversation:', error);
       });
@@ -2004,19 +2062,32 @@ const MainApp: React.FC<MainAppProps> = ({
           .catch(error => console.warn('Failed to track Game Hub tab creation:', error));
       }
 
-      // ✅ AUTO-ADD TO LIBRARY: Add game to "Owned" category when tab is created
-      try {
-        const igdbData = await fetchIGDBGameData(gameInfo.gameTitle);
-        if (igdbData && igdbData.id) {
-          libraryStorage.addGame(igdbData.id, igdbData.name || gameInfo.gameTitle, 'own', igdbData);
-          console.log('📚 [MainApp] Auto-added game to Owned library:', igdbData.name || gameInfo.gameTitle);
-        } else {
-          console.log('📚 [MainApp] Could not auto-add to library - no IGDB data found for:', gameInfo.gameTitle);
+      // ✅ AUTO-ADD TO LIBRARY & TRIGGER GAME KNOWLEDGE FETCH: Fire-and-forget background operations
+      (async () => {
+        try {
+          const igdbData = await fetchIGDBGameData(gameInfo.gameTitle);
+          if (igdbData && igdbData.id) {
+            // Add to library
+            libraryStorage.addGame(igdbData.id, igdbData.name || gameInfo.gameTitle, 'own', igdbData);
+            console.log('📚 [MainApp] Auto-added game to Owned library:', igdbData.name || gameInfo.gameTitle);
+            
+            // 🎯 GLOBAL CACHE TRIGGER: Fetch game knowledge for Pro/Vanguard users
+            if (currentUser.tier === 'pro' || currentUser.tier === 'vanguard_pro') {
+              const { triggerGameKnowledgeFetch } = await import('../services/gameKnowledgeFetcher');
+              triggerGameKnowledgeFetch(igdbData.id, igdbData.name || gameInfo.gameTitle);
+              console.log('🎯 [MainApp] Triggered background game knowledge fetch for:', {
+                gameTitle: igdbData.name || gameInfo.gameTitle,
+                igdbId: igdbData.id,
+                tier: currentUser.tier
+              });
+            }
+          } else {
+            console.log('📚 [MainApp] Could not auto-add to library - no IGDB data found for:', gameInfo.gameTitle);
+          }
+        } catch (error) {
+          console.warn('📚 [MainApp] Background IGDB/library operation failed:', error);
         }
-      } catch (libraryError) {
-        console.warn('📚 [MainApp] Failed to auto-add game to library:', libraryError);
-        // Don't fail the tab creation if library addition fails
-      }
+      })();
 
             toastService.success(`Game tab "${gameInfo.gameTitle}" created!`);
       return newGameTab;
@@ -2073,26 +2144,47 @@ const MainApp: React.FC<MainAppProps> = ({
   }, [conversations, activeConversation]);
 
   // ✅ EDIT MESSAGE: Allow user to edit and resubmit a query
-  const handleEditMessage = useCallback((messageId: string, content: string) => {
-    console.log('✏️ [MainApp] Setting up edit for message:', messageId);
+  const handleEditMessage = useCallback((messageId: string, content: string, imageUrl?: string) => {
+    console.log('✏️ [MainApp] handleEditMessage called:', { messageId, contentLength: content?.length, hasImage: !!imageUrl, hasActiveConversation: !!activeConversation });
     
     if (!activeConversation) {
+      console.error('🔴 [MainApp] Cannot edit - no active conversation');
       return;
     }
     
     // Find the message to ensure it exists
     const messageIndex = activeConversation.messages.findIndex(m => m.id === messageId);
+    console.log('✏️ [MainApp] Message search result:', { messageIndex, totalMessages: activeConversation.messages.length });
+    
     if (messageIndex === -1) {
+      console.error('🔴 [MainApp] Message not found for editing:', messageId);
+      console.error('🔴 [MainApp] Available message IDs:', activeConversation.messages.map(m => m.id));
       return;
     }
     
     // Store which message is being edited - will be used on submit to remove old messages
     setEditingMessageId(messageId);
+    console.log('✅ [MainApp] Set editingMessageId to:', messageId);
     
     // Set the message in the input field for editing
     setCurrentInputMessage(content);
+    console.log('✅ [MainApp] Set input content, length:', content.length);
     
-    toastService.info('Editing message - modify and resend, or clear to cancel');
+    // Queue the image if present
+    if (imageUrl) {
+      setQueuedScreenshot(imageUrl);
+      console.log('✅ [MainApp] Queued image for re-send:', imageUrl.substring(0, 50) + '...');
+    }
+    
+    // Scroll to input and focus it
+    const inputElement = document.querySelector('textarea[placeholder*="Ask"], input[placeholder*="Ask"]') as HTMLTextAreaElement | HTMLInputElement;
+    if (inputElement) {
+      inputElement.focus();
+      inputElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      console.log('✅ [MainApp] Focused and scrolled to input');
+    } else {
+      console.error('🔴 [MainApp] Could not find input element to focus');
+    }
   }, [activeConversation]);
 
   // ✅ FEEDBACK: Handle thumbs up/down on AI responses
@@ -2316,8 +2408,106 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
     }
   }, [activeConversation, setConversations]);
 
+  // ✅ RETRY SUBTAB: Regenerate a specific subtab
+  const handleRetrySubtab = useCallback(async (tabId: string) => {
+    if (!activeConversation) {
+      console.warn('[MainApp] Cannot retry subtab: no active conversation');
+      return;
+    }
+    
+    const subtabToRetry = activeConversation.subtabs?.find(s => s.id === tabId);
+    if (!subtabToRetry) {
+      console.warn('[MainApp] Cannot retry subtab: tab not found');
+      return;
+    }
+    
+    console.log('[MainApp] Retrying subtab:', subtabToRetry.title);
+    
+    // Delete the failed subtab first
+    try {
+      const success = await subtabsService.deleteSubtab(activeConversation.id, tabId);
+      
+      if (success) {
+        // Update local state to remove the tab
+        const updatedSubtabs = activeConversation.subtabs?.filter(s => s.id !== tabId) || [];
+        const updatedConversation = {
+          ...activeConversation,
+          subtabs: updatedSubtabs,
+          subtabsOrder: updatedSubtabs.map(s => s.id),
+          updatedAt: Date.now()
+        };
+        
+        setConversations(prev => ({
+          ...prev,
+          [activeConversation.id]: updatedConversation
+        }));
+        setActiveConversation(updatedConversation);
+      }
+    } catch (error) {
+      console.error('[MainApp] Error removing failed subtab:', error);
+    }
+    
+    // Trigger regeneration by sending a message requesting that specific tab
+    const retryPrompt = `Generate a new "${subtabToRetry.title}" tab with ${subtabToRetry.type} insights.`;
+    
+    setTimeout(() => {
+      handleSendMessageRef.current?.(retryPrompt);
+    }, 100);
+  }, [activeConversation, setConversations, setActiveConversation]);
+
+  // ✅ RETRY: Resend the last user message
+  const handleRetryLastMessage = useCallback(() => {
+    if (!activeConversation?.messages || activeConversation.messages.length === 0) {
+      console.warn('[MainApp] Cannot retry: no messages in conversation');
+      return;
+    }
+    
+    // Find the last user message
+    const lastUserMessage = [...activeConversation.messages]
+      .reverse()
+      .find(m => m.role === 'user');
+    
+    if (!lastUserMessage) {
+      console.warn('[MainApp] Cannot retry: no user messages found');
+      return;
+    }
+    
+    console.log('[MainApp] Retrying last message:', lastUserMessage.content);
+    
+    // Remove the failed AI response (last message if it's from assistant)
+    const lastMessage = activeConversation.messages[activeConversation.messages.length - 1];
+    if (lastMessage.role === 'assistant') {
+      const updatedMessages = activeConversation.messages.slice(0, -1);
+      const updatedConversation: Conversation = {
+        ...activeConversation,
+        messages: updatedMessages
+      };
+      
+      // Update both conversations dict and activeConversation
+      setConversations(prev => ({
+        ...prev,
+        [activeConversation.id]: updatedConversation
+      }));
+      setActiveConversation(updatedConversation);
+    }
+    
+    // Resend with same content and image (if any)
+    const imageUrl = lastUserMessage.imageUrl;
+    
+    // Use setTimeout to avoid calling handleSendMessage in the same render
+    setTimeout(() => {
+      handleSendMessageRef.current?.(lastUserMessage.content, imageUrl);
+    }, 0);
+  }, [activeConversation, setConversations, setActiveConversation]);
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleSendMessage = async (message: string, imageUrl?: string) => {
+    // ✅ PROCESSING LOCK: Prevent concurrent operations during AI response handling
+    if (isProcessingResponse) {
+      console.warn('🔒 [MainApp] Processing lock active, blocking concurrent message');
+      return;
+    }
+    
     // ✅ RATE LIMITING: Prevent rapid-fire duplicate requests
     const now = Date.now();
     const timeSinceLastRequest = now - lastRequestTimeRef.current;
@@ -2389,6 +2579,9 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
     
     // Track user activity
     sessionService.trackActivity('send_message');
+    
+    // ✅ Initialize target conversation ID ref (will be updated after migration decision)
+    targetConversationIdRef.current = activeConversation?.id || null;
     
     // Prevent duplicate/concurrent sends
     if (!activeConversation || isLoading) {
@@ -2482,11 +2675,18 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
       return updated;
     });
 
-    // Add message to service - MUST await to ensure it's saved before potential migration
-    const userMessageResult = await ConversationService.addMessage(activeConversation.id, newMessage);
-    
-    // ✅ CRITICAL: Get the database UUID for migration
-    const userMessageDbId = userMessageResult.message?.id || newMessage.id;
+    // Create updated conversation with new message for AI service
+    const updatedConversationForAI = {
+      ...activeConversation,
+      messages: [...messagesToKeep, newMessage],
+      subtabs: editingMessageId ? [] : activeConversation.subtabs,
+      updatedAt: Date.now()
+    };
+
+    // ✅ CRITICAL FIX: DON'T save message to database yet
+    // We need to wait for migration decision to know which conversation to save to
+    // This prevents the race condition where messages are saved to Game Hub then migrated
+    let userMessageDbId = newMessage.id; // Will be updated after save
 
     // Clear the input message after sending
     setCurrentInputMessage('');
@@ -2532,6 +2732,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
           );
           
           // Return early - no AI call, no credits consumed
+          // ✅ FIX: This path never calls setIsProcessingResponse(true), so no cleanup needed
           return;
         }
       }
@@ -2634,6 +2835,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
     // Clear previous suggestions and start loading
     setSuggestedPrompts([]);
     setIsLoading(true);
+    setIsProcessingResponse(true);
     
     // Create abort controller for stop functionality
     const controller = new AbortController();
@@ -2734,6 +2936,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
           // Clear loading state and exit early (skip AI processing)
           setIsLoading(false);
           setAbortController(null);
+          setIsProcessingResponse(false); // ✅ CRITICAL FIX: Clear processing lock
           return;
         } else {
           console.error('❌ [MainApp] Failed to upload screenshot:', uploadResult.error);
@@ -2743,16 +2946,21 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
       }
 
       // Apply context summarization before sending to AI (keeps context manageable)
-      let conversationWithOptimizedContext = activeConversation;
-      if (activeConversation.messages.length > 10) {
+      // This summarizes AI RESPONSES only, not game knowledge content
+      let conversationWithOptimizedContext = updatedConversationForAI;
+      if (updatedConversationForAI.messages.length > 10) {
         const { contextSummarizationService } = await import('../services/contextSummarizationService');
         
-        if (contextSummarizationService.shouldSummarize(activeConversation)) {
-                    const summarizedConversation = await contextSummarizationService.applyContextSummarization(activeConversation);
-          
+        if (contextSummarizationService.shouldSummarize(updatedConversationForAI)) {
+          console.log(`📋 [MainApp] Applying context summarization for ${updatedConversationForAI.messages.length} messages`);
+          const summarizedConversation = await contextSummarizationService.applyContextSummarization(updatedConversationForAI);
           // Update conversation with summarized context
           await ConversationService.updateConversation(activeConversation.id, summarizedConversation);
-          conversationWithOptimizedContext = summarizedConversation;
+          conversationWithOptimizedContext = {
+            ...updatedConversationForAI,
+            ...summarizedConversation,
+            subtabs: summarizedConversation.subtabs || updatedConversationForAI.subtabs
+          };
           
           // Update local state
           setConversations(prev => ({
@@ -2760,8 +2968,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
             [activeConversation.id]: summarizedConversation
           }));
           setActiveConversation(summarizedConversation);
-          
-                  }
+        }
       }
 
       const response = await aiService.getChatResponseWithStructure(
@@ -2780,11 +2987,26 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                 return;
       }
 
+      // ✅ CRITICAL: Process suggestions BEFORE creating aiMessage so they can be saved with it
+      const suggestionsToUse = response.followUpPrompts || response.suggestions;
+      console.log('🔍 [MainApp] RAW suggestionsToUse:', suggestionsToUse);
+      console.log('🔍 [MainApp] suggestionsToUse type:', typeof suggestionsToUse);
+      console.log('🔍 [MainApp] suggestionsToUse is Array:', Array.isArray(suggestionsToUse));
+      console.log('🔍 [MainApp] suggestionsToUse length:', Array.isArray(suggestionsToUse) ? suggestionsToUse.length : 'N/A');
+      
+      const processedSuggestions = suggestedPromptsService.processAISuggestions(suggestionsToUse);
+      console.log('🔍 [MainApp] AFTER processAISuggestions:', processedSuggestions);
+      console.log('🔍 [MainApp] processedSuggestions length:', processedSuggestions.length);
+
       const aiMessage = {
         id: `msg_${Date.now() + 1}`,
         content: response.content,
         role: 'assistant' as const,
         timestamp: Date.now(),
+        suggestedPrompts: processedSuggestions, // ✅ CRITICAL: Save AI-generated prompts with message
+        metadata: {
+          suggestedPrompts: processedSuggestions, // ✅ Store in metadata for database persistence
+        },
       };
 
       // Optimized: Update state immediately
@@ -2802,11 +3024,9 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
         return updated;
       });
 
-      // Add message to service - MUST await to ensure it's saved before potential migration
-      const aiMessageResult = await ConversationService.addMessage(activeConversation.id, aiMessage);
-      
-      // ✅ CRITICAL: Get the database UUID for migration
-      const aiMessageDbId = aiMessageResult.message?.id || aiMessage.id;
+      // ✅ CRITICAL FIX: DON'T save AI message yet - wait for migration decision
+      // We'll save both user and AI messages to the correct conversation after migration
+      let aiMessageDbId = aiMessage.id; // Will be updated after save
 
       //  Hands-Free Mode: Read AI response aloud if enabled
       if (isHandsFreeMode && response.content) {
@@ -2933,27 +3153,10 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
         otakonTagKeys: response.otakonTags ? Array.from(response.otakonTags.keys()) : []
       }, null, 2));
       
-      const suggestionsToUse = response.followUpPrompts || response.suggestions;
-      console.log('🔍 [MainApp] suggestionsToUse (before processing):', suggestionsToUse);
-      
-      let processedSuggestions = suggestedPromptsService.processAISuggestions(suggestionsToUse);
-      console.log('🔍 [MainApp] processedSuggestions (after processing):', processedSuggestions);
-      
-      // 🔄 Filter out already shown prompts to prevent repetition
-      if (user?.authUserId && processedSuggestions.length > 0) {
-        try {
-          const gameTitle = activeConversation?.isGameHub ? null : (activeConversation?.gameTitle ?? null);
-          processedSuggestions = await shownPromptsService.filterNewPrompts(
-            user.authUserId,
-            processedSuggestions,
-            'suggested',
-            gameTitle
-          );
-          console.log('🔍 [MainApp] processedSuggestions (after shown filter):', processedSuggestions);
-        } catch (filterError) {
-          console.warn('[MainApp] Failed to filter shown prompts, using unfiltered:', filterError);
-        }
-      }
+      // ✅ DON'T filter AI-generated prompts - they're contextual to the current response
+      // The AI generates specific follow-up questions based on what it just answered
+      // Filtering them would show generic fallbacks instead of relevant prompts
+      // Only fallback prompts need filtering to prevent repetition
       
       // ✅ DEBUG: Log all response fields for progress tracking
       console.log('📊 [MainApp] AI Response received:', {
@@ -3323,7 +3526,8 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
           let targetConversationId: string;
           
           if (existingGameTab) {
-                        targetConversationId = existingGameTab.id;
+            targetConversationId = existingGameTab.id;
+            console.log('🎮 [MainApp] Using existing game tab:', targetConversationId);
           } else {
             console.log('🎮 [MainApp] Creating new game tab for:', gameTitle, isUnreleased ? '(unreleased)' : '(released)');
             const gameInfo = { gameTitle: gameTitle as string, genre: genre as string | undefined, aiResponse: response as unknown as Record<string, unknown>, isUnreleased };
@@ -3341,61 +3545,37 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
           const shouldMigrateMessages = targetConversationId && targetConversationId !== activeConversation.id;
           
           if (shouldMigrateMessages) {
-            // ✅ FIX: Update local state IMMEDIATELY so messages appear in the new tab right away
-            // This prevents the visual gap where messages disappear during migration
-            // ✅ CRITICAL: Use database IDs for the messages to migrate (not temp client IDs)
-            const userMsgWithDbId = { ...newMessage, id: userMessageDbId };
-            const aiMsgWithDbId = { ...aiMessage, id: aiMessageDbId };
-            const messagesToMigrate = [userMsgWithDbId, aiMsgWithDbId];
+            // ✅ CRITICAL FIX: Update target conversation ref BEFORE saving messages
+            targetConversationIdRef.current = targetConversationId;
+            console.log('🎮 [MainApp] Migration detected - target:', targetConversationId, 'source:', activeConversation.id);
             
-            // Get fresh conversations state for immediate update
-            const currentConversations = await ConversationService.getConversations();
-            const sourceConv = currentConversations[activeConversation.id];
-            const destConv = currentConversations[targetConversationId];
+            // ✅ CRITICAL FIX: Save messages to TARGET conversation FIRST (not source)
+            console.log('💾 [MainApp] Saving user message to TARGET conversation...');
+            const userMessageResult = await ConversationService.addMessage(targetConversationId, newMessage);
+            userMessageDbId = userMessageResult.message?.id || newMessage.id;
             
-            if (sourceConv && destConv) {
-              // Optimistically update state BEFORE database operations
-              // ✅ FIX: Filter using database UUIDs, not temporary client IDs
-              const updatedSourceMessages = sourceConv.messages.filter(
-                m => m.id !== userMessageDbId && m.id !== aiMessageDbId
-              );
-              const updatedDestMessages = [...destConv.messages, ...messagesToMigrate];
-              
-              setConversations(prev => ({
-                ...prev,
-                [activeConversation.id]: {
-                  ...prev[activeConversation.id],
-                  messages: updatedSourceMessages,
+            console.log('💾 [MainApp] Saving AI message to TARGET conversation...');
+            const aiMessageResult = await ConversationService.addMessage(targetConversationId, aiMessage);
+            aiMessageDbId = aiMessageResult.message?.id || aiMessage.id;
+            
+            console.log('✅ [MainApp] Messages saved to target with IDs:', { userMessageDbId, aiMessageDbId });
+            
+            // ✅ CRITICAL FIX: No migration needed - messages already saved to correct conversation!
+            // Just remove the temporary UI messages from source conversation
+            setConversations(prev => {
+              const updated = { ...prev };
+              if (updated[activeConversation.id]) {
+                // Remove temporary messages that were shown in UI
+                updated[activeConversation.id] = {
+                  ...updated[activeConversation.id],
+                  messages: updated[activeConversation.id].messages.filter(
+                    m => m.id !== newMessage.id && m.id !== aiMessage.id
+                  ),
                   updatedAt: Date.now()
-                },
-                [targetConversationId]: {
-                  ...prev[targetConversationId],
-                  messages: updatedDestMessages,
-                  updatedAt: Date.now()
-                }
-              }));
-              
-              // Set active conversation to dest WITH messages already included
-              setActiveConversation({
-                ...destConv,
-                messages: updatedDestMessages,
-                updatedAt: Date.now()
-              });
-              
-              console.log('📦 [MainApp] Optimistically updated UI with migrated messages');
-            }
-            
-            // ✅ Now do database migration in background (non-blocking for UI)
-            // Wait for conversation to fully persist before migrating
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            // ✅ Use atomic migration service to prevent race conditions
-            // ✅ CRITICAL: Use database UUIDs instead of temporary client IDs
-            await MessageRoutingService.migrateMessagesAtomic(
-              [userMessageDbId, aiMessageDbId],
-              activeConversation.id,
-              targetConversationId
-            );
+                };
+              }
+              return updated;
+            });
             
             // ✅ After migration, update subtabs with new context from the AI response
             // This updates existing subtabs progressively, not regenerating them
@@ -3415,7 +3595,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                 
                 if (progressUpdate !== null) {
                   progressUpdates.gameProgress = progressUpdate;
-                  console.error(`🎮 [MainApp] ✅ Applying progress ${progressUpdate}% to TARGET: ${gameTab.title} (${targetConversationId})`);
+                  console.error(`🎮 [MainApp] ✅ Applying progress ${progressUpdate}% to TARGET: ${gameTab.title} (${targetConversationIdRef.current})`);
                 }
                 
                 if (objectiveUpdate !== null) {
@@ -3423,8 +3603,10 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                   console.error(`🎮 [MainApp] ✅ Applying objective to TARGET: ${gameTab.title}`);
                 }
                 
-                // Update in database first
-                await ConversationService.updateConversation(targetConversationId, progressUpdates);
+                // Update in database first (use ref to ensure correct conversation)
+                if (targetConversationIdRef.current) {
+                  await ConversationService.updateConversation(targetConversationIdRef.current, progressUpdates);
+                }
                 
                 // Merge into gameTab for immediate UI update
                 Object.assign(gameTab, progressUpdates);
@@ -3444,8 +3626,13 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               setSidebarOpen(false);
               
               // ✅ Set suggested prompts AFTER tab switch (based on FINAL active tab)
+              console.log('🎯 [MainApp] Setting suggestions after migration. processedSuggestions:', processedSuggestions);
+              console.log('🎯 [MainApp] processedSuggestions.length:', processedSuggestions.length);
               if (processedSuggestions.length > 0) {
+                console.log('✅ [MainApp] Using AI-generated suggestions:', processedSuggestions);
+                isSettingSuggestionsFromAI.current = true; // Prevent useEffect override
                 setSuggestedPrompts(processedSuggestions);
+                setTimeout(() => { isSettingSuggestionsFromAI.current = false; }, 100); // Reset after state update
                 // 🔄 Record shown prompts to prevent future repetition
                 if (user?.authUserId) {
                   const promptsToRecord = processedSuggestions.map(p => ({
@@ -3458,6 +3645,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                 }
               } else {
                 // Use fallback suggestions based on the GAME TAB, not Game Hub
+                console.warn('⚠️ [MainApp] No AI suggestions - using fallback for game tab:', gameTab.title);
                 const fallbackSuggestions = suggestedPromptsService.getFallbackSuggestions(gameTab.id, false);
                 setSuggestedPrompts(fallbackSuggestions);
               }
@@ -3482,10 +3670,10 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               
               // ✅ CRITICAL: Apply deferred subtab updates to TARGET conversation (not source!)
               // This ensures subtab updates go to Game B when you upload a Game B screenshot from Game A
-              if (pendingSubtabUpdates.length > 0) {
+              if (pendingSubtabUpdates.length > 0 && targetConversationIdRef.current) {
                 console.error(`🎮 [MainApp] ✅ Applying ${pendingSubtabUpdates.length} deferred subtab updates to TARGET: ${gameTab.title}`);
                 gameTabService.updateSubTabsFromAIResponse(
-                  targetConversationId,  // ✅ Use TARGET conversation, not source
+                  targetConversationIdRef.current,  // ✅ Use ref to ensure correct conversation
                   pendingSubtabUpdates
                 ).then(() => {
                   console.error('🎮 [MainApp] ✅ Successfully applied deferred subtab updates to target');
@@ -3504,6 +3692,18 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               }
             }
           } else {
+            // ✅ No migration - save messages to CURRENT conversation
+            targetConversationIdRef.current = activeConversation.id;
+            
+            console.log('💾 [MainApp] No migration - saving messages to current conversation...');
+            const userMessageResult = await ConversationService.addMessage(activeConversation.id, newMessage);
+            userMessageDbId = userMessageResult.message?.id || newMessage.id;
+            
+            const aiMessageResult = await ConversationService.addMessage(activeConversation.id, aiMessage);
+            aiMessageDbId = aiMessageResult.message?.id || aiMessage.id;
+            
+            console.log('✅ [MainApp] Messages saved to current conversation');
+            
             // ✅ No migration - apply progress updates to CURRENT conversation
             if (progressUpdate !== null || objectiveUpdate !== null) {
               const progressUpdates: Partial<Conversation> = { updatedAt: Date.now() };
@@ -3527,16 +3727,18 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               }));
               setActiveConversation(updatedConv);
               
-              // Persist to database
-              ConversationService.updateConversation(activeConversation.id, progressUpdates)
-                .catch(error => console.error('Failed to update progress:', error));
+              // Persist to database (use ref to ensure correct conversation)
+              if (targetConversationIdRef.current) {
+                ConversationService.updateConversation(targetConversationIdRef.current, progressUpdates)
+                  .catch(error => console.error('Failed to update progress:', error));
+              }
             }
             
             // ✅ No migration - apply subtab updates to CURRENT conversation
-            if (pendingSubtabUpdates.length > 0) {
+            if (pendingSubtabUpdates.length > 0 && targetConversationIdRef.current) {
               console.error(`🎮 [MainApp] ✅ Applying ${pendingSubtabUpdates.length} subtab updates to CURRENT: ${activeConversation.title}`);
               gameTabService.updateSubTabsFromAIResponse(
-                activeConversation.id,
+                targetConversationIdRef.current,
                 pendingSubtabUpdates
               ).then(() => {
                 console.error('🎮 [MainApp] ✅ Successfully applied subtab updates');
@@ -3554,9 +3756,12 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
             }
             
             // ✅ No migration - set prompts for current tab (Game Hub or existing game tab)
+            console.log('🎯 [MainApp] Setting suggestions (no migration). processedSuggestions:', processedSuggestions);
             if (processedSuggestions.length > 0) {
               console.log('✅ [MainApp] Setting AI-provided suggestions (no migration):', processedSuggestions);
+              isSettingSuggestionsFromAI.current = true; // Prevent useEffect override
               setSuggestedPrompts(processedSuggestions);
+              setTimeout(() => { isSettingSuggestionsFromAI.current = false; }, 100); // Reset after state update
               // 🔄 Record shown prompts to prevent future repetition
               if (user?.authUserId) {
                 const gameTitle = activeConversation.isGameHub ? null : (activeConversation.gameTitle ?? null);
@@ -3569,16 +3774,93 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                   .catch((err: unknown) => console.warn('[MainApp] Failed to record shown prompts:', err));
               }
             } else {
+              console.warn('⚠️ [MainApp] No AI suggestions (no migration) - using fallback');
               const fallbackSuggestions = suggestedPromptsService.getFallbackSuggestions(activeConversation.id, activeConversation.isGameHub);
               setSuggestedPrompts(fallbackSuggestions);
             }
           }
         }
-        // else: No GAME_ID tag in response, nothing to process for game tab creation
+      } else {
+        // ✅ CRITICAL FIX: No GAME_ID tag - save messages to current conversation
+        // This handles text queries that don't mention a specific game
+        console.log('📝 [MainApp] No GAME_ID detected - saving to current conversation');
+        targetConversationIdRef.current = activeConversation.id;
+        
+        // Save user message
+        const userMessageResult = await ConversationService.addMessage(activeConversation.id, newMessage);
+        userMessageDbId = userMessageResult.message?.id || newMessage.id;
+        
+        // Save AI message
+        const aiMessageResult = await ConversationService.addMessage(activeConversation.id, aiMessage);
+        aiMessageDbId = aiMessageResult.message?.id || aiMessage.id;
+        
+        console.log('✅ [MainApp] Messages saved to current conversation (no game detected)');
+        
+        // Apply any progress/objective updates to current conversation
+        if (progressUpdate !== null || objectiveUpdate !== null) {
+          const progressUpdates: Partial<Conversation> = { updatedAt: Date.now() };
+          
+          if (progressUpdate !== null) {
+            progressUpdates.gameProgress = progressUpdate;
+          }
+          
+          if (objectiveUpdate !== null) {
+            progressUpdates.activeObjective = objectiveUpdate;
+          }
+          
+          await ConversationService.updateConversation(activeConversation.id, progressUpdates);
+          
+          // Update state
+          setConversations(prev => ({
+            ...prev,
+            [activeConversation.id]: { ...prev[activeConversation.id], ...progressUpdates }
+          }));
+          setActiveConversation(prev => prev ? { ...prev, ...progressUpdates } : null);
+        }
+        
+        // Apply any subtab updates to current conversation
+        if (pendingSubtabUpdates.length > 0) {
+          gameTabService.updateSubTabsFromAIResponse(
+            activeConversation.id,
+            pendingSubtabUpdates
+          ).catch(error => console.error('Failed to apply subtab updates:', error));
+        }
+        
+        // Set suggested prompts for current conversation
+        console.log('🎯 [MainApp] Setting suggestions (no GAME_ID). processedSuggestions:', processedSuggestions);
+        if (processedSuggestions.length > 0) {
+          console.log('✅ [MainApp] Using AI suggestions (no GAME_ID):', processedSuggestions);
+          isSettingSuggestionsFromAI.current = true; // Prevent useEffect override
+          setSuggestedPrompts(processedSuggestions);
+          setTimeout(() => { isSettingSuggestionsFromAI.current = false; }, 100); // Reset after state update
+        } else {
+          console.warn('⚠️ [MainApp] No AI suggestions (no GAME_ID) - using fallback');
+          const fallbackSuggestions = suggestedPromptsService.getFallbackSuggestions(activeConversation.id, activeConversation.isGameHub);
+          setSuggestedPrompts(fallbackSuggestions);
+        }
+      }
+      
+      // ✅ FINAL REFRESH: Ensure UI is up to date with all changes
+      // This forces a re-render with the latest conversation state
+      const finalConversations = await ConversationService.getConversations();
+      setConversations(finalConversations);
+      const finalActiveConv = finalConversations[targetConversationIdRef.current || activeConversation.id];
+      if (finalActiveConv) {
+        setActiveConversation(finalActiveConv);
       }
 
     } catch (error) {
-      console.error("Failed to get AI response:", error);
+      console.error("🚨 [MainApp] Failed to get AI response:", error);
+      console.error("🚨 [MainApp] Error details:", {
+        name: error instanceof Error ? error.name : 'unknown',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        conversationId: activeConversation.id,
+        gameTitle: activeConversation.gameTitle,
+        isGameHub: activeConversation.isGameHub,
+        messageCount: updatedConversationForAI.messages.length,
+        userTier: user?.tier
+      });
       
       // Check if it was aborted (user stopped the response)
       if (error instanceof Error && error.name === 'AbortError') {
@@ -3653,6 +3935,9 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
     } finally {
       setIsLoading(false);
       setAbortController(null);
+      setIsProcessingResponse(false);
+      targetConversationIdRef.current = null;
+      console.log('🔓 [MainApp] Processing lock released');
     }
   };
 
@@ -4025,8 +4310,11 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                   onDeleteQueuedMessage={handleDeleteQueuedMessage}
                   onEditMessage={handleEditMessage}
                   onFeedback={handleFeedback}
+                  onRetryLastMessage={handleRetryLastMessage}
                   onModifySubtab={handleModifySubtab}
                   onDeleteSubtab={handleDeleteSubtab}
+                  onRetrySubtab={handleRetrySubtab}
+                  onOpenExplorer={() => setGamingExplorerOpen(true)}
                 />
               </ErrorBoundary>
             </div>
@@ -4099,6 +4387,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
         onClose={() => setGameInfoModalOpen(false)}
         gameData={currentGameIGDBData}
         gameName={activeConversation?.gameTitle || ''}
+        userTier={currentUser.tier}
       />
 
       {/* Feedback Modal - AI Response Feedback */}

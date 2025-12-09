@@ -269,7 +269,14 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
   }, [selectedCategory]);
 
   // Handle clicking on a news prompt card - sends query to Game Hub
-  const handleNewsPromptClick = useCallback((prompt: NewsPromptCard) => {
+  const handleNewsPromptClick = useCallback(async (prompt: NewsPromptCard) => {
+    // Check Supabase global cache first
+    const cachedNews = await newsCacheStorage.getAsync(prompt.id);
+    if (cachedNews) {
+      console.log('[GamingExplorerHome] Using cached news from Supabase/localStorage for:', prompt.id);
+      // Could display cached news directly here if needed
+    }
+    
     // Check rate limit (24-hour per-user limit per prompt type)
     const canGenerate = newsCacheStorage.canGenerate(user.id, prompt.id);
     if (!canGenerate.allowed && canGenerate.nextAvailableAt) {

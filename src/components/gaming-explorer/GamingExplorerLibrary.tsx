@@ -94,15 +94,31 @@ const GamingExplorerLibrary: React.FC<GamingExplorerLibraryProps> = ({ user: _us
 
   // Load games on mount and category change
   useEffect(() => {
-    setGames(libraryStorage.getByCategory(activeCategory));
+    const loadedGames = libraryStorage.getByCategory(activeCategory);
+    console.log('[GamingExplorerLibrary] Loading games for category:', activeCategory, 'Found:', loadedGames.length);
+    console.log('[GamingExplorerLibrary] Games:', loadedGames.map(g => g.gameName));
+    setGames(loadedGames);
   }, [activeCategory]);
 
   // Update active category when initialCategory prop changes
   useEffect(() => {
     if (initialCategory) {
+      console.log('[GamingExplorerLibrary] Switching to category:', initialCategory);
       setActiveCategory(initialCategory);
     }
   }, [initialCategory]);
+
+  // Force reload games when component mounts to ensure fresh data
+  useEffect(() => {
+    const allGames = libraryStorage.getAll();
+    console.log('[GamingExplorerLibrary] Total games in library:', allGames.length);
+    console.log('[GamingExplorerLibrary] Games by category:', {
+      own: libraryStorage.getByCategory('own').length,
+      wishlist: libraryStorage.getByCategory('wishlist').length,
+      favorite: libraryStorage.getByCategory('favorite').length,
+      disliked: libraryStorage.getByCategory('disliked').length,
+    });
+  }, []);
 
   // Get library stats
   const stats = useMemo(() => {
@@ -113,6 +129,7 @@ const GamingExplorerLibrary: React.FC<GamingExplorerLibraryProps> = ({ user: _us
 
   // Debounced autocomplete search - triggers as user types
   const handleSearchInputChange = useCallback((value: string) => {
+    console.log('[GamingExplorerLibrary] Search query changed:', value);
     setSearchQuery(value);
     
     // Clear previous timeout
@@ -130,18 +147,20 @@ const GamingExplorerLibrary: React.FC<GamingExplorerLibraryProps> = ({ user: _us
     // Set searching state immediately for visual feedback
     setIsSearching(true);
     
-    // Debounce the search - wait 300ms after user stops typing
+    // Debounce the search - wait 200ms after user stops typing (reduced for faster response)
     searchTimeoutRef.current = setTimeout(async () => {
       try {
+        console.log('[GamingExplorerLibrary] Searching IGDB for:', value);
         const results = await searchIGDBGames(value);
+        console.log('[GamingExplorerLibrary] Search results:', results.length, 'games');
         setSearchResults(results);
       } catch (error) {
-        console.error('Search error:', error);
+        console.error('[GamingExplorerLibrary] Search error:', error);
         setSearchResults([]);
       } finally {
         setIsSearching(false);
       }
-    }, 300);
+    }, 200);
   }, []);
 
   // Cleanup timeout on unmount
@@ -178,6 +197,7 @@ const GamingExplorerLibrary: React.FC<GamingExplorerLibraryProps> = ({ user: _us
 
   // Add game to library
   const handleAddGame = useCallback((gameData: IGDBGameData, category: LibraryCategory) => {
+    console.log('[GamingExplorerLibrary] Adding game to library:', gameData.name, 'Category:', category);
     libraryStorage.addGame(
       gameData.id,
       gameData.name,
@@ -185,8 +205,13 @@ const GamingExplorerLibrary: React.FC<GamingExplorerLibraryProps> = ({ user: _us
       gameData
     );
     
-    setGames(libraryStorage.getByCategory(activeCategory));
-    setShowSearchModal(false);
+    // Refresh games for the active category
+    const updatedGames = libraryStorage.getByCategory(activeCategory);
+    console.log('[GamingExplorerLibrary] Updated games count for', activeCategory, ':', updatedGames.length);
+    setGames(updatedGames);
+    
+    // Don't close modal, keep it open for adding more games
+    // Clear search to allow new search
     setSearchQuery('');
     setSearchResults([]);
     
@@ -419,26 +444,6 @@ const GamingExplorerLibrary: React.FC<GamingExplorerLibraryProps> = ({ user: _us
                 {/* Game Info - Enhanced */}
                 <div className="p-2 sm:p-3 bg-gradient-to-t from-[#0A0A0A] to-[#1C1C1C] min-w-0 overflow-hidden">
                   <h3 className="font-semibold text-[#F5F5F5] text-xs sm:text-sm truncate">{game.gameName}</h3>
-                  
-                  {/* Your Rating - Enhanced */}
-                  <div className="flex items-center gap-0.5 mt-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <motion.button
-                        key={star}
-                        whileHover={{ scale: 1.2 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleUpdateRating(game.id, star);
-                        }}
-                        className={`text-sm sm:text-base transition-colors ${
-                          (game.personalRating || 0) >= star ? 'text-yellow-400' : 'text-[#424242] hover:text-yellow-400/50'
-                        }`}
-                      >
-                        ★
-                      </motion.button>
-                    ))}
-                  </div>
 
                   {/* Genres - Enhanced */}
                   {game.igdbData?.genres && (

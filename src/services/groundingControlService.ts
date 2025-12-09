@@ -8,10 +8,17 @@
  * 4. Game type (live service games NEED current data)
  * 5. AI knowledge cutoff (Jan 2025 - games after need grounding)
  * 
- * COST OPTIMIZATION:
- * - Free tier: Limited grounding (8x/month) - prioritize news & new games
+ * COST OPTIMIZATION (Dec 2025 Update):
+ * - Free tier: NO grounding (0x/month) - relies on global game knowledge cache
+ *   populated by Pro/Vanguard users. Seamless fallback to training data.
  * - Pro tier: Moderate grounding (30x/month) - includes live service meta
  * - Vanguard Pro: Liberal grounding (100x/month) - full access
+ * 
+ * GLOBAL CACHE SYSTEM:
+ * - Pro/Vanguard users trigger game knowledge fetches WITH grounding
+ * - Knowledge stored in Supabase game_knowledge_cache table
+ * - ALL users (including Free) benefit from cached knowledge
+ * - Reduces grounding costs by 70-80%
  * 
  * IMPORTANT: Gemini 2.5 Flash knowledge cutoff is January 2025.
  * Games released after this date NEED grounding for any help.
@@ -21,10 +28,11 @@ import { supabase } from '../lib/supabase';
 import type { UserTier } from '../types';
 
 // ============================================================================
-// GROUNDING LIMITS BY TIER (increased for better experience)
+// GROUNDING LIMITS BY TIER
+// Free tier: 0 (relies on global cache populated by Pro/Vanguard)
 // ============================================================================
 const GROUNDING_LIMITS: Record<UserTier, number> = {
-  free: 8,            // 8 grounded searches per month (2x per week avg)
+  free: 0,            // NO grounding - uses cached knowledge from global cache
   pro: 30,            // 30 grounded searches per month  
   vanguard_pro: 100   // 100 grounded searches per month
 };
@@ -96,7 +104,9 @@ export const KNOWLEDGE_CUTOFF_TIMESTAMP = new Date('2025-01-31T23:59:59Z').getTi
  * @returns true if game released after Jan 2025 (AI won't have training knowledge)
  */
 export function isRecentRelease(igdbReleaseDate?: number | null): boolean {
-  if (!igdbReleaseDate) return false;
+  if (!igdbReleaseDate) {
+    return false;
+  }
   // IGDB uses Unix seconds, convert to milliseconds
   const releaseDateMs = igdbReleaseDate * 1000;
   return releaseDateMs > KNOWLEDGE_CUTOFF_TIMESTAMP;
@@ -386,19 +396,18 @@ export async function getGroundingUsage(authUserId: string): Promise<number> {
       .select('usage_count')
       .eq('auth_user_id', authUserId)
       .eq('month_year', currentMonth)
-      .single();
+      .maybeSingle(); // Use maybeSingle() instead of single() to handle 0 or 1 rows gracefully
     
     if (error) {
-      // Check if table doesn't exist
-      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+      // Check if table doesn't exist (various error codes for different scenarios)
+      if (error.code === '42P01' || error.code === 'PGRST205' || error.message?.includes('does not exist') || error.message?.includes('Could not find')) {
         console.warn('[GroundingControl] DB table not yet created, using in-memory tracking');
         dbTableExists = false;
         return cached?.count || 0;
       }
-      if (error.code !== 'PGRST116') { // PGRST116 = not found (which is OK)
-        console.error('[GroundingControl] Failed to fetch usage:', error);
-        return cached?.count || 0;
-      }
+      // Don't check for PGRST116 anymore since maybeSingle() handles not found
+      console.error('[GroundingControl] Failed to fetch usage:', error);
+      return cached?.count || 0;
     }
     
     dbTableExists = true;

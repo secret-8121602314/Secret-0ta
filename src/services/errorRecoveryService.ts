@@ -22,11 +22,44 @@ class ErrorRecoveryService {
    */
   async handleAIError(error: Error, context: ErrorContext): Promise<RecoveryAction> {
     console.error(`🤖 [ErrorRecovery] AI Error in ${context.operation}:`, error);
+    console.error(`🤖 [ErrorRecovery] Error message:`, error.message);
 
-    // Check if we should retry
+    // ✅ CRITICAL: Check for non-retryable errors FIRST (before any retry logic)
+    // Rate limit / quota / 429 errors should NEVER be retried - they waste API quota!
+    const isRateLimitError = error.message.includes('RATE_LIMIT_ERROR') ||
+                            error.message.includes('rate limit') || 
+                            error.message.includes('quota') || 
+                            error.message.includes('429') ||
+                            error.message.includes('RESOURCE_EXHAUSTED') ||
+                            error.message.includes('Too Many Requests');
+    
+    if (isRateLimitError) {
+      console.error('🔴 [ErrorRecovery] ⛔ RATE LIMIT ERROR DETECTED - STOPPING ALL RETRIES');
+      console.error('🔴 [ErrorRecovery] Error message:', error.message);
+      return {
+        type: 'user_notification',
+        message: 'AI service is temporarily busy. Please wait about a minute and try again.'
+      };
+    }
+
+    // Check for authentication errors (don't retry auth failures)
+    if (error.message.includes('API key') || 
+        error.message.includes('authentication') ||
+        error.message.includes('401') || 
+        error.message.includes('403') || 
+        error.message.includes('unauthorized')) {
+      console.error('🔴 [ErrorRecovery] Auth error - NOT retrying:', error.message);
+      return {
+        type: 'user_notification',
+        message: 'AI service authentication failed. Please try logging out and back in.'
+      };
+    }
+
+    // Only retry transient errors (network issues, timeouts, 5xx errors)
     if (this.shouldRetry(context)) {
       const delay = this.getRetryDelay(context.retryCount);
-            await this.delay(delay);
+      console.log(`🔄 [ErrorRecovery] Will retry after ${delay}ms (attempt ${context.retryCount + 1}/${this.MAX_RETRIES})`);
+      await this.delay(delay);
       return {
         type: 'retry',
         action: async () => {
@@ -35,21 +68,7 @@ class ErrorRecoveryService {
       };
     }
 
-    // Determine fallback action based on error type
-    if (error.message.includes('API key') || error.message.includes('authentication')) {
-      return {
-        type: 'user_notification',
-        message: 'AI service authentication failed. Please check your API key in settings.'
-      };
-    }
-
-    if (error.message.includes('rate limit') || error.message.includes('quota')) {
-      return {
-        type: 'user_notification',
-        message: 'AI service is temporarily busy. Please try again in a few moments.'
-      };
-    }
-
+    // Network/timeout errors (after max retries)
     if (error.message.includes('network') || error.message.includes('timeout')) {
       return {
         type: 'user_notification',
@@ -57,7 +76,12 @@ class ErrorRecoveryService {
       };
     }
 
-    // Generic fallback
+    // Generic fallback - log full error for debugging
+    console.error('🔴 [ErrorRecovery] Unknown AI service error:', {
+      message: error.message,
+      stack: error.stack,
+      operation: context.operation
+    });
     return {
       type: 'user_notification',
       message: 'AI service is temporarily unavailable. Please try again later.'
@@ -143,6 +167,14 @@ class ErrorRecoveryService {
    */
   private getRetryDelay(retryCount: number): number {
     return this.RETRY_DELAYS[Math.min(retryCount, this.RETRY_DELAYS.length - 1)];
+  }
+
+  /**
+   * Get current retry count for an operation
+   */
+  getRetryCount(context: ErrorContext): number {
+    const key = `${context.operation}_${context.conversationId || 'global'}`;
+    return this.retryAttempts.get(key) || 0;
   }
 
   /**

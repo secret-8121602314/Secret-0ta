@@ -20,6 +20,7 @@ const GamingExplorerOnboarding: React.FC<GamingExplorerOnboardingProps> = ({
   const [selectedDecade, setSelectedDecade] = useState<number>(
     Math.floor((currentYear - 10) / 10) * 10
   );
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   // Generate decades from 1970 to current decade
   const decades = [];
@@ -34,8 +35,16 @@ const GamingExplorerOnboarding: React.FC<GamingExplorerOnboardingProps> = ({
   }
 
   const handleSubmit = useCallback(() => {
+    setShowConfirmation(true);
+  }, []);
+
+  const handleConfirm = useCallback(() => {
     onComplete(selectedYear);
   }, [selectedYear, onComplete]);
+
+  const handleGoBack = useCallback(() => {
+    setShowConfirmation(false);
+  }, []);
 
   return (
     <motion.div
@@ -132,6 +141,62 @@ const GamingExplorerOnboarding: React.FC<GamingExplorerOnboardingProps> = ({
           Skip for now
         </button>
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-[#1C1C1C] rounded-2xl p-6 max-w-md w-full border border-[#424242]/40 shadow-2xl"
+          >
+            {/* Icon */}
+            <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br from-[#E53A3A] to-[#D98C1F] flex items-center justify-center">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+
+            {/* Title */}
+            <h3 className="text-xl font-bold text-[#F5F5F5] text-center mb-2">
+              Confirm Your Selection
+            </h3>
+
+            {/* Details */}
+            <div className="bg-[#0A0A0A] rounded-xl p-4 mb-6 border border-[#424242]/30">
+              <div className="text-center">
+                <p className="text-[#8F8F8F] text-sm mb-2">Your gaming journey starts in</p>
+                <p className="text-4xl font-bold bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] bg-clip-text text-transparent mb-2">
+                  {selectedYear}
+                </p>
+                <p className="text-[#CFCFCF] text-sm">
+                  That's <span className="font-semibold text-[#F5F5F5]">{currentYear - selectedYear} years</span> of gaming history!
+                </p>
+              </div>
+            </div>
+
+            <p className="text-[#8F8F8F] text-sm text-center mb-6">
+              This will be used to create your gaming timeline. You can always update this later in your profile settings.
+            </p>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={handleGoBack}
+                className="flex-1 py-3 px-4 bg-[#0A0A0A] border border-[#424242]/40 text-[#CFCFCF] font-medium rounded-xl hover:bg-[#2A2A2A] hover:border-[#424242]/60 transition-all"
+              >
+                Go Back
+              </button>
+              <button
+                onClick={handleConfirm}
+                className="flex-1 py-3 px-4 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-semibold rounded-xl hover:opacity-90 transition-opacity shadow-lg"
+              >
+                Confirm
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </motion.div>
   );
 };

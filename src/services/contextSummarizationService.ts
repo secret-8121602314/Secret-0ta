@@ -1,5 +1,6 @@
 import { Conversation, ChatMessage, User } from '../types';
 import { aiService } from './aiService';
+import { toastService } from './toastService';
 
 interface SummarizationResult {
   summary: string;
@@ -7,6 +8,9 @@ interface SummarizationResult {
   messagesIncluded: number;
   originalWordCount: number;
 }
+
+// Track retry counts for each conversation
+const retryTracking = new Map<string, number>();
 
 /**
  * Context Summarization Service
@@ -112,6 +116,8 @@ Provide ONLY the summary, no additional commentary.`;
         isGameHub: false
       };
 
+      console.log(`📡 [GEMINI CALL #2] 📋 Context Summarization | Messages: ${messages.length} | Game: ${gameTitle || 'N/A'} | Target: ${this.MAX_WORDS} words`);
+
       // Get AI summary using getChatResponse
       // Create minimal user object for summarization
       const summaryUser = {
@@ -125,13 +131,22 @@ Provide ONLY the summary, no additional commentary.`;
         summaryUser,
         summaryPrompt,
         false, // Not active session
-        false // No images
+        false, // No images
+        undefined, // No image data
+        undefined, // No abort signal
+        'summarization' // Route to ai-summarization edge function
       );
 
       const summary = response.content.trim();
       const summaryWordCount = this.countWords(summary);
 
-      console.log(`✅ [ContextSummarization] Summary generated: ${summaryWordCount} words (reduced from ${originalWordCount})`);
+      console.log(`✅ [GEMINI CALL] Context Summarization SUCCESS | ${summaryWordCount} words (reduced from ${originalWordCount})`);
+
+      // Show success toast
+      toastService.success(`Conversation summarized (${originalWordCount} → ${summaryWordCount} words)`);
+      
+      // Reset retry count on success
+      retryTracking.delete('summarization');
 
       return {
         summary,
@@ -142,6 +157,23 @@ Provide ONLY the summary, no additional commentary.`;
 
     } catch (error) {
       console.error('❌ [ContextSummarization] Failed to generate summary:', error);
+      
+      // ✅ RETRY LOGIC: Add 1 second delay and retry up to 3 times
+      const currentRetries = retryTracking.get('summarization') || 0;
+      const maxRetries = 3;
+      
+      if (currentRetries < maxRetries) {
+        retryTracking.set('summarization', currentRetries + 1);
+        console.log(`🔄 [ContextSummarization] Retry ${currentRetries + 1}/${maxRetries} in 1 second...`);
+        
+        // Wait 1 second then retry
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return this.summarizeMessages(messages, gameTitle, genre);
+      }
+      
+      // Max retries reached - reset and return fallback
+      console.error(`❌ [ContextSummarization] Max retries reached`);
+      retryTracking.delete('summarization');
       
       // Fallback: Create simple concatenated summary
       const fallbackSummary = messages

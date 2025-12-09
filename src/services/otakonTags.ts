@@ -1,6 +1,7 @@
 /**
  * Parses AI responses to extract OTAKON tags and clean content
  * Handles both simple tags [OTAKON_TAG: value] and complex tags with JSON arrays/objects
+ * Also extracts structured data from "Internal Data Structure" JSON blocks
  * 
  * SIMPLIFIED FORMATTING CLEANUP - Consolidated from 12+ regex phases into streamlined logic
  * ORDER: 1) Extract tags from raw 2) Clean content after extraction
@@ -10,6 +11,111 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
   let cleanContent = rawContent;
   
   console.log(`🏷️ [otakonTags] Parsing response (${rawContent.length} chars)...`);
+
+  // ============================================
+  // STEP 0: EXTRACT FROM "Internal Data Structure" JSON BLOCKS
+  // This handles the new AI response format with embedded JSON
+  // ============================================
+  
+  // Look for JSON block after "Internal Data Structure" header
+  const internalDataPatterns = [
+    /Internal Data Structure:?\s*\n*\s*```json\s*([\s\S]*?)```/i,
+    /Internal Data Structure:?\s*\n*\s*```\s*([\s\S]*?)```/i,
+    /Internal Data Structure:?\s*\n*(\{[\s\S]*?"followUpPrompts"[\s\S]*?\})\s*$/i,
+    /"Internal Data Structure":?\s*\n*(\{[\s\S]*?"followUpPrompts"[\s\S]*?\})/i,
+  ];
+  
+  for (const pattern of internalDataPatterns) {
+    const match = rawContent.match(pattern);
+    if (match && match[1]) {
+      try {
+        const jsonStr = match[1].trim();
+        const parsed = JSON.parse(jsonStr);
+        console.log(`🏷️ [otakonTags] Found Internal Data Structure JSON:`, Object.keys(parsed));
+        
+        // Extract followUpPrompts
+        if (parsed.followUpPrompts && Array.isArray(parsed.followUpPrompts)) {
+          tags.set('SUGGESTIONS', parsed.followUpPrompts);
+          console.log(`🏷️ [otakonTags] ✅ Extracted followUpPrompts from JSON:`, parsed.followUpPrompts);
+        }
+        
+        // Extract stateUpdateTags for progress
+        if (parsed.stateUpdateTags && Array.isArray(parsed.stateUpdateTags)) {
+          for (const tag of parsed.stateUpdateTags) {
+            const progressMatch = String(tag).match(/PROGRESS[:\s]+(\d+)/i);
+            if (progressMatch) {
+              const progress = parseInt(progressMatch[1], 10);
+              if (progress >= 0 && progress <= 100) {
+                tags.set('PROGRESS', progress);
+                console.log(`📊 [otakonTags] ✅ Extracted PROGRESS from stateUpdateTags: ${progress}%`);
+              }
+            }
+            const objectiveMatch = String(tag).match(/OBJECTIVE[:\s]+(.+)/i);
+            if (objectiveMatch) {
+              tags.set('OBJECTIVE', objectiveMatch[1].trim());
+              console.log(`🎯 [otakonTags] ✅ Extracted OBJECTIVE from stateUpdateTags`);
+            }
+          }
+        }
+        
+        // Extract progressiveInsightUpdates for subtabs
+        if (parsed.progressiveInsightUpdates && Array.isArray(parsed.progressiveInsightUpdates)) {
+          tags.set('SUBTAB_UPDATE', parsed.progressiveInsightUpdates);
+          console.log(`📑 [otakonTags] ✅ Extracted ${parsed.progressiveInsightUpdates.length} subtab updates from JSON`);
+        }
+        
+        break; // Found and parsed successfully
+      } catch (e) {
+        console.warn('[otakonTags] Failed to parse Internal Data Structure JSON:', e);
+      }
+    }
+  }
+  
+  // Also try to extract followUpPrompts directly from raw content (without "Internal Data Structure" header)
+  if (!tags.has('SUGGESTIONS')) {
+    const directJsonMatch = rawContent.match(/\{[\s\S]*?"followUpPrompts"\s*:\s*\[([\s\S]*?)\][\s\S]*?\}/);
+    if (directJsonMatch) {
+      try {
+        // Try to extract the full JSON object
+        const jsonStartIndex = rawContent.indexOf(directJsonMatch[0]);
+        let braceCount = 0;
+        let jsonEndIndex = jsonStartIndex;
+        for (let i = jsonStartIndex; i < rawContent.length; i++) {
+          if (rawContent[i] === '{') {
+            braceCount++;
+          }
+          if (rawContent[i] === '}') {
+            braceCount--;
+            if (braceCount === 0) {
+              jsonEndIndex = i + 1;
+              break;
+            }
+          }
+        }
+        const jsonStr = rawContent.substring(jsonStartIndex, jsonEndIndex);
+        const parsed = JSON.parse(jsonStr);
+        
+        if (parsed.followUpPrompts && Array.isArray(parsed.followUpPrompts)) {
+          tags.set('SUGGESTIONS', parsed.followUpPrompts);
+          console.log(`🏷️ [otakonTags] ✅ Extracted followUpPrompts from embedded JSON:`, parsed.followUpPrompts);
+        }
+      } catch (_e) {
+        // Try simpler extraction - just the array
+        try {
+          const arrayMatch = rawContent.match(/"followUpPrompts"\s*:\s*\[([^\]]+)\]/);
+          if (arrayMatch) {
+            const prompts = JSON.parse(`[${arrayMatch[1]}]`);
+            if (Array.isArray(prompts) && prompts.length > 0) {
+              tags.set('SUGGESTIONS', prompts);
+              console.log(`🏷️ [otakonTags] ✅ Extracted followUpPrompts array:`, prompts);
+            }
+          }
+        } catch (_e2) {
+          console.warn('[otakonTags] Could not extract followUpPrompts from JSON');
+        }
+      }
+    }
+  }
 
   // ============================================
   // STEP 1: EXTRACT TAGS FROM RAW CONTENT FIRST
@@ -167,13 +273,34 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
   }
 
   // ============================================
-  // STEP 2: MINIMAL CLEANUP - Remove AI intro and trim
+  // STEP 2: AGGRESSIVE CLEANUP - Remove all tag remnants and trim
   // ============================================
   
   // Remove AI self-introduction only (keep all other content as-is)
   cleanContent = cleanContent
     // Remove "I'm Otagon, your dedicated gaming lore expert..." intro
     .replace(/^I['']?m\s+Otagon,\s+your\s+dedicated\s+gaming\s+lore\s+expert[^\n]*\n*/i, '')
+    // Remove any remaining OTAKON_SUGGESTIONS tags (in case regex didn't catch all variants)
+    .replace(/\[OTAKON_SUGGESTIONS:[^\]]*\]/gi, '')
+    // Remove any remaining OTAKON tags
+    .replace(/\[OTAKON_[A-Z_]+:[^\]]*\]/g, '')
+    // ✅ NEW: Remove "Internal Data Structure" section and everything after it
+    .replace(/\*+\s*#+\s*Internal Data Structure[\s\S]*$/gi, '') // ***## Internal Data Structure
+    .replace(/\*+\s*Internal Data Structure[\s\S]*$/gi, '') // *** Internal Data Structure
+    .replace(/#+\s*Internal Data Structure[\s\S]*$/gi, '') // ## Internal Data Structure
+    .replace(/Internal Data Structure:?[\s\S]*$/gi, '') // Internal Data Structure (any case)
+    .replace(/"Internal Data Structure":?[\s\S]*$/gi, '') // With quotes
+    // ✅ NEW: Remove standalone JSON blocks with structured data at the end
+    .replace(/\{[\s\S]*?"followUpPrompts"[\s\S]*?\}\s*$/gi, '')
+    .replace(/\{[\s\S]*?"progressiveInsightUpdates"[\s\S]*?\}\s*$/gi, '')
+    .replace(/\{[\s\S]*?"stateUpdateTags"[\s\S]*?\}\s*$/gi, '')
+    .replace(/\{[\s\S]*?"gamePillData"[\s\S]*?\}\s*$/gi, '')
+    // ✅ NEW: Remove code blocks containing JSON
+    .replace(/```json[\s\S]*?```/gi, '')
+    .replace(/```\s*\{[\s\S]*?```/gi, '')
+    // Remove orphaned closing brackets that might remain at the end
+    .replace(/\]\s*$/g, '')
+    .replace(/\}\s*$/g, '') // Also remove trailing }
     .trim();
 
   // Log extracted tags summary

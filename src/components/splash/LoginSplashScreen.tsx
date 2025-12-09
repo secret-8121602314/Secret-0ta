@@ -35,6 +35,35 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [signupModalType, setSignupModalType] = useState<'success' | 'email-exists' | 'invalid-email'>('success');
   const [signupModalMessage, setSignupModalMessage] = useState('');
+  const [currentMascotIndex, setCurrentMascotIndex] = useState(0);
+
+  // Mascot images for carousel with corresponding text
+  const mascotImages = [
+    {
+      src: '/images/mascot/1.webp',
+      title: 'Welcome to Otagon',
+      description: 'Your ultimate gaming companion for an enhanced experience.'
+    },
+    {
+      src: '/images/mascot/4.webp',
+      title: 'Never Get Stuck Again',
+      description: 'Get instant help and tips while gaming on PC—no more frustrating moments.'
+    },
+    {
+      src: '/images/mascot/9.webp',
+      title: 'Hands-Free Mode',
+      description: 'Voice commands and smart assistance for seamless gameplay.'
+    }
+  ];
+
+  // Auto-rotate mascot carousel (desktop only)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentMascotIndex((prev) => (prev + 1) % mascotImages.length);
+    }, 4000); // Change every 4 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Load PWA manifest when login screen mounts
   useEffect(() => {
@@ -347,45 +376,98 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
   };
 
   return (
-    <div className="h-[100dvh] bg-gradient-to-br from-background via-[#0F0F0F] to-background text-text-primary flex flex-col items-center justify-between px-5 sm:px-6 py-8 sm:py-6 md:py-6 lg:py-8 relative overflow-hidden">
+    <div className="h-[100dvh] bg-gradient-to-br from-background via-[#0F0F0F] to-background text-text-primary flex flex-col lg:flex-row relative overflow-hidden">
       
-      <div className={`w-full max-w-md lg:max-w-lg xl:max-w-xl relative z-10 transition-all duration-500 ${isAnimating ? 'scale-105' : 'scale-100'} mx-auto flex-1 flex flex-col justify-center`}>
-        {/* Logo and Title */}
-        <div className="text-center mb-3 md:mb-5 lg:mb-6">
-          <img
-            src="/images/otagon-logo.png"
-            alt="Otagon Logo"
-            className="mx-auto mb-2 md:mb-3 lg:mb-4 w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 object-contain aspect-square"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-            }}
-          />
-          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-1 md:mb-2">
-            Welcome to Otagon
-          </h1>
-          <p className="text-xs md:text-sm lg:text-base text-text-secondary px-4 mb-3 md:mb-5 lg:mb-6">
-            {emailMode === 'options' 
-              ? 'Sign in to start your gaming adventure' 
-              : emailMode === 'signin' 
-                ? 'Welcome back! Sign in to continue'
-                : emailMode === 'signup'
-                  ? 'Create your account to get started'
-                  : 'Reset your password'
-            }
-          </p>
+      {/* Left Side - Mascot Carousel (Desktop Only) */}
+      <div className="hidden lg:flex lg:w-1/2 lg:h-full bg-gradient-to-br from-background via-[#0F0F0F] to-background relative">
+        <div className="w-full h-full flex flex-col items-center justify-center px-12 py-16 pb-24">
+          <div className="relative flex flex-col items-center justify-center max-w-2xl">
+            {/* Mascot Image with Transition */}
+            <div className="relative w-full max-w-md h-[400px] xl:h-[500px] mb-8">
+              {mascotImages.map((mascot, index) => (
+                <img
+                  key={mascot.src}
+                  src={mascot.src}
+                  alt={`Otagon Mascot ${index + 1}`}
+                  className={`absolute inset-0 w-full h-full object-contain drop-shadow-2xl transition-opacity duration-1000 ${
+                    index === currentMascotIndex ? 'opacity-100' : 'opacity-0'
+                  }`}
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Text Below Image */}
+            <div className="text-center mb-8 z-10 max-w-md">
+              <h2 className="text-3xl xl:text-4xl font-bold text-text-primary mb-4 transition-opacity duration-500">
+                {mascotImages[currentMascotIndex].title}
+              </h2>
+              <p className="text-base xl:text-lg text-text-secondary transition-opacity duration-500">
+                {mascotImages[currentMascotIndex].description}
+              </p>
+            </div>
+
+            {/* Carousel Indicators */}
+            <div className="flex space-x-2 z-10">
+              {mascotImages.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentMascotIndex(index)}
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    index === currentMascotIndex 
+                      ? 'bg-primary w-8' 
+                      : 'bg-text-muted/30 hover:bg-text-muted/50'
+                  }`}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
+          </div>
         </div>
+      </div>
+
+      {/* Right Side - Login Form (Full width on mobile/tablet, 50% on desktop with #121212 background) */}
+      <div className="flex-1 lg:flex-initial lg:w-1/2 lg:h-full lg:bg-[#121212] flex items-center justify-center overflow-y-auto">
+        <div className={`w-full max-w-md lg:max-w-lg xl:max-w-xl relative z-10 transition-all duration-500 ${isAnimating ? 'scale-105' : 'scale-100'} px-5 sm:px-6 lg:px-12 xl:px-16 py-6 sm:py-8 lg:py-8`}>
+          {/* Logo and Title */}
+          <div className="text-center mb-3 md:mb-5 lg:mb-6">
+            <img
+              src="/images/otagon-logo.png"
+              alt="Otagon Logo"
+              className="mx-auto mb-2 md:mb-3 lg:mb-4 w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 object-contain aspect-square"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+              }}
+            />
+            <h1 className="text-xl md:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-1 md:mb-2">
+              Welcome to Otagon
+            </h1>
+            <p className="text-sm sm:text-sm md:text-base lg:text-base text-text-secondary px-4 mb-3 md:mb-5 lg:mb-6">
+              {emailMode === 'options' 
+                ? 'Sign in to start your gaming adventure' 
+                : emailMode === 'signin' 
+                  ? 'Welcome back! Sign in to continue'
+                  : emailMode === 'signup'
+                    ? 'Create your account to get started'
+                    : 'Reset your password'
+              }
+            </p>
+          </div>
 
         {/* Error Message */}
         {errorMessage && (
-          <div className="mb-2 md:mb-3 lg:mb-4 p-1.5 md:p-2.5 lg:p-3 bg-red-500/10 border border-red-500/20 rounded-lg md:rounded-xl text-red-400 text-center text-xs md:text-sm">
+          <div className="mb-2 md:mb-3 lg:mb-4 p-1.5 md:p-2.5 lg:p-3 bg-red-500/10 border border-red-500/20 rounded-lg md:rounded-xl text-red-400 text-center text-sm md:text-base">
             {errorMessage}
           </div>
         )}
 
         {/* Success Message */}
         {successMessage && (
-          <div className="mb-2 md:mb-3 lg:mb-4 p-1.5 md:p-2.5 lg:p-3 bg-green-500/10 border border-green-500/20 rounded-lg md:rounded-xl text-green-400 text-center text-xs md:text-sm">
+          <div className="mb-2 md:mb-3 lg:mb-4 p-1.5 md:p-2.5 lg:p-3 bg-green-500/10 border border-green-500/20 rounded-lg md:rounded-xl text-green-400 text-center text-sm md:text-base">
             {successMessage}
           </div>
         )}
@@ -477,7 +559,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
                     <p id="password-error" className="mt-1.5 text-xs text-red-400" role="alert">{passwordError}</p>
                   )}
                   {emailMode === 'signup' && (
-                    <div className="mt-2.5 md:mt-3 lg:mt-4 pt-2 md:pt-2.5 lg:pt-3 border-t border-surface-light/30 text-xs md:text-sm text-text-muted">
+                    <div className="mt-2.5 md:mt-3 lg:mt-4 pt-2 md:pt-2.5 lg:pt-3 border-t border-surface-light/30 text-sm md:text-sm text-text-muted">
                       <p className="font-medium mb-2">Password must contain:</p>
                       <ul className="list-disc list-inside space-y-1.5">
                         <li className={password.match(/[a-z]/) ? 'text-green-400' : 'text-text-muted'}>
@@ -503,7 +585,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
 
               {emailMode === 'signin' && (
                 <div className="flex items-center justify-between">
-                  <label className="flex items-center space-x-2 text-xs md:text-sm text-text-secondary">
+                  <label className="flex items-center space-x-2 text-sm md:text-base text-text-secondary">
                     <input
                       type="checkbox"
                       checked={rememberMe}
@@ -515,7 +597,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
                   <button
                     type="button"
                     onClick={() => setEmailMode('forgot-password')}
-                    className="text-xs md:text-sm text-primary hover:text-primary/80 transition-colors"
+                    className="text-sm md:text-base text-primary hover:text-primary/80 transition-colors"
                   >
                     Forgot password?
                   </button>
@@ -538,7 +620,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setEmailMode('options')}
-                className="text-text-muted hover:text-text-primary transition-colors text-xs md:text-sm"
+                className="text-text-muted hover:text-text-primary transition-colors text-sm md:text-base"
               >
                 {emailMode === 'signup' ? '← Back to Login' : '← Back to options'}
               </button>
@@ -691,7 +773,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
             onClick={() => {
                             onBackToLanding();
             }}
-            className="text-text-muted hover:text-text-primary transition-colors text-xs md:text-sm lg:text-base flex items-center justify-center space-x-1 md:space-x-2 mx-auto hover:scale-105 transition-all duration-300"
+            className="text-text-muted hover:text-text-primary transition-colors text-sm md:text-base lg:text-base flex items-center justify-center space-x-1 md:space-x-2 mx-auto hover:scale-105 transition-all duration-300"
             aria-label="Return to landing page"
           >
             <svg className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -700,27 +782,28 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
             <span>Back to Landing Page</span>
           </button>
         </div>
-      </div>
 
-      {/* Footer - Note: #root already applies safe-area-inset-bottom in PWA mode (globals.css) */}
-      <div className="w-full py-2 pb-2 md:p-4 lg:p-5 text-center flex-shrink-0">
-        <p className="text-[10px] md:text-sm lg:text-base text-text-muted">
-          By continuing, you agree to our{' '}
-          <button
-            onClick={() => setShowTermsModal(true)}
-            className="text-primary hover:text-secondary transition-colors underline"
-          >
-            Terms of Service
-          </button>
-          {' '}and{' '}
-          <button
-            onClick={() => setShowPrivacyModal(true)}
-            className="text-primary hover:text-secondary transition-colors underline"
-          >
-            Privacy Policy
-          </button>
-          .
-        </p>
+        {/* Footer - Note: #root already applies safe-area-inset-bottom in PWA mode (globals.css) */}
+        <div className="w-full py-2 md:py-4 lg:py-6 text-center mt-4">
+          <p className="text-xs sm:text-sm md:text-sm lg:text-sm text-text-muted">
+            By continuing, you agree to our{' '}
+            <button
+              onClick={() => setShowTermsModal(true)}
+              className="text-primary hover:text-secondary transition-colors underline"
+            >
+              Terms of Service
+            </button>
+            {' '}and{' '}
+            <button
+              onClick={() => setShowPrivacyModal(true)}
+              className="text-primary hover:text-secondary transition-colors underline"
+            >
+              Privacy Policy
+            </button>
+            .
+          </p>
+        </div>
+        </div>
       </div>
 
       {/* Modals */}

@@ -16,6 +16,8 @@ import { ConversationService } from './conversationService';
 import { behaviorService } from './ai/behaviorService';
 import { correctionService } from './ai/correctionService';
 import { groundingControlService, type GroundingQueryType } from './groundingControlService';
+import { gameKnowledgeCacheService } from './gameKnowledgeCacheService';
+import { libraryStorage } from './gamingExplorerStorage';
 
 // ? SECURITY FIX: Use Edge Function proxy instead of exposed API key
 const USE_EDGE_FUNCTION = true; // Set to true to use secure server-side proxy
@@ -46,15 +48,25 @@ class AIService {
   private flashModel: GenerativeModel;
   private proModel: GenerativeModel;
   private flashModelWithGrounding: GenerativeModel;
-  private edgeFunctionUrl: string;
+  private edgeFunctionUrls: {
+    chat: string;           // User-facing chat messages (30/min)
+    subtabs: string;        // Subtab generation (20/min)
+    background: string;     // Game knowledge fetching (15/min)
+    summarization: string;  // Context summarization (10/min)
+  };
   
   // ? REQUEST DEDUPLICATION: Track pending requests to prevent duplicate API calls
   private pendingRequests: Map<string, Promise<AIResponse>> = new Map();
 
   constructor() {
-    // ? SECURITY: Initialize Edge Function URL
+    // ? SECURITY: Initialize Edge Function URLs for each AI call type
     const supabaseUrl = (import.meta as ViteImportMeta).env.VITE_SUPABASE_URL;
-    this.edgeFunctionUrl = `${supabaseUrl}/functions/v1/ai-proxy`;
+    this.edgeFunctionUrls = {
+      chat: `${supabaseUrl}/functions/v1/ai-chat`,
+      subtabs: `${supabaseUrl}/functions/v1/ai-subtabs`,
+      background: `${supabaseUrl}/functions/v1/ai-background`,
+      summarization: `${supabaseUrl}/functions/v1/ai-summarization`
+    };
 
     if (!USE_EDGE_FUNCTION) {
       // Legacy: Direct API mode (only for development/testing)
@@ -91,6 +103,10 @@ class AIService {
     }
   }
 
+  // ✅ Track Edge Function calls for debugging rate limit issues
+  private static edgeFunctionCallCount = 0;
+  private static lastCallTimestamp = Date.now();
+
   /**
    * ? SECURITY: Call Edge Function proxy instead of direct API
    */
@@ -104,7 +120,20 @@ class AIService {
     model?: string;
     tools?: Array<Record<string, unknown>>;
     abortSignal?: AbortSignal;
+    callType?: 'chat' | 'subtabs' | 'background' | 'summarization'; // Route to correct edge function
   }): Promise<{ response: string; success: boolean; usage?: Record<string, unknown>; groundingMetadata?: Record<string, unknown> }> {
+    // ✅ Log every API call for debugging
+    AIService.edgeFunctionCallCount++;
+    const now = Date.now();
+    const timeSinceLastCall = now - AIService.lastCallTimestamp;
+    AIService.lastCallTimestamp = now;
+    
+    // Determine which edge function to call (default to chat for user-facing messages)
+    const callType = request.callType || 'chat';
+    const edgeFunctionUrl = this.edgeFunctionUrls[callType];
+    
+    console.log(`📡 [AIService] Edge Function Call #${AIService.edgeFunctionCallCount} | Type: ${request.requestType} | CallType: ${callType} | Time since last: ${timeSinceLastCall}ms | Model: ${request.model || 'default'}`);
+    
     // Get user's JWT token
     const { data: { session } } = await supabase.auth.getSession();
     
@@ -113,7 +142,7 @@ class AIService {
     }
 
     // Call Edge Function (server-side proxy)
-    const response = await fetch(this.edgeFunctionUrl, {
+    const response = await fetch(edgeFunctionUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${session.access_token}`,
@@ -125,9 +154,30 @@ class AIService {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error || 'AI service error');
+      console.error(`❌ [AIService] Edge Function Call #${AIService.edgeFunctionCallCount} FAILED:`, error);
+      
+      // ✅ CRITICAL: Detect rate limit/quota errors and throw specific error
+      const errorMessage = error.error || 'AI service error';
+      const errorDetails = JSON.stringify(error.details || '');
+      
+      // Check multiple conditions for rate limit detection
+      const isRateLimit = response.status === 429 || 
+                         errorMessage.includes('429') ||
+                         errorMessage.includes('rate limit') ||
+                         errorMessage.includes('quota') ||
+                         errorDetails.includes('429') || 
+                         errorDetails.includes('RESOURCE_EXHAUSTED') ||
+                         errorDetails.includes('quota');
+      
+      if (isRateLimit) {
+        console.error('🚫 [AIService] RATE LIMIT DETECTED - This error should NOT be retried!');
+        throw new Error(`RATE_LIMIT_ERROR: ${errorMessage}`);
+      }
+      
+      throw new Error(errorMessage);
     }
 
+    console.log(`✅ [AIService] Edge Function Call #${AIService.edgeFunctionCallCount} SUCCESS`);
     return await response.json();
   }
 
@@ -173,7 +223,8 @@ class AIService {
     isActiveSession: boolean,
     hasImages: boolean = false,
     imageData?: string,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
+    callType?: 'chat' | 'subtabs' | 'background' | 'summarization'
   ): Promise<AIResponse> {
     // Create deduplication key (conversation + message + session state)
     const dedupKey = `${conversation.id}_${userMessage}_${isActiveSession}_${hasImages}`;
@@ -192,7 +243,8 @@ class AIService {
       isActiveSession,
       hasImages,
       imageData,
-      abortSignal
+      abortSignal,
+      callType
     );
     
     // Store pending request
@@ -217,7 +269,8 @@ class AIService {
     isActiveSession: boolean,
     hasImages: boolean = false,
     imageData?: string,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
+    callType?: 'chat' | 'subtabs' | 'background' | 'summarization'
   ): Promise<AIResponse> {
     // Use deduplication wrapper
     return this.getChatResponseWithDeduplication(
@@ -227,7 +280,8 @@ class AIService {
       isActiveSession,
       hasImages,
       imageData,
-      abortSignal
+      abortSignal,
+      callType
     );
   }
 
@@ -241,7 +295,8 @@ class AIService {
     isActiveSession: boolean,
     hasImages: boolean = false,
     imageData?: string,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
+    callType?: 'chat' | 'subtabs' | 'background' | 'summarization'
   ): Promise<AIResponse> {
     // ? QUERY LIMIT: Check if user can send this query
     const queryCheck = hasImages 
@@ -348,7 +403,7 @@ class AIService {
     };
     
     // Use the enhanced prompt system with session context and player profile
-    const basePrompt = getPromptForPersona(
+    const basePrompt = await getPromptForPersona(
       conversation, 
       userMessage, 
       user, 
@@ -371,7 +426,31 @@ class AIService {
       });
     }
     
-    const prompt = basePrompt + sessionContext + '\n\n' + immersionContext;
+    // 🎯 GLOBAL CACHE: Inject game knowledge context (Option C)
+    // If no cache exists: Use training data (non-blocking, fetch runs in background)
+    // If cache exists: Inject comprehensive knowledge for Gemini to search and use
+    let gameKnowledgeContext = '';
+    if (conversation.gameTitle) {
+      const libraryGame = libraryStorage.getByGameTitle(conversation.gameTitle);
+      if (libraryGame?.igdbGameId) {
+        try {
+          const knowledgeResult = await gameKnowledgeCacheService.get(libraryGame.igdbGameId);
+          if (knowledgeResult.cached && knowledgeResult.knowledge) {
+            gameKnowledgeContext = `\n\n=== GAME KNOWLEDGE DATABASE ===\nThe following is comprehensive, up-to-date information about ${conversation.gameTitle}. You can reference any part of this knowledge base to answer the user's questions accurately.\n\n${knowledgeResult.knowledge}\n\n=== END KNOWLEDGE DATABASE ===\n\n`;
+            console.log(`🎮 [AIService] Injecting ${knowledgeResult.knowledge.length} chars of cached knowledge from ${knowledgeResult.source}`);
+          } else {
+            // No cache = first query: use training data
+            // Background fetch will populate for next time (already triggered by MainApp)
+            console.log(`🎮 [AIService] No cached knowledge for ${conversation.gameTitle}, using Gemini training data`);
+          }
+        } catch (error) {
+          console.warn(`🎮 [AIService] Failed to fetch game knowledge:`, error);
+          // Continue without knowledge - graceful degradation
+        }
+      }
+    }
+    
+    const prompt = basePrompt + sessionContext + gameKnowledgeContext + '\n\n' + immersionContext;
     
         // Check if request was aborted before starting
     if (abortSignal?.aborted) {
@@ -381,6 +460,8 @@ class AIService {
     try {
       // ? ENABLE GROUNDING FOR ALL QUERIES (text and image)
       const needsWebSearch = true;
+      
+      console.log(`📡 [GEMINI CALL #4] 💬 Main Chat Response | Game: ${conversation.gameTitle || 'Game Hub'} | Message: ${userMessage.substring(0, 50)}... | HasImage: ${hasImages} | Session: ${isActiveSession}`);
       
       // Use grounding model for queries that need current information
       // ? SECURITY: Use Edge Function if enabled
@@ -418,7 +499,8 @@ class AIService {
           requestType: hasImages ? 'image' : 'text',
           model: modelName,
           tools: tools.length > 0 ? tools : undefined,
-          abortSignal
+          abortSignal,
+          callType: callType || 'chat' // Default to chat if not specified
         });
 
         if (!edgeResponse.success) {
@@ -484,7 +566,15 @@ class AIService {
       if (abortSignal?.aborted) {
         throw new DOMException('Request was aborted', 'AbortError');
       }
+      
+      console.log('🏷️ [AIService] Raw AI response length:', rawContent.length);
+      console.log('🏷️ [AIService] Has OTAKON_SUGGESTIONS:', rawContent.includes('OTAKON_SUGGESTIONS'));
+      
       const { cleanContent, tags } = parseOtakonTags(rawContent);
+      
+      console.log('🏷️ [AIService] Clean content length:', cleanContent.length);
+      console.log('🏷️ [AIService] Extracted tags:', Array.from(tags.keys()));
+      console.log('🏷️ [AIService] Suggestions extracted:', tags.has('SUGGESTIONS') ? 'YES' : 'NO');
 
       // Build gamePillData from OTAKON tags if game was detected
       const gameId = tags.get('GAME_ID') as string | undefined;
@@ -605,22 +695,40 @@ class AIService {
       
       toastService.error('AI response failed. Please try again.');
       
-      // Use error recovery service
+      // ✅ FIX: Get actual current retry count instead of always using 0
+      const contextForRetryCheck = {
+        operation: 'getChatResponse',
+        conversationId: conversation.id,
+        userId: user.id,
+        timestamp: Date.now(),
+        retryCount: 0 // Initial value, will be updated below
+      };
+      
+      const currentRetryCount = errorRecoveryService.getRetryCount(contextForRetryCheck);
+      const context = {
+        ...contextForRetryCheck,
+        retryCount: currentRetryCount // ✅ Use actual count from service
+      };
+      
+      console.log('🔄 [AIService] Retry context:', {
+        operation: context.operation,
+        currentRetryCount,
+        maxRetries: 3,
+        errorMessage: (error as Error).message.substring(0, 100)
+      });
+      
       const recoveryAction = await errorRecoveryService.handleAIError(
         error as Error,
-        {
-          operation: 'getChatResponse',
-          conversationId: conversation.id,
-          userId: user.id,
-          timestamp: Date.now(),
-          retryCount: 0
-        }
+        context
       );
       
       if (recoveryAction.type === 'retry') {
-        // Retry the request
+        // ✅ FIX: Increment retry count before recursive call
+        errorRecoveryService.incrementRetryCount(context);
         return this.getChatResponse(conversation, user, userMessage, isActiveSession, hasImages, imageData, abortSignal);
       } else if (recoveryAction.type === 'user_notification') {
+        // ✅ Reset retry count on terminal failure
+        errorRecoveryService.resetRetryCount(context);
         // Return a user-friendly error response
         return {
           content: recoveryAction.message || "I'm having trouble thinking right now. Please try again later.",
@@ -721,7 +829,7 @@ class AIService {
       isReturningUser: timeSinceLastInteraction > 30 // 30 minutes = returning user
     };
     
-    const basePrompt = getPromptForPersona(
+    const basePrompt = await getPromptForPersona(
       conversation, 
       userMessage, 
       user, 
@@ -880,6 +988,8 @@ In addition to your regular response, provide structured data in the following o
         });
       }
       
+      console.log(`📡 [GEMINI CALL #5] 🏗️ Main Structured Response | Game: ${conversation.gameTitle || 'Game Hub'} | Message: ${userMessage.substring(0, 50)}... | HasImage: ${hasImages} | Grounding: ${useGrounding}`);
+      
       // ? SECURITY: Use Edge Function for structured responses
       if (USE_EDGE_FUNCTION) {
         // Extract base64 image data if present
@@ -909,7 +1019,8 @@ In addition to your regular response, provide structured data in the following o
           requestType: hasImages ? 'image' : 'text',
           model: modelName,
           tools: tools,
-          abortSignal
+          abortSignal,
+          callType: 'chat' // User-facing structured chat
         });
 
         if (!edgeResponse.success) {
@@ -1057,6 +1168,7 @@ In addition to your regular response, provide structured data in the following o
       }
       
       // For text-only, try JSON schema mode for structured response
+      console.log('🚀 [AIService] ENTERING JSON SCHEMA MODE');
       try {
         const result = await modelToUse.generateContent({
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -1121,10 +1233,15 @@ In addition to your regular response, provide structured data in the following o
         }
         
         const rawResponse = await result.response.text();
+        console.log('🔍 [AIService] RAW RESPONSE LENGTH:', rawResponse.length);
+        console.log('🔍 [AIService] RAW RESPONSE PREVIEW:', rawResponse.substring(0, 500));
         const structuredData = JSON.parse(rawResponse);
+        console.log('🔍 [AIService] PARSED SUCCESSFULLY');
         
-        // ? DEBUG: Log what Gemini actually returns
+        // ✅ DEBUG: Log what Gemini actually returns
         console.log('🤖 [AIService] Gemini response keys:', Object.keys(structuredData));
+        console.log('🤖 [AIService] followUpPrompts:', structuredData.followUpPrompts);
+        console.log('🤖 [AIService] followUpPrompts length:', structuredData.followUpPrompts?.length);
         console.log('🤖 [AIService] stateUpdateTags:', structuredData.stateUpdateTags);
         
         // ✅ FALLBACK: If stateUpdateTags is empty/missing, try to extract progress from content
@@ -1210,12 +1327,24 @@ In addition to your regular response, provide structured data in the following o
           .replace(/\*+\s*#+\s*Internal Data Structure[\s\S]*$/gi, '') // ***## Internal Data Structure
           .replace(/\*+\s*Internal Data Structure[\s\S]*$/gi, '') // *** Internal Data Structure  
           .replace(/#+\s*Internal Data Structure[\s\S]*$/gi, '') // ## Internal Data Structure
-          .replace(/Internal Data Structure[\s\S]*$/gi, '') // Internal Data Structure (any case)
+          .replace(/Internal Data Structure:?[\s\S]*$/gi, '') // Internal Data Structure (any case, with/without colon)
+          .replace(/["']?Internal Data Structure["']?:?[\s\S]*$/gi, '') // With quotes
           // ? STEP 2: Remove JSON blocks with specific fields (before general JSON removal)
           .replace(/\{[\s\S]*?"followUpPrompts"[\s\S]*?\}/gi, '')
           .replace(/\{[\s\S]*?"progressiveInsightUpdates"[\s\S]*?\}/gi, '')
           .replace(/\{[\s\S]*?"gamePillData"[\s\S]*?\}/gi, '')
           .replace(/\{[\s\S]*?"stateUpdateTags"[\s\S]*?\}/gi, '')
+          // ✅ STEP 2b: Remove plain text formatted structured data (not in JSON format)
+          // These patterns handle the case where AI outputs: followUpPrompts: [...]
+          .replace(/followUpPrompts:\s*\[[\s\S]*?\]/gi, '')
+          .replace(/progressiveInsightUpdates:\s*\[[\s\S]*?\]/gi, '')
+          .replace(/stateUpdateTags:\s*\[[\s\S]*?\]/gi, '')
+          .replace(/gamePillData:\s*\{[\s\S]*?\}/gi, '')
+          // Also remove with quotes (e.g., "followUpPrompts": [...])
+          .replace(/"followUpPrompts":\s*\[[\s\S]*?\]/gi, '')
+          .replace(/"progressiveInsightUpdates":\s*\[[\s\S]*?\]/gi, '')
+          .replace(/"stateUpdateTags":\s*\[[\s\S]*?\]/gi, '')
+          .replace(/"gamePillData":\s*\{[\s\S]*?\}/gi, '')
           // ? STEP 3: Remove code blocks
           .replace(/```json[\s\S]*?```/gi, '')
           .replace(/```\s*\{[\s\S]*?```/gi, '')
@@ -1223,8 +1352,14 @@ In addition to your regular response, provide structured data in the following o
           .replace(/Enhanced Response Data[\s\S]*$/gi, '')
           // ? STEP 5: Remove standalone artifacts at end
           .replace(/\*+\s*\]\s*$/g, '') // ***]
-          .replace(/\]\s*$/g, '') // ]
+          .replace(/\]\s*$/g, '') // Trailing ]
           .replace(/\*+\s*$/g, '') // ***
+          // ? STEP 5b: Remove ] that appears after content on any line
+          .replace(/([.?!])\s*\]\s*$/gm, '$1') // Remove ] after punctuation
+          .replace(/\s+\]\s*$/gm, '') // Remove ] with whitespace before it
+          // ? STEP 5c: Aggressively remove ] followed by JSON blocks
+          .replace(/\]\s*\n+\s*\{[\s\S]*$/g, '') // ] then newlines then {
+          .replace(/"\]\s*\n+\s*\{[\s\S]*$/g, '') // "] then newlines then {
           // ? STEP 6: Remove any JSON structure at the end
           .replace(/\n\s*\{[\s\S]*$/g, '')
           .replace(/\s*[\]}]\s*$/g, '')
@@ -1318,39 +1453,22 @@ In addition to your regular response, provide structured data in the following o
         return aiResponse;
         
       } catch (_jsonError) {
-                // Fallback to regular OTAKON_TAG parsing
-        let rawContent: string;
-
-        if (USE_EDGE_FUNCTION) {
-          // Use Edge Function for fallback
-          const edgeResponse = await this.callEdgeFunction({
-            prompt,
-            temperature: 0.7,
-            maxTokens: 8192, // Increased to prevent response truncation
-            requestType: 'text',
-            model: 'gemini-2.5-flash'
-          });
-
-          if (!edgeResponse.success) {
-            throw new Error(edgeResponse.response || 'AI request failed');
-          }
-
-          rawContent = edgeResponse.response;
-        } else {
-          // Legacy: Direct API
-          const result = await modelToUse.generateContent(prompt);
-          
-          // ? FIX 5: Check safety response in fallback
-          const safetyCheck = this.checkSafetyResponse(result);
-          if (!safetyCheck.safe) {
-            toastService.error('Unable to generate response due to content policy');
-            throw new Error(safetyCheck.reason);
-          }
-          
-          rawContent = await result.response.text();
+        // ✅ OPTIMIZED: Fallback to OTAKON_TAG parsing (legacy Direct API mode only)
+        // Since we use USE_EDGE_FUNCTION = true, this path is rarely executed
+        // For the legacy mode, we need to make a new API call since rawResponse was malformed
+        console.error('❌ [AIService] JSON parsing failed:', _jsonError);
+        console.warn('⚠️ [AIService] JSON parsing failed in legacy mode, falling back to OTAKON_TAG parsing');
+        
+        // In legacy mode, make a single fallback call
+        const fallbackResult = await modelToUse.generateContent(prompt);
+        const safetyCheckFallback = this.checkSafetyResponse(fallbackResult);
+        if (!safetyCheckFallback.safe) {
+          toastService.error('Unable to generate response due to content policy');
+          throw new Error(safetyCheckFallback.reason);
         }
-
-        const { cleanContent, tags } = parseOtakonTags(rawContent);
+        
+        const fallbackRawContent = await fallbackResult.response.text();
+        const { cleanContent, tags } = parseOtakonTags(fallbackRawContent);
         
         const suggestions = (tags.get('SUGGESTIONS') as string[]) || [];
         const aiResponse: AIResponse = {
@@ -1358,7 +1476,7 @@ In addition to your regular response, provide structured data in the following o
           suggestions: suggestions,
           followUpPrompts: suggestions, // ? Set followUpPrompts from SUGGESTIONS tag
           otakonTags: tags,
-          rawContent: rawContent,
+          rawContent: fallbackRawContent,
           metadata: {
             model: 'gemini-2.5-flash',
             timestamp: Date.now(),
@@ -1383,7 +1501,18 @@ In addition to your regular response, provide structured data in the following o
       }
       
     } catch (error) {
-      console.error("Structured AI Service Error:", error);
+      console.error("🚨 [AIService] Structured AI Service Error:", error);
+      console.error("🚨 [AIService] Error context:", {
+        name: error instanceof Error ? error.name : 'unknown',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack?.substring(0, 500) : undefined,
+        conversationId: conversation.id,
+        gameTitle: conversation.gameTitle,
+        isGameHub: conversation.isGameHub,
+        messageCount: conversation.messages.length,
+        hasImages,
+        userTier: user.tier
+      });
       
       // ? FIX 5: Enhanced error handling for safety blocks
       const errorMessage = (error as Error).message || '';
@@ -1392,42 +1521,21 @@ In addition to your regular response, provide structured data in the following o
         throw new Error('Content blocked by safety filters');
       }
       
-      toastService.error('AI response failed. Please try again.');
+      // ⛔ NO AUTO-RETRY for chat responses - show retry button instead
+      toastService.error('AI response failed. Click retry to try again.');
       
-      // Use error recovery with proper retry tracking
-      const context = {
-        operation: 'getChatResponseWithStructure',
-        conversationId: conversation.id,
-        userId: user.id,
-        timestamp: Date.now(),
-        retryCount: 0
+      return {
+        content: "I'm having trouble processing that right now. Please click the retry button to try again.",
+        suggestions: ["Try again", "Rephrase your question", "Check your connection"],
+        otakonTags: new Map(),
+        rawContent: "Error occurred",
+        metadata: {
+          model: 'error',
+          timestamp: Date.now(),
+          cost: 0,
+          tokens: 0
+        }
       };
-      
-      const recoveryAction = await errorRecoveryService.handleAIError(
-        error as Error,
-        context
-      );
-      
-      if (recoveryAction.type === 'retry') {
-        errorRecoveryService.incrementRetryCount(context);
-        return this.getChatResponseWithStructure(conversation, user, userMessage, isActiveSession, hasImages, imageData, abortSignal, igdbReleaseDate);
-      } else if (recoveryAction.type === 'user_notification') {
-        errorRecoveryService.resetRetryCount(context);
-        return {
-          content: recoveryAction.message || "I'm having trouble thinking right now. Please try again later.",
-          suggestions: ["Try again", "Check your connection", "Contact support"],
-          otakonTags: new Map(),
-          rawContent: recoveryAction.message || "Error occurred",
-          metadata: {
-            model: 'error',
-            timestamp: Date.now(),
-            cost: 0,
-            tokens: 0
-          }
-        };
-      }
-      
-      throw new Error("Failed to get structured response from AI service.");
     }
   }
 
@@ -1549,6 +1657,8 @@ NOW generate COMPREHENSIVE valid JSON for ALL these tab IDs (MUST include every 
     try {
       let responseText: string;
 
+      console.log(`📡 [GEMINI CALL #3] 🎯 Generate Initial Insights | Game: ${gameTitle} | Genre: ${genre} | Progress: ${gameProgress ?? 0}% | Tabs: ${config.length}`);
+
       if (USE_EDGE_FUNCTION) {
         // Use Edge Function for insights generation
         const edgeResponse = await this.callEdgeFunction({
@@ -1556,7 +1666,8 @@ NOW generate COMPREHENSIVE valid JSON for ALL these tab IDs (MUST include every 
           temperature: 0.7,
           maxTokens: 5000, // ? Increased to 5000 to accommodate comprehensive 150-250 word insights per tab
           requestType: 'text',
-          model: 'gemini-2.5-flash' // Back to Flash model
+          model: 'gemini-2.5-flash', // Back to Flash model
+          callType: 'subtabs' // Subtab content generation
         });
 
         if (!edgeResponse.success) {
@@ -1674,7 +1785,8 @@ NOW generate COMPREHENSIVE valid JSON for ALL these tab IDs (MUST include every 
         return {};
       }
       
-      toastService.warning('Failed to generate game insights. You can still continue chatting!');
+      // ⛔ NO AUTO-RETRY for subtab generation - show retry button instead
+      toastService.error('Failed to generate subtabs. Click retry to try again.');
       return {};
     }
   }

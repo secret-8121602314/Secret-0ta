@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, memo, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { Conversation, ActiveSessionState, ChatMessage } from '../../types';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import SessionSummaryCard, { parseSessionSummaryMessage } from './SessionSummaryCard';
@@ -50,8 +51,9 @@ interface ChatMessageComponentProps {
   conversationId?: string;
   onDownloadImage: (url: string, index: number) => void;
   onDeleteQueuedMessage?: (messageId: string) => void;
-  onEditMessage?: (messageId: string, content: string) => void;
+  onEditMessage?: (messageId: string, content: string, imageUrl?: string) => void;
   onFeedback?: (messageId: string, type: 'up' | 'down', messageContent?: string) => void;
+  onRetryMessage?: () => void;
   isLatestAIMessage?: boolean;
 }
 
@@ -65,6 +67,7 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
   onDeleteQueuedMessage,
   onEditMessage,
   onFeedback,
+  onRetryMessage,
   isLatestAIMessage = false
 }) => {
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
@@ -266,7 +269,7 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
             <button
               onClick={() => {
                 const cleanContent = message.content.replace(/\n\n_⏳ Queued.*_$/, '');
-                onEditMessage(message.id, cleanContent);
+                onEditMessage(message.id, cleanContent, message.imageUrl);
               }}
               className="flex items-center justify-center w-7 h-7 text-[#666] active:text-[#FF4D4D] active:bg-[#FF4D4D]/10 sm:hover:text-[#FF4D4D] sm:hover:bg-[#FF4D4D]/10 rounded-full"
               title="Edit and resubmit"
@@ -313,6 +316,18 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
                 <path strokeLinecap="round" strokeLinejoin="round" d="M7.498 15.25H4.372c-1.026 0-1.945-.694-2.054-1.715a12.137 12.137 0 0 1-.068-1.285c0-2.848.992-5.464 2.649-7.521C5.287 4.247 5.886 4 6.504 4h4.016a4.5 4.5 0 0 1 1.423.23l3.114 1.04a4.5 4.5 0 0 0 1.423.23h1.294M7.498 15.25c.618 0 .991.724.725 1.282A7.471 7.471 0 0 0 7.5 19.5a2.25 2.25 0 0 0 2.25 2.25.75.75 0 0 0 .75-.75v-.633c0-.573.11-1.14.322-1.672.304-.76.93-1.33 1.653-1.715a9.04 9.04 0 0 0 2.86-2.4c.498-.634 1.226-1.08 2.032-1.08h.384m-10.253 1.5H9.7m8.075-9.75c.01.05.027.1.05.148.593 1.2.925 2.55.925 3.977 0 1.487-.36 2.89-.999 4.125m.023-8.25c-.076-.365.183-.75.575-.75h.908c.889 0 1.713.518 1.972 1.368.339 1.11.521 2.287.521 3.507 0 1.553-.295 3.036-.831 4.398-.306.774-1.086 1.227-1.918 1.227h-1.053c-.472 0-.745-.556-.5-.96.417-.66.778-1.378 1.07-2.128.426-1.1.654-2.224.654-3.375a9.116 9.116 0 0 0-1.4-4.887Z" />
               </svg>
             </button>
+            {/* Retry button - shown for latest AI message */}
+            {onRetryMessage && isLatestAIMessage && (
+              <button
+                onClick={onRetryMessage}
+                className="flex items-center justify-center w-7 h-7 rounded-full transition-colors text-[#666] active:text-[#FF4D4D] active:bg-[#FF4D4D]/10 sm:hover:text-[#FF4D4D] sm:hover:bg-[#FF4D4D]/10"
+                title="Retry this message"
+              >
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -333,6 +348,7 @@ const MemoizedChatMessage = memo(ChatMessageComponent, (prevProps, nextProps) =>
     prevProps.onDeleteQueuedMessage === nextProps.onDeleteQueuedMessage &&
     prevProps.onEditMessage === nextProps.onEditMessage &&
     prevProps.onFeedback === nextProps.onFeedback &&
+    prevProps.onRetryMessage === nextProps.onRetryMessage &&
     prevProps.isLatestAIMessage === nextProps.isLatestAIMessage
   );
 });
@@ -365,8 +381,11 @@ interface ChatInterfaceProps {
   onDeleteQueuedMessage?: (messageId: string) => void;
   onEditMessage?: (messageId: string, content: string) => void;
   onFeedback?: (messageId: string, type: 'up' | 'down', messageContent?: string) => void;
+  onRetryLastMessage?: () => void;
   onModifySubtab?: (tabId: string, tabTitle: string, suggestion: string, currentContent: string) => void;
   onDeleteSubtab?: (tabId: string) => void;
+  onRetrySubtab?: (tabId: string) => void;
+  onOpenExplorer?: () => void;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -391,8 +410,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onDeleteQueuedMessage,
   onEditMessage,
   onFeedback,
+  onRetryLastMessage,
   onModifySubtab,
   onDeleteSubtab,
+  onRetrySubtab,
+  onOpenExplorer,
 }) => {
   const [message, setMessage] = useState(initialMessage);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -823,6 +845,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 onDeleteQueuedMessage={onDeleteQueuedMessage}
                 onEditMessage={onEditMessage}
                 onFeedback={onFeedback}
+                onRetryMessage={msg.id === lastAIMessageId ? onRetryLastMessage : undefined}
                 isLatestAIMessage={msg.id === lastAIMessageId}
               />
             ));
@@ -863,6 +886,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               onFeedback={onFeedback}
               onModifyTab={onModifySubtab}
               onDeleteTab={onDeleteSubtab}
+              onRetrySubtab={onRetrySubtab}
               onExpandedChange={setIsSubtabsExpanded}
             />
             </ErrorBoundary>
@@ -966,10 +990,28 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             </div>
           </div>
         )}
-      </div>
-      {/* END Main Chat Area Container */}
 
-      {/* Floating Chat Input Section with Gradient Border */}
+        {/* HQ Button - Floating icon button matching chat explore design */}
+        {conversation && onOpenExplorer && (
+          <div className="absolute bottom-0 right-3 pb-4 z-10 pointer-events-none" style={{ bottom: conversation.isGameHub ? '60px' : '0' }}>
+            <div className="pointer-events-auto">
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={onOpenExplorer}
+                className="w-14 h-14 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white rounded-full flex items-center justify-center z-30"
+                style={{ boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5), 0 8px 32px rgba(229, 58, 58, 0.4)' }}
+                title="Open Gaming HQ"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+              </motion.button>
+            </div>
+          </div>
+        )}
+      </div>
+      {/* END Main Chat Area Container */}      {/* Floating Chat Input Section with Gradient Border */}
       <div className="flex-shrink-0 bg-background/95 backdrop-blur-sm">
         <div className="mx-3 mt-3 mb-4 rounded-2xl p-px transition-all duration-300" style={{
           background: isFocused 

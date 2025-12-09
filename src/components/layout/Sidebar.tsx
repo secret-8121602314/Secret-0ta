@@ -288,19 +288,21 @@ const Sidebar: React.FC<SidebarProps> = ({
                         </div>
                       )}
                       <div className={`flex-1 min-w-0 flex flex-col ${(isRegularGame || isUnreleased) && conversation.coverUrl ? 'justify-center' : ''}`}>
-                        <div className="flex items-center space-x-2">
-                          <p className={`text-xs font-medium truncate ${titleClass}`}>
-                            {conversation.title}
-                          </p>
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <p className={`text-xs font-medium truncate flex-1 min-w-0 ${titleClass}`}>
+                              {conversation.title}
+                            </p>
+                            {conversation.isPinned && (
+                              <svg className="w-3 h-3 text-primary-dark flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                              </svg>
+                            )}
+                          </div>
                           {isUnreleased && (
-                            <span className="flex-shrink-0 px-1.5 py-0.5 bg-yellow-500/20 border border-yellow-500/40 rounded text-[10px] text-yellow-400 font-medium">
+                            <span className="self-start px-1.5 py-0.5 bg-yellow-500/20 border border-yellow-500/40 rounded text-[10px] text-yellow-400 font-medium">
                               UPCOMING
                             </span>
-                          )}
-                          {conversation.isPinned && (
-                            <svg className="w-3 h-3 text-primary-dark flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                            </svg>
                           )}
                         </div>
                         {/* Progress bar for games with progress > 0 */}

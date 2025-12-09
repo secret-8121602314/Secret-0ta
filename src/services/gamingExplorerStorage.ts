@@ -15,6 +15,9 @@
 
 import { IGDBGameData } from './igdbService';
 import { triggerGameKnowledgeFetch } from './gameKnowledgeFetcher';
+import { newsCacheService } from './newsCacheService';
+import { librarySupabaseSync, timelineSupabaseSync, screenshotsSupabaseSync } from './hqSupabaseSync';
+import { authService } from './authService';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -204,6 +207,31 @@ function safeSetItem(key: string, value: unknown): boolean {
 
 export const libraryStorage = {
   /**
+   * Load library from Supabase and merge with localStorage
+   * Call this on app initialization
+   */
+  async loadFromSupabase(userId: string): Promise<void> {
+    try {
+      console.log('[LibraryStorage] Loading from Supabase...');
+      const supabaseItems = await librarySupabaseSync.getAll(userId);
+      const localItems = this.getAll();
+      
+      if (supabaseItems.length === 0 && localItems.length > 0) {
+        // First sync: Upload localStorage to Supabase
+        console.log('[LibraryStorage] First sync: Uploading localStorage to Supabase');
+        await librarySupabaseSync.syncFromLocalStorage(userId, localItems);
+      } else if (supabaseItems.length > 0) {
+        // Merge: Supabase is source of truth
+        console.log(`[LibraryStorage] Loaded ${supabaseItems.length} items from Supabase`);
+        safeSetItem(STORAGE_KEYS.LIBRARY, supabaseItems);
+        this.updateStats();
+      }
+    } catch (error) {
+      console.error('[LibraryStorage] Failed to load from Supabase:', error);
+    }
+  },
+  
+  /**
    * Get all library items
    */
   getAll(): GameLibraryItem[] {
@@ -307,7 +335,17 @@ export const libraryStorage = {
     // 🎮 BACKGROUND KNOWLEDGE FETCH: When game is added as "owned", 
     // trigger non-blocking Gemini call to fetch game knowledge
     if (category === 'own') {
+      console.log(`🎮 [LibraryStorage] Game added as OWNED: "${gameName}" (IGDB ID: ${igdbGameId})`);
+      console.log(`🎮 [LibraryStorage] Triggering background knowledge fetch...`);
       triggerGameKnowledgeFetch(igdbGameId, gameName);
+    }
+    
+    // ☁️ SUPABASE SYNC: Dual-write to Supabase for cross-device sync
+    const user = authService.getCurrentUser();
+    if (user?.authUserId) {
+      librarySupabaseSync.add(user.authUserId, newItem).catch(err => {
+        console.error('[LibraryStorage] Failed to sync to Supabase:', err);
+      });
     }
     
     return newItem;
@@ -332,6 +370,15 @@ export const libraryStorage = {
     
     safeSetItem(STORAGE_KEYS.LIBRARY, all);
     this.updateStats();
+    
+    // ☁️ SUPABASE SYNC: Update in Supabase
+    const user = authService.getCurrentUser();
+    if (user?.authUserId) {
+      librarySupabaseSync.update(user.authUserId, all[index]).catch(err => {
+        console.error('[LibraryStorage] Failed to update in Supabase:', err);
+      });
+    }
+    
     return all[index];
   },
 
@@ -345,11 +392,20 @@ export const libraryStorage = {
     );
     
     if (filtered.length === all.length) {
-      return false;
+      return false; // Nothing was removed
     }
     
     safeSetItem(STORAGE_KEYS.LIBRARY, filtered);
     this.updateStats();
+    
+    // ☁️ SUPABASE SYNC: Remove from Supabase
+    const user = authService.getCurrentUser();
+    if (user?.authUserId) {
+      librarySupabaseSync.remove(user.authUserId, igdbGameId, category).catch(err => {
+        console.error('[LibraryStorage] Failed to remove from Supabase:', err);
+      });
+    }
+    
     return true;
   },
 
@@ -426,6 +482,30 @@ export const libraryStorage = {
 
 export const timelineStorage = {
   /**
+   * Load timeline from Supabase and merge with localStorage
+   * Call this on app initialization
+   */
+  async loadFromSupabase(userId: string): Promise<void> {
+    try {
+      console.log('[TimelineStorage] Loading from Supabase...');
+      const supabaseEvents = await timelineSupabaseSync.getAll(userId);
+      const localEvents = this.getAll();
+      
+      if (supabaseEvents.length === 0 && localEvents.length > 0) {
+        // First sync: Upload localStorage to Supabase
+        console.log('[TimelineStorage] First sync: Uploading localStorage to Supabase');
+        await timelineSupabaseSync.syncFromLocalStorage(userId, localEvents);
+      } else if (supabaseEvents.length > 0) {
+        // Merge: Supabase is source of truth
+        console.log(`[TimelineStorage] Loaded ${supabaseEvents.length} events from Supabase`);
+        safeSetItem(STORAGE_KEYS.TIMELINE, supabaseEvents);
+      }
+    } catch (error) {
+      console.error('[TimelineStorage] Failed to load from Supabase:', error);
+    }
+  },
+
+  /**
    * Get all timeline events sorted by date
    */
   getAll(): TimelineEvent[] {
@@ -465,6 +545,15 @@ export const timelineStorage = {
 
     all.push(newEvent);
     safeSetItem(STORAGE_KEYS.TIMELINE, all);
+    
+    // ☁️ SUPABASE SYNC: Dual-write to Supabase for cross-device sync
+    const user = authService.getCurrentUser();
+    if (user?.authUserId) {
+      timelineSupabaseSync.add(user.authUserId, newEvent).catch(err => {
+        console.error('[TimelineStorage] Failed to sync to Supabase:', err);
+      });
+    }
+    
     return newEvent;
   },
 
@@ -501,6 +590,15 @@ export const timelineStorage = {
     }
     
     safeSetItem(STORAGE_KEYS.TIMELINE, filtered);
+    
+    // ☁️ SUPABASE SYNC: Remove from Supabase
+    const user = authService.getCurrentUser();
+    if (user?.authUserId) {
+      timelineSupabaseSync.remove(user.authUserId, id).catch(err => {
+        console.error('[TimelineStorage] Failed to remove from Supabase:', err);
+      });
+    }
+    
     return true;
   },
 
@@ -631,6 +729,15 @@ export const gameplaySessionsStorage = {
     session.screenshots.push(newScreenshot);
 
     safeSetItem(STORAGE_KEYS.GAMEPLAY_SESSIONS, all);
+    
+    // ☁️ SUPABASE SYNC: Save screenshot to Supabase
+    const user = authService.getCurrentUser();
+    if (user?.authUserId) {
+      screenshotsSupabaseSync.add(user.authUserId, newScreenshot, gameName).catch(err => {
+        console.error('[GameplaySessionsStorage] Failed to sync screenshot to Supabase:', err);
+      });
+    }
+    
     return session;
   },
 
@@ -650,8 +757,11 @@ export const gameplaySessionsStorage = {
 export const newsCacheStorage = {
   /**
    * Get cached news for a prompt type
+   * Checks Supabase global cache first, then falls back to localStorage
    */
   get(promptType: NewsPromptType): GamingNewsCache | null {
+    // Note: Supabase check is async, so we only use localStorage here
+    // Use getAsync() for Supabase-first lookup
     const all = safeGetItem<GamingNewsCache[]>(STORAGE_KEYS.NEWS_CACHE, []);
     const cache = all.find(c => c.promptType === promptType);
     
@@ -662,9 +772,32 @@ export const newsCacheStorage = {
     
     return null;
   },
+  
+  /**
+   * Get cached news (async) - checks Supabase global cache first
+   */
+  async getAsync(promptType: NewsPromptType): Promise<GamingNewsCache | null> {
+    // Check Supabase global cache first
+    const supabaseItems = await newsCacheService.getCache(promptType);
+    if (supabaseItems) {
+      const now = Date.now();
+      return {
+        promptType,
+        items: supabaseItems.map(item => ({
+          ...item,
+          cachedAt: now,
+        })),
+        cachedAt: now,
+        expiresAt: now + (24 * 60 * 60 * 1000),
+      };
+    }
+    
+    // Fallback to localStorage
+    return this.get(promptType);
+  },
 
   /**
-   * Save news cache
+   * Save news cache to both Supabase and localStorage
    */
   save(cache: GamingNewsCache): void {
     const all = safeGetItem<GamingNewsCache[]>(STORAGE_KEYS.NEWS_CACHE, []);
@@ -678,6 +811,11 @@ export const newsCacheStorage = {
     }
     
     safeSetItem(STORAGE_KEYS.NEWS_CACHE, all);
+    
+    // Also save to Supabase global cache
+    newsCacheService.setCache(cache.promptType, cache.items).catch(err => {
+      console.error('[NewsCache] Failed to save to Supabase:', err);
+    });
   },
 
   /**

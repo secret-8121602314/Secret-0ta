@@ -14,6 +14,7 @@ import {
   libraryStorage, 
   LibraryCategory 
 } from '../../services/gamingExplorerStorage';
+import { triggerGameKnowledgeFetch } from '../../services/gameKnowledgeFetcher';
 import { toastService } from '../../services/toastService';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -22,11 +23,12 @@ interface GameInfoModalProps {
   onClose: () => void;
   gameData: IGDBGameData | null;
   gameName: string;
+  userTier?: string; // Add user tier for knowledge fetch gating
 }
 
 type TabType = 'overview' | 'media' | 'similar';
 
-const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData: initialGameData, gameName: _gameName }) => {
+const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData: initialGameData, gameName: _gameName, userTier }) => {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [currentGameData, setCurrentGameData] = useState<IGDBGameData | null>(initialGameData);
   const [gameHistory, setGameHistory] = useState<IGDBGameData[]>([]);
@@ -128,11 +130,21 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
         currentGameData
       );
       toastService.success(`Added to ${category}`);
+      
+      // 🎯 GLOBAL CACHE TRIGGER: Fetch game knowledge when adding to 'own' category (ALL users)
+      if (category === 'own') {
+        triggerGameKnowledgeFetch(currentGameData.id, currentGameData.name);
+        console.log('🎯 [GameInfoModal] Triggered background game knowledge fetch for:', {
+          gameTitle: currentGameData.name,
+          igdbId: currentGameData.id,
+          tier: userTier || 'free'
+        });
+      }
     }
     
     // Force re-render
     setLibraryVersion(v => v + 1);
-  }, [currentGameData, gameCategories]);
+  }, [currentGameData, gameCategories, userTier]);
 
   // Update current game data when initial data changes
   useEffect(() => {
@@ -167,6 +179,13 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
         }
         setCurrentGameData(newGameData);
         setActiveTab('overview');
+        // Scroll to top when new game loads
+        setTimeout(() => {
+          const scrollContainer = document.querySelector('.max-h-\\[85vh\\]');
+          if (scrollContainer) {
+            scrollContainer.scrollTop = 0;
+          }
+        }, 0);
       }
     } catch (error) {
       console.error('Error fetching similar game:', error);
@@ -227,19 +246,21 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
       onClose={handleClose} 
       title=""
       maxWidth="lg"
+      className="p-3 sm:p-4 md:p-6"
     >
-      {/* Back button if we have history */}
-      {gameHistory.length > 0 && (
+      {/* Close button - positioned top left */}
+      <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10">
         <button
-          onClick={handleBack}
-          className="absolute top-4 left-4 p-1 hover:bg-white/10 rounded-lg transition-colors z-10"
-          title="Back to previous game"
+          onClick={handleClose}
+          className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+          title="Close modal"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-      )}
+      </div>
+
       <div className="max-h-[85vh] overflow-hidden flex flex-col">
         {/* Loading overlay for similar games */}
         <AnimatePresence>
@@ -259,45 +280,45 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
         </AnimatePresence>
 
         {/* Header Section (~30%) - Cover + Game Info Side by Side */}
-        <div className="flex gap-3 sm:gap-4 pb-3 border-b border-neutral-700/50 flex-shrink-0">
+        <div className="flex gap-3 sm:gap-4 md:gap-5 pb-3 sm:pb-4 border-b border-neutral-700/50 flex-shrink-0">
           {/* Cover Image */}
           {currentGameData.cover?.url && (
             <img
               src={currentGameData.cover.url}
               alt={currentGameData.name}
-              className="w-20 sm:w-24 md:w-28 aspect-[3/4] object-cover rounded-lg shadow-lg flex-shrink-0"
+              className="w-32 sm:w-40 md:w-48 lg:w-56 aspect-[3/4] object-cover rounded-lg shadow-lg flex-shrink-0"
             />
           )}
           
           {/* Game Info */}
-          <div className="flex-1 min-w-0 flex flex-col justify-between">
-            <div>
+          <div className="flex-1 min-w-0 flex flex-col justify-between gap-2">
+            <div className="space-y-1 sm:space-y-1.5">
               {/* Title */}
-              <h3 className="text-base sm:text-lg font-bold text-text-primary line-clamp-2">{currentGameData.name}</h3>
+              <h3 className="text-base sm:text-lg md:text-xl font-bold text-text-primary line-clamp-2">{currentGameData.name}</h3>
               
               {/* Rating */}
-              <div className="mt-0.5">
+              <div>
                 {renderRating(combinedRating)}
               </div>
               
               {/* Quick Info Row */}
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-xs text-text-secondary">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] sm:text-xs text-text-secondary">
                 <span>{formatReleaseDate(currentGameData.first_release_date)}</span>
                 {developers.length > 0 && (
                   <>
                     <span className="text-neutral-600">•</span>
-                    <span className="truncate max-w-[120px]">{developers[0]}</span>
+                    <span className="truncate max-w-[100px] sm:max-w-[140px]">{developers[0]}</span>
                   </>
                 )}
               </div>
               
               {/* Genres */}
               {currentGameData.genres && currentGameData.genres.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-1.5">
+                <div className="flex flex-wrap gap-1 sm:gap-1.5">
                   {currentGameData.genres.slice(0, 3).map(genre => (
                     <span
                       key={genre.id}
-                      className="px-1.5 py-0.5 text-[10px] rounded-md bg-primary/15 text-primary"
+                      className="px-1.5 py-0.5 text-[10px] sm:text-xs rounded-md bg-primary/15 text-primary"
                     >
                       {genre.name}
                     </span>
@@ -306,8 +327,8 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
               )}
             </div>
 
-            {/* Library Action Buttons - Compact */}
-            <div className="flex flex-wrap gap-1.5 mt-2">
+            {/* Library Action Buttons - Compact for smaller space */}
+            <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
               {libraryActions.map((action) => {
                 const isActive = gameCategories.includes(action.id);
                 return (
@@ -316,15 +337,15 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
                     onClick={() => handleLibraryAction(action.id)}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-all ${
+                    className={`flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 sm:py-2.5 rounded-lg text-[11px] sm:text-xs font-medium transition-all min-h-[40px] ${
                       isActive
-                        ? 'bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white shadow-sm'
+                        ? 'bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white shadow-md'
                         : 'bg-neutral-800/80 text-text-secondary hover:bg-neutral-700 hover:text-text-primary'
                     }`}
                     title={isActive ? `Remove from ${action.label}` : `Add to ${action.label}`}
                   >
-                    <span className="w-3.5 h-3.5 flex items-center justify-center">{isActive ? action.activeIcon : action.icon}</span>
-                    <span className="hidden sm:inline">{isActive ? action.activeLabel : action.label}</span>
+                    <span className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center">{isActive ? action.activeIcon : action.icon}</span>
+                    <span className="truncate">{isActive ? action.activeLabel : action.label}</span>
                   </motion.button>
                 );
               })}

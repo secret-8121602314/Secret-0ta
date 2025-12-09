@@ -539,8 +539,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
   const [streamedText, setStreamedText] = useState('');
   const [currentDemoIndex, setCurrentDemoIndex] = useState(0);
   
-  // Demo data - cycles through these on "Try Again"
-  const demoData = [
+  // Demo data - cycles through these on "Try Again" - memoized to prevent unnecessary re-renders
+  const demoData = React.useMemo(() => [
     {
       image: '/images/landing/hint.jpg',
       query: 'What should I do here?',
@@ -551,7 +551,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
       query: 'What am I looking at?',
       hint: 'You are gazing upon the magnificent, yet menacing entrance to the Raya Lucaria Academy. Before attempting to breach the main gate, ensure you have secured the necessary Academy Glimstone Key.'
     }
-  ];
+  ], []);
   
   const currentDemo = demoData[currentDemoIndex];
 
@@ -620,7 +620,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
 
     // Interactive hint demo - F1 keyboard listener
     const triggerHintDemo = useCallback(() => {
-        if (hintDemoState === 'loading' || hintDemoState === 'streaming') return;
+        if (hintDemoState === 'loading' || hintDemoState === 'streaming') { return; }
         
         setHintDemoState('loading');
         setStreamedText('');
@@ -922,20 +922,22 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                     <div className="container mx-auto px-6 relative overflow-visible">
                         <div className="flex flex-col items-center justify-center gap-1 md:gap-4 mb-4 md:mb-10 overflow-visible">
                             <Logo className="h-32 w-32" spinOnce={true} />
-                            <h1 
-                                className="text-6xl md:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] leading-none py-2"
-                                style={{
-                                    lineHeight: '1.3',
-                                    paddingTop: '0.25rem',
-                                    paddingBottom: '0.25rem',
-                                    display: 'block',
-                                    overflow: 'visible',
-                                    minHeight: '1.3em',
-                                    height: 'auto'
-                                }}
-                            >
-              Otagon
-            </h1>
+                            <div className="relative inline-block">
+                              <h1 
+                                  className="text-6xl md:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] leading-none py-2"
+                                  style={{
+                                      lineHeight: '1.3',
+                                      paddingTop: '0.25rem',
+                                      paddingBottom: '0.25rem',
+                                      display: 'block',
+                                      overflow: 'visible',
+                                      minHeight: '1.3em',
+                                      height: 'auto'
+                                  }}
+                              >
+                Otagon
+              </h1>
+            </div>
           </div>
           
                         <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-3 md:mb-6 text-white leading-tight">
@@ -1585,7 +1587,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 <h3 className="text-3xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] mb-2">Pro Vanguard</h3>
                                 <p className="text-neutral-300 mb-6 text-sm">Become a Founding Member</p>
                                 <div className="mb-6">
-                                    <span className="text-4xl font-bold text-white">$20</span>
+                                    <span className="text-4xl font-bold text-white">$30</span>
                                     <span className="text-lg text-neutral-300">/year</span>
                                     <p className="text-green-400 font-medium text-sm mt-1">Lifetime Price Guarantee!</p>
                                 </div>
@@ -1616,7 +1618,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 <h3 className="text-2xl font-bold text-white mb-2">Pro</h3>
                                 <p className="text-neutral-300 mb-6 text-sm">For the Serious Gamer</p>
                                 <div className="mb-6">
-                                    <span className="text-4xl font-bold text-white">$3.99</span>
+                                    <span className="text-4xl font-bold text-white">$4.99</span>
                                     <span className="text-lg text-neutral-300">/month</span>
                                 </div>
                                 <ul className="space-y-3 mb-8">

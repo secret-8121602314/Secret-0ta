@@ -50,7 +50,6 @@ const GamingExplorerModal: React.FC<GamingExplorerModalProps> = ({
   // GameInfoModal state
   const [gameInfoModalOpen, setGameInfoModalOpen] = useState(false);
   const [selectedGameData, setSelectedGameData] = useState<IGDBGameData | null>(null);
-  const [selectedGameName, setSelectedGameName] = useState<string>('');
 
   // Check if user needs onboarding (gaming start year not set)
   useEffect(() => {
@@ -90,9 +89,8 @@ const GamingExplorerModal: React.FC<GamingExplorerModalProps> = ({
   }, []);
 
   // Open GameInfoModal for a game
-  const handleOpenGameInfo = useCallback((gameData: IGDBGameData, gameName: string) => {
+  const handleOpenGameInfo = useCallback((gameData: IGDBGameData, _gameName: string) => {
     setSelectedGameData(gameData);
-    setSelectedGameName(gameName);
     setGameInfoModalOpen(true);
   }, []);
 
@@ -166,14 +164,19 @@ const GamingExplorerModal: React.FC<GamingExplorerModalProps> = ({
           >
             {/* Header - Dark themed matching chat app */}
             <header className="flex-shrink-0 bg-[#0A0A0A] border-b border-[#1C1C1C] px-3 sm:px-4 py-2.5 sm:py-3 safe-area-inset-top">
-              <div className="flex items-center justify-between">
-                {/* Logo with title */}
-                <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex items-center justify-between lg:justify-between">
+                {/* Spacer for mobile/tablet to center logo */}
+                <div className="w-10 h-10 sm:w-9 sm:h-9 lg:hidden" />
+                
+                {/* Logo with title - centered on mobile/tablet, left on desktop */}
+                <div className="flex items-center gap-2 sm:gap-3 absolute left-1/2 -translate-x-1/2 lg:static lg:translate-x-0">
                   <div className="relative">
                     <div className="absolute inset-0 bg-gradient-to-r from-[#E53A3A]/20 to-[#D98C1F]/20 blur-lg rounded-full" />
                     <Logo size="md" userTier={user.tier} />
                   </div>
-                  <span className="text-base sm:text-lg font-semibold text-[#F5F5F5]">Home</span>
+                  <span className="text-base sm:text-lg font-semibold text-[#F5F5F5]">
+                    {tabs.find(tab => tab.id === activeTab)?.label || 'Home'}
+                  </span>
                 </div>
                 
                 {/* Close button - right side, properly aligned */}
@@ -310,7 +313,8 @@ const GamingExplorerModal: React.FC<GamingExplorerModalProps> = ({
             isOpen={gameInfoModalOpen}
             onClose={() => setGameInfoModalOpen(false)}
             gameData={selectedGameData}
-            gameName={selectedGameName}
+            gameName={selectedGameData?.name || ''}
+            userTier={user.tier}
           />
         </motion.div>
       )}

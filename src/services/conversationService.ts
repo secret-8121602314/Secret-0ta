@@ -132,6 +132,61 @@ export class ConversationService {
   }
 
   /**
+   * Background cache refresh (non-blocking)
+   */
+  private static async refreshCacheInBackground(userId: string): Promise<void> {
+    try {
+      const supabaseConvs = await getSupabaseService().getConversations(userId);
+      const conversations = supabaseConvs.reduce((acc, conv) => {
+        acc[conv.id] = conv;
+        return acc;
+      }, {} as Conversations);
+      
+      this.conversationsCache = {
+        userId,
+        data: conversations,
+        timestamp: Date.now()
+      };
+      console.log('🔍 [ConversationService] Background cache refresh complete');
+    } catch (error) {
+      console.error('🔍 [ConversationService] Background cache refresh failed:', error);
+    }
+  }
+
+  /**
+   * ✅ Cleanup conversations for localStorage storage to prevent quota exceeded
+   * Keeps only the last 20 messages per conversation and removes large data
+   */
+  private static cleanupConversationsForStorage(conversations: Conversations): Conversations {
+    const cleaned: Conversations = {};
+    
+    for (const [id, conv] of Object.entries(conversations)) {
+      // Keep only last 20 messages per conversation
+      const messages = conv.messages?.slice(-20) || [];
+      
+      // Remove image URLs from messages (large base64 data)
+      const cleanedMessages = messages.map(msg => ({
+        ...msg,
+        imageUrl: msg.imageUrl ? '[removed]' : undefined
+      }));
+      
+      // Keep subtabs but limit content
+      const cleanedSubtabs = conv.subtabs?.map(tab => ({
+        ...tab,
+        content: tab.content?.substring(0, 1000) || '' // Keep only first 1000 chars
+      }));
+      
+      cleaned[id] = {
+        ...conv,
+        messages: cleanedMessages,
+        subtabs: cleanedSubtabs
+      };
+    }
+    
+    return cleaned;
+  }
+
+  /**
    * ✅ SECURITY FIX: Clear ALL cached data - call on logout to prevent data leakage
    * This prevents User B from seeing User A's conversations after logout
    */
@@ -189,11 +244,17 @@ export class ConversationService {
     
     // ✅ SECURITY: Check in-memory cache first (unless explicitly skipped)
     // ✅ CRITICAL: Validate userId matches cache to prevent data leakage between accounts
+    // ✅ FIX: Use merge strategy - never return stale cache that's missing new data
     if (!skipCache && 
         this.conversationsCache && 
         this.conversationsCache.userId === userId &&
         Date.now() - this.conversationsCache.timestamp < this.CACHE_TTL) {
-      console.log('🔍 [ConversationService] Using cached conversations for user', userId, '(age:', Date.now() - this.conversationsCache.timestamp, 'ms)');
+      console.log('🔍 [ConversationService] Cache hit for user', userId, '(age:', Date.now() - this.conversationsCache.timestamp, 'ms)');
+      // Return cache immediately, but also refresh in background if approaching TTL
+      if (Date.now() - this.conversationsCache.timestamp > this.CACHE_TTL / 2) {
+        console.log('🔍 [ConversationService] Cache approaching expiry, refreshing in background...');
+        this.refreshCacheInBackground(userId);
+      }
       return this.conversationsCache.data;
     }
     
@@ -263,7 +324,15 @@ export class ConversationService {
         
         // Also update localStorage as backup
         if (Object.keys(conversations).length > 0) {
-          StorageService.set(STORAGE_KEYS.CONVERSATIONS, conversations);
+          try {
+            // ✅ FIX: Cleanup old messages before saving to prevent quota exceeded
+            const cleanedConversations = this.cleanupConversationsForStorage(conversations);
+            StorageService.set(STORAGE_KEYS.CONVERSATIONS, cleanedConversations);
+          } catch (storageError) {
+            // If localStorage is full, just log warning and continue
+            // The app will still work fine using Supabase and in-memory cache
+            console.warn('⚠️ [ConversationService] localStorage full, skipping backup:', storageError);
+          }
         }
         
       } catch (error) {

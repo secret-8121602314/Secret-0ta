@@ -807,21 +807,21 @@ const GamingExplorerTimeline: React.FC<GamingExplorerTimelineProps> = ({ user: _
               )}
 
               {!addEventType ? (
-                <div className="grid grid-cols-2 gap-3 mt-4">
+                <div className="grid grid-cols-2 gap-3 mt-6">
                   {(['console', 'game', 'pc_build', 'album'] as AddEventType[]).map((type) => {
                     const config = eventTypeConfig[type];
                     return (
                       <motion.button
                         key={type}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                         onClick={() => handleAddEvent(type)}
-                        className={`p-4 rounded-xl bg-gradient-to-br ${config.gradient} text-white font-medium hover:opacity-90 transition-opacity shadow-lg`}
+                        className={`flex flex-col items-center justify-center gap-3 p-5 rounded-xl bg-gradient-to-br ${config.gradient} text-white font-medium hover:opacity-90 transition-all shadow-lg min-h-[120px]`}
                       >
-                        <div className="flex flex-col items-center gap-2">
-                          <div className="w-8 h-8">{config.icon}</div>
-                          <span className="text-sm">{config.label}</span>
+                        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-white/15 backdrop-blur-sm">
+                          {config.icon}
                         </div>
+                        <span className="text-sm font-semibold text-center leading-tight">{config.label}</span>
                       </motion.button>
                     );
                   })}
@@ -914,9 +914,9 @@ const AddEventForm: React.FC<AddEventFormProps> = ({
   return (
     <form onSubmit={handleSubmit} className="space-y-4 mt-4">
       <div>
-        <label className="block text-sm text-[#CFCFCF] mb-1.5 font-medium flex items-center gap-2">
-          <span className="w-5 h-5 text-[#E53A3A]">{config.icon}</span>
-          Title *
+        <label className="block text-sm text-[#CFCFCF] mb-2 font-medium flex items-center gap-2">
+          <span className="w-5 h-5 flex items-center justify-center flex-shrink-0 text-[#E53A3A]">{config.icon}</span>
+          <span>Title *</span>
         </label>
         <input
           type="text"
@@ -930,11 +930,11 @@ const AddEventForm: React.FC<AddEventFormProps> = ({
       </div>
 
       <div>
-        <label className="block text-sm text-[#CFCFCF] mb-1.5 font-medium flex items-center gap-2">
-          <svg className="w-4 h-4 text-[#8B5CF6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <label className="block text-sm text-[#CFCFCF] mb-2 font-medium flex items-center gap-2">
+          <svg className="w-5 h-5 flex-shrink-0 text-[#8B5CF6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          Year *
+          <span>Year *</span>
         </label>
         <select
           value={year}
@@ -948,11 +948,11 @@ const AddEventForm: React.FC<AddEventFormProps> = ({
       </div>
 
       <div>
-        <label className="block text-sm text-[#CFCFCF] mb-1.5 font-medium flex items-center gap-2">
-          <svg className="w-4 h-4 text-[#10B981]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <label className="block text-sm text-[#CFCFCF] mb-2 font-medium flex items-center gap-2">
+          <svg className="w-5 h-5 flex-shrink-0 text-[#10B981]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
-          Description
+          <span>Description</span>
         </label>
         <textarea
           value={description}
@@ -965,11 +965,11 @@ const AddEventForm: React.FC<AddEventFormProps> = ({
 
       {/* Image Upload */}
       <div>
-        <label className="block text-sm text-[#CFCFCF] mb-1.5 font-medium flex items-center gap-2">
-          <svg className="w-4 h-4 text-[#F59E0B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <label className="block text-sm text-[#CFCFCF] mb-2 font-medium flex items-center gap-2">
+          <svg className="w-5 h-5 flex-shrink-0 text-[#F59E0B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          Photos (Optional)
+          <span>Photos (Optional)</span>
         </label>
         
         {/* Photo Preview Grid */}
@@ -1016,10 +1016,10 @@ const AddEventForm: React.FC<AddEventFormProps> = ({
       {type === 'pc_build' && (
         <div className="space-y-2">
           <label className="block text-sm text-[#CFCFCF] font-medium flex items-center gap-2">
-            <svg className="w-4 h-4 text-[#3B82F6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 flex-shrink-0 text-[#3B82F6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
             </svg>
-            PC Specs
+            <span>PC Specs</span>
           </label>
           <div className="grid grid-cols-2 gap-2">
             {['CPU', 'GPU', 'RAM', 'Storage'].map((spec) => (
@@ -1036,14 +1036,17 @@ const AddEventForm: React.FC<AddEventFormProps> = ({
         </div>
       )}
 
-      <div className="flex gap-3 pt-4">
+      <div className="flex gap-3 pt-6">
         <motion.button
           type="button"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={onCancel}
-          className="flex-1 py-2.5 px-4 bg-[#424242]/50 text-[#CFCFCF] rounded-xl font-medium hover:bg-[#424242] transition-colors"
+          className="flex-1 py-2.5 px-4 bg-[#424242]/50 text-[#CFCFCF] rounded-xl font-medium hover:bg-[#424242] transition-colors flex items-center justify-center gap-2"
         >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
           Back
         </motion.button>
         <motion.button
@@ -1051,8 +1054,11 @@ const AddEventForm: React.FC<AddEventFormProps> = ({
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           disabled={!title}
-          className="flex-1 py-2.5 px-4 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white rounded-xl font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+          className="flex-1 py-2.5 px-4 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white rounded-xl font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
           Add Event
         </motion.button>
       </div>
