@@ -1587,7 +1587,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 <h3 className="text-3xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] mb-2">Pro Vanguard</h3>
                                 <p className="text-neutral-300 mb-6 text-sm">Become a Founding Member</p>
                                 <div className="mb-6">
-                                    <span className="text-4xl font-bold text-white">$30</span>
+                                    <span className="text-4xl font-bold text-white">$35</span>
                                     <span className="text-lg text-neutral-300">/year</span>
                                     <p className="text-green-400 font-medium text-sm mt-1">Lifetime Price Guarantee!</p>
                                 </div>
@@ -1618,7 +1618,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 <h3 className="text-2xl font-bold text-white mb-2">Pro</h3>
                                 <p className="text-neutral-300 mb-6 text-sm">For the Serious Gamer</p>
                                 <div className="mb-6">
-                                    <span className="text-4xl font-bold text-white">$4.99</span>
+                                    <span className="text-4xl font-bold text-white">$5</span>
                                     <span className="text-lg text-neutral-300">/month</span>
                                 </div>
                                 <ul className="space-y-3 mb-8">
