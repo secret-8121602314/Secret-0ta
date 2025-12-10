@@ -109,17 +109,15 @@ const MainAppRoute: React.FC = () => {
     const isPWA = isPWAMode();
     
     if (isPWA) {
-      // ✅ PWA CRITICAL FIX: For PWA, force a full reload to clear all state
+      // ✅ PWA CRITICAL FIX: For PWA, navigate to login page and reload to clear all state
       // This prevents black screen and ensures clean login experience
-      console.log('📱 [PWA] Forcing full reload after logout to clear state');
+      console.log('📱 [PWA] Navigating to /earlyaccess and reloading to clear state');
       
       // Set a flag to indicate we just logged out
       localStorage.setItem('otakon_just_logged_out', 'true');
       
-      // Delay slightly to ensure storage is written
-      setTimeout(() => {
-        window.location.reload();
-      }, 100);
+      // Navigate to login page (this will trigger reload with correct URL)
+      window.location.href = '/earlyaccess';
       
       // ✅ CRITICAL: Return here to prevent any further code execution
       return;
