@@ -325,6 +325,7 @@ function App() {
       
       // Clear state and redirect to login after a short delay
       setTimeout(() => {
+        setIsInitializing(false); // Critical: Allow login screen to render
         setAuthState({ user: null, isLoading: false, error: null });
         setAppState((prev: AppState) => ({
           ...prev,
@@ -366,6 +367,7 @@ function App() {
               // Show loading state briefly while we determine next action
               setAuthState(prev => ({ ...prev, isLoading: true }));
               setTimeout(() => {
+                setIsInitializing(false); // Critical: Allow login screen to render
                 setAuthState({ user: null, isLoading: false, error: null });
                 setAppState(prev => ({ ...prev, view: 'app', onboardingStatus: 'login' }));
               }, 500);
@@ -374,6 +376,7 @@ function App() {
             
             if (!session) {
               console.log('📱 [PWA] No session found after background, showing login');
+              setIsInitializing(false); // Critical: Allow login screen to render
               setAuthState({ user: null, isLoading: false, error: null });
               setAppState(prev => ({ ...prev, view: 'app', onboardingStatus: 'login' }));
             } else {
@@ -545,7 +548,8 @@ function App() {
       localStorage.setItem('otakon_welcome_shown', welcomeShown);
     }
     
-    // ✅ Set state to show login screen
+    // ✅ PWA FIX: Set all state synchronously to ensure login screen renders
+    setIsInitializing(false); // Critical: Allow login screen to render
     setAppState((prev: AppState) => ({
       ...prev,
       view: 'app', // Set to app view so landing page check doesn't trigger
@@ -553,7 +557,7 @@ function App() {
     }));
     setAuthState({ user: null, isLoading: false, error: null });
     
-    console.log('🎯 [App] Logout completed, state set to view: app, onboardingStatus: login');
+    console.log('🎯 [App] Logout completed, state set to: isInitializing=false, view=app, onboardingStatus=login');
     
     // ✅ Release processing flag after a small delay to ensure auth subscription doesn't override
     setTimeout(() => {

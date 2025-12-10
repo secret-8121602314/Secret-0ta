@@ -149,6 +149,24 @@ const AppRouter: React.FC<AppRouterProps> = ({
     return <AppLoadingScreen size="md" />;
   }
 
+  // ✅ PWA FIX: Defensive check - if user is logged out, always show login screen
+  // This prevents black screen when states get out of sync
+  if (!authState.user && !authState.isLoading && appState.view === 'app') {
+    console.log('🎯 [AppRouter] No user detected, forcing LoginSplashScreen render', {
+      onboardingStatus: appState.onboardingStatus,
+      view: appState.view,
+      hasUser: !!authState.user,
+      isLoading: authState.isLoading
+    });
+    return (
+      <LoginSplashScreen
+        onComplete={handleLoginComplete}
+        onBackToLanding={handleBackToLanding}
+        onSetAppState={() => {}}
+      />
+    );
+  }
+
   if (authState.user && appState.view === 'app') {
     if (appState.onboardingStatus === 'initial' && !isInitializing) {
       return <InitialSplashScreen onComplete={() => handleOnboardingComplete('initial')} user={authState.user} />;
