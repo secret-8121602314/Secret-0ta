@@ -4,6 +4,7 @@ import { authService } from '../../services/authService';
 import TermsModal from '../modals/TermsModal';
 import PrivacyModal from '../modals/PrivacyModal';
 import PWAInstallBanner from './PWAInstallBanner';
+import { isPWAMode } from '../../utils/pwaDetection';
 import type { AppState } from '../../types';
 // Mobile optimizations applied
 
@@ -767,21 +768,23 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
           <PWAInstallBanner alwaysShowInBrowser={true} />
         </div>
         
-        {/* Back to Landing */}
-        <div className="text-center mt-2 md:mt-4 lg:mt-6">
-          <button
-            onClick={() => {
-                            onBackToLanding();
-            }}
-            className="text-text-muted hover:text-text-primary transition-colors text-sm md:text-base lg:text-base flex items-center justify-center space-x-1 md:space-x-2 mx-auto hover:scale-105 transition-all duration-300"
-            aria-label="Return to landing page"
-          >
-            <svg className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            <span>Back to Landing Page</span>
-          </button>
-        </div>
+        {/* Back to Landing - Hidden in PWA mode */}
+        {!isPWAMode() && (
+          <div className="text-center mt-2 md:mt-4 lg:mt-6">
+            <button
+              onClick={() => {
+                              onBackToLanding();
+              }}
+              className="text-text-muted hover:text-text-primary transition-colors text-sm md:text-base lg:text-base flex items-center justify-center space-x-1 md:space-x-2 mx-auto hover:scale-105 transition-all duration-300"
+              aria-label="Return to landing page"
+            >
+              <svg className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span>Back to Landing Page</span>
+            </button>
+          </div>
+        )}
 
         {/* Footer - Note: #root already applies safe-area-inset-bottom in PWA mode (globals.css) */}
         <div className="w-full py-2 md:py-4 lg:py-6 text-center mt-4">
