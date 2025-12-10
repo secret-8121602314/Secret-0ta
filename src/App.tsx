@@ -83,6 +83,22 @@ function App() {
     });
   }, [appState.view, appState.onboardingStatus, authState.user]);
 
+  // ✅ PWA FIX: Early check for logged-out state on app mount
+  // This runs once immediately to handle the case where PWA was killed while logged out
+  useEffect(() => {
+    if (isPWAMode()) {
+      const pwaLoggedOut = localStorage.getItem('otakon_pwa_logged_out');
+      if (pwaLoggedOut === 'true') {
+        console.log('📱 [PWA] Early check: User was logged out, setting login state');
+        // Set state for logged-out user - this will be overridden if a valid session exists
+        setAuthState({ user: null, isLoading: false, error: null });
+        setAppState(prev => ({ ...prev, view: 'app', onboardingStatus: 'login' }));
+        setIsInitializing(false);
+        setIsAppReady(true);
+      }
+    }
+  }, []); // Empty deps - run once on mount
+
   useEffect(() => {
     if (authState.user && !authState.isLoading) {
       const updateAppState = async () => {
@@ -127,6 +143,14 @@ function App() {
         return;
       }
       
+      // ✅ PWA FIX: Check if user just logged out - don't override the login state
+      const pwaLoggedOut = localStorage.getItem('otakon_pwa_logged_out');
+      if (pwaLoggedOut === 'true' && !newAuthState.user) {
+        console.log('📱 [PWA] User logged out, keeping login state');
+        // Clear the marker only when we have a new user (successful login)
+        return;
+      }
+      
       isProcessingAuthRef.current = true;
       console.log('🎯 [App] Processing auth state:', {
         hasUser: !!newAuthState.user,
@@ -136,6 +160,11 @@ function App() {
       try {
         if (newAuthState.user) {
           setHasEverLoggedIn(true);
+          
+          // ✅ PWA FIX: Clear the logged-out marker since user is now logged in
+          localStorage.removeItem('otakon_pwa_logged_out');
+          console.log('📱 [PWA] Cleared logout marker - user logged in');
+          
           const savedAppState = newAuthState.user.appState || {};
           // ✅ OPTIMIZATION: Use synchronous method - User already has onboarding data from get_complete_user_data
           // This eliminates a redundant get_user_onboarding_status RPC call (~200-500ms savings)
@@ -217,6 +246,15 @@ function App() {
       if (isInitializing) {
         console.warn('⏰ [App] Initialization timeout reached, forcing ready state');
         setIsInitializing(false);
+        
+        // ✅ PWA FIX: Check for logged-out marker first
+        const pwaLoggedOut = localStorage.getItem('otakon_pwa_logged_out');
+        if (isPWAMode() && pwaLoggedOut === 'true') {
+          console.log('📱 [PWA] User was logged out, showing login screen');
+          setAuthState({ user: null, isLoading: false, error: null });
+          setAppState(prev => ({ ...prev, view: 'app', onboardingStatus: 'login' }));
+          return;
+        }
         
         // If we're still loading auth and it's a PWA, check session one more time
         if (isPWAMode() && authState.isLoading) {
@@ -309,7 +347,17 @@ function App() {
     const handleSignedOut = () => {
       console.log('🔐 [App] Signed out event received');
       cleanupDOMStyles(); // ✅ MOBILE FIX: Clean up DOM before state change
+      
+      // ✅ PWA FIX: Set logout marker when signed out event fires
+      if (isPWAMode()) {
+        localStorage.setItem('otakon_pwa_logged_out', 'true');
+        console.log('📱 [PWA] Set logout marker on signed out event');
+      }
+      
       setAuthState({ user: null, isLoading: false, error: null });
+      // ✅ PWA FIX: Also set the app state to login screen
+      setAppState(prev => ({ ...prev, view: 'app', onboardingStatus: 'login' }));
+      setIsInitializing(false);
     };
 
     // ✅ FIX: Handle session expiry - prompt user to re-login
@@ -323,15 +371,21 @@ function App() {
       // ✅ MOBILE FIX: Clean up DOM before state change
       cleanupDOMStyles();
       
+      // ✅ PWA FIX: Set logout marker when session expires
+      if (isPWAMode()) {
+        localStorage.setItem('otakon_pwa_logged_out', 'true');
+        console.log('📱 [PWA] Set logout marker on session expired');
+      }
+      
       // Clear state and redirect to login after a short delay
       setTimeout(() => {
-        setIsInitializing(false); // Critical: Allow login screen to render
         setAuthState({ user: null, isLoading: false, error: null });
         setAppState((prev: AppState) => ({
           ...prev,
           view: 'app',
           onboardingStatus: 'login'
         }));
+        setIsInitializing(false);
       }, 1500);
     };
 
@@ -354,6 +408,16 @@ function App() {
         const backgroundDuration = Date.now() - appVisibilityTimestamp;
         console.log('📱 [PWA] App became visible, background duration:', backgroundDuration, 'ms');
         
+        // ✅ PWA FIX: Always check for logged-out marker first when becoming visible
+        const pwaLoggedOut = localStorage.getItem('otakon_pwa_logged_out');
+        if (isPWAMode() && pwaLoggedOut === 'true') {
+          console.log('📱 [PWA] User logged out marker found, ensuring login screen');
+          setAuthState({ user: null, isLoading: false, error: null });
+          setAppState(prev => ({ ...prev, view: 'app', onboardingStatus: 'login' }));
+          setIsInitializing(false);
+          return;
+        }
+        
         // Only refresh auth if app was in background for more than threshold
         if (isPWAMode() && backgroundDuration > PWA_BACKGROUND_THRESHOLD) {
           console.log('📱 [PWA] Long background detected, refreshing auth state...');
@@ -367,7 +431,6 @@ function App() {
               // Show loading state briefly while we determine next action
               setAuthState(prev => ({ ...prev, isLoading: true }));
               setTimeout(() => {
-                setIsInitializing(false); // Critical: Allow login screen to render
                 setAuthState({ user: null, isLoading: false, error: null });
                 setAppState(prev => ({ ...prev, view: 'app', onboardingStatus: 'login' }));
               }, 500);
@@ -376,7 +439,6 @@ function App() {
             
             if (!session) {
               console.log('📱 [PWA] No session found after background, showing login');
-              setIsInitializing(false); // Critical: Allow login screen to render
               setAuthState({ user: null, isLoading: false, error: null });
               setAppState(prev => ({ ...prev, view: 'app', onboardingStatus: 'login' }));
             } else {
@@ -519,6 +581,13 @@ function App() {
     // Keep it TRUE to block the auth subscription from overriding our state
     isProcessingAuthRef.current = true;
     
+    // ✅ PWA FIX: Set a marker in localStorage BEFORE signOut so PWA knows user logged out
+    // This is critical for preventing black screen on PWA restart
+    if (isPWAMode()) {
+      localStorage.setItem('otakon_pwa_logged_out', 'true');
+      console.log('📱 [PWA] Set logout marker for PWA restart handling');
+    }
+    
     // Preserve welcome screen flag (user has seen it once, don't show again)
     const welcomeShown = localStorage.getItem('otakon_welcome_shown');
     
@@ -540,6 +609,16 @@ function App() {
     window.dispatchEvent(new CustomEvent('otakon:user-logout'));
     console.log('🎯 [App] Dispatched otakon:user-logout event');
     
+    // ✅ PWA CRITICAL: Set state FIRST before signOut to ensure UI updates immediately
+    // This prevents the race condition where user sees chat screen after logout
+    setAppState((prev: AppState) => ({
+      ...prev,
+      view: 'app',
+      onboardingStatus: 'login'
+    }));
+    setAuthState({ user: null, isLoading: false, error: null });
+    console.log('🎯 [App] State set to login BEFORE signOut');
+    
     // Sign out (clears Supabase session and localStorage)
     await authService.signOut();
     
@@ -548,22 +627,28 @@ function App() {
       localStorage.setItem('otakon_welcome_shown', welcomeShown);
     }
     
-    // ✅ PWA FIX: Set all state synchronously to ensure login screen renders
-    setIsInitializing(false); // Critical: Allow login screen to render
+    // ✅ PWA FIX: Keep the logout marker for PWA restart
+    if (isPWAMode()) {
+      localStorage.setItem('otakon_pwa_logged_out', 'true');
+    }
+    
+    // ✅ Ensure state is still correct after signOut (in case any listener tried to override)
     setAppState((prev: AppState) => ({
       ...prev,
-      view: 'app', // Set to app view so landing page check doesn't trigger
-      onboardingStatus: 'login' // This will show login screen
+      view: 'app',
+      onboardingStatus: 'login'
     }));
     setAuthState({ user: null, isLoading: false, error: null });
+    setIsInitializing(false); // Ensure we're not stuck in initializing state
     
-    console.log('🎯 [App] Logout completed, state set to: isInitializing=false, view=app, onboardingStatus=login');
+    console.log('🎯 [App] Logout completed, state confirmed as view: app, onboardingStatus: login');
     
-    // ✅ Release processing flag after a small delay to ensure auth subscription doesn't override
+    // ✅ Release processing flag after a longer delay to ensure auth subscription doesn't override
+    // Extended to 500ms to account for any async operations
     setTimeout(() => {
       isProcessingAuthRef.current = false;
       console.log('🎯 [App] Processing flag released after logout');
-    }, 100);
+    }, 500);
   };
 
   const openModal = (modal: ActiveModal) => {

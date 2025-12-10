@@ -335,6 +335,12 @@ export class AuthService {
     const previousState = { ...this.authState };
     this.authState = { ...this.authState, ...newState };
     
+    // ✅ PWA FIX: Clear the logout marker when user successfully logs in
+    if (newState.user && !previousState.user && isPWAMode()) {
+      localStorage.removeItem('otakon_pwa_logged_out');
+      console.log('📱 [PWA] Cleared logout marker - user signed in');
+    }
+    
     // Only notify listeners if the state actually changed
     const hasChanged = JSON.stringify(previousState) !== JSON.stringify(this.authState);
     if (hasChanged) {
