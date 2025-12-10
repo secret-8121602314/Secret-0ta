@@ -4146,7 +4146,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
             )}
             
             <button
-              onClick={handleConnectionModalOpen}
+              onClick={() => { haptic.modalOpen(); handleConnectionModalOpen(); }}
               className={`btn-icon p-3 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center ${
                 connectionStatus === ConnectionStatus.CONNECTED 
                   ? 'text-green-400 hover:text-green-300' 
@@ -4162,7 +4162,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
             
             <button
               ref={settingsButtonRef}
-              onClick={handleSettingsContextMenu}
+              onClick={(e) => { haptic.button(); handleSettingsContextMenu(e); }}
               className="btn-icon p-3 text-text-muted hover:text-text-primary transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             >
               <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -4272,7 +4272,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               <div className="flex items-center gap-2">
                 {/* Thread name button */}
                 <button
-                  onClick={() => setSidebarOpen(true)}
+                  onClick={() => { haptic.button(); setSidebarOpen(true); }}
                   className="flex-1 bg-gradient-to-r from-surface/30 to-background/30 backdrop-blur-sm border border-surface-light/20 rounded-lg px-4 py-3 transition-all duration-200 hover:from-surface/40 hover:to-background/40 hover:border-surface-light/30 active:scale-[0.98]"
                 >
                   <h2 className="text-sm sm:text-base font-semibold bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent text-center">

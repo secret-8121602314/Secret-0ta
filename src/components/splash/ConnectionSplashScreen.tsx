@@ -1,4 +1,5 @@
 import React from 'react';
+import haptic from '../../services/hapticService';
 
 interface ConnectionSplashScreenProps {
   isOpen: boolean;
@@ -94,7 +95,7 @@ const ConnectionSplashScreen: React.FC<ConnectionSplashScreenProps> = ({ isOpen,
           
           {/* CTA Button */}
           <button
-            onClick={onClose}
+            onClick={() => { haptic.button(); onClose(); }}
             className="w-full bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-bold py-3 sm:py-4 px-6 rounded-xl text-sm sm:text-base transition-all duration-300 active:scale-[0.98] hover:shadow-lg hover:shadow-[#E53A3A]/25"
           >
             Let's Go!

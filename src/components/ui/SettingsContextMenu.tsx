@@ -4,6 +4,7 @@ import { authService } from '../../services/authService';
 import { supabaseService } from '../../services/supabaseService';
 import { toastService } from '../../services/toastService';
 import UserFeedbackModal from '../modals/UserFeedbackModal';
+import haptic from '../../services/hapticService';
 
 interface SettingsContextMenuProps {
   isOpen: boolean;
@@ -207,9 +208,17 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
     let left = position.x;
     let top = position.y;
     
-    // Horizontal positioning - keep menu on screen
-    // Try to center horizontally on the click point
-    left = Math.max(padding + menuWidth / 2, Math.min(left, viewportWidth - menuWidth / 2 - padding));
+    // Horizontal positioning - prevent menu from going off-screen
+    // Position from the right edge if clicked on the right side of screen
+    if (position.x > viewportWidth / 2) {
+      // Clicked on right side - align menu right edge near click position
+      left = Math.min(position.x, viewportWidth - padding) - menuWidth;
+      // Ensure it doesn't go off the left edge
+      left = Math.max(padding, left);
+    } else {
+      // Clicked on left side - align menu left edge near click position
+      left = Math.max(padding, Math.min(position.x, viewportWidth - menuWidth - padding));
+    }
     
     // Vertical positioning - prefer showing below, but flip above if needed
     const showAbove = position.y + menuHeight + padding > viewportHeight;
@@ -316,6 +325,7 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
       {/* Settings Option */}
       <button
         onClick={() => {
+          haptic.button();
           onOpenSettings();
           onClose();
         }}
@@ -332,6 +342,7 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
       {onOpenGuide && (
         <button
           onClick={() => {
+            haptic.button();
             onOpenGuide();
             onClose();
           }}
@@ -347,6 +358,7 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
       {/* Feedback Option */}
       <button
         onClick={() => {
+          haptic.button();
           setIsFeedbackModalOpen(true);
           onClose();
         }}
@@ -375,6 +387,7 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
           {!isLoadingTrialStatus && isTrialEligible && !isTrialActive && (
             <button
               onClick={() => {
+                haptic.button();
                 setIsTrialConfirmModalOpen(true);
                 onClose();
               }}
@@ -391,6 +404,7 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
           {!isLoadingTrialStatus && !isTrialEligible && !isTrialActive && (
             <button
               onClick={() => {
+                haptic.button();
                 if (onUpgradeClick) {
                   onUpgradeClick();
                 }
@@ -423,6 +437,7 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
       {/* Logout Option */}
       <button
         onClick={() => {
+          haptic.button();
           onLogout();
           onClose();
         }}

@@ -938,7 +938,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             <div className="pointer-events-auto relative">
           {/* Collapsible Header */}
           <button
-            onClick={() => setIsQuickActionsExpanded(!isQuickActionsExpanded)}
+            onClick={() => { haptic.button(); setIsQuickActionsExpanded(!isQuickActionsExpanded); }}
             className="w-full flex items-center justify-between mb-2 py-2 px-3 rounded-lg bg-[#1C1C1C] hover:bg-[#252525] border border-[#424242]/30 hover:border-[#424242]/60 transition-all duration-200 relative z-10"
           >
             <div className={`text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
@@ -983,11 +983,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   <button
                     key={prompt.text}
                     onClick={() => {
+                      haptic.button();
                       setIsQuickActionsExpanded(false);
                       onSuggestedPromptClick?.(prompt.text);
                     }}
                     disabled={isLoading}
-                    className="group relative px-3 py-3 rounded-xl bg-gradient-to-br from-[#1C1C1C] to-[#0F0F0F] hover:from-[#252525] hover:to-[#1A1A1A] border border-[#424242]/30 hover:border-[#E53A3A]/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-left overflow-hidden min-h-[88px]"
+                    className="group relative px-3 py-3 rounded-xl bg-gradient-to-br from-[#1C1C1C] to-[#0F0F0F] hover:from-[#252525] hover:to-[#1A1A1A] border border-[#424442]/30 hover:border-[#E53A3A]/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-left overflow-hidden min-h-[88px]"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-[#E53A3A]/10 to-[#FF6B35]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative flex flex-col items-start justify-start h-full gap-2">
@@ -1035,7 +1036,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={onOpenExplorer}
+                onClick={() => { haptic.modalOpen(); onOpenExplorer(); }}
                 className="w-14 h-14 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white rounded-full flex items-center justify-center z-30"
                 style={{ boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5), 0 8px 32px rgba(229, 58, 58, 0.4)' }}
                 title="Open Gaming HQ"
@@ -1286,7 +1287,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 <div className="flex-shrink-0">
                   <ActiveSessionToggle
                     isActive={activeSession.isActive && activeSession.currentGameId === conversation.id}
-                    onClick={onToggleActiveSession}
+                    onClick={() => { haptic.button(); onToggleActiveSession(); }}
                   />
                 </div>
               )
@@ -1295,7 +1296,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             {isLoading && onStop ? (
               <button
                 type="button"
-                onClick={onStop}
+                onClick={() => { haptic.button(); onStop(); }}
                 aria-label="Stop generating"
                 className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-xl transition-all duration-300 bg-[#EF4444] text-white scale-100 md:hover:scale-105 md:hover:bg-[#DC2626] active:scale-95"
               >
@@ -1306,6 +1307,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 type="submit"
                 disabled={!message.trim() && !imageFile}
                 aria-label="Send message"
+                onClick={() => haptic.messageSend()}
                 className={`flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-xl transition-all duration-300 disabled:cursor-not-allowed ${
                   !message.trim() && !imageFile
                     ? 'bg-[#2E2E2E]/15 text-[#A3A3A3]/25 scale-100'

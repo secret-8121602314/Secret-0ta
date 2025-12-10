@@ -179,7 +179,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               {/* Explorer/HQ Button - Gaming-centric design */}
               {onOpenExplorer ? (
                 <button
-                  onClick={onOpenExplorer}
+                  onClick={() => { haptic.modalOpen(); onOpenExplorer(); }}
                   className="group flex-1 flex items-center gap-3 px-4 py-2.5 sm:px-5 sm:py-3 bg-gradient-to-r from-[#1A1A1A] to-[#141414] hover:from-[#E53A3A]/10 hover:to-[#D98C1F]/10 rounded-xl transition-all duration-300 border border-[#424242]/40 hover:border-[#E53A3A]/60 hover:shadow-[0_0_20px_rgba(229,58,58,0.15)]"
                 >
                   {/* Tier-based Logo Icon */}
