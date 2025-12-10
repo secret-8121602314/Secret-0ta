@@ -4,7 +4,6 @@ import { authService } from '../../services/authService';
 import { supabaseService } from '../../services/supabaseService';
 import { toastService } from '../../services/toastService';
 import UserFeedbackModal from '../modals/UserFeedbackModal';
-import haptic from '../../services/hapticService';
 
 interface SettingsContextMenuProps {
   isOpen: boolean;
@@ -325,7 +324,6 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
       {/* Settings Option */}
       <button
         onClick={() => {
-          haptic.button();
           onOpenSettings();
           onClose();
         }}
@@ -342,7 +340,6 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
       {onOpenGuide && (
         <button
           onClick={() => {
-            haptic.button();
             onOpenGuide();
             onClose();
           }}
@@ -358,7 +355,6 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
       {/* Feedback Option */}
       <button
         onClick={() => {
-          haptic.button();
           setIsFeedbackModalOpen(true);
           onClose();
         }}
@@ -387,7 +383,6 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
           {!isLoadingTrialStatus && isTrialEligible && !isTrialActive && (
             <button
               onClick={() => {
-                haptic.button();
                 setIsTrialConfirmModalOpen(true);
                 onClose();
               }}
@@ -404,7 +399,6 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
           {!isLoadingTrialStatus && !isTrialEligible && !isTrialActive && (
             <button
               onClick={() => {
-                haptic.button();
                 if (onUpgradeClick) {
                   onUpgradeClick();
                 }
@@ -437,7 +431,6 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
       {/* Logout Option */}
       <button
         onClick={() => {
-          haptic.button();
           onLogout();
           onClose();
         }}

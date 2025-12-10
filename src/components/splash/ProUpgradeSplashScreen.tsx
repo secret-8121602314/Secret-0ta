@@ -1,5 +1,4 @@
 import React from 'react';
-import haptic from '../../services/hapticService';
 
 interface ProUpgradeSplashScreenProps {
   isOpen: boolean;
@@ -216,7 +215,7 @@ const ProUpgradeSplashScreen: React.FC<ProUpgradeSplashScreenProps> = ({
 
           {/* CTA Button */}
           <button
-            onClick={() => { haptic.button(); onClose(); }}
+            onClick={onClose}
             className="w-full bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-bold py-2.5 sm:py-4 px-6 rounded-xl text-sm sm:text-base transition-all duration-300 active:scale-[0.98] hover:shadow-lg hover:shadow-[#E53A3A]/25"
           >
             Let's Go!

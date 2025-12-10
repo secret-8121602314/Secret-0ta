@@ -345,7 +345,7 @@ const SubTabs: React.FC<SubTabsProps> = ({
     <div ref={containerRef} className="mb-4 relative">
       {/* Collapsible Header - Matching Latest Gaming News style */}
       <button
-        onClick={() => { haptic.button(); toggleExpanded(); }}
+        onClick={toggleExpanded}
         className="w-full flex items-center justify-between py-2 px-3 rounded-lg bg-[#1C1C1C] hover:bg-[#252525] border border-[#424242]/30 hover:border-[#424242]/60 transition-all duration-200 relative z-[51]"
       >
         <div className="flex items-center gap-2">

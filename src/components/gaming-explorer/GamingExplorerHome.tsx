@@ -681,7 +681,7 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
                 key={game.id}
                 whileHover={{ scale: 1.03, y: -4 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => { haptic.modalOpen(); onOpenGameInfo(game, game.name); }}
+                onClick={() => onOpenGameInfo(game, game.name)}
                 className="bg-[#1C1C1C] rounded-xl overflow-hidden border border-[#424242]/40 hover:border-[#FF4D4D]/50 transition-all text-left"
               >
                 <div className="aspect-[3/4] relative overflow-hidden">
@@ -728,13 +728,13 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
             <div className="w-8 h-8 border-2 border-[#E53A3A] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : featuredGames.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-2 lg:gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-2 lg:gap-4">
             {featuredGames.map((game) => (
               <motion.button
                 key={game.id}
-                whileHover={{ scale: 1.03, y: -4 }}
+                whileHover={{ scale: 1.02, y: -4 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => { haptic.modalOpen(); onOpenGameInfo(game, game.name); }}
+                onClick={() => onOpenGameInfo(game, game.name)}
                 className="bg-[#1C1C1C] rounded-xl overflow-hidden border border-[#424242]/40 hover:border-[#E53A3A]/50 transition-all text-left"
               >
                 <div className="aspect-[3/4] relative overflow-hidden">
@@ -753,8 +753,13 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
                     </div>
                   )}
                 </div>
-                <div className="p-2">
-                  <h3 className="font-medium text-[#F5F5F5] text-xs line-clamp-1">{game.name}</h3>
+                <div className="p-3">
+                  <h3 className="font-medium text-[#F5F5F5] text-sm line-clamp-1">{game.name}</h3>
+                  {game.genres && (
+                    <p className="text-xs text-[#6B7280] mt-1 line-clamp-1">
+                      {game.genres.slice(0, 2).map(g => g.name).join(' • ')}
+                    </p>
+                  )}
                 </div>
               </motion.button>
             ))}
@@ -818,7 +823,7 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
                 key={game.id}
                 whileHover={{ scale: 1.02, y: -4 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => { haptic.modalOpen(); onOpenGameInfo(game, game.name); }}
+                onClick={() => onOpenGameInfo(game, game.name)}
                 className="bg-[#1C1C1C] rounded-xl overflow-hidden border border-[#424242]/40 hover:border-[#E53A3A]/50 text-left transition-all"
               >
                 <div className="aspect-[3/4] relative overflow-hidden">
