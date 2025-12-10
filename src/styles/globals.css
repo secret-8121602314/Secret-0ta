@@ -1294,8 +1294,8 @@ button, a, [role="button"], input, textarea, select, [tabindex] {
 button:active:not(:disabled),
 [role="button"]:active:not(:disabled),
 a:active {
-  transform: scale(0.97);
-  transition: transform 0.1s ease-out;
+  filter: brightness(0.9);
+  transition: filter 0.1s ease-out;
 }
 
 /* PWA-specific touch optimizations */
@@ -1303,8 +1303,7 @@ a:active {
   /* More pronounced active feedback in PWA */
   button:active:not(:disabled),
   [role="button"]:active:not(:disabled) {
-    transform: scale(0.95);
-    filter: brightness(0.9);
+    filter: brightness(0.85);
   }
   
   /* Prevent overscroll bounce in PWA */
