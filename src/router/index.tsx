@@ -11,6 +11,7 @@ import HowToUseRoute from './routes/HowToUseRoute';
 import FeaturesConnectedRoute from './routes/FeaturesConnectedRoute';
 import ProFeaturesRoute from './routes/ProFeaturesRoute';
 import MainAppRoute from './routes/MainAppRoute';
+import RootLayout from './routes/RootLayout';
 
 /**
  * Router loader: Check authentication and onboarding status
@@ -152,67 +153,74 @@ async function appLoader({ request }: LoaderFunctionArgs) {
 
 /**
  * Route definitions
+ * All routes are wrapped in RootLayout for PWA lifecycle handling
  */
 const routes: RouteObject[] = [
   {
-    path: '/',
-    loader: authLoader,
-    element: <LandingPageRoute />,
-  },
-  {
-    path: '/earlyaccess',
-    loader: authLoader,
-    element: <LoginRoute />,
-  },
-  {
-    path: '/auth/callback',
-    element: <AuthCallbackRoute />,
-  },
-  {
-    path: '/onboarding',
-    loader: onboardingLoader,
+    // Root layout wrapper for PWA lifecycle management
+    element: <RootLayout />,
     children: [
       {
-        index: true,
-        loader: onboardingLoader,
-        element: <InitialOnboardingRoute />,
+        path: '/',
+        loader: authLoader,
+        element: <LandingPageRoute />,
       },
       {
-        path: 'welcome',
-        loader: onboardingLoader,
-        element: <InitialOnboardingRoute />,
+        path: '/earlyaccess',
+        loader: authLoader,
+        element: <LoginRoute />,
       },
       {
-        path: 'how-to-use',
-        loader: onboardingLoader,
-        element: <HowToUseRoute />,
+        path: '/auth/callback',
+        element: <AuthCallbackRoute />,
       },
       {
-        path: 'features',
+        path: '/onboarding',
         loader: onboardingLoader,
-        element: <FeaturesConnectedRoute />,
+        children: [
+          {
+            index: true,
+            loader: onboardingLoader,
+            element: <InitialOnboardingRoute />,
+          },
+          {
+            path: 'welcome',
+            loader: onboardingLoader,
+            element: <InitialOnboardingRoute />,
+          },
+          {
+            path: 'how-to-use',
+            loader: onboardingLoader,
+            element: <HowToUseRoute />,
+          },
+          {
+            path: 'features',
+            loader: onboardingLoader,
+            element: <FeaturesConnectedRoute />,
+          },
+          {
+            path: 'pro-features',
+            loader: onboardingLoader,
+            element: <ProFeaturesRoute />,
+          },
+        ],
       },
       {
-        path: 'pro-features',
-        loader: onboardingLoader,
-        element: <ProFeaturesRoute />,
+        path: '/app',
+        loader: appLoader,
+        element: <MainAppRoute />,
+      },
+      {
+        path: '/app/*',
+        loader: appLoader,
+        element: <MainAppRoute />,
+      },
+      // Catch-all: redirect to home
+      {
+        path: '*',
+        loader: () => redirect('/'),
       },
     ],
-  },
-  {
-    path: '/app',
-    loader: appLoader,
-    element: <MainAppRoute />,
-  },
-  {
-    path: '/app/*',
-    loader: appLoader,
-    element: <MainAppRoute />,
-  },
-  // Catch-all: redirect to home
-  {
-    path: '*',
-    loader: () => redirect('/'),
   },
 ];
 

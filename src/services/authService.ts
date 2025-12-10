@@ -335,12 +335,6 @@ export class AuthService {
     const previousState = { ...this.authState };
     this.authState = { ...this.authState, ...newState };
     
-    // ✅ PWA FIX: Clear the logout marker when user successfully logs in
-    if (newState.user && !previousState.user && isPWAMode()) {
-      localStorage.removeItem('otakon_pwa_logged_out');
-      console.log('📱 [PWA] Cleared logout marker - user signed in');
-    }
-    
     // Only notify listeners if the state actually changed
     const hasChanged = JSON.stringify(previousState) !== JSON.stringify(this.authState);
     if (hasChanged) {
@@ -612,7 +606,12 @@ export class AuthService {
 
   async signOut(): Promise<void> {
     try {
-            // End session tracking before signing out
+            // ✅ PWA CRITICAL FIX: Immediately update auth state to prevent race conditions
+      // This ensures all listeners get notified of logout BEFORE async operations
+      this.updateAuthState({ user: null, isLoading: false, error: null });
+      console.log('🔐 [AuthService] Auth state cleared immediately');
+      
+      // End session tracking before signing out
       await sessionService.endSession();
       
       // Sign out from Supabase FIRST to clear session tokens
@@ -701,14 +700,14 @@ export class AuthService {
       
       console.log('🧹 [AuthService] AdSense cleanup complete, DOM styles delegated to App.tsx');
       
-      // Clear auth state
-      this.updateAuthState({ user: null, isLoading: false, error: null });
+      // ✅ Auth state already cleared at the start of signOut to prevent race conditions
+      // No need to update again here
       
             toastService.success('Successfully signed out. See you next time!');
     } catch (error) {
       console.error('🔐 [AuthService] Sign out error:', error);
       toastService.error('Sign out failed. Please try again.');
-      // Even if there's an error, clear the local state
+      // Even if there's an error, ensure the local state is cleared
       this.updateAuthState({ user: null, isLoading: false, error: null });
     }
   }

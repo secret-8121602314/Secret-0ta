@@ -6,6 +6,7 @@ import PrivacyModal from '../../components/modals/PrivacyModal';
 import TermsModal from '../../components/modals/TermsModal';
 import { ConnectionStatus, type User } from '../../types';
 import { connect as connectWebSocket, disconnect as disconnectWebSocket } from '../../services/websocketService';
+import { isPWAMode } from '../../utils/pwaDetection';
 
 /**
  * Route wrapper for MainApp
@@ -93,8 +94,38 @@ const MainAppRoute: React.FC = () => {
   const handleLogout = async () => {
     // Import authService dynamically to avoid circular deps
     const { authService } = await import('../../services/authService');
+    
+    // ✅ PWA FIX: Clear sessionStorage to prevent state restoration on reopen
+    sessionStorage.clear();
+    console.log('🧹 [MainAppRoute] SessionStorage cleared to prevent state restoration');
+    
+    // ✅ PWA FIX: Dispatch a custom event BEFORE signOut to notify components to reset their refs
+    window.dispatchEvent(new CustomEvent('otakon:user-logout'));
+    console.log('🎯 [MainAppRoute] Dispatched otakon:user-logout event');
+    
     await authService.signOut();
-    // Navigate to login page after logout
+    
+    // ✅ PWA FIX: Check if running as PWA
+    const isPWA = isPWAMode();
+    
+    if (isPWA) {
+      // ✅ PWA CRITICAL FIX: For PWA, force a full reload to clear all state
+      // This prevents black screen and ensures clean login experience
+      console.log('📱 [PWA] Forcing full reload after logout to clear state');
+      
+      // Set a flag to indicate we just logged out
+      localStorage.setItem('otakon_just_logged_out', 'true');
+      
+      // Delay slightly to ensure storage is written
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
+      
+      // ✅ CRITICAL: Return here to prevent any further code execution
+      return;
+    }
+    
+    // Navigate to login page after logout (for non-PWA)
     navigate('/earlyaccess');
   };
 

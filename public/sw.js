@@ -249,10 +249,16 @@ self.addEventListener('message', (event) => {
           
           console.log('[SW] Auth and user data caches cleared successfully');
           
-          // Notify clients that caches are cleared
-          const clients = await self.clients.matchAll({ type: 'window' });
+          // ✅ PWA CRITICAL FIX: Force all clients to reload after cache clear
+          // This ensures clean state on next app open
+          const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+          console.log('[SW] Notifying', clients.length, 'clients of cache clear');
+          
           clients.forEach(client => {
-            client.postMessage({ type: 'AUTH_CACHE_CLEARED' });
+            client.postMessage({ 
+              type: 'AUTH_CACHE_CLEARED',
+              action: 'reload' // Signal to reload if needed
+            });
           });
         } catch (error) {
           console.error('[SW] Error clearing caches:', error);

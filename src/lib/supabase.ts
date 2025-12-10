@@ -46,10 +46,6 @@ if (typeof window !== 'undefined') {
         void document.body.offsetHeight; // Force layout recalculation
         console.log('🔐 [Supabase] DOM styles cleaned on SIGNED_IN');
         
-        // ✅ PWA FIX: Clear the logout marker when user signs in
-        localStorage.removeItem('otakon_pwa_logged_out');
-        console.log('📱 [PWA] Cleared logout marker on SIGNED_IN');
-        
         // Store session timestamp for PWA mode
         localStorage.setItem('otakon_session_refreshed', Date.now().toString());
         localStorage.setItem('otakon_last_session_check', Date.now().toString());
@@ -93,16 +89,6 @@ if (typeof window !== 'undefined') {
       }
       void document.body.offsetHeight; // Force layout recalculation
       console.log('🔐 [Supabase] DOM styles cleaned on SIGNED_OUT');
-      
-      // ✅ PWA FIX: Set the logout marker when user signs out
-      // Check if running in PWA mode
-      const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
-                    (window.navigator as { standalone?: boolean }).standalone === true ||
-                    document.referrer.includes('android-app://');
-      if (isPWA) {
-        localStorage.setItem('otakon_pwa_logged_out', 'true');
-        console.log('📱 [PWA] Set logout marker on SIGNED_OUT');
-      }
       
       // Clear all session data
       localStorage.removeItem('otakon_session_refreshed');
