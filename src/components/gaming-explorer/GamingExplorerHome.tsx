@@ -10,8 +10,8 @@
  * - Clicking news card sends query to Game Hub for AI grounding search
  */
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { User } from '../../types';
 import { 
   newsCacheStorage, 
@@ -23,6 +23,7 @@ import {
 } from '../../services/gamingExplorerStorage';
 import { 
   fetchIGDBGameData,
+  searchIGDBGames,
   IGDBGameData,
   getCoverUrl,
 } from '../../services/igdbService';
@@ -126,6 +127,8 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchHistory, setSearchHistory] = useState<IGDBGameData[]>(() => searchHistoryStorage.getGames());
+  const [searchResults, setSearchResults] = useState<IGDBGameData[]>([]);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Get library stats
   const stats = useMemo(() => {
@@ -232,7 +235,61 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
     fetchAllGames();
   }, []);
 
-  // Handle game search
+  // Debounced autocomplete search
+  const handleSearchInputChange = useCallback((value: string) => {
+    setSearchQuery(value);
+    
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    // If query is too short, clear results
+    if (value.trim().length < 2) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+    
+    // Set searching state
+    setIsSearching(true);
+    
+    // Debounce the search
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const results = await searchIGDBGames(value);
+        setSearchResults(results);
+      } catch (error) {
+        console.error('Search error:', error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 200);
+  }, []);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Handle clicking a search result
+  const handleSearchResultClick = useCallback((game: IGDBGameData) => {
+    // Add to search history
+    searchHistoryStorage.add(game);
+    setSearchHistory(searchHistoryStorage.getGames());
+    // Open the game info modal
+    onOpenGameInfo(game, game.name);
+    // Clear search
+    setSearchQuery('');
+    setSearchResults([]);
+  }, [onOpenGameInfo]);
+
+  // Handle game search form submit
   const handleSearch = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim() || isSearching) { return; }
@@ -248,6 +305,7 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
         onOpenGameInfo(gameData, gameData.name);
         // Clear search input
         setSearchQuery('');
+        setSearchResults([]);
       } else {
         toastService.warning(`No game found for "${searchQuery}"`);
       }
@@ -391,16 +449,17 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
         </motion.button>
       </div>
 
-      {/* Search Bar */}
+      {/* Search Bar with Autocomplete */}
       <form onSubmit={handleSearch} className="relative">
         <div className="relative">
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => handleSearchInputChange(e.target.value)}
             placeholder="Search for any game..."
             className="w-full px-4 py-3 pl-12 bg-[#1C1C1C] border border-[#424242]/50 rounded-xl text-[#F5F5F5] placeholder-[#6B7280] focus:outline-none focus:border-[#E53A3A]/50 focus:ring-1 focus:ring-[#E53A3A]/30 transition-all"
             disabled={isSearching}
+            autoComplete="off"
           />
           <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6B7280]">
             {isSearching ? (
@@ -423,6 +482,61 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
             </button>
           )}
         </div>
+
+        {/* Autocomplete Dropdown */}
+        <AnimatePresence>
+          {searchQuery.length >= 2 && searchResults.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="absolute top-full left-0 right-0 mt-2 bg-[#1C1C1C] border border-[#424242]/50 rounded-xl overflow-hidden shadow-xl z-50 max-h-96 overflow-y-auto"
+            >
+              {searchResults.map((game, index) => (
+                <motion.button
+                  key={game.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: index * 0.03 }}
+                  onClick={() => handleSearchResultClick(game)}
+                  className="w-full p-3 flex gap-3 items-center hover:bg-[#2A2A2A] transition-colors text-left border-b border-[#424242]/30 last:border-0"
+                >
+                  {game.cover?.url ? (
+                    <img
+                      src={getCoverUrl(game.cover.url, 'cover_small')}
+                      alt={game.name}
+                      className="w-10 h-14 object-cover rounded flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-10 h-14 bg-[#2A2A2A] rounded flex-shrink-0 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-[#424242]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                      </svg>
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-[#F5F5F5] truncate">{game.name}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      {game.first_release_date && (
+                        <span className="text-xs text-[#8F8F8F]">
+                          {new Date(game.first_release_date * 1000).getFullYear()}
+                        </span>
+                      )}
+                      {game.aggregated_rating && (
+                        <>
+                          <span className="text-[#424242]">•</span>
+                          <span className="text-xs text-[#10B981] font-medium">
+                            {Math.round(game.aggregated_rating)}%
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </motion.button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </form>
 
       {/* Your Collection - Owned Games */}

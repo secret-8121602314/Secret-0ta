@@ -476,7 +476,11 @@
           // Register new service worker
           navigator.serviceWorker.register(swPath)
             .then((registration) => {
-              console.log('✅ SW v1.3.4 registered:', registration);
+              console.log('✅ SW v1.3.5 registered:', registration);
+              
+              // Prevent infinite reload loops
+              const lastReloadTime = sessionStorage.getItem('sw_last_reload');
+              const now = Date.now();
               
               // Check for updates
               registration.addEventListener('updatefound', () => {
@@ -486,11 +490,18 @@
                     if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                       // New content is available, auto-update
                       console.log('New SW version detected, updating...');
-                      newWorker.postMessage({ type: 'SKIP_WAITING' });
-                      // Auto-reload after 1 second
-                      setTimeout(() => {
-                        window.location.reload();
-                      }, 1000);
+                      
+                      // Only reload if last reload was more than 5 seconds ago
+                      if (!lastReloadTime || now - parseInt(lastReloadTime) > 5000) {
+                        sessionStorage.setItem('sw_last_reload', now.toString());
+                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                        // Auto-reload after 1 second
+                        setTimeout(() => {
+                          window.location.reload();
+                        }, 1000);
+                      } else {
+                        console.log('Skipping reload - too soon after last reload');
+                      }
                     }
                   });
                 }

@@ -1,6 +1,6 @@
 // Service Worker for Otagon PWA - Performance Optimized with Enhanced Background Sync
-// Version: v1.3.5-pwa-fix - CONSOLIDATED (no duplicate event listeners)
-const CACHE_VERSION = 'v1.3.5-pwa-fix';
+// Version: v1.3.6-pwa-android-fix - Wake lock and media session improvements
+const CACHE_VERSION = 'v1.3.6-pwa-android-fix';
 const CACHE_NAME = `otagon-${CACHE_VERSION}`;
 const CHAT_CACHE_NAME = `otagon-chat-${CACHE_VERSION}`;
 const STATIC_CACHE = `otagon-static-${CACHE_VERSION}`;
@@ -887,4 +887,67 @@ async function clearOfflineImageData() {
   }
 }
 
+// =============================================
+// BACKGROUND OPERATIONS - MESSAGE SYNC
+// =============================================
+async function syncChatData() {
+  console.log('[SW] Syncing chat data...');
+  
+  try {
+    // Get pending messages from localStorage (via clients)
+    const clients = await self.clients.matchAll({ type: 'window' });
+    
+    for (const client of clients) {
+      client.postMessage({
+        type: 'SYNC_PENDING_MESSAGES',
+        timestamp: Date.now()
+      });
+    }
+    
+    console.log('[SW] Chat sync request sent to clients');
+  } catch (error) {
+    console.error('[SW] Chat sync failed:', error);
+  }
+}
+
+// =============================================
+// BACKGROUND OPERATIONS - SESSION PING
+// =============================================
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SESSION_PING') {
+    console.log('[SW] Session ping received, keeping session alive');
+    
+    // Respond to client
+    if (event.source) {
+      event.source.postMessage({
+        type: 'SESSION_PONG',
+        timestamp: Date.now()
+      });
+    }
+  }
+});
+
+// =============================================
+// BACKGROUND OPERATIONS - PERIODIC REFRESH
+// =============================================
+async function performPeriodicSync() {
+  console.log('[SW] Performing periodic refresh...');
+  
+  try {
+    const clients = await self.clients.matchAll({ type: 'window' });
+    
+    for (const client of clients) {
+      client.postMessage({
+        type: 'PERIODIC_REFRESH',
+        timestamp: Date.now()
+      });
+    }
+    
+    console.log('[SW] Periodic refresh notification sent');
+  } catch (error) {
+    console.error('[SW] Periodic sync failed:', error);
+  }
+}
+
 console.log('[SW] Service worker script loaded:', CACHE_VERSION);
+

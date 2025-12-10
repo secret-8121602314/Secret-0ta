@@ -597,7 +597,11 @@ const GamingExplorerLibrary: React.FC<GamingExplorerLibraryProps> = ({ user: _us
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.05 }}
-                          className="p-4 border-b border-[#424242]/40 hover:bg-[#2A2A2A] transition-colors"
+                          className="p-4 border-b border-[#424242]/40 hover:bg-[#2A2A2A] transition-colors cursor-pointer"
+                          onClick={() => {
+                            // Open game info modal when clicking the game card
+                            onOpenGameInfo(game, game.name);
+                          }}
                         >
                           <div className="flex gap-4">
                             {game.cover?.url ? (
@@ -637,13 +641,16 @@ const GamingExplorerLibrary: React.FC<GamingExplorerLibraryProps> = ({ user: _us
                               )}
 
                               {/* Add to category buttons - compact row */}
-                              <div className="flex flex-wrap gap-1.5 mt-2">
+                              <div className="flex flex-wrap gap-1.5 mt-2" onClick={(e) => e.stopPropagation()}>
                                 {categories.map((cat) => {
                                   const isInCategory = libraryStorage.getGameCategories(game.id).includes(cat.id);
                                   return (
                                     <button
                                       key={cat.id}
-                                      onClick={() => handleAddGame(game, cat.id)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleAddGame(game, cat.id);
+                                      }}
                                       disabled={isInCategory}
                                       className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
                                         isInCategory

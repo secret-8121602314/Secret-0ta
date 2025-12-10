@@ -17,18 +17,32 @@ const requestWakeLock = async () => {
     try {
         const nav = navigator as ExtendedNavigator;
         if (nav.wakeLock) {
+            // Release old lock if exists
+            if (wakeLock !== null) {
+                try {
+                    await wakeLock.release();
+                } catch (_e) {
+                    // Ignore release errors
+                }
+            }
+            
             wakeLock = await nav.wakeLock.request('screen');
             console.log('🔒 [TTS] Wake lock acquired - screen will stay on');
-            wakeLock.addEventListener('release', () => {
+            
+            wakeLock.addEventListener('release', async () => {
                 console.log('🔓 [TTS] Wake lock released');
+                wakeLock = null;
                 // Automatically reacquire if TTS is still speaking
-                if (synth && synth.speaking && !isBackgroundPlayback) {
-                    requestWakeLock();
+                if (synth && synth.speaking) {
+                    console.log('🔒 [TTS] Reacquiring wake lock (TTS still active)');
+                    await requestWakeLock();
                 }
             });
+        } else {
+            console.warn('⚠️ [TTS] Wake lock API not available');
         }
     } catch (err) {
-        console.warn('⚠️ [TTS] Wake lock not available:', err);
+        console.warn('⚠️ [TTS] Wake lock request failed:', err);
     }
 };
 
@@ -207,9 +221,35 @@ const cancelAndDisableHandsFree = () => {
 
 const setupMediaSession = () => {
     if ('mediaSession' in navigator) {
-        navigator.mediaSession.setActionHandler('play', () => { /* Let audio play naturally */ });
-        navigator.mediaSession.setActionHandler('pause', cancelAndDisableHandsFree);
-        navigator.mediaSession.setActionHandler('stop', cancelAndDisableHandsFree);
+        console.log('🎵 [TTS] Setting up media session');
+        
+        // Set action handlers for lock screen controls
+        try {
+            navigator.mediaSession.setActionHandler('play', () => {
+                console.log('🎵 [TTS] Media session play action');
+                if (synth && synth.paused) {
+                    resume();
+                }
+            });
+            
+            navigator.mediaSession.setActionHandler('pause', () => {
+                console.log('🎵 [TTS] Media session pause action');
+                if (synth && synth.speaking && !synth.paused) {
+                    pause();
+                }
+            });
+            
+            navigator.mediaSession.setActionHandler('stop', () => {
+                console.log('🎵 [TTS] Media session stop action');
+                cancelAndDisableHandsFree();
+            });
+            
+            console.log('✅ [TTS] Media session handlers registered');
+        } catch (err) {
+            console.warn('⚠️ [TTS] Failed to set media session handlers:', err);
+        }
+    } else {
+        console.warn('⚠️ [TTS] Media session API not available');
     }
 };
 
@@ -320,6 +360,9 @@ const speak = async (text: string): Promise<void> => {
             }
 
             utterance.onstart = async () => {
+                console.log('🎤 [TTS] Speech started');
+                currentText = text;
+                
                 // Request wake lock and start silent audio for background playback
                 await requestWakeLock();
                 await startSilentAudio();
@@ -331,18 +374,37 @@ const speak = async (text: string): Promise<void> => {
                     });
                 }
                 
+                // Set media session metadata and playback state
                 if ('mediaSession' in navigator) {
-                    navigator.mediaSession.playbackState = 'playing';
-                    navigator.mediaSession.metadata = new MediaMetadata({
-                        title: text.length > 50 ? text.substring(0, 50) + '...' : text,
-                        artist: 'Your AI Gaming Companion',
-                        album: 'Otakon',
-                        artwork: [
-                            { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-                            { src: '/icon-512.png', sizes: '512x512', type: 'image/png' }
-                        ]
-                    });
+                    try {
+                        navigator.mediaSession.playbackState = 'playing';
+                        
+                        // Extract a clean preview for media session title
+                        const cleanTitle = text
+                            .replace(/[*_~`#]/g, '') // Remove markdown
+                            .replace(/\n+/g, ' ') // Replace newlines with spaces
+                            .trim();
+                        
+                        const title = cleanTitle.length > 100 
+                            ? cleanTitle.substring(0, 97) + '...' 
+                            : cleanTitle;
+                        
+                        navigator.mediaSession.metadata = new MediaMetadata({
+                            title: title,
+                            artist: 'Otagon AI',
+                            album: 'Gaming Companion',
+                            artwork: [
+                                { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+                                { src: '/icon-512.png', sizes: '512x512', type: 'image/png' }
+                            ]
+                        });
+                        
+                        console.log('🎵 [TTS] Media session metadata set');
+                    } catch (err) {
+                        console.warn('⚠️ [TTS] Failed to set media session:', err);
+                    }
                 }
+                
                 window.dispatchEvent(new CustomEvent('otakon:ttsStarted'));
             };
 

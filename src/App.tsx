@@ -9,9 +9,34 @@ import { supabase } from './lib/supabase';
 import AppRouter from './components/AppRouter';
 import { ToastContainer } from './components/ui/ToastContainer';
 import { isPWAMode } from './utils/pwaDetection';
+import { logPWAStatus } from './utils/pwaRedirectPrevention';
 import LayoutDebugOverlay from './components/debug/LayoutDebugOverlay';
+import { initBackgroundOperations } from './utils/backgroundOperations';
+import { initKeyboardManager } from './utils/keyboardManager';
+import { initLandscapeViewer } from './utils/landscapeImageViewer';
 
-console.log('🚀🚀🚀 APP.TSX LOADED - NEW CODE VERSION 9:24 PM 🚀🚀🚀');
+console.log('🚀🚀🚀 APP.TSX LOADED - PWA FIXES VERSION 🚀🚀🚀');
+
+// Log PWA status on app load
+logPWAStatus();
+
+// Initialize PWA utilities if in standalone mode
+if (isPWAMode()) {
+  console.log('[PWA] Initializing native app features...');
+  
+  // Initialize on DOM ready
+  if (document.readyState === 'complete') {
+    initBackgroundOperations();
+    initKeyboardManager();
+    initLandscapeViewer();
+  } else {
+    window.addEventListener('load', () => {
+      initBackgroundOperations();
+      initKeyboardManager();
+      initLandscapeViewer();
+    });
+  }
+}
 
 function App() {
   const [authState, setAuthState] = useState<AuthState>({
@@ -20,6 +45,7 @@ function App() {
     error: null,
   });
   const [hasEverLoggedIn, setHasEverLoggedIn] = useState(false);
+  const [isAppReady, setIsAppReady] = useState(false);
   const [appState, setAppState] = useState<AppState>({
     view: 'landing', // Will be updated once auth state is checked
     onboardingStatus: 'initial',
@@ -189,6 +215,10 @@ function App() {
       }
     });
     authSubscriptionRef.current = unsubscribe;
+    
+    // Set app ready after subscription setup
+    setIsAppReady(true);
+    
     return () => {
       isMounted = false;
       if (authSubscriptionRef.current) {
@@ -943,6 +973,20 @@ function App() {
 
   // App.tsx now only handles manual routing
   // AppWrapper.tsx handles the decision between React Router and manual routing
+  
+  // Show loading screen while app initializes to prevent black screen
+  if (!isAppReady || (authState.isLoading && isInitializing)) {
+    return (
+      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 mx-auto mb-4 border-4 border-[#E53A3A] border-t-transparent rounded-full animate-spin" />
+          <p className="text-white text-lg font-medium">Loading Otagon...</p>
+          <p className="text-[#8F8F8F] text-sm mt-2">Initializing your gaming companion</p>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <>
       <AppRouter

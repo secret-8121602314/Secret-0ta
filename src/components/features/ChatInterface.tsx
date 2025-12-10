@@ -18,6 +18,7 @@ import SubTabs from './SubTabs';
 import { gameTabService } from '../../services/gameTabService';
 import { tabManagementService } from '../../services/tabManagementService';
 import { ChatInterfaceSkeleton } from '../ui/Skeletons';
+import { hapticMessageSent } from '../../utils/hapticFeedback';
 
 // ============================================================================
 // ERROR FALLBACK COMPONENTS
@@ -723,6 +724,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     if (conversation?.isGameHub) {
       setIsQuickActionsExpanded(false);
     }
+
+    // Haptic feedback on message send (PWA only)
+    hapticMessageSent();
 
     const imageUrl = imagePreview || undefined;
     console.log('📤 [ChatInterface] Submitting:', { message, hasImage: !!imageUrl, imageUrl: imageUrl?.substring(0, 50) + '...' });
