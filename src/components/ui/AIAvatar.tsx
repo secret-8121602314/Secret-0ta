@@ -23,6 +23,7 @@ const AIAvatar: React.FC<AIAvatarProps> = ({ className }) => {
         alt="AI Avatar"
         className="w-[70%] h-[70%] object-contain"
         onError={handleError}
+        data-no-viewer="true"
       />
     </div>
   );

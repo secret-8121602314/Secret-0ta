@@ -458,7 +458,6 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
             onChange={(e) => handleSearchInputChange(e.target.value)}
             placeholder="Search for any game..."
             className="w-full px-4 py-3 pl-12 bg-[#1C1C1C] border border-[#424242]/50 rounded-xl text-[#F5F5F5] placeholder-[#6B7280] focus:outline-none focus:border-[#E53A3A]/50 focus:ring-1 focus:ring-[#E53A3A]/30 transition-all"
-            disabled={isSearching}
             autoComplete="off"
           />
           <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6B7280]">

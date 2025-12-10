@@ -101,6 +101,7 @@ const ProFeaturesSplashScreen: React.FC<ProFeaturesSplashScreenProps> = ({ onCom
                       src={isVanguard ? '/images/mascot/vanguard-user.png' : '/images/mascot/pro-user.png'}
                       alt={isVanguard ? 'Vanguard Mascot' : 'Pro Mascot'}
                       className="w-56 h-56 sm:w-64 sm:h-64 md:w-72 md:h-72 object-contain rounded-xl"
+                      data-no-viewer="true"
                     />
                   </div>
                   <h2 className={`mt-2 sm:mt-3 text-base sm:text-lg md:text-xl font-bold text-center ${
@@ -153,6 +154,7 @@ const ProFeaturesSplashScreen: React.FC<ProFeaturesSplashScreenProps> = ({ onCom
                       src={isVanguard ? '/images/mascot/vanguard-user.png' : '/images/mascot/pro-user.png'} 
                       alt={isVanguard ? 'Vanguard Mascot' : 'Pro Mascot'}
                       className="w-96 h-96 xl:w-[28rem] xl:h-[28rem] object-contain rounded-2xl"
+                      data-no-viewer="true"
                     />
                   </div>
                   <h2 className={`mt-4 text-2xl xl:text-3xl font-bold text-center bg-clip-text text-transparent ${

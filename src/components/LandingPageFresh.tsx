@@ -991,6 +991,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                         src="/images/mascot/4.png"
                                         alt="Otagon Mascot"
                                         className="w-56 h-56 sm:w-64 sm:h-64 object-contain aspect-square mx-auto"
+                                        data-no-viewer="true"
                                         onError={(e) => {
                                             const target = e.target as HTMLImageElement;
                                             target.style.display = 'none';

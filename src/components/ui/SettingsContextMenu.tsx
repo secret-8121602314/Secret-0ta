@@ -310,7 +310,7 @@ const SettingsContextMenu: React.FC<SettingsContextMenuProps> = ({
       style={{
         left: safePosition.left,
         top: safePosition.top,
-        transform: 'translateX(-50%)',
+        textAlign: 'left', // Ensure all content is left-aligned
       }}
     >
       {/* Settings Option */}

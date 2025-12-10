@@ -482,6 +482,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
                 </div>
 
+                {/* Spacer between content style and save button */}
+                <div className="pt-2 sm:pt-4" />
+
                 {/* Save Button */}
                 <button
                   onClick={async () => {

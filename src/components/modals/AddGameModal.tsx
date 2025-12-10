@@ -80,6 +80,7 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
               src="/images/mascot/6.png"
               alt="Add Game"
               className="w-16 h-16 sm:w-20 sm:h-20 object-contain aspect-square"
+              data-no-viewer="true"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.style.display = 'none';

@@ -4082,18 +4082,19 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <header className="chat-header-fixed bg-background backdrop-blur-sm border-b border-surface-light/20 px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-6 flex items-center justify-between">
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-1 sm:space-x-2">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden btn-icon p-3 text-text-muted hover:text-text-primary min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className="lg:hidden btn-icon p-2 sm:p-3 text-text-muted hover:text-text-primary flex items-center justify-center -ml-1"
+              data-no-touch-feedback="true"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
             
             {/* Logo only visible on mobile/tablet - hidden on desktop where sidebar is always open */}
-            <div className="lg:hidden">
+            <div className="lg:hidden" data-no-touch-feedback="true">
               <Logo 
                 size="md" 
                 bounce={false} 

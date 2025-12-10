@@ -821,6 +821,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 src="/images/mascot/4.png"
                 alt="Otagon Mascot"
                 className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 object-contain aspect-square mx-auto mb-4"
+                data-no-viewer="true"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.style.display = 'none';

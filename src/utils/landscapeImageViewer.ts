@@ -203,16 +203,30 @@ function createViewerElement(imageUrl: string, alt: string): HTMLElement {
  * Setup close handlers for viewer
  */
 function setupCloseHandlers(viewer: HTMLElement, onClose?: () => void): void {
-  // Close button
+  // Close button - use capture phase and stop propagation to ensure it works
   const closeBtn = viewer.querySelector('.landscape-viewer-close');
-  closeBtn?.addEventListener('click', () => {
+  closeBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
     closeImageViewer();
     onClose?.();
-  });
+  }, { capture: true });
+  
+  // Also handle touch events for mobile
+  closeBtn?.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    closeImageViewer();
+    onClose?.();
+  }, { capture: true });
 
   // Overlay click
   const overlay = viewer.querySelector('.landscape-viewer-overlay');
-  overlay?.addEventListener('click', () => {
+  overlay?.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     closeImageViewer();
     onClose?.();
   });
@@ -349,6 +363,25 @@ export function enableAutoLandscapeViewer(options?: {
         return;
       }
 
+      // ✅ ONLY open landscape viewer for specific image types:
+      // 1. User query images (in chat messages)
+      // 2. Queued message images (in chat input)
+      // 3. Gallery images (explicitly marked)
+      const isUserQueryImage = img.closest('.chat-message-image, .message-image, [data-image-type="user-query"]');
+      const isQueuedMessageImage = img.closest('.queued-image, .chat-input-image, [data-image-type="queued"]');
+      const isGalleryImage = img.closest('.gallery-image, [data-image-type="gallery"]') || img.hasAttribute('data-viewer-enabled');
+      
+      // Exclude mascot images and other UI images
+      const isMascotImage = img.src.includes('/mascot/') || img.src.includes('mascot');
+      const isLogoImage = img.src.includes('logo') || img.closest('.logo, [class*="logo"]');
+      const isIconImage = img.src.includes('/icons/') || img.closest('.icon, [class*="icon"]');
+      const isUIImage = img.closest('.sidebar, .header, .nav, .modal-header, .context-menu, .dropdown');
+      
+      // Only proceed if it's an allowed image type and not excluded
+      if ((!isUserQueryImage && !isQueuedMessageImage && !isGalleryImage) || isMascotImage || isLogoImage || isIconImage || isUIImage) {
+        return;
+      }
+
       e.preventDefault();
       e.stopPropagation();
 
@@ -430,6 +463,7 @@ function injectViewerCSS(): void {
       justify-content: center;
       cursor: pointer;
       z-index: 10;
+      pointer-events: auto;
       transition: background 0.2s ease;
     }
 

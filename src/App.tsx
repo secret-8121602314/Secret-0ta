@@ -237,6 +237,26 @@ function App() {
     return () => clearTimeout(timeout);
   }, [isInitializing, hasEverLoggedIn]);
 
+  // ✅ PWA FIX: Handle visibility change to re-initialize when app reopens
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('👁️ [App] PWA became visible, checking auth state');
+        // Re-check auth state when app becomes visible
+        if (isInitializing && authState.user) {
+          setIsInitializing(false);
+        }
+        // Refresh session if user is logged in
+        if (authState.user) {
+          void authService.refreshUser();
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isInitializing, authState.user]);
+
   useEffect(() => {
     const isAuthCallback = window.location.pathname === '/auth/callback' || 
                            window.location.pathname === '/auth/callback';

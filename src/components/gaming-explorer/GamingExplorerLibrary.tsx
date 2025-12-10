@@ -599,8 +599,14 @@ const GamingExplorerLibrary: React.FC<GamingExplorerLibraryProps> = ({ user: _us
                           transition={{ delay: index * 0.05 }}
                           className="p-4 border-b border-[#424242]/40 hover:bg-[#2A2A2A] transition-colors cursor-pointer"
                           onClick={() => {
-                            // Open game info modal when clicking the game card
-                            onOpenGameInfo(game, game.name);
+                            // Close search modal first, then open game info modal
+                            setShowSearchModal(false);
+                            setSearchQuery('');
+                            setSearchResults([]);
+                            // Use setTimeout to ensure modal closes before opening new one
+                            setTimeout(() => {
+                              onOpenGameInfo(game, game.name);
+                            }, 100);
                           }}
                         >
                           <div className="flex gap-4">
