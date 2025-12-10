@@ -18,7 +18,6 @@ import SubTabs from './SubTabs';
 import { gameTabService } from '../../services/gameTabService';
 import { tabManagementService } from '../../services/tabManagementService';
 import { ChatInterfaceSkeleton } from '../ui/Skeletons';
-import { hapticMessageSent } from '../../utils/hapticFeedback';
 
 // ============================================================================
 // ERROR FALLBACK COMPONENTS
@@ -72,7 +71,19 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
   isLatestAIMessage = false
 }) => {
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
+  const [imageRotation, setImageRotation] = useState<0 | 90 | 180 | 270>(0);
   const [feedbackGiven, setFeedbackGiven] = useState<'up' | 'down' | null>(null);
+  
+  // Reset rotation when image changes or closes
+  const handleCloseViewer = useCallback(() => {
+    setExpandedImage(null);
+    setImageRotation(0);
+  }, []);
+  
+  // Rotate image by 90 degrees
+  const handleRotateImage = useCallback(() => {
+    setImageRotation(prev => prev === 270 ? 0 : (prev + 90) as 0 | 90 | 180 | 270);
+  }, []);
   
   // Check if this is a session summary message
   const sessionSummaryData = message.role === 'assistant' 
@@ -131,25 +142,37 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
   
   return (
     <>
-      {/* Image Modal */}
+      {/* Image Modal with Rotation */}
       {expandedImage && (
         <div 
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
-          onClick={() => setExpandedImage(null)}
+          onClick={handleCloseViewer}
         >
           <div className="relative max-w-[90vw] max-h-[90vh]">
+            {/* Close button */}
             <button
-              onClick={() => setExpandedImage(null)}
+              onClick={handleCloseViewer}
               className="absolute -top-3 -right-3 z-10 w-8 h-8 flex items-center justify-center bg-[#1C1C1C] border border-[#424242] rounded-full text-white hover:bg-[#2C2C2C] transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
+            {/* Rotate button */}
+            <button
+              onClick={(e) => { e.stopPropagation(); handleRotateImage(); }}
+              className="absolute -top-3 -left-3 z-10 w-8 h-8 flex items-center justify-center bg-[#1C1C1C] border border-[#424242] rounded-full text-white hover:bg-[#2C2C2C] transition-colors"
+              title="Rotate image (R)"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
             <img
               src={expandedImage}
               alt="Full size"
-              className="max-w-full max-h-[85vh] rounded-lg shadow-2xl"
+              className="max-w-full max-h-[85vh] rounded-lg shadow-2xl transition-transform duration-300"
+              style={{ transform: `rotate(${imageRotation}deg)` }}
               onClick={(e) => e.stopPropagation()}
             />
             <div className="flex justify-center mt-3">
@@ -420,6 +443,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [message, setMessage] = useState(initialMessage);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [expandedQueuedImage, setExpandedQueuedImage] = useState<string | null>(null);
+  const [queuedImageRotation, setQueuedImageRotation] = useState<0 | 90 | 180 | 270>(0);
   const [isFocused, setIsFocused] = useState(false);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [autocompleteSuggestions, setAutocompleteSuggestions] = useState<Array<{ id: string; title: string }>>([]);
@@ -431,6 +456,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [isQuickActionsExpanded, setIsQuickActionsExpanded] = useState(false);
   // Track if subtabs are expanded to control chat scrollbar visibility
   const [_isSubtabsExpanded, setIsSubtabsExpanded] = useState(false);
+  
+  // Image viewer handlers for queued images
+  const handleCloseQueuedViewer = useCallback(() => {
+    setExpandedQueuedImage(null);
+    setQueuedImageRotation(0);
+  }, []);
+  
+  const handleRotateQueuedImage = useCallback(() => {
+    setQueuedImageRotation(prev => prev === 270 ? 0 : (prev + 90) as 0 | 90 | 180 | 270);
+  }, []);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -725,9 +761,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       setIsQuickActionsExpanded(false);
     }
 
-    // Haptic feedback on message send (PWA only)
-    hapticMessageSent();
-
     const imageUrl = imagePreview || undefined;
     console.log('📤 [ChatInterface] Submitting:', { message, hasImage: !!imageUrl, imageUrl: imageUrl?.substring(0, 50) + '...' });
     onSendMessage(message, imageUrl);
@@ -821,7 +854,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 src="/images/mascot/4.png"
                 alt="Otagon Mascot"
                 className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 object-contain aspect-square mx-auto mb-4"
-                data-no-viewer="true"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.style.display = 'none';
@@ -1153,23 +1185,29 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             {/* Image Preview - Inside the form so it doesn't push input off screen */}
             {imagePreview && (
               <div className="mb-2 flex items-center gap-2">
-                <div className="relative">
+                <div className="relative group cursor-pointer" onClick={() => setExpandedQueuedImage(imagePreview)}>
                   <img
                     src={imagePreview}
                     alt="Preview"
-                    className="w-24 h-24 object-cover rounded-lg border border-[#424242]/40"
+                    className="w-24 h-24 object-cover rounded-lg border border-[#424242]/40 group-hover:border-[#FF4D4D]/50 transition-colors"
                   />
+                  {/* Expand icon overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 rounded-lg transition-colors">
+                    <svg className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                    </svg>
+                  </div>
                   <button
                     type="button"
-                    onClick={removeImage}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 transition-colors flex-shrink-0"
+                    onClick={(e) => { e.stopPropagation(); removeImage(); }}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 transition-colors flex-shrink-0 z-10"
                   >
                     ×
                   </button>
                 </div>
                 <div className="text-xs text-[#A3A3A3]">
                   <p className="font-semibold">Image Ready</p>
-                  <p>Add a message or send</p>
+                  <p>Tap to preview • Add message or send</p>
                 </div>
               </div>
             )}
@@ -1281,6 +1319,43 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </form>
         </div>
       </div>
+      
+      {/* Queued Image Viewer Modal with Rotation */}
+      {expandedQueuedImage && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          onClick={handleCloseQueuedViewer}
+        >
+          <div className="relative max-w-[90vw] max-h-[90vh]">
+            {/* Close button */}
+            <button
+              onClick={handleCloseQueuedViewer}
+              className="absolute -top-3 -right-3 z-10 w-8 h-8 flex items-center justify-center bg-[#1C1C1C] border border-[#424242] rounded-full text-white hover:bg-[#2C2C2C] transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            {/* Rotate button */}
+            <button
+              onClick={(e) => { e.stopPropagation(); handleRotateQueuedImage(); }}
+              className="absolute -top-3 -left-3 z-10 w-8 h-8 flex items-center justify-center bg-[#1C1C1C] border border-[#424242] rounded-full text-white hover:bg-[#2C2C2C] transition-colors"
+              title="Rotate image"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+            <img
+              src={expandedQueuedImage}
+              alt="Queued image preview"
+              className="max-w-full max-h-[85vh] rounded-lg shadow-2xl transition-transform duration-300"
+              style={{ transform: `rotate(${queuedImageRotation}deg)` }}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

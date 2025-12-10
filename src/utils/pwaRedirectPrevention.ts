@@ -5,21 +5,16 @@
  * when user opens app in browser while PWA is installed.
  */
 
+import { isPWAMode } from './pwaDetection';
+
 /**
+ * @deprecated Use `isPWAMode` from './pwaDetection' instead.
+ * This function is kept for backward compatibility.
  * Check if app is running in PWA standalone mode
  */
 export function isRunningAsPWA(): boolean {
-  // Check display mode
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-  
-  // Check if running as installed PWA (iOS)
-  const isIOSStandalone = (window.navigator as any).standalone === true;
-  
-  // Check URL parameter (set by manifest start_url)
-  const urlParams = new URLSearchParams(window.location.search);
-  const standaloneParam = urlParams.get('standalone') === 'true';
-  
-  return isStandalone || isIOSStandalone || standaloneParam;
+  // Delegate to the canonical implementation
+  return isPWAMode();
 }
 
 /**
@@ -29,8 +24,8 @@ export function isPWAInstalled(): boolean {
   // Check if beforeinstallprompt was prevented (means already installed)
   const wasInstalled = localStorage.getItem('pwa_installed') === 'true';
   
-  // Check if running as PWA
-  const runningAsPWA = isRunningAsPWA();
+  // Check if running as PWA - use canonical function
+  const runningAsPWA = isPWAMode();
   
   return wasInstalled || runningAsPWA;
 }
@@ -49,7 +44,7 @@ export function markPWAAsInstalled(): void {
  */
 export function shouldPreventPWARedirect(): boolean {
   // If already running as PWA, no need to redirect
-  if (isRunningAsPWA()) {
+  if (isPWAMode()) {
     return true;
   }
   
@@ -76,7 +71,7 @@ export function setPreferBrowser(prefer: boolean): void {
  */
 export function logPWAStatus(): void {
   console.log('📱 [PWA Detection]', {
-    isRunningAsPWA: isRunningAsPWA(),
+    isPWAMode: isPWAMode(),
     isPWAInstalled: isPWAInstalled(),
     shouldPreventRedirect: shouldPreventPWARedirect(),
     displayMode: window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser',

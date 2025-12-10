@@ -482,10 +482,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
                 </div>
 
-                {/* Spacer between content style and save button */}
-                <div className="pt-2 sm:pt-4" />
-
-                {/* Save Button */}
+                {/* Save Button - with proper spacing from content above */}
                 <button
                   onClick={async () => {
                     const profileData = {
@@ -508,7 +505,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     // Show success message (you can add a toast notification here)
                     onClose();
                   }}
-                  className="w-full py-2.5 sm:py-3 px-4 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] md:hover:from-[#D42A2A] md:hover:to-[#C87A1A] text-white rounded-lg font-medium transition-all md:hover:scale-105 active:scale-95 text-sm sm:text-base"
+                  className="w-full mt-6 sm:mt-8 py-2.5 sm:py-3 px-4 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] md:hover:from-[#D42A2A] md:hover:to-[#C87A1A] text-white rounded-lg font-medium transition-all md:hover:scale-105 active:scale-95 text-sm sm:text-base"
                 >
                   Save Profile Preferences
                 </button>

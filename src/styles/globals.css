@@ -1275,256 +1275,98 @@ html, body {
 }
 
 /* ============================================================================
-   PWA-ONLY: NATIVE APP-LIKE TOUCH INTERACTIONS
-   Better touch response, active states, ripple effects, long-press support
-   Only applies in PWA standalone mode to keep web experience standard
+   PWA TOUCH INTERACTIONS - Native-like touch experience
    ============================================================================ */
 
+/* Remove 300ms tap delay on all interactive elements */
+button, a, [role="button"], input, textarea, select, [tabindex] {
+  touch-action: manipulation;
+}
+
+/* Prevent text selection during touch interactions */
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Touch-optimized button active states */
+button:active:not(:disabled),
+[role="button"]:active:not(:disabled),
+a:active {
+  transform: scale(0.97);
+  transition: transform 0.1s ease-out;
+}
+
+/* PWA-specific touch optimizations */
 @media (display-mode: standalone) {
-  /* Remove 300ms tap delay completely */
-  * {
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  /* Allow specific gestures where needed */
-  .allow-pinch-zoom {
-    touch-action: pan-x pan-y pinch-zoom;
-  }
-
-  .allow-swipe {
-    touch-action: pan-x pan-y;
-  }
-
-  /* Remove default touch highlight */
-  button, a, input, textarea, select, [role="button"], [tabindex] {
-    -webkit-tap-highlight-color: transparent;
-    -webkit-touch-callout: none;
-  }
-
-  /* Better touch targets - minimum 44x44px everywhere */
-  button, a, input[type="button"], input[type="submit"], [role="button"], .btn, .btn-icon {
-    min-height: 44px !important;
-    min-width: 44px !important;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.5rem 1rem;
-  }
-
-  /* Small icon buttons still respect minimum touch target */
-  .btn-icon-sm, [data-size="sm"] {
-    min-height: 44px !important;
-    min-width: 44px !important;
-    padding: 0.75rem !important;
-  }
-
-  /* Active states with scale transforms - native app feel */
-  button:active, a:active, [role="button"]:active, .btn:active {
-    transform: scale(0.96);
-    transition: transform 0.1s ease-out;
-  }
-
-  /* Ripple effect container */
-  .ripple-container {
-    position: relative;
-    overflow: hidden;
-  }
-
-  /* Ripple animation */
-  @keyframes ripple {
-    0% {
-      transform: scale(0);
-      opacity: 0.6;
-    }
-    100% {
-      transform: scale(4);
-      opacity: 0;
-    }
-  }
-
-  .ripple {
-    position: absolute;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.5);
-    transform: scale(0);
-    animation: ripple 0.6s ease-out;
-    pointer-events: none;
-  }
-
-  /* Material Design-style touch feedback */
-  .touch-feedback {
-    position: relative;
-    overflow: hidden;
-  }
-
-  .touch-feedback::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
-    transform: translate(-50%, -50%);
-    transition: width 0.3s ease-out, height 0.3s ease-out;
-  }
-
-  .touch-feedback:active::after {
-    width: 300px;
-    height: 300px;
-  }
-
-  /* Long-press indication */
-  @keyframes long-press-grow {
-    0% {
-      transform: scale(1);
-      opacity: 0.5;
-    }
-    100% {
-      transform: scale(1.5);
-      opacity: 0;
-    }
-  }
-
-  .long-press-target {
-    position: relative;
-  }
-
-  .long-press-target::before {
-    content: '';
-    position: absolute;
-    inset: -8px;
-    border-radius: inherit;
-    background: rgba(229, 58, 58, 0.3);
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .long-press-target.long-press-active::before {
-    animation: long-press-grow 0.6s ease-out;
-  }
-
-  /* Hardware acceleration for smooth animations */
-  button, a, [role="button"], .btn {
-    transform: translateZ(0);
-    will-change: transform;
-    backface-visibility: hidden;
-  }
-
-  /* Smooth transitions for all interactive elements */
-  button, a, [role="button"], .btn, input, textarea, select {
-    transition: transform 0.1s ease-out, background-color 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  /* Better input touch feedback */
-  input:active, textarea:active, select:active {
-    transform: scale(0.995);
-  }
-
-  /* Card press effect */
-  .card-pressable, [data-pressable="true"] {
-    transition: transform 0.1s ease-out, box-shadow 0.2s ease;
-    cursor: pointer;
-  }
-
-  .card-pressable:active, [data-pressable="true"]:active {
-    transform: scale(0.98);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  }
-
-  /* Tab/navigation press effect */
-  .tab-button, [role="tab"] {
-    transition: transform 0.1s ease-out, background-color 0.2s ease;
-  }
-
-  .tab-button:active, [role="tab"]:active {
+  /* More pronounced active feedback in PWA */
+  button:active:not(:disabled),
+  [role="button"]:active:not(:disabled) {
     transform: scale(0.95);
+    filter: brightness(0.9);
   }
-
-  /* Modal backdrop touch to dismiss */
-  .modal-backdrop, [data-modal-backdrop="true"] {
-    touch-action: none;
-  }
-
-  /* Scrollable areas allow touch scroll */
-  .scrollable, [data-scrollable="true"], .overflow-auto, .overflow-y-auto, .overflow-x-auto {
-    -webkit-overflow-scrolling: touch;
+  
+  /* Prevent overscroll bounce in PWA */
+  .pwa-no-bounce {
     overscroll-behavior: contain;
   }
-
-  /* Prevent accidental text selection during gestures */
-  .no-select-on-touch {
-    -webkit-user-select: none;
-    user-select: none;
-  }
-
-  /* Re-enable text selection for inputs */
-  input, textarea, [contenteditable="true"] {
-    -webkit-user-select: text;
-    user-select: text;
+  
+  /* Optimized touch scrolling */
+  .pwa-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
   }
 }
 
-/* ============================================================================
-   PWA-ONLY: LONG-PRESS CONTEXT MENUS
-   Native-like context menu experience with haptic feedback
-   ============================================================================ */
+/* Touch-friendly hit areas - minimum 44px */
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-@media (display-mode: standalone) {
-  .context-menu-trigger {
-    position: relative;
-    user-select: none;
-  }
+/* Ripple effect container */
+.ripple-container {
+  position: relative;
+  overflow: hidden;
+}
 
-  .context-menu {
-    position: fixed;
-    background: rgba(30, 30, 30, 0.95);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 8px;
-    min-width: 200px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-    z-index: 10000;
-    opacity: 0;
-    transform: scale(0.9);
-    transition: opacity 0.2s ease, transform 0.2s ease;
-    pointer-events: none;
-  }
+/* Ripple animation */
+.ripple-container::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, rgba(255, 77, 77, 0.3) 10%, transparent 10.01%);
+  background-repeat: no-repeat;
+  background-position: 50%;
+  transform: scale(10, 10);
+  opacity: 0;
+  transition: transform 0.4s, opacity 0.8s;
+}
 
-  .context-menu.active {
-    opacity: 1;
-    transform: scale(1);
-    pointer-events: auto;
-  }
+.ripple-container:active::after {
+  transform: scale(0, 0);
+  opacity: 0.3;
+  transition: 0s;
+}
 
-  .context-menu-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    border-radius: 8px;
-    color: white;
-    font-size: 15px;
-    cursor: pointer;
-    transition: background 0.1s ease;
-  }
+/* Button brightness feedback (alternative to scale) */
+.btn-press-feedback:active:not(:disabled) {
+  filter: brightness(0.85);
+  transition: filter 0.1s ease-out;
+}
 
-  .context-menu-item:active {
-    background: rgba(255, 255, 255, 0.15);
-    transform: scale(0.97);
-  }
-
-  .context-menu-item.destructive {
-    color: #FF4444;
-  }
-
-  .context-menu-separator {
-    height: 1px;
-    background: rgba(255, 255, 255, 0.1);
-    margin: 8px 0;
-  }
+/* Smooth touch feedback for cards */
+.card-touch:active {
+  transform: scale(0.98);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.15s ease-out;
 }
 

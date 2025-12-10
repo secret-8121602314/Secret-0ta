@@ -4,6 +4,7 @@ import { GAME_HUB_ID } from '../constants';
 import { ConversationService } from '../services/conversationService';
 import { authService } from '../services/authService';
 import { aiService } from '../services/aiService';
+import haptic from '../services/hapticService';
 import { useActiveSession } from '../hooks/useActiveSession';
 import { suggestedPromptsService } from '../services/suggestedPromptsService';
 import { shownPromptsService } from '../services/ai/shownPromptsService';
@@ -1250,6 +1251,9 @@ const MainApp: React.FC<MainAppProps> = ({
   }, [conversations, isLoading, abortController]);
 
   const handleConversationSelect = async (id: string) => {
+    // Haptic feedback for tab switch
+    haptic.tabSwitch();
+    
     console.error('🔄 [MainApp] Switching to conversation:', id);
     
     // Clear editing state when switching conversations
@@ -1477,10 +1481,12 @@ const MainApp: React.FC<MainAppProps> = ({
   };
 
   const handleCreditModalOpen = () => {
+    haptic.modalOpen();
     setCreditModalOpen(true);
   };
 
   const handleCreditModalClose = () => {
+    haptic.modalClose();
     setCreditModalOpen(false);
   };
 
@@ -1494,6 +1500,7 @@ const MainApp: React.FC<MainAppProps> = ({
   };
 
   const handleAddGame = () => {
+    haptic.modalOpen();
     setAddGameModalOpen(true);
   };
 
@@ -1527,10 +1534,12 @@ const MainApp: React.FC<MainAppProps> = ({
   };
 
   const handleConnectionModalOpen = () => {
+    haptic.modalOpen();
     setConnectionModalOpen(true);
   };
 
   const handleConnectionModalClose = () => {
+    haptic.modalClose();
     setConnectionModalOpen(false);
   };
 
@@ -1551,10 +1560,12 @@ const MainApp: React.FC<MainAppProps> = ({
     }
     
     // Open the modal
+    haptic.modalOpen();
     setHandsFreeModalOpen(true);
   };
 
   const handleHandsFreeModalClose = () => {
+    haptic.modalClose();
     setHandsFreeModalOpen(false);
   };
 
@@ -1641,6 +1652,7 @@ const MainApp: React.FC<MainAppProps> = ({
   };
 
   const handleOpenSettings = () => {
+    haptic.modalOpen();
     setSettingsOpen(true);
   };
 
@@ -2502,6 +2514,9 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleSendMessage = async (message: string, imageUrl?: string) => {
+    // Haptic feedback for message send
+    haptic.messageSend();
+    
     // ✅ PROCESSING LOCK: Prevent concurrent operations during AI response handling
     if (isProcessingResponse) {
       console.warn('🔒 [MainApp] Processing lock active, blocking concurrent message');
@@ -4100,7 +4115,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                 bounce={false} 
                 userTier={currentUser.tier} 
                 isOnTrial={Boolean(currentUser.trialExpiresAt && currentUser.trialExpiresAt > Date.now())}
-                onClick={() => setGamingExplorerOpen(true)}
+                onClick={() => { haptic.modalOpen(); setGamingExplorerOpen(true); }}
               />
             </div>
           </div>
@@ -4223,7 +4238,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                 {/* Game Info Button - Only show when IGDB data is available (desktop) */}
                 {currentGameIGDBData && (
                   <button
-                    onClick={() => setGameInfoModalOpen(true)}
+                    onClick={() => { haptic.modalOpen(); setGameInfoModalOpen(true); }}
                     className="hidden lg:flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-[#E53A3A]/10 to-[#FF6B6B]/5 backdrop-blur-sm border border-[#E53A3A]/30 rounded-lg hover:border-[#E53A3A]/60 hover:from-[#E53A3A]/15 hover:to-[#FF6B6B]/10 transition-all duration-200 group"
                     title="View game information"
                   >
@@ -4267,7 +4282,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                 {/* Game Info Button - Mobile (right of thread name) */}
                 {!activeConversation.isGameHub && activeConversation.gameTitle && currentGameIGDBData && (
                   <button
-                    onClick={() => setGameInfoModalOpen(true)}
+                    onClick={() => { haptic.modalOpen(); setGameInfoModalOpen(true); }}
                     className="flex-shrink-0 p-3 bg-gradient-to-r from-[#E53A3A]/10 to-[#FF6B6B]/5 backdrop-blur-sm border border-[#E53A3A]/30 rounded-lg hover:border-[#E53A3A]/60 hover:from-[#E53A3A]/15 hover:to-[#FF6B6B]/10 transition-all duration-200 group"
                     title="View game information"
                   >
@@ -4315,7 +4330,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                   onModifySubtab={handleModifySubtab}
                   onDeleteSubtab={handleDeleteSubtab}
                   onRetrySubtab={handleRetrySubtab}
-                  onOpenExplorer={() => setGamingExplorerOpen(true)}
+                  onOpenExplorer={() => { haptic.modalOpen(); setGamingExplorerOpen(true); }}
                 />
               </ErrorBoundary>
             </div>
@@ -4325,7 +4340,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
       {/* Settings Modal */}
       <SettingsModal
         isOpen={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
+        onClose={() => { haptic.modalClose(); setSettingsOpen(false); }}
         user={currentUser}
       />
 
@@ -4376,7 +4391,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
       {/* Add Game Modal */}
       <AddGameModal
         isOpen={addGameModalOpen}
-        onClose={() => setAddGameModalOpen(false)}
+        onClose={() => { haptic.modalClose(); setAddGameModalOpen(false); }}
         onCreateGame={handleCreateGame}
         onCloseSidebar={() => setSidebarOpen(false)}
       />
@@ -4385,7 +4400,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
       {/* Game Info Modal - IGDB Integration */}
       <GameInfoModal
         isOpen={gameInfoModalOpen}
-        onClose={() => setGameInfoModalOpen(false)}
+        onClose={() => { haptic.modalClose(); setGameInfoModalOpen(false); }}
         gameData={currentGameIGDBData}
         gameName={activeConversation?.gameTitle || ''}
         userTier={currentUser.tier}
@@ -4442,7 +4457,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
       {/* Gaming Explorer Modal */}
       <GamingExplorerModal
         isOpen={gamingExplorerOpen}
-        onClose={() => setGamingExplorerOpen(false)}
+        onClose={() => { haptic.modalClose(); setGamingExplorerOpen(false); }}
         user={currentUser}
         onSendNewsQuery={handleGamingExplorerNewsQuery}
       />

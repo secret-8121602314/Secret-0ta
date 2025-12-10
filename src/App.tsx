@@ -11,32 +11,15 @@ import { ToastContainer } from './components/ui/ToastContainer';
 import { isPWAMode } from './utils/pwaDetection';
 import { logPWAStatus } from './utils/pwaRedirectPrevention';
 import LayoutDebugOverlay from './components/debug/LayoutDebugOverlay';
-import { initBackgroundOperations } from './utils/backgroundOperations';
-import { initKeyboardManager } from './utils/keyboardManager';
-import { initLandscapeViewer } from './utils/landscapeImageViewer';
+
+// PWA lifecycle state tracking
+let appVisibilityTimestamp = Date.now();
+const PWA_BACKGROUND_THRESHOLD = 30000; // 30 seconds - refresh auth if app was backgrounded longer
 
 console.log('🚀🚀🚀 APP.TSX LOADED - PWA FIXES VERSION 🚀🚀🚀');
 
 // Log PWA status on app load
 logPWAStatus();
-
-// Initialize PWA utilities if in standalone mode
-if (isPWAMode()) {
-  console.log('[PWA] Initializing native app features...');
-  
-  // Initialize on DOM ready
-  if (document.readyState === 'complete') {
-    initBackgroundOperations();
-    initKeyboardManager();
-    initLandscapeViewer();
-  } else {
-    window.addEventListener('load', () => {
-      initBackgroundOperations();
-      initKeyboardManager();
-      initLandscapeViewer();
-    });
-  }
-}
 
 function App() {
   const [authState, setAuthState] = useState<AuthState>({
@@ -228,34 +211,34 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ✅ PWA FIX: Loading timeout with smart fallback to prevent infinite black screen
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (isInitializing) {
+        console.warn('⏰ [App] Initialization timeout reached, forcing ready state');
         setIsInitializing(false);
+        
+        // If we're still loading auth and it's a PWA, check session one more time
+        if (isPWAMode() && authState.isLoading) {
+          console.log('📱 [PWA] Auth still loading after timeout, checking session...');
+          supabase.auth.getSession().then(({ data: { session } }) => {
+            if (!session) {
+              console.log('📱 [PWA] No session after timeout, showing login');
+              setAuthState({ user: null, isLoading: false, error: null });
+              setAppState(prev => ({ ...prev, view: 'app', onboardingStatus: 'login' }));
+            } else {
+              console.log('📱 [PWA] Session found after timeout, user should appear shortly');
+            }
+          }).catch(err => {
+            console.error('📱 [PWA] Session check failed after timeout:', err);
+            setAuthState({ user: null, isLoading: false, error: null });
+            setAppState(prev => ({ ...prev, view: 'app', onboardingStatus: 'login' }));
+          });
+        }
       }
-    }, 10000);
+    }, 8000); // Reduced from 10s to 8s for faster fallback
     return () => clearTimeout(timeout);
-  }, [isInitializing, hasEverLoggedIn]);
-
-  // ✅ PWA FIX: Handle visibility change to re-initialize when app reopens
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        console.log('👁️ [App] PWA became visible, checking auth state');
-        // Re-check auth state when app becomes visible
-        if (isInitializing && authState.user) {
-          setIsInitializing(false);
-        }
-        // Refresh session if user is logged in
-        if (authState.user) {
-          void authService.refreshUser();
-        }
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [isInitializing, authState.user]);
+  }, [isInitializing, hasEverLoggedIn, authState.isLoading]);
 
   useEffect(() => {
     const isAuthCallback = window.location.pathname === '/auth/callback' || 
@@ -361,6 +344,88 @@ function App() {
       window.removeEventListener('otakon:session-expired', handleSessionExpired);
     };
   }, [authState.user]);
+
+  // ✅ PWA FIX: Visibility change handler to refresh auth state when app comes back from background
+  // This prevents black screen on PWA reopen by ensuring auth state is valid
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible') {
+        const backgroundDuration = Date.now() - appVisibilityTimestamp;
+        console.log('📱 [PWA] App became visible, background duration:', backgroundDuration, 'ms');
+        
+        // Only refresh auth if app was in background for more than threshold
+        if (isPWAMode() && backgroundDuration > PWA_BACKGROUND_THRESHOLD) {
+          console.log('📱 [PWA] Long background detected, refreshing auth state...');
+          
+          try {
+            // Check current session validity
+            const { data: { session }, error } = await supabase.auth.getSession();
+            
+            if (error) {
+              console.error('📱 [PWA] Session check error:', error);
+              // Show loading state briefly while we determine next action
+              setAuthState(prev => ({ ...prev, isLoading: true }));
+              setTimeout(() => {
+                setAuthState({ user: null, isLoading: false, error: null });
+                setAppState(prev => ({ ...prev, view: 'app', onboardingStatus: 'login' }));
+              }, 500);
+              return;
+            }
+            
+            if (!session) {
+              console.log('📱 [PWA] No session found after background, showing login');
+              setAuthState({ user: null, isLoading: false, error: null });
+              setAppState(prev => ({ ...prev, view: 'app', onboardingStatus: 'login' }));
+            } else {
+              console.log('📱 [PWA] Session valid, refreshing user data');
+              // Refresh user data to ensure latest state
+              await authService.refreshUser().catch(err => {
+                console.warn('📱 [PWA] User refresh failed, but session is valid:', err);
+              });
+            }
+          } catch (error) {
+            console.error('📱 [PWA] Visibility change auth check error:', error);
+            // On error, set a safe state rather than showing black screen
+            setAuthState(prev => ({ ...prev, isLoading: false }));
+          }
+        }
+      } else {
+        // App going to background - record timestamp
+        appVisibilityTimestamp = Date.now();
+        console.log('📱 [PWA] App going to background');
+      }
+    };
+    
+    // ✅ PWA FIX: pageshow event for bfcache restoration
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        console.log('📱 [PWA] Page restored from bfcache');
+        // Reset timestamp to trigger auth check
+        appVisibilityTimestamp = Date.now() - PWA_BACKGROUND_THRESHOLD - 1;
+        handleVisibilityChange();
+      }
+    };
+    
+    // ✅ PWA FIX: beforeunload to save state for potential restore
+    const handleBeforeUnload = () => {
+      // Save current scroll position and view state for potential restore
+      if (isPWAMode()) {
+        sessionStorage.setItem('pwa_last_view', appState.view);
+        sessionStorage.setItem('pwa_last_onboarding', appState.onboardingStatus);
+        sessionStorage.setItem('pwa_last_timestamp', Date.now().toString());
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pageshow', handlePageShow);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pageshow', handlePageShow);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [appState.view, appState.onboardingStatus]);
 
   // Restore WebSocket connection on page load if there's a stored code
   useEffect(() => {
