@@ -7,5 +7,14 @@
 /*.svg        /:splat       200
 /*.webp       /:splat       200
 
+# Modal redirects for SEO-friendly URLs
+/about        /?modal=about       301
+/privacy      /?modal=privacy     301
+/terms        /?modal=terms       301
+/refund       /?modal=refund      301
+/contact      /?modal=contact     301
+/blog         /?modal=blog        301
+/blog/*       /?modal=blog&post=:splat  301
+
 # All other routes go to SPA
 /*            /index.html   200
