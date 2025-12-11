@@ -215,6 +215,35 @@ const routes: RouteObject[] = [
         loader: appLoader,
         element: <MainAppRoute />,
       },
+      // Modal routes - redirect to landing with modal param
+      {
+        path: '/about',
+        loader: () => redirect('/?modal=about'),
+      },
+      {
+        path: '/privacy',
+        loader: () => redirect('/?modal=privacy'),
+      },
+      {
+        path: '/terms',
+        loader: () => redirect('/?modal=terms'),
+      },
+      {
+        path: '/refund',
+        loader: () => redirect('/?modal=refund'),
+      },
+      {
+        path: '/contact',
+        loader: () => redirect('/?modal=contact'),
+      },
+      {
+        path: '/blog',
+        loader: () => redirect('/?modal=blog'),
+      },
+      {
+        path: '/blog/:slug',
+        loader: ({ params }) => redirect(`/?modal=blog&post=${params.slug}`),
+      },
       // Catch-all: redirect to home
       {
         path: '*',
