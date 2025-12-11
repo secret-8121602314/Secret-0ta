@@ -626,7 +626,8 @@ export class AuthService {
         }
       }
       keysToRemove.forEach(key => localStorage.removeItem(key));
-            // Clear all app-specific local storage
+      
+      // Clear all app-specific local storage
       localStorage.removeItem('otakon_auth_method');
       localStorage.removeItem('otakon_remember_me');
       localStorage.removeItem('otakon_remembered_email');
@@ -646,6 +647,30 @@ export class AuthService {
       // ✅ PWA FIX: Clear session-related localStorage items
       localStorage.removeItem('otakon_session_refreshed');
       localStorage.removeItem('otakon_last_session_check');
+      
+      // ✅ CRITICAL BUG FIX: Clear Gaming Explorer data (timeline, library, etc.)
+      // This prevents User B from seeing User A's gaming data after logout
+      localStorage.removeItem('otagon_gaming_library');
+      localStorage.removeItem('otagon_gaming_timeline');
+      localStorage.removeItem('otagon_timeline_albums');
+      localStorage.removeItem('otagon_timeline_photos');
+      localStorage.removeItem('otagon_gaming_news_cache');
+      localStorage.removeItem('otagon_news_generation_log');
+      localStorage.removeItem('otagon_game_knowledge');
+      localStorage.removeItem('otagon_user_gaming_profile');
+      localStorage.removeItem('otagon_gameplay_sessions');
+      localStorage.removeItem('otagon_igdb_home_cache');
+      localStorage.removeItem('otagon_game_search_history');
+      
+      // ✅ CRITICAL BUG FIX: Clear user preferences and UI state
+      localStorage.removeItem('otakon_manual_upload_mode');
+      localStorage.removeItem('otakon_screenshot_mode');
+      localStorage.removeItem('otakon_screenshot_hint_seen');
+      localStorage.removeItem('otakon_pending_messages');
+      localStorage.removeItem('otakon_sync_metadata');
+      localStorage.removeItem('otakon_has_seen_splash_screens');
+      
+      console.log('🔐 [AuthService] All user-specific localStorage cleared');
       
       // Clear sessionStorage
       sessionStorage.clear();
@@ -672,6 +697,17 @@ export class AuthService {
         console.log('🔒 [AuthService] Conversation caches cleared - no data leakage');
       } catch (error) {
         console.error('⚠️ [AuthService] Failed to clear conversation caches:', error);
+      }
+      
+      // ✅ CRITICAL BUG FIX: Clear IndexedDB to prevent User B from seeing User A's data
+      // This includes pending messages, images, and voice data
+      try {
+        const { indexedDBService } = await import('./indexedDBService');
+        await indexedDBService.clearAllMessages();
+        await indexedDBService.clearAllImages();
+        console.log('🔒 [AuthService] IndexedDB cleared - no offline data leakage');
+      } catch (error) {
+        console.error('⚠️ [AuthService] Failed to clear IndexedDB:', error);
       }
       
       // ✅ PWA FIX: Clear SupabaseService instance to prevent stale data
