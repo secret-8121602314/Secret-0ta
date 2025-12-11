@@ -354,7 +354,7 @@
       })(window, document, "clarity", "script", "u9sbvr97qi");
     </script>
     
-    <!-- CRITICAL: Inline loading screen for PWA cold start -->
+    <!-- CRITICAL: Inline loading screen for PWA cold start (only for PWA/earlyaccess, not landing page) -->
     <style id="pwa-loading-styles">
       /* Show loading screen immediately before React loads */
       html, body {
@@ -372,12 +372,17 @@
         right: 0;
         bottom: 0;
         background-color: #0B0B0B;
-        display: flex;
+        display: none; /* Hidden by default */
         flex-direction: column;
         align-items: center;
         justify-content: center;
         z-index: 99999;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+      
+      /* Only show loading screen on PWA/earlyaccess pages */
+      body.show-pwa-loading #pwa-loading-screen {
+        display: flex;
       }
       
       #pwa-loading-screen img {
@@ -413,7 +418,7 @@
     </style>
   </head>
   <body>
-    <!-- Inline loading screen - visible immediately before React loads -->
+    <!-- Inline loading screen - visible immediately before React loads (only on PWA/earlyaccess) -->
     <div id="pwa-loading-screen">
       <img src="/images/otagon-logo.png" alt="Otagon" />
       <div class="loading-spinner"></div>
@@ -421,10 +426,22 @@
     
     <div id="root"></div>
     
-    <!-- Script to hide loading screen once React mounts -->
+    <!-- Script to conditionally show loading screen and hide once React mounts -->
     <script>
-      // Mark when React has mounted
+      // Only show loading screen on PWA/earlyaccess pages, not landing page
       (function() {
+        var currentPath = window.location.pathname;
+        var isLoginPage = currentPath === '/earlyaccess' || currentPath.includes('/earlyaccess');
+        var hasAuthToken = localStorage.getItem('supabase.auth.token');
+        var isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                    window.navigator.standalone === true;
+        
+        // Show loading screen only if: PWA mode OR on earlyaccess page OR has auth
+        if (isPWA || isLoginPage || hasAuthToken) {
+          document.body.classList.add('show-pwa-loading');
+        }
+        
+        // Mark when React has mounted
         var observer = new MutationObserver(function(mutations) {
           var root = document.getElementById('root');
           if (root && root.children.length > 0) {
