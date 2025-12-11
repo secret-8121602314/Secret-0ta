@@ -20,7 +20,7 @@ import feature5 from '../assets/images/feature-images/feature5.png';
 import feature6 from '../assets/images/feature-images/feature6.png';
 import geminiLogo from '../assets/images/landing/google.png';
 import pcAppImage from '../assets/images/landing/PC app.png';
-import dragonVideo from '../assets/video/dragon_60fps.mp4';
+import dragonVideo from '../assets/video/dragon_compressed.mp4';
 
 const GamepadIcon = ({ className }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -996,6 +996,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                         autoPlay
                                         muted
                                         playsInline
+                                        preload="metadata"
                                         className="w-52 h-52 sm:w-64 sm:h-64 object-cover aspect-square mx-auto scale-110"
                                         data-no-viewer="true"
                                         onError={(e) => {
