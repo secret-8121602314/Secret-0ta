@@ -195,7 +195,9 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
   }, [currentGameData, isLoadingSimilar]);
 
   // Handle back navigation in game history
-  const handleBack = useCallback(() => {
+  // Future use: Will be used when implementing back button in UI
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _handleBack = useCallback(() => {
     if (gameHistory.length > 0) {
       const previousGame = gameHistory[gameHistory.length - 1];
       setGameHistory(prev => prev.slice(0, -1));
@@ -245,7 +247,7 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
       isOpen={isOpen} 
       onClose={handleClose} 
       title=""
-      maxWidth="lg"
+      maxWidth="6xl"
       className="p-3 sm:p-4 md:p-6"
     >
       <div className="max-h-[85vh] overflow-hidden flex flex-col">
@@ -270,7 +272,7 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
         <div className="flex gap-3 sm:gap-4 md:gap-5 pb-3 sm:pb-4 border-b border-neutral-700/50 flex-shrink-0">
           {/* Cover Image */}
           {currentGameData.cover?.url && (
-            <div className="w-32 sm:w-40 md:w-48 lg:w-56 bg-neutral-900 rounded-lg shadow-lg flex-shrink-0 overflow-hidden flex items-center justify-center self-stretch">
+            <div className="w-32 sm:w-40 md:w-48 lg:w-56 xl:w-64 bg-neutral-900 rounded-lg shadow-lg flex-shrink-0 overflow-hidden flex items-center justify-center self-stretch">
               <img
                 src={currentGameData.cover.url}
                 alt={currentGameData.name}
@@ -513,7 +515,7 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
                   {currentGameData.videos && currentGameData.videos.length > 0 && (
                     <div>
                       <h4 className="text-sm font-semibold text-text-primary mb-2">Videos</h4>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
                         {currentGameData.videos.slice(0, 6).map(video => (
                           <a
                             key={video.id}
@@ -549,7 +551,7 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
                   {allMedia.length > 0 ? (
                     <div>
                       <h4 className="text-sm font-semibold text-text-primary mb-2">Screenshots & Artwork</h4>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
                         {allMedia.map((media, index) => (
                           <button
                             key={media.id}
@@ -632,7 +634,7 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
               {activeTab === 'similar' && (
                 <div>
                   {currentGameData.similar_games && currentGameData.similar_games.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                       {currentGameData.similar_games.slice(0, 12).map(game => (
                         <button
                           key={game.id}

@@ -18,7 +18,6 @@ import {
   NewsPromptType, 
   libraryStorage,
   userProfileStorage,
-  igdbHomeCacheStorage,
   searchHistoryStorage,
 } from '../../services/gamingExplorerStorage';
 import { 
@@ -29,6 +28,18 @@ import {
 } from '../../services/igdbService';
 import { supabase } from '../../lib/supabase';
 import { toastService } from '../../services/toastService';
+
+// Type for Supabase cache entries
+type IGDBCacheEntry = {
+  cache_key: string;
+  data: IGDBGameData[];
+  expires_at: string;
+};
+
+type SupabaseResponse<T> = {
+  data: T | null;
+  error: { message: string } | null;
+};
 
 interface GamingExplorerHomeProps {
   user: User;
@@ -155,21 +166,36 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
       // Check Supabase global cache first
       try {
         const now = new Date();
-        const { data: cachedSections, error } = await supabase
+        const { data: cachedSections, error } = (await supabase
           .from('igdb_home_cache')
           .select('cache_key, data, expires_at')
           .in('cache_key', ['featured_games', 'latest_games', 'new_releases', 'highest_rated', 'categories'])
-          .gt('expires_at', now.toISOString());
+          .gt('expires_at', now.toISOString())) as SupabaseResponse<IGDBCacheEntry[]>;
 
         if (!error && cachedSections && cachedSections.length > 0) {
           console.log('[GamingExplorerHome] Using global Supabase cache');
           const cacheMap = new Map(cachedSections.map(s => [s.cache_key, s.data]));
           
-          if (cacheMap.has('featured_games')) setFeaturedGames(cacheMap.get('featured_games'));
-          if (cacheMap.has('latest_games')) setLatestGames(cacheMap.get('latest_games'));
-          if (cacheMap.has('new_releases')) setNewReleases(cacheMap.get('new_releases'));
-          if (cacheMap.has('highest_rated')) setHighestRatedGames(cacheMap.get('highest_rated'));
-          if (cacheMap.has('categories')) setCategoryGamesMap(cacheMap.get('categories'));
+          const featuredData = cacheMap.get('featured_games');
+          if (featuredData) {
+            setFeaturedGames(featuredData);
+          }
+          const latestData = cacheMap.get('latest_games');
+          if (latestData) {
+            setLatestGames(latestData);
+          }
+          const newReleasesData = cacheMap.get('new_releases');
+          if (newReleasesData) {
+            setNewReleases(newReleasesData);
+          }
+          const highestRatedData = cacheMap.get('highest_rated');
+          if (highestRatedData) {
+            setHighestRatedGames(highestRatedData);
+          }
+          const categoriesData = cacheMap.get('categories');
+          if (categoriesData) {
+            setCategoryGamesMap(categoriesData as Record<string, IGDBGameData[]>);
+          }
           
           setLoadingFeatured(false);
           setLoadingLatest(false);
@@ -290,7 +316,7 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
           { cache_key: 'categories', data: categoryResults, expires_at: sevenDaysLater.toISOString() },
         ];
         
-        await supabase.from('igdb_home_cache').upsert(cacheEntries, { onConflict: 'cache_key' });
+        await (supabase.from('igdb_home_cache').upsert(cacheEntries, { onConflict: 'cache_key' }) as unknown as Promise<{ error: { message: string } | null }>);
         console.log('[GamingExplorerHome] Cached to Supabase: new_releases=1d, others=7d');
       } catch (error) {
         console.error('Error fetching games:', error);

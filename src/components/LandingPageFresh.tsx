@@ -9,6 +9,7 @@ import { toastService } from '../services/toastService';
 import useEmblaCarousel from 'embla-carousel-react';
 import Autoplay from 'embla-carousel-autoplay';
 import { AITextLoading } from './ui/AITextLoading';
+import { blogPosts, BlogPost } from '../data/blogPosts';
 
 // Import feature images
 import feature1 from '../assets/images/feature-images/feature1.png';
@@ -522,10 +523,12 @@ interface LandingPageProps {
   onOpenRefund: () => void;
   onOpenTerms: () => void;
   onOpenContact: () => void;
+  onOpenBlog: () => void;
+  onSelectBlogPost: (slug: string) => void;
   onDirectNavigation: (_path: string) => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, onOpenAbout, onOpenPrivacy, onOpenRefund, onOpenTerms, onOpenContact, onDirectNavigation }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, onOpenAbout, onOpenPrivacy, onOpenRefund, onOpenTerms, onOpenContact, onOpenBlog, onSelectBlogPost, onDirectNavigation }) => {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState('');
@@ -1965,6 +1968,66 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
           </div>
         </div>
                 </section>
+
+                {/* Gaming Guides Section */}
+                <section id="guides" className="py-16 md:py-24 bg-transparent relative overflow-hidden">
+                    <div className="container mx-auto px-8 max-w-7xl relative">
+                        {/* Section Header */}
+                        <div className="text-center mb-12 md:mb-16 animate-fade-slide-up">
+                            <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white mb-6">
+                                Master Any Game with AI
+                            </h2>
+                            <p className="text-lg md:text-xl text-neutral-300 leading-relaxed max-w-3xl mx-auto">
+                                Comprehensive guides powered by Otagon AI. From boss strategies to perfection runs, 
+                                learn how to leverage AI assistance for ultimate gaming success.
+                            </p>
+                        </div>
+
+                        {/* Blog Cards Grid - Clean & Minimal */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-12">
+                            {blogPosts.slice(0, 6).map((post: BlogPost, index: number) => (
+                                <button
+                                    key={post.id}
+                                    onClick={() => onSelectBlogPost(post.slug)}
+                                    className="group bg-neutral-900/60 border border-neutral-800 rounded-xl p-5 text-left transition-all duration-300 hover:border-primary/50 hover:bg-neutral-800/60 animate-fade-slide-up"
+                                    style={{ animationDelay: `${index * 80}ms` }}
+                                >
+                                    {/* Game & Time - Compact Header */}
+                                    <div className="flex items-center justify-between mb-3">
+                                        <span className="text-xs font-semibold text-secondary">{post.game}</span>
+                                        <span className="text-xs text-text-muted">{post.readTime}</span>
+                                    </div>
+
+                                    {/* Title - Main Focus */}
+                                    <h3 className="text-lg font-bold text-white mb-2 group-hover:text-primary transition-colors duration-200 line-clamp-2">
+                                        {post.title}
+                                    </h3>
+
+                                    {/* Arrow indicator */}
+                                    <div className="flex items-center justify-between mt-4">
+                                        <span className="text-xs text-text-muted bg-neutral-800/80 px-2 py-1 rounded">{post.category}</span>
+                                        <svg className="w-4 h-4 text-text-muted group-hover:text-primary group-hover:translate-x-1 transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* View All Guides Button */}
+                        <div className="text-center animate-fade-slide-up">
+                            <button
+                                onClick={onOpenBlog}
+                                className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-primary to-secondary text-white font-bold text-lg rounded-xl hover:shadow-2xl hover:shadow-primary/30 transition-all duration-300 hover:scale-105 active:scale-95"
+                            >
+                                <span>View All Gaming Guides</span>
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </section>
       </main>
 
       {/* Footer */}
@@ -1975,6 +2038,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                         <div className="flex flex-col md:flex-row items-center gap-3 md:gap-6 text-sm font-medium text-neutral-400 order-1 md:order-2">
                            <div className="flex items-center gap-4 md:gap-6">
                                <a href="#pricing" onClick={handleScrollTo('pricing')} className="hover:text-white transition-colors">Pricing</a>
+                               <button type="button" onClick={onOpenBlog} className="hover:text-white transition-colors active:scale-95">Gaming Guides</button>
                                <button type="button" onClick={onOpenAbout} className="hover:text-white transition-colors active:scale-95">About</button>
                                <button type="button" onClick={onOpenTerms} className="hover:text-white transition-colors active:scale-95">Terms</button>
                            </div>

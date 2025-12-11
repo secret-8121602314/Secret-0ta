@@ -672,7 +672,7 @@ html, body {
 }
 
 .modal-content {
-  @apply bg-gradient-to-r from-[#1C1C1C] to-[#0A0A0A] border-2 border-[#424242]/40 rounded-2xl max-w-2xl w-full shadow-2xl backdrop-blur-sm;
+  @apply bg-gradient-to-r from-[#1C1C1C] to-[#0A0A0A] border-2 border-[#424242]/40 rounded-2xl w-full shadow-2xl backdrop-blur-sm;
   /* Responsive padding */
   padding: 1rem;
 }

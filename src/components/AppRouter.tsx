@@ -118,6 +118,10 @@ const AppRouter: React.FC<AppRouterProps> = ({
           onOpenRefund={() => openModal('refund')}
           onOpenTerms={() => openModal('terms')}
           onOpenContact={() => openModal('contact')}
+          onOpenBlog={() => openModal('blog')}
+          onSelectBlogPost={(_slug: string) => {
+            // Handle blog post selection - this gets handled in LandingPageRoute
+          }}
           onDirectNavigation={() => {
             // Direct navigation handler for landing page links
           }}

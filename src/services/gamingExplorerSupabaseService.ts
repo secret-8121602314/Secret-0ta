@@ -77,13 +77,15 @@ interface SupabaseGamingProfile {
   last_updated: string;
 }
 
-interface SupabaseSearchHistory {
-  id: string;
-  auth_user_id: string;
-  igdb_game_id: number;
-  game_data: IGDBGameData;
-  searched_at: string;
-}
+// Generic Supabase response types
+type SupabaseResponse<T> = {
+  data: T | null;
+  error: { message: string } | null;
+};
+
+type SupabaseMutationResponse = {
+  error: { message: string } | null;
+};
 
 // ============================================================================
 // LIBRARY SYNC SERVICE
@@ -118,12 +120,12 @@ export const supabaseLibraryService = {
       }));
 
       // Upsert all items
-      const { error } = await supabase
+      const { error } = (await supabase
         .from('gaming_library')
         .upsert(supabaseItems, {
           onConflict: 'auth_user_id,igdb_game_id,category',
           ignoreDuplicates: false,
-        });
+        })) as SupabaseMutationResponse;
 
       if (error) {
         console.error('[SupabaseLibrary] Sync error:', error);
@@ -142,10 +144,10 @@ export const supabaseLibraryService = {
    */
   async fetchAndMerge(authUserId: string): Promise<GameLibraryItem[]> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = (await supabase
         .from('gaming_library')
         .select('*')
-        .eq('auth_user_id', authUserId);
+        .eq('auth_user_id', authUserId)) as SupabaseResponse<SupabaseLibraryItem[]>;
 
       if (error) {
         console.error('[SupabaseLibrary] Fetch error:', error);
@@ -200,7 +202,7 @@ export const supabaseLibraryService = {
     item: GameLibraryItem
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const { error } = await supabase
+      const { error } = (await supabase
         .from('gaming_library')
         .upsert({
           auth_user_id: authUserId,
@@ -217,7 +219,7 @@ export const supabaseLibraryService = {
           updated_at: new Date(item.updatedAt).toISOString(),
         }, {
           onConflict: 'auth_user_id,igdb_game_id,category',
-        });
+        })) as SupabaseMutationResponse;
 
       if (error) {
         console.error('[SupabaseLibrary] Add error:', error);
@@ -240,12 +242,12 @@ export const supabaseLibraryService = {
     category: LibraryCategory
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const { error } = await supabase
+      const { error } = (await supabase
         .from('gaming_library')
         .delete()
         .eq('auth_user_id', authUserId)
         .eq('igdb_game_id', igdbGameId)
-        .eq('category', category);
+        .eq('category', category)) as SupabaseMutationResponse;
 
       if (error) {
         console.error('[SupabaseLibrary] Remove error:', error);
@@ -293,9 +295,9 @@ export const supabaseTimelineService = {
         updated_at: new Date(event.updatedAt).toISOString(),
       }));
 
-      const { error } = await supabase
+      const { error } = (await supabase
         .from('gaming_timeline')
-        .insert(supabaseEvents);
+        .insert(supabaseEvents)) as SupabaseMutationResponse;
 
       if (error) {
         console.error('[SupabaseTimeline] Sync error:', error);
@@ -314,11 +316,11 @@ export const supabaseTimelineService = {
    */
   async fetchAll(authUserId: string): Promise<TimelineEvent[]> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = (await supabase
         .from('gaming_timeline')
         .select('*')
         .eq('auth_user_id', authUserId)
-        .order('event_date', { ascending: false });
+        .order('event_date', { ascending: false })) as SupabaseResponse<SupabaseTimelineEvent[]>;
 
       if (error) {
         console.error('[SupabaseTimeline] Fetch error:', error);
@@ -359,7 +361,7 @@ export const supabaseTimelineService = {
     event: TimelineEvent
   ): Promise<{ success: boolean; id?: string; error?: string }> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = (await supabase
         .from('gaming_timeline')
         .insert({
           auth_user_id: authUserId,
@@ -376,7 +378,7 @@ export const supabaseTimelineService = {
           ai_summary: event.aiSummary || null,
         })
         .select('id')
-        .single();
+        .single()) as SupabaseResponse<{ id: string }>;
 
       if (error) {
         console.error('[SupabaseTimeline] Add error:', error);
@@ -403,7 +405,7 @@ export const supabaseProfileService = {
     try {
       const profile = userProfileStorage.get();
 
-      const { error } = await supabase
+      const { error } = (await supabase
         .from('gaming_profiles')
         .upsert({
           auth_user_id: authUserId,
@@ -417,7 +419,7 @@ export const supabaseProfileService = {
           last_updated: new Date(profile.lastUpdated).toISOString(),
         }, {
           onConflict: 'auth_user_id',
-        });
+        })) as SupabaseMutationResponse;
 
       if (error) {
         console.error('[SupabaseProfile] Sync error:', error);
@@ -436,11 +438,11 @@ export const supabaseProfileService = {
    */
   async fetch(authUserId: string): Promise<UserGamingProfile | null> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = (await supabase
         .from('gaming_profiles')
         .select('*')
         .eq('auth_user_id', authUserId)
-        .single();
+        .single()) as SupabaseResponse<SupabaseGamingProfile>;
 
       if (error || !data) {
         return null;
@@ -489,11 +491,11 @@ export const supabaseSearchHistoryService = {
         searched_at: new Date(item.searchedAt).toISOString(),
       }));
 
-      const { error } = await supabase
+      const { error } = (await supabase
         .from('gaming_search_history')
         .upsert(supabaseItems, {
           onConflict: 'auth_user_id,igdb_game_id',
-        });
+        })) as SupabaseMutationResponse;
 
       if (error) {
         console.error('[SupabaseSearchHistory] Sync error:', error);
@@ -521,7 +523,7 @@ export const supabaseSearchHistoryService = {
           searched_at: new Date().toISOString(),
         }, {
           onConflict: 'auth_user_id,igdb_game_id',
-        });
+        }) as unknown as SupabaseMutationResponse;
     } catch (error) {
       console.error('[SupabaseSearchHistory] Add error:', error);
     }
@@ -563,11 +565,11 @@ export const supabaseKnowledgeService = {
           last_updated: new Date(k.lastUpdated).toISOString(),
         }));
 
-      const { error } = await supabase
+      const { error } = (await supabase
         .from('gaming_knowledge')
         .upsert(knowledgeItems, {
           onConflict: 'auth_user_id,igdb_game_id',
-        });
+        })) as SupabaseMutationResponse;
 
       if (error) {
         console.error('[SupabaseKnowledge] Sync error:', error);
@@ -629,10 +631,10 @@ export const gamingExplorerMigrationService = {
     }
 
     // Check if Supabase has data
-    const { data, error } = await supabase
+    const { data, error } = (await supabase
       .from('gaming_library')
       .select('id', { count: 'exact', head: true })
-      .eq('auth_user_id', authUserId);
+      .eq('auth_user_id', authUserId)) as SupabaseResponse<{ id: string }[]>;
 
     if (error) {
       console.error('[Migration] Check error:', error);

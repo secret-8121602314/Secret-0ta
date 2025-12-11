@@ -7,7 +7,8 @@ let currentText = '';
 let wakeLock: WakeLockSentinel | null = null;
 let audioContext: AudioContext | null = null;
 let silentAudio: HTMLAudioElement | null = null;
-let isBackgroundPlayback = false;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+let _isBackgroundPlayback = false;
 let keepAliveInterval: NodeJS.Timeout | null = null;
 
 const SPEECH_RATE_KEY = 'otakonSpeechRate';
@@ -257,7 +258,7 @@ const setupMediaSession = () => {
 const handleVisibilityChange = async () => {
     if (document.hidden) {
         // Screen locked or app backgrounded
-        isBackgroundPlayback = true;
+        _isBackgroundPlayback = true;
         console.log('📱 [TTS] App went to background, isSpeaking:', synth?.speaking);
         
         // Keep silent audio playing to maintain audio session
@@ -277,7 +278,7 @@ const handleVisibilityChange = async () => {
         }
     } else {
         // Screen unlocked or app foregrounded
-        isBackgroundPlayback = false;
+        _isBackgroundPlayback = false;
         console.log('📱 [TTS] App came to foreground, isSpeaking:', synth?.speaking);
         
         // Reacquire wake lock if TTS is still speaking

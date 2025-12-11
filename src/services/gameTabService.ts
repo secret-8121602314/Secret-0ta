@@ -133,13 +133,13 @@ class GameTabService {
             console.error('🎮 [GameTabService] Created', subTabs.length, 'subtabs from INSIGHT_UPDATE tags');
           } else {
             // ✅ FALLBACK: Create template subtabs and populate them via background AI call
-            subTabs = this.generateInitialSubTabs(data.genre || 'Default', data.playerProfile, { gameTitle: data.gameTitle });
+            subTabs = this.generateInitialSubTabs(data.genre || 'Default', data.playerProfile, {});
             console.error('🎮 [GameTabService] Created', subTabs.length, 'template subtabs (will populate via background AI using conversation context)');
           }
         }
       } else {
         // No AI response - create template subtabs for pro users
-        subTabs = this.generateInitialSubTabs(data.genre || 'Default', data.playerProfile, { gameTitle: data.gameTitle });
+        subTabs = this.generateInitialSubTabs(data.genre || 'Default', data.playerProfile, {});
         console.error('🎮 [GameTabService] Created', subTabs.length, 'initial template subtabs (no AI response)');
       }
     } else if (data.isUnreleased) {
@@ -262,7 +262,11 @@ class GameTabService {
    * Get game-specific subtab customizations
    * Returns custom tab titles/instructions for specific games, or null to use genre defaults
    * Types: 'chat' | 'walkthrough' | 'tips' | 'strategies' | 'story' | 'characters' | 'items'
+   * 
+   * NOTE: Currently disabled - using null in generateInitialSubTabs
    */
+  // @ts-ignore - Disabled for now
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private getGameSpecificTabCustomizations(gameTitle: string): ProfileSpecificTab[] | null {
     const gameLower = gameTitle.toLowerCase();
     
@@ -270,6 +274,7 @@ class GameTabService {
     if (gameLower.includes('elden ring')) {
       return [
         { 
+          id: generateUUID(),
           title: 'Story So Far', 
           type: 'story',
           instruction: 'Track the Tarnished\'s journey through the Lands Between, major demigod encounters, and story progression.',
@@ -277,6 +282,7 @@ class GameTabService {
           isProfileSpecific: false
         },
         { 
+          id: generateUUID(),
           title: 'Sites of Grace Nearby', 
           type: 'tips',
           instruction: 'List nearby Sites of Grace, their locations, and what areas they unlock.',
@@ -284,6 +290,7 @@ class GameTabService {
           isProfileSpecific: false
         },
         { 
+          id: generateUUID(),
           title: 'Boss Strategy', 
           type: 'strategies',
           instruction: 'Detailed strategies for Great Rune bearers, remembrance bosses, and field bosses.',
@@ -291,6 +298,7 @@ class GameTabService {
           isProfileSpecific: false
         },
         { 
+          id: generateUUID(),
           title: 'Character Questlines', 
           type: 'characters',
           instruction: 'Track NPC questlines like Ranni, Fia, Millicent, and their current progress.',
@@ -298,6 +306,7 @@ class GameTabService {
           isProfileSpecific: false
         },
         { 
+          id: generateUUID(),
           title: 'Remembrances & Items', 
           type: 'items',
           instruction: 'Track collected remembrances, Great Runes, and legendary armaments/ashes of war.',
@@ -310,35 +319,40 @@ class GameTabService {
     // Cyberpunk 2077 - customize for fixers, gigs, cyberware
     if (gameLower.includes('cyberpunk')) {
       return [
-        { 
+        {
+          id: generateUUID(),
           title: 'Story Progress', 
           type: 'story',
           instruction: 'Track main story missions, relationship with Johnny Silverhand, and key choices made.',
           priority: 'high',
           isProfileSpecific: false
         },
-        { 
+        {
+          id: generateUUID(),
           title: 'Fixers & Gigs', 
           type: 'walkthrough',
           instruction: 'List available fixers in current district, active gigs, and completed contracts.',
           priority: 'high',
           isProfileSpecific: false
         },
-        { 
+        {
+          id: generateUUID(),
           title: 'Cyberware Build', 
           type: 'strategies',
           instruction: 'Current cyberware loadout, recommended upgrades, and build synergies.',
           priority: 'high',
           isProfileSpecific: false
         },
-        { 
+        {
+          id: generateUUID(),
           title: 'Characters & Relationships', 
           type: 'characters',
           instruction: 'Track relationships with Panam, Judy, River, Kerry, and romance options.',
           priority: 'high',
           isProfileSpecific: false
         },
-        { 
+        {
+          id: generateUUID(),
           title: 'Night City Secrets', 
           type: 'tips',
           instruction: 'Hidden legendary weapons, iconic gear locations, and easter eggs in current area.',
@@ -351,35 +365,40 @@ class GameTabService {
     // Dark Souls series - customize for bonfires, covenant, boss souls
     if (gameLower.includes('dark souls')) {
       return [
-        { 
+        {
+          id: generateUUID(),
           title: 'Story So Far', 
           type: 'story',
           instruction: 'Track the Chosen Undead\'s journey, Lords of Cinder defeated, and covenant allegiances.',
           priority: 'high',
           isProfileSpecific: false
         },
-        { 
+        {
+          id: generateUUID(),
           title: 'Nearby Bonfires', 
           type: 'tips',
           instruction: 'List nearby bonfires, their locations, and connectivity to other areas.',
           priority: 'high',
           isProfileSpecific: false
         },
-        { 
+        {
+          id: generateUUID(),
           title: 'Boss Strategy', 
           type: 'strategies',
           instruction: 'Strategies for Lord Souls, required bosses, and optional powerful enemies.',
           priority: 'high',
           isProfileSpecific: false
         },
-        { 
+        {
+          id: generateUUID(),
           title: 'Covenant Progress', 
           type: 'walkthrough',
           instruction: 'Track covenant memberships, offering progress, and covenant-specific rewards.',
           priority: 'high',
           isProfileSpecific: false
         },
-        { 
+        {
+          id: generateUUID(),
           title: 'Upgrade Paths', 
           type: 'items',
           instruction: 'Weapon upgrade materials, blacksmith locations, and recommended upgrade paths for current build.',
@@ -392,35 +411,40 @@ class GameTabService {
     // Baldur's Gate 3 - customize for companions, choices, D&D mechanics
     if (gameLower.includes('baldur') || gameLower.includes('bg3')) {
       return [
-        { 
+        {
+          id: generateUUID(),
           title: 'Story & Choices', 
           type: 'story',
           instruction: 'Track main story progress, major decisions made, and their consequences. Note which companions were recruited and key story branches taken.',
           priority: 'high',
           isProfileSpecific: false
         },
-        { 
+        {
+          id: generateUUID(),
           title: 'Companion Approval', 
           type: 'characters',
           instruction: 'Track companion relationships, approval ratings, personal quests, and romance progress.',
           priority: 'high',
           isProfileSpecific: false
         },
-        { 
+        {
+          id: generateUUID(),
           title: 'Build & Multiclass', 
           type: 'strategies',
           instruction: 'Current character build, multiclass options, and synergistic spell/ability combinations.',
           priority: 'high',
           isProfileSpecific: false
         },
-        { 
+        {
+          id: generateUUID(),
           title: 'Active Quests', 
           type: 'walkthrough',
           instruction: 'List active main quests and important side quests in current act, with quest objectives.',
           priority: 'high',
           isProfileSpecific: false
         },
-        { 
+        {
+          id: generateUUID(),
           title: 'Secrets & Items', 
           type: 'items',
           instruction: 'Hidden legendary items, secret areas, and missable content in current region.',
@@ -433,35 +457,40 @@ class GameTabService {
     // The Witcher 3 - customize for contracts, potions, Gwent
     if (gameLower.includes('witcher')) {
       return [
-        { 
+        {
+          id: generateUUID(),
           title: 'Story Progress', 
           type: 'story',
           instruction: 'Track main story, key decisions, Ciri\'s journey, and major political developments.',
           priority: 'high',
           isProfileSpecific: false
         },
-        { 
+        {
+          id: generateUUID(),
           title: 'Contracts & Quests', 
           type: 'walkthrough',
           instruction: 'Active witcher contracts, treasure hunts, and important side quests in current region.',
           priority: 'high',
           isProfileSpecific: false
         },
-        { 
+        {
+          id: generateUUID(),
           title: 'Combat & Alchemy', 
           type: 'strategies',
           instruction: 'Best potions, oils, and decoctions for current enemies. Sign usage tips and combat strategies.',
           priority: 'high',
           isProfileSpecific: false
         },
-        { 
+        {
+          id: generateUUID(),
           title: 'Characters & Romance', 
           type: 'characters',
           instruction: 'Track relationships with Yennefer, Triss, and other key characters. Romance quest progress.',
           priority: 'high',
           isProfileSpecific: false
         },
-        { 
+        {
+          id: generateUUID(),
           title: 'Gear & Diagrams', 
           type: 'items',
           instruction: 'Witcher gear sets available, diagram locations, and upgrade materials needed.',
@@ -474,35 +503,40 @@ class GameTabService {
     // Hollow Knight - customize for charms, area exploration, boss challenges
     if (gameLower.includes('hollow knight')) {
       return [
-        { 
+        {
+          id: generateUUID(),
           title: 'Exploration Progress', 
           type: 'story',
           instruction: 'Track areas explored, lore discovered, and connections between regions.',
           priority: 'high',
           isProfileSpecific: false
         },
-        { 
+        {
+          id: generateUUID(),
           title: 'Boss Strategies', 
           type: 'strategies',
           instruction: 'Detailed strategies for current and nearby bosses, including dream versions and optional challenges.',
           priority: 'high',
           isProfileSpecific: false
         },
-        { 
+        {
+          id: generateUUID(),
           title: 'Charm Builds', 
           type: 'items',
           instruction: 'Recommended charm combinations for current playstyle, and where to find new charms.',
           priority: 'high',
           isProfileSpecific: false
         },
-        { 
+        {
+          id: generateUUID(),
           title: 'Hidden Secrets', 
           type: 'tips',
           instruction: 'Secret paths, hidden rooms, and breakable walls in current and nearby areas.',
           priority: 'high',
           isProfileSpecific: false
         },
-        { 
+        {
+          id: generateUUID(),
           title: 'NPC Questlines', 
           type: 'characters',
           instruction: 'Track NPC locations, quest progress for characters like Hornet, Quirrel, and Bretta.',
@@ -515,35 +549,40 @@ class GameTabService {
     // God of War (2018/Ragnarok) - customize for realms, collectibles, upgrades
     if (gameLower.includes('god of war')) {
       return [
-        { 
+        {
+          id: generateUUID(),
           title: 'Story & Mythology', 
           type: 'story',
           instruction: 'Track main story progress, realm visits, and Norse mythology lore discovered.',
           priority: 'high',
           isProfileSpecific: false
         },
-        { 
+        {
+          id: generateUUID(),
           title: 'Boss & Enemy Tactics', 
           type: 'strategies',
           instruction: 'Strategies for bosses and tough enemies, including optimal runic attacks and Spartan Rage usage.',
           priority: 'high',
           isProfileSpecific: false
         },
-        { 
+        {
+          id: generateUUID(),
           title: 'Gear & Upgrades', 
           type: 'items',
           instruction: 'Best armor sets for current level, weapon upgrades, and where to find crafting materials.',
           priority: 'high',
           isProfileSpecific: false
         },
-        { 
+        {
+          id: generateUUID(),
           title: 'Realm Exploration', 
           type: 'tips',
           instruction: 'Areas to explore in current realm, hidden chests, and optional content.',
           priority: 'high',
           isProfileSpecific: false
         },
-        { 
+        {
+          id: generateUUID(),
           title: 'Collectibles', 
           type: 'walkthrough',
           instruction: 'Track Odin\'s Ravens, Nornir Chests, artifacts, and other collectibles in current regions.',
@@ -564,8 +603,8 @@ class GameTabService {
     gameContext?: GameContext
   ): SubTab[] {
     // Check for game-specific customizations first
-    const gameTitle = gameContext?.gameTitle || '';
-    const gameCustomizations = this.getGameSpecificTabCustomizations(gameTitle);
+    const gameTitle = '';
+    const gameCustomizations = null; // Disabled for now
     
     // Get base tabs (game-specific or genre-based)
     let baseTabs: ProfileSpecificTab[];
@@ -1444,19 +1483,29 @@ class GameTabService {
         // 3. Key-to-title match (if update.tabId like "story_so_far" maps to "Story So Far")
         const update = updates.find(u => {
           // Method 1: Direct UUID match
-          if (u.tabId === tab.id) return true;
+          if (u.tabId === tab.id) {
+            return true;
+          }
           
           // Method 2: Title match (case-insensitive)
-          if (u.tabId.toLowerCase() === tab.title.toLowerCase()) return true;
-          if (u.title && u.title.toLowerCase() === tab.title.toLowerCase()) return true;
+          if (u.tabId.toLowerCase() === tab.title.toLowerCase()) {
+            return true;
+          }
+          if (u.title && u.title.toLowerCase() === tab.title.toLowerCase()) {
+            return true;
+          }
           
           // Method 3: Key-to-title map (AI sends "story_so_far", subtab has title "Story So Far")
           const expectedTitle = keyToTitleMap[u.tabId];
-          if (expectedTitle && expectedTitle === tab.title) return true;
+          if (expectedTitle && expectedTitle === tab.title) {
+            return true;
+          }
           
           // Method 4: Title-to-key map (subtab title -> key -> match update.tabId)
           const subtabKey = titleToKeyMap[tab.title];
-          if (subtabKey && subtabKey === u.tabId) return true;
+          if (subtabKey && subtabKey === u.tabId) {
+            return true;
+          }
           
           return false;
         });
@@ -1569,16 +1618,28 @@ class GameTabService {
       const matchedTabIds = new Set<string>();
       conversation.subtabs.forEach(tab => {
         const matched = updates.find(u => {
-          if (u.tabId === tab.id) return true;
-          if (u.tabId.toLowerCase() === tab.title.toLowerCase()) return true;
-          if (u.title && u.title.toLowerCase() === tab.title.toLowerCase()) return true;
+          if (u.tabId === tab.id) {
+            return true;
+          }
+          if (u.tabId.toLowerCase() === tab.title.toLowerCase()) {
+            return true;
+          }
+          if (u.title && u.title.toLowerCase() === tab.title.toLowerCase()) {
+            return true;
+          }
           const expectedTitle = keyToTitleMap[u.tabId];
-          if (expectedTitle && expectedTitle === tab.title) return true;
+          if (expectedTitle && expectedTitle === tab.title) {
+            return true;
+          }
           const subtabKey = titleToKeyMap[tab.title];
-          if (subtabKey && subtabKey === u.tabId) return true;
+          if (subtabKey && subtabKey === u.tabId) {
+            return true;
+          }
           return false;
         });
-        if (matched) matchedTabIds.add(matched.tabId);
+        if (matched) {
+          matchedTabIds.add(matched.tabId);
+        }
       });
       
       updates.forEach(u => {
@@ -1648,7 +1709,7 @@ class GameTabService {
         console.log(`🔄 [GameTabService] Generating subtabs for "${conv.gameTitle}" (${i + 1}/${gameTabs.length})`);
         
         // Generate initial subtabs
-        const subTabs = this.generateInitialSubTabs(conv.genre || 'Default', playerProfile, { gameTitle: conv.gameTitle || '' });
+        const subTabs = this.generateInitialSubTabs(conv.genre || 'Default', playerProfile, {});
         
         // Update conversation with subtabs
         await ConversationService.updateConversation(conv.id, {
@@ -1689,3 +1750,4 @@ class GameTabService {
 }
 
 export const gameTabService = new GameTabService();
+

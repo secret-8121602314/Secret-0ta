@@ -13,13 +13,6 @@
 
 import { isPWAMode } from '../utils/pwaDetection';
 
-// Type declarations for Vibration API
-declare global {
-  interface Navigator {
-    vibrate?: (pattern: number | number[]) => boolean;
-  }
-}
-
 // Vibration patterns (in milliseconds)
 export const HapticPatterns = {
   // Simple taps

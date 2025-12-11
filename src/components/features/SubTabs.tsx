@@ -296,7 +296,9 @@ const SubTabs: React.FC<SubTabsProps> = ({
     if (isExpanded && containerRef.current) {
       const calculatePanelPosition = () => {
         const container = containerRef.current;
-        if (!container) return;
+        if (!container) {
+          return;
+        }
         
         // Get the container's position relative to viewport
         const rect = container.getBoundingClientRect();

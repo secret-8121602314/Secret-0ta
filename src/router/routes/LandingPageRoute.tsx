@@ -6,6 +6,8 @@ import PrivacyModal from '../../components/modals/PrivacyModal';
 import TermsModal from '../../components/modals/TermsModal';
 import RefundPolicyModal from '../../components/modals/RefundPolicyModal';
 import ContactUsModal from '../../components/modals/ContactUsModal';
+import BlogIndexModal from '../../components/modals/BlogIndexModal';
+import BlogPostModal from '../../components/modals/BlogPostModal';
 import type { User, OnboardingStatus } from '../../types';
 
 /**
@@ -62,6 +64,18 @@ const LandingPageRoute: React.FC = () => {
     setSearchParams({ modal: 'contact' });
   };
 
+  const handleOpenBlog = () => {
+    setSearchParams({ modal: 'blog' });
+  };
+
+  const handleSelectBlogPost = (slug: string) => {
+    setSearchParams({ modal: 'blog-post', slug });
+  };
+
+  const handleBackToBlog = () => {
+    setSearchParams({ modal: 'blog' });
+  };
+
   const handleCloseModal = () => {
     setSearchParams({});
   };
@@ -79,6 +93,8 @@ const LandingPageRoute: React.FC = () => {
         onOpenRefund={handleOpenRefund}
         onOpenTerms={handleOpenTerms}
         onOpenContact={handleOpenContact}
+        onOpenBlog={handleOpenBlog}
+        onSelectBlogPost={handleSelectBlogPost}
         onDirectNavigation={handleDirectNavigation}
       />
       {/* Modals controlled by URL params */}
@@ -87,6 +103,18 @@ const LandingPageRoute: React.FC = () => {
       <TermsModal isOpen={activeModal === 'terms'} onClose={handleCloseModal} />
       <RefundPolicyModal isOpen={activeModal === 'refund'} onClose={handleCloseModal} />
       <ContactUsModal isOpen={activeModal === 'contact'} onClose={handleCloseModal} />
+      <BlogIndexModal 
+        isOpen={activeModal === 'blog'} 
+        onClose={handleCloseModal} 
+        onSelectPost={handleSelectBlogPost}
+      />
+      <BlogPostModal 
+        isOpen={activeModal === 'blog-post'} 
+        onClose={handleCloseModal} 
+        onBack={handleBackToBlog}
+        slug={searchParams.get('slug')}
+        onSelectPost={handleSelectBlogPost}
+      />
     </>
   );
 };

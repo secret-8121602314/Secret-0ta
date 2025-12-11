@@ -169,8 +169,6 @@ export class MessageService {
           timestamp: safeParseDate(newMessage.created_at),
           imageUrl: safeString(newMessage.image_url, undefined),
           metadata: metadata,
-          // ✅ Restore suggestedPrompts from metadata for UI display
-          suggestedPrompts: metadata?.suggestedPrompts as string[] | undefined,
         };
       } catch (error) {
         if (attempt === maxRetries - 1) {

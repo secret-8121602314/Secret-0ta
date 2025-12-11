@@ -139,7 +139,7 @@ export interface Usage {
 // App State
 export type AppView = 'landing' | 'app';
 export type OnboardingStatus = 'login' | 'initial' | 'features' | 'pro-features' | 'how-to-use' | 'features-connected' | 'tier-splash' | 'profile-setup' | 'complete' | 'loading';
-export type ActiveModal = 'about' | 'privacy' | 'refund' | 'contact' | 'terms' | 'settings' | 'connection' | 'hands-free' | 'credit' | 'otaku-diary' | 'wishlist' | null;
+export type ActiveModal = 'about' | 'privacy' | 'refund' | 'contact' | 'terms' | 'settings' | 'connection' | 'hands-free' | 'credit' | 'otaku-diary' | 'wishlist' | 'blog' | null;
 
 export interface AppState {
   view: AppView;
