@@ -1578,11 +1578,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 </ul>
                                 <div className="mt-auto">
                                     <button
-                                        onClick={_onGetStarted}
-                                        className="w-full bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-opacity"
-                                        title="Get started with Free plan - Sign up now!"
+                                        disabled
+                                        className="w-full bg-gray-600 text-gray-300 font-bold py-3 px-6 rounded-lg cursor-not-allowed opacity-50 transition-opacity"
+                                        title="Coming Soon"
                                     >
-                                        Get Started Free
+                                        Coming Soon
                                     </button>
                                 </div>
                             </div>
@@ -1611,11 +1611,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 </ul>
                                 <div className="mt-auto">
                                     <button 
-                                        onClick={_onGetStarted}
-                                        className="w-full bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-opacity shadow-lg shadow-[#E53A3A]/30"
-                                        title="Sign up to upgrade to Vanguard Pro"
+                                        disabled
+                                        className="w-full bg-gray-600 text-gray-300 font-bold py-3 px-6 rounded-lg cursor-not-allowed opacity-50 transition-opacity"
+                                        title="Coming Soon"
                                     >
-                                        Upgrade to Vanguard
+                                        Coming Soon
                                     </button>
             </div>
           </div>
@@ -1640,11 +1640,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 </ul>
                                 <div className="mt-auto">
                                     <button 
-                                        onClick={_onGetStarted}
-                                        className="w-full bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-opacity"
-                                        title="Sign up to upgrade to Pro"
+                                        disabled
+                                        className="w-full bg-gray-600 text-gray-300 font-bold py-3 px-6 rounded-lg cursor-not-allowed opacity-50 transition-opacity"
+                                        title="Coming Soon"
                                     >
-                                        Upgrade to Pro
+                                        Coming Soon
                                     </button>
                                 </div>
             </div>
