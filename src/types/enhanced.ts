@@ -37,6 +37,7 @@ export interface UserProfileData {
   avatar?: string;
   bio?: string;
   favoriteGenres?: string[];
+  gamingStartYear?: number; // Gaming Explorer onboarding - when user started gaming
   [key: string]: unknown;
 }
 

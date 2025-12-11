@@ -18,6 +18,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { User } from '../../types';
 import { userProfileStorage } from '../../services/gamingExplorerStorage';
 import { IGDBGameData } from '../../services/igdbService';
+import { authService } from '../../services/authService';
 import GamingExplorerHome from './GamingExplorerHome';
 import GamingExplorerTimeline from './GamingExplorerTimeline';
 import GamingExplorerLibrary from './GamingExplorerLibrary';
@@ -54,10 +55,20 @@ const GamingExplorerModal: React.FC<GamingExplorerModalProps> = ({
   // Check if user needs onboarding (gaming start year not set)
   useEffect(() => {
     if (isOpen) {
-      const needsOnboarding = userProfileStorage.needsOnboarding();
+      // Check both Supabase (source of truth) and localStorage
+      const supabaseHasYear = user.profileData?.gamingStartYear !== undefined;
+      const localStorageHasYear = !userProfileStorage.needsOnboarding();
+      
+      // If Supabase has it but localStorage doesn't, sync it
+      if (supabaseHasYear && !localStorageHasYear) {
+        userProfileStorage.setGamingStartYear(user.profileData.gamingStartYear!);
+      }
+      
+      // Show onboarding only if both don't have it
+      const needsOnboarding = !supabaseHasYear && !localStorageHasYear;
       setShowOnboarding(needsOnboarding);
     }
-  }, [isOpen]);
+  }, [isOpen, user.profileData?.gamingStartYear]);
 
   // Handle escape key
   useEffect(() => {
@@ -83,10 +94,23 @@ const GamingExplorerModal: React.FC<GamingExplorerModalProps> = ({
     };
   }, [isOpen]);
 
-  const handleOnboardingComplete = useCallback((startYear: number) => {
+  const handleOnboardingComplete = useCallback(async (startYear: number) => {
+    // Save to localStorage first for immediate access
     userProfileStorage.setGamingStartYear(startYear);
+    
+    // Save to Supabase for cross-device sync
+    try {
+      await authService.updateUserProfile(user.authUserId, {
+        gamingStartYear: startYear
+      });
+      console.log('🎮 [Gaming Explorer] Gaming start year saved to Supabase:', startYear);
+    } catch (error) {
+      console.error('Failed to save gaming start year to Supabase:', error);
+      // Don't block onboarding if save fails - localStorage still works
+    }
+    
     setShowOnboarding(false);
-  }, []);
+  }, [user.authUserId]);
 
   // Open GameInfoModal for a game
   const handleOpenGameInfo = useCallback((gameData: IGDBGameData, _gameName: string) => {
