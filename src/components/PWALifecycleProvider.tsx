@@ -30,6 +30,15 @@ export function PWALifecycleProvider({ children }: PWALifecycleProviderProps) {
       const backgroundDuration = Date.now() - appVisibilityTimestamp;
       console.log('📱 [PWA-Router] App became visible, background duration:', backgroundDuration, 'ms');
 
+      // ✅ PWA BLACK SCREEN FIX: Force DOM repaint on visibility change
+      // This prevents black screen when app is opened after being completely closed
+      if (isPWAMode()) {
+        console.log('📱 [PWA-Router] Forcing DOM repaint to prevent black screen');
+        document.body.style.display = 'none';
+        void document.body.offsetHeight; // Force reflow
+        document.body.style.display = '';
+      }
+
       // ✅ PWA CRITICAL FIX: Check if we just logged out
       const justLoggedOut = localStorage.getItem('otakon_just_logged_out');
       if (justLoggedOut) {
@@ -38,15 +47,6 @@ export function PWALifecycleProvider({ children }: PWALifecycleProviderProps) {
         navigate('/earlyaccess', { replace: true });
         return;
       }
-
-      // ✅ BLACK SCREEN FIX: Force UI update immediately on visibility
-      // This prevents black screen when app comes back from locked screen
-      console.log('📱 [PWA-Router] Forcing UI update to prevent black screen');
-      
-      // Force a DOM repaint by touching the body
-      document.body.style.display = 'none';
-      void document.body.offsetHeight; // Force reflow
-      document.body.style.display = '';
 
       // Only check auth if app was in background for more than threshold
       if (isPWAMode() && backgroundDuration > PWA_BACKGROUND_THRESHOLD) {
@@ -104,6 +104,21 @@ export function PWALifecycleProvider({ children }: PWALifecycleProviderProps) {
       if (location.pathname !== '/earlyaccess' && location.pathname !== '/') {
         navigate('/earlyaccess', { replace: true });
       }
+    }
+
+    // ✅ PWA BLACK SCREEN FIX: Force DOM repaint on cold start
+    // This handles the case where PWA is opened after being completely closed
+    if (isPWAMode()) {
+      console.log('📱 [PWA-Router] Cold start detected, forcing DOM repaint');
+      // Small delay to ensure DOM is fully ready
+      const timer = setTimeout(() => {
+        document.body.style.display = 'none';
+        void document.body.offsetHeight; // Force reflow
+        document.body.style.display = '';
+        console.log('📱 [PWA-Router] DOM repaint complete');
+      }, 100);
+
+      return () => clearTimeout(timer);
     }
   }, [navigate, location.pathname]);
 
