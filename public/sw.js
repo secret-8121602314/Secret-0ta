@@ -1,6 +1,6 @@
 // Service Worker for Otagon PWA - Performance Optimized with Enhanced Background Sync
-// Version: v1.3.7-cold-start-fix - Fix black screen on cold start after delay
-const CACHE_VERSION = 'v1.3.7-cold-start-fix';
+// Version: v1.3.8-inline-loading - Fix black screen with inline HTML loading screen
+const CACHE_VERSION = 'v1.3.8-inline-loading';
 const CACHE_NAME = `otagon-${CACHE_VERSION}`;
 const CHAT_CACHE_NAME = `otagon-chat-${CACHE_VERSION}`;
 const STATIC_CACHE = `otagon-static-${CACHE_VERSION}`;
@@ -81,6 +81,16 @@ self.addEventListener('activate', (event) => {
   console.log('[SW] Activating service worker...');
   event.waitUntil(
     (async () => {
+      // Enable navigation preload for faster cold starts
+      if ('navigationPreload' in self.registration) {
+        try {
+          await self.registration.navigationPreload.enable();
+          console.log('[SW] Navigation preload enabled');
+        } catch (err) {
+          console.log('[SW] Navigation preload not available:', err);
+        }
+      }
+      
       // Clear old caches that don't match current version
       const cacheNames = await caches.keys();
       await Promise.all(
@@ -148,6 +158,16 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       (async () => {
         try {
+          // Use navigation preload response if available (faster cold starts)
+          const preloadResponse = event.preloadResponse ? await event.preloadResponse : null;
+          if (preloadResponse) {
+            console.log('[SW] Using preloaded response for navigation');
+            const responseToCache = preloadResponse.clone();
+            const cache = await caches.open(CACHE_NAME);
+            cache.put(event.request, responseToCache);
+            return preloadResponse;
+          }
+          
           const response = await fetch(event.request);
           // Clone and cache the response
           const responseToCache = response.clone();
