@@ -8,6 +8,28 @@ import { isPWAMode } from '../../utils/pwaDetection';
 import type { AppState } from '../../types';
 // Mobile optimizations applied
 
+// Spinning logo animation
+const spinningLogoStyle = `
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  .spinning-logo {
+    animation: spin 3s linear infinite;
+  }
+`;
+
+// Inject styles
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = spinningLogoStyle;
+  document.head.appendChild(style);
+}
+
 interface LoginSplashScreenProps {
   onComplete: () => void;
   onBackToLanding: () => void;
@@ -443,7 +465,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
             <img
               src="/images/otagon-logo.png"
               alt="Otagon Logo"
-              className="mx-auto mb-2 md:mb-3 lg:mb-4 w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 object-contain aspect-square"
+              className="spinning-logo mx-auto mb-2 md:mb-3 lg:mb-4 w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 object-contain aspect-square"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.style.display = 'none';
