@@ -27,6 +27,7 @@ import {
   IGDBGameData,
   getCoverUrl,
 } from '../../services/igdbService';
+import { supabase } from '../../lib/supabase';
 import { toastService } from '../../services/toastService';
 
 interface GamingExplorerHomeProps {
@@ -118,6 +119,14 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
   const [latestGames, setLatestGames] = useState<IGDBGameData[]>([]);
   const [loadingLatest, setLoadingLatest] = useState(false);
   
+  // New Releases (last 15 days)
+  const [newReleases, setNewReleases] = useState<IGDBGameData[]>([]);
+  const [loadingNewReleases, setLoadingNewReleases] = useState(false);
+  
+  // Highest Rated Games
+  const [highestRatedGames, setHighestRatedGames] = useState<IGDBGameData[]>([]);
+  const [loadingHighestRated, setLoadingHighestRated] = useState(false);
+  
   // Category browsing - preload all categories, default to 'action'
   const [selectedCategory, setSelectedCategory] = useState<string | null>('action');
   const [categoryGamesMap, setCategoryGamesMap] = useState<Record<string, IGDBGameData[]>>({});
@@ -140,25 +149,44 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
   const ownedGames = useMemo(() => libraryStorage.getByCategory('own').slice(0, 6), []);
   const favoriteGames = useMemo(() => libraryStorage.getByCategory('favorite').slice(0, 6), []);
 
-  // Fetch featured games and preload ALL category games on mount (with caching)
+  // Fetch featured games and preload ALL category games on mount (with global Supabase caching)
   useEffect(() => {
     const fetchAllGames = async () => {
-      // Check cache first
-      const cachedData = igdbHomeCacheStorage.get();
-      if (cachedData) {
-        console.log('[GamingExplorerHome] Using cached IGDB data');
-        setFeaturedGames(cachedData.featuredGames);
-        setLatestGames(cachedData.latestGames);
-        setCategoryGamesMap(cachedData.categoryGamesMap);
-        setLoadingFeatured(false);
-        setLoadingLatest(false);
-        setLoadingCategories(false);
-        return;
+      // Check Supabase global cache first
+      try {
+        const now = new Date();
+        const { data: cachedSections, error } = await supabase
+          .from('igdb_home_cache')
+          .select('cache_key, data, expires_at')
+          .in('cache_key', ['featured_games', 'latest_games', 'new_releases', 'highest_rated', 'categories'])
+          .gt('expires_at', now.toISOString());
+
+        if (!error && cachedSections && cachedSections.length > 0) {
+          console.log('[GamingExplorerHome] Using global Supabase cache');
+          const cacheMap = new Map(cachedSections.map(s => [s.cache_key, s.data]));
+          
+          if (cacheMap.has('featured_games')) setFeaturedGames(cacheMap.get('featured_games'));
+          if (cacheMap.has('latest_games')) setLatestGames(cacheMap.get('latest_games'));
+          if (cacheMap.has('new_releases')) setNewReleases(cacheMap.get('new_releases'));
+          if (cacheMap.has('highest_rated')) setHighestRatedGames(cacheMap.get('highest_rated'));
+          if (cacheMap.has('categories')) setCategoryGamesMap(cacheMap.get('categories'));
+          
+          setLoadingFeatured(false);
+          setLoadingLatest(false);
+          setLoadingNewReleases(false);
+          setLoadingHighestRated(false);
+          setLoadingCategories(false);
+          return;
+        }
+      } catch (error) {
+        console.error('[GamingExplorerHome] Error loading cache:', error);
       }
 
       console.log('[GamingExplorerHome] Fetching fresh IGDB data');
       setLoadingFeatured(true);
       setLoadingLatest(true);
+      setLoadingNewReleases(true);
+      setLoadingHighestRated(true);
       setLoadingCategories(true);
       
       try {
@@ -194,6 +222,38 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
         setFeaturedGames(validFeatured.slice(0, 8));
         setLoadingFeatured(false);
         
+        // Fetch New Releases (last 15 days) - Games released recently
+        const newReleaseTitles = [
+          'Indiana Jones and the Great Circle',
+          'Path of Exile 2',
+          'Marvel Rivals',
+          'Fantasian Neo Dimension',
+          'Delta Force',
+          'Infinity Nikki',
+        ];
+        const newReleasePromises = newReleaseTitles.map(title => fetchIGDBGameData(title));
+        const newReleaseResults = await Promise.all(newReleasePromises);
+        const validNewReleases = newReleaseResults.filter((g): g is IGDBGameData => g !== null);
+        setNewReleases(validNewReleases.slice(0, 6));
+        setLoadingNewReleases(false);
+        
+        // Fetch Highest Rated Games (all-time best)
+        const highestRatedTitles = [
+          'The Legend of Zelda: Breath of the Wild',
+          'The Witcher 3: Wild Hunt',
+          'Red Dead Redemption 2',
+          'God of War',
+          'The Last of Us',
+          'Hades',
+          'Portal 2',
+          'Half-Life 2',
+        ];
+        const highestRatedPromises = highestRatedTitles.map(title => fetchIGDBGameData(title));
+        const highestRatedResults = await Promise.all(highestRatedPromises);
+        const validHighestRated = highestRatedResults.filter((g): g is IGDBGameData => g !== null);
+        setHighestRatedGames(validHighestRated.slice(0, 8));
+        setLoadingHighestRated(false);
+        
         // Preload games for ALL categories (5-8 games each)
         const categoryQueries: Record<string, string[]> = {
           action: ['Devil May Cry 5', 'Bayonetta 3', 'Armored Core VI', 'Sekiro', 'Nioh 2', 'Sifu'],
@@ -217,13 +277,21 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
         
         setCategoryGamesMap(categoryResults);
 
-        // Cache the results
-        igdbHomeCacheStorage.set({
-          featuredGames: validFeatured.slice(0, 8),
-          latestGames: validLatest.slice(0, 6),
-          categoryGamesMap: categoryResults,
-        });
-        console.log('[GamingExplorerHome] Cached IGDB data for 24 hours');
+        // Cache the results in Supabase with different TTLs
+        const now = new Date();
+        const oneDayLater = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 1 day
+        const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days
+        
+        const cacheEntries = [
+          { cache_key: 'featured_games', data: validFeatured.slice(0, 8), expires_at: sevenDaysLater.toISOString() },
+          { cache_key: 'latest_games', data: validLatest.slice(0, 6), expires_at: sevenDaysLater.toISOString() },
+          { cache_key: 'new_releases', data: validNewReleases.slice(0, 6), expires_at: oneDayLater.toISOString() },
+          { cache_key: 'highest_rated', data: validHighestRated.slice(0, 8), expires_at: sevenDaysLater.toISOString() },
+          { cache_key: 'categories', data: categoryResults, expires_at: sevenDaysLater.toISOString() },
+        ];
+        
+        await supabase.from('igdb_home_cache').upsert(cacheEntries, { onConflict: 'cache_key' });
+        console.log('[GamingExplorerHome] Cached to Supabase: new_releases=1d, others=7d');
       } catch (error) {
         console.error('Error fetching games:', error);
       } finally {
@@ -713,6 +781,114 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
         ) : (
           <div className="text-center py-6 text-[#8F8F8F] text-sm">
             Loading latest games...
+          </div>
+        )}
+      </section>
+
+      {/* New Releases (Last 15 Days) */}
+      <section>
+        <h2 className="text-lg font-bold text-[#F5F5F5] mb-3 flex items-center gap-2">
+          <span className="w-1.5 h-6 bg-gradient-to-b from-[#10B981] to-[#06B6D4] rounded-full" />
+          New Releases
+          <span className="text-xs text-[#8F8F8F] font-normal">(Last 15 Days)</span>
+        </h2>
+        {loadingNewReleases ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="w-8 h-8 border-2 border-[#10B981] border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : newReleases.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-2 lg:gap-3">
+            {newReleases.map((game) => (
+              <motion.button
+                key={game.id}
+                whileHover={{ scale: 1.03, y: -4 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => onOpenGameInfo(game, game.name)}
+                className="bg-[#1C1C1C] rounded-xl overflow-hidden border border-[#424242]/40 hover:border-[#10B981]/50 transition-all text-left"
+              >
+                <div className="aspect-[3/4] relative overflow-hidden">
+                  {game.cover?.url ? (
+                    <img
+                      src={getCoverUrl(game.cover.url, 'cover_big')}
+                      alt={game.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-[#2A2A2A]" />
+                  )}
+                  {/* Fresh badge */}
+                  <div className="absolute top-2 left-2 bg-gradient-to-r from-[#10B981] to-[#06B6D4] px-2 py-0.5 rounded text-[10px] font-bold text-white">
+                    FRESH
+                  </div>
+                  {game.aggregated_rating && (
+                    <div className="absolute top-2 right-2 bg-black/70 px-1.5 py-0.5 rounded text-[10px] font-bold text-[#10B981]">
+                      {Math.round(game.aggregated_rating)}%
+                    </div>
+                  )}
+                </div>
+                <div className="p-2">
+                  <h3 className="font-medium text-[#F5F5F5] text-xs line-clamp-1">{game.name}</h3>
+                </div>
+              </motion.button>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-6 text-[#8F8F8F] text-sm">
+            Loading new releases...
+          </div>
+        )}
+      </section>
+
+      {/* Highest Rated Games */}
+      <section>
+        <h2 className="text-lg font-bold text-[#F5F5F5] mb-3 flex items-center gap-2">
+          <span className="w-1.5 h-6 bg-gradient-to-b from-[#FFD700] to-[#FFA500] rounded-full" />
+          Highest Rated
+          <span className="text-xs text-[#8F8F8F] font-normal">(All Time)</span>
+        </h2>
+        {loadingHighestRated ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="w-8 h-8 border-2 border-[#FFD700] border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : highestRatedGames.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-2 lg:gap-4">
+            {highestRatedGames.map((game) => (
+              <motion.button
+                key={game.id}
+                whileHover={{ scale: 1.02, y: -4 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => onOpenGameInfo(game, game.name)}
+                className="bg-[#1C1C1C] rounded-xl overflow-hidden border border-[#424242]/40 hover:border-[#FFD700]/50 transition-all text-left"
+              >
+                <div className="aspect-[3/4] relative overflow-hidden">
+                  {game.cover?.url ? (
+                    <img
+                      src={getCoverUrl(game.cover.url, 'cover_big')}
+                      alt={game.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-[#2A2A2A]" />
+                  )}
+                  {/* Gold star badge for highest rated */}
+                  <div className="absolute top-2 left-2 bg-gradient-to-r from-[#FFD700] to-[#FFA500] px-2 py-0.5 rounded text-[10px] font-bold text-black">
+                    ★ TOP
+                  </div>
+                  {game.aggregated_rating && (
+                    <div className="absolute top-2 right-2 bg-black/70 px-2 py-1 rounded text-xs font-bold text-[#FFD700]">
+                      {Math.round(game.aggregated_rating)}%
+                    </div>
+                  )}
+                </div>
+                <div className="p-2">
+                  <h3 className="font-medium text-[#F5F5F5] text-xs line-clamp-1">{game.name}</h3>
+                </div>
+              </motion.button>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-6 text-[#8F8F8F] text-sm">
+            Loading highest rated games...
           </div>
         )}
       </section>

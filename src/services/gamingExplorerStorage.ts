@@ -1022,6 +1022,8 @@ export const photoLimitsStorage = {
 interface IGDBHomeCache {
   featuredGames: IGDBGameData[];
   latestGames: IGDBGameData[];
+  newReleases?: IGDBGameData[];
+  highestRatedGames?: IGDBGameData[];
   categoryGamesMap: Record<string, IGDBGameData[]>;
   cachedAt: number;
 }
