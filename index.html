@@ -22,6 +22,9 @@
     <link rel="preload" href="/images/mascot/pro-user.png" as="image" />
     <link rel="preload" href="/images/mascot/vanguard-user.png" as="image" />
     
+    <!-- LemonSqueezy Checkout -->
+    <script src="https://app.lemonsqueezy.com/js/lemon.js" defer></script>
+    
     <link rel="icon" type="image/png" href="/images/otagon-logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
     
@@ -392,12 +395,7 @@
       }
       
       #pwa-loading-screen .loading-spinner {
-        width: 32px;
-        height: 32px;
-        border: 3px solid rgba(74, 222, 128, 0.2);
-        border-top-color: #4ade80;
-        border-radius: 50%;
-        animation: pwa-spin 0.8s linear infinite;
+        display: none;
       }
       
       @keyframes pwa-spin {

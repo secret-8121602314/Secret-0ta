@@ -1578,12 +1578,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 </ul>
                                 <div className="mt-auto">
                                     <button
-                                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                                        className="w-full bg-gradient-to-r from-neutral-600 to-neutral-500 text-neutral-300 font-bold py-3 px-6 rounded-lg cursor-not-allowed opacity-50"
-                                        disabled
-                                        title="Coming Soon - Join the waitlist to be notified when pricing goes live!"
+                                        onClick={_onGetStarted}
+                                        className="w-full bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-opacity"
+                                        title="Get started with Free plan - Sign up now!"
                                     >
-                                        Coming Soon
+                                        Get Started Free
                                     </button>
                                 </div>
                             </div>
@@ -1612,12 +1611,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 </ul>
                                 <div className="mt-auto">
                                     <button 
-                                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                                        className="w-full bg-gradient-to-r from-neutral-600 to-neutral-500 text-neutral-300 font-bold py-3 px-6 rounded-lg cursor-not-allowed opacity-50"
-                                        disabled
-                                        title="Coming Soon - Join the waitlist to be notified when pricing goes live!"
+                                        onClick={_onGetStarted}
+                                        className="w-full bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-opacity shadow-lg shadow-[#E53A3A]/30"
+                                        title="Sign up to upgrade to Vanguard Pro"
                                     >
-                                        Coming Soon
+                                        Upgrade to Vanguard
                                     </button>
             </div>
           </div>
@@ -1642,12 +1640,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 </ul>
                                 <div className="mt-auto">
                                     <button 
-                                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                                        className="w-full bg-gradient-to-r from-neutral-600 to-neutral-500 text-neutral-300 font-bold py-3 px-6 rounded-lg cursor-not-allowed opacity-50"
-                                        disabled
-                                        title="Coming Soon - Join the waitlist to be notified when pricing goes live!"
+                                        onClick={_onGetStarted}
+                                        className="w-full bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-opacity"
+                                        title="Sign up to upgrade to Pro"
                                     >
-                                        Coming Soon
+                                        Upgrade to Pro
                                     </button>
                                 </div>
             </div>

@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import Modal from '../ui/Modal';
 import { User, UserTier } from '../../types';
 import { authService } from '../../services/authService';
+import { getCustomerPortalUrl } from '../../services/lemonsqueezy';
 import TrialBanner from '../trial/TrialBanner';
 import Logo from '../ui/Logo';
+import PaymentModal from './PaymentModal';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -17,6 +19,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   user
 }) => {
   const [activeTab, setActiveTab] = useState<'account' | 'tier' | 'profile'>('account');
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   
   // Profile preferences state (from ProfileSetupBanner)
   const [hintStyle, setHintStyle] = useState(user?.profileData?.hintStyle || 'Balanced');
@@ -28,6 +31,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const [gamingStyle, setGamingStyle] = useState(user?.profileData?.gamingStyle || 'balanced');
   const [experienceLevel, setExperienceLevel] = useState(user?.profileData?.experienceLevel || 'intermediate');
   const [preferredContentStyle, setPreferredContentStyle] = useState(user?.profileData?.preferredContentStyle || 'detailed');
+
+  // Handle checkout completion - close all modals
+  const handleCheckoutSuccess = () => {
+    console.log('💳 Checkout success - closing all modals');
+    setShowPaymentModal(false);
+    onClose(); // Close settings modal
+  };
+  
+  // Handle checkout close - close all modals and return to chat
+  const handleCheckoutClose = () => {
+    console.log('❌ Checkout closed - closing all modals and returning to chat');
+    setShowPaymentModal(false);
+    onClose(); // Close settings modal too
+  };
 
   if (!user) {
 
@@ -274,6 +291,28 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
             </div>
 
+            {/* Subscription Management */}
+            <div className="flex gap-3">
+              {user.tier === 'free' ? (
+                <button
+                  onClick={() => setShowPaymentModal(true)}
+                  className="w-full px-6 py-3 bg-gradient-to-r from-primary to-secondary text-white rounded-lg hover:opacity-90 transition-opacity font-medium"
+                >
+                  Upgrade Now
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    const portalUrl = getCustomerPortalUrl();
+                    window.open(portalUrl, '_blank');
+                  }}
+                  className="w-full px-6 py-3 bg-surface-light text-text-primary rounded-lg hover:bg-surface transition-colors font-medium"
+                >
+                  Manage Subscription
+                </button>
+              )}
+            </div>
+
           </div>
         )}
 
@@ -515,6 +554,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         )}
 
       </div>
+      
+      {/* Payment Modal */}
+      {user && (
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          user={user}
+          onCheckoutSuccess={handleCheckoutSuccess}
+          onCheckoutClose={handleCheckoutClose}
+        />
+      )}
     </Modal>
   );
 };

@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { User } from '../../types';
 import StarIcon from '../ui/StarIcon';
 import TextIcon from '../ui/TextIcon';
 import ImageIcon from '../ui/ImageIcon';
+import PaymentModal from './PaymentModal';
 
 interface CreditModalProps {
   isOpen: boolean;
@@ -12,6 +13,22 @@ interface CreditModalProps {
 }
 
 const CreditModal: React.FC<CreditModalProps> = ({ isOpen, onClose, onUpgrade, user }) => {
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  
+  // Handle checkout completion - close all modals
+  const handleCheckoutSuccess = () => {
+    console.log('💳 Checkout success - closing all modals');
+    setShowPaymentModal(false);
+    onClose(); // Close credit modal
+  };
+  
+  // Handle checkout close - close all modals and return to chat
+  const handleCheckoutClose = () => {
+    console.log('❌ Checkout closed - closing all modals and returning to chat');
+    setShowPaymentModal(false);
+    onClose(); // Close credit modal too
+  };
+  
   if (!isOpen) {
     return null;
   }
@@ -80,8 +97,7 @@ const CreditModal: React.FC<CreditModalProps> = ({ isOpen, onClose, onUpgrade, u
           <div className="mt-8 bg-[#2E2E2E]/30 backdrop-blur-sm p-4 rounded-lg border border-[#424242]/30">
             <button
               onClick={() => {
-                onUpgrade();
-                onClose();
+                setShowPaymentModal(true);
               }}
               className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-bold py-3 px-4 rounded-lg transition-transform transform hover:scale-105"
             >
@@ -91,6 +107,15 @@ const CreditModal: React.FC<CreditModalProps> = ({ isOpen, onClose, onUpgrade, u
           </div>
         )}
       </div>
+      
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        user={user}
+        onCheckoutSuccess={handleCheckoutSuccess}
+        onCheckoutClose={handleCheckoutClose}
+      />
     </div>
   );
 };

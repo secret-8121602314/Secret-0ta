@@ -1,10 +1,9 @@
 /**
- * Payment Service (Placeholder for Future Implementation)
+ * Payment Service - LemonSqueezy Integration Bridge
  * 
- * This service will handle payment processing and subscription management.
- * Currently contains placeholder implementations for Stripe integration.
- * 
- * @todo Implement when ready to integrate payment processing
+ * This service bridges the payment API to LemonSqueezy services,
+ * allowing the rest of the app to use a consistent payment interface
+ * regardless of the underlying payment provider.
  */
 
 import type { 
@@ -15,13 +14,22 @@ import type {
   IPaymentService,
   BillingInterval 
 } from '../types/payment';
+import { 
+  openCheckout,
+  getUserSubscription,
+  getUserSubscriptions,
+  getCustomerPortalUrl,
+  PRICING_PLANS,
+  type TierKey,
+} from './lemonsqueezy';
+import type { User } from '../types';
 
 class PaymentService implements IPaymentService {
   private isInitialized = false;
   private config: PaymentConfig | null = null;
 
   /**
-   * Get current configuration (for future use)
+   * Get current configuration
    */
   getConfig(): PaymentConfig | null {
     return this.config;
@@ -29,150 +37,156 @@ class PaymentService implements IPaymentService {
 
   /**
    * Initialize payment service with configuration
-   * 
-   * @future Will load Stripe SDK and initialize payment provider
    */
   async initialize(config: PaymentConfig): Promise<void> {
-        this.config = config;
+    this.config = config;
     this.isInitialized = true;
-
-    // @todo: Load Stripe SDK
-    // if (config.provider === 'stripe') {
-    //   const stripe = await loadStripe(config.publicKey);
-    //   this.stripeInstance = stripe;
-    // }
   }
 
   /**
-   * Create a new subscription for a user
-   * 
-   * @future Will create Stripe subscription and handle payment
+   * Create a new subscription (opens LemonSqueezy checkout)
    */
   async createSubscription(
-    _userId: string, 
-    _tier: 'pro' | 'vanguard_pro', 
-    _interval: BillingInterval
+    userId: string, 
+    tier: 'pro' | 'vanguard_pro', 
+    _interval: BillingInterval,
+    user?: User
   ): Promise<Subscription> {
-    this.ensureInitialized();
+    if (!user) {
+      throw new Error('User object required for checkout');
+    }
 
-        // @todo: Implement Stripe subscription creation
-    // const response = await fetch('/api/subscriptions', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ userId, tier, interval })
-    // });
-    // const subscription = await response.json();
-    // return subscription;
+    // Open LemonSqueezy checkout
+    await openCheckout({
+      tier: tier as TierKey,
+      user,
+      redirectUrl: `${window.location.origin}/payment-success`,
+    });
 
-    throw new Error('Payment integration not yet implemented');
+    // Return a pending subscription object
+    // The actual subscription will be created via webhook
+    return {
+      id: 'pending',
+      userId,
+      tier,
+      status: 'pending',
+      interval: _interval,
+      startDate: new Date().toISOString(),
+      endDate: null,
+      cancelAtPeriodEnd: false,
+    } as Subscription;
   }
 
   /**
    * Update an existing subscription
    */
-  async updateSubscription(_subscriptionId: string, _tier: 'pro' | 'vanguard_pro'): Promise<Subscription> {
-    this.ensureInitialized();
-        // @todo: Implement subscription update
-    throw new Error('Payment integration not yet implemented');
+  async updateSubscription(subscriptionId: string, tier: 'pro' | 'vanguard_pro'): Promise<Subscription> {
+    // LemonSqueezy handles subscription updates via customer portal
+    console.warn('Subscription updates should be done via customer portal:', getCustomerPortalUrl());
+    throw new Error('Please use the customer portal to update your subscription');
   }
 
   /**
    * Cancel a subscription
-   * 
-   * @param subscriptionId - The subscription ID to cancel
-   * @param immediate - If true, cancel immediately; otherwise at period end
    */
-  async cancelSubscription(_subscriptionId: string, _immediate = false): Promise<void> {
-    this.ensureInitialized();
-        // @todo: Implement subscription cancellation
-    throw new Error('Payment integration not yet implemented');
+  async cancelSubscription(subscriptionId: string, immediate = false): Promise<void> {
+    // LemonSqueezy handles cancellations via customer portal
+    console.warn('Subscription cancellations should be done via customer portal:', getCustomerPortalUrl());
+    throw new Error('Please use the customer portal to cancel your subscription');
   }
 
   /**
    * Reactivate a canceled subscription
    */
-  async reactivateSubscription(_subscriptionId: string): Promise<Subscription> {
-    this.ensureInitialized();
-        // @todo: Implement subscription reactivation
-    throw new Error('Payment integration not yet implemented');
+  async reactivateSubscription(subscriptionId: string): Promise<Subscription> {
+    console.warn('Subscription reactivation should be done via customer portal:', getCustomerPortalUrl());
+    throw new Error('Please use the customer portal to reactivate your subscription');
   }
 
   /**
-   * Add a payment method for a user
+   * Get user's subscriptions from Supabase
+   */
+  async getUserSubscriptions(userId: string): Promise<Subscription[]> {
+    const subscriptions = await getUserSubscriptions(userId);
+    
+    // Map to Payment type format
+    return subscriptions.map(sub => ({
+      id: sub.lemon_subscription_id,
+      userId: sub.user_id,
+      tier: sub.tier,
+      status: sub.status === 'active' ? 'active' : 'cancelled',
+      interval: sub.tier === 'vanguard_pro' ? 'year' : 'month',
+      startDate: sub.created_at,
+      endDate: sub.ends_at,
+      cancelAtPeriodEnd: sub.status === 'cancelled' && sub.ends_at !== null,
+    })) as Subscription[];
+  }
+
+  /**
+   * Get user's active subscription
+   */
+  async getActiveSubscription(userId: string): Promise<Subscription | null> {
+    const subscription = await getUserSubscription(userId);
+    
+    if (!subscription) {
+      return null;
+    }
+
+    return {
+      id: subscription.lemon_subscription_id,
+      userId: subscription.user_id,
+      tier: subscription.tier,
+      status: subscription.status === 'active' ? 'active' : 'cancelled',
+      interval: subscription.tier === 'vanguard_pro' ? 'year' : 'month',
+      startDate: subscription.created_at,
+      endDate: subscription.ends_at,
+      cancelAtPeriodEnd: subscription.status === 'cancelled' && subscription.ends_at !== null,
+    } as Subscription;
+  }
+
+  /**
+   * Payment methods are managed via LemonSqueezy customer portal
    */
   async addPaymentMethod(_userId: string, _paymentMethodData: unknown): Promise<PaymentMethod> {
-    this.ensureInitialized();
-        // @todo: Implement payment method addition
-    // Use Stripe Elements or similar
-    throw new Error('Payment integration not yet implemented');
+    console.warn('Payment methods should be managed via customer portal:', getCustomerPortalUrl());
+    throw new Error('Please use the customer portal to manage payment methods');
   }
 
-  /**
-   * Remove a payment method
-   */
   async removePaymentMethod(_paymentMethodId: string): Promise<void> {
-    this.ensureInitialized();
-        // @todo: Implement payment method removal
-    throw new Error('Payment integration not yet implemented');
+    throw new Error('Please use the customer portal to manage payment methods');
   }
 
-  /**
-   * Set default payment method
-   */
   async setDefaultPaymentMethod(_paymentMethodId: string): Promise<void> {
-    this.ensureInitialized();
-        // @todo: Implement setting default payment method
-    throw new Error('Payment integration not yet implemented');
+    throw new Error('Please use the customer portal to manage payment methods');
   }
 
-  /**
-   * Get all payment methods for a user
-   */
   async getPaymentMethods(_userId: string): Promise<PaymentMethod[]> {
-    this.ensureInitialized();
-        // @todo: Implement fetching payment methods
-    throw new Error('Payment integration not yet implemented');
+    // LemonSqueezy doesn't expose payment methods via API
+    return [];
   }
 
   /**
-   * Get invoices for a user
+   * Invoices are managed via LemonSqueezy customer portal
    */
   async getInvoices(_userId: string, _limit = 10): Promise<Invoice[]> {
-    this.ensureInitialized();
-        // @todo: Implement fetching invoices
-    throw new Error('Payment integration not yet implemented');
+    console.warn('Invoices should be accessed via customer portal:', getCustomerPortalUrl());
+    return [];
   }
 
-  /**
-   * Download an invoice PDF
-   */
   async downloadInvoice(_invoiceId: string): Promise<Blob> {
-    this.ensureInitialized();
-        // @todo: Implement invoice download
-    throw new Error('Payment integration not yet implemented');
+    throw new Error('Please use the customer portal to download invoices');
   }
 
   /**
-   * Handle payment webhook events
-   * 
-   * @future Will process Stripe webhook events
+   * Webhooks are handled by Supabase Edge Function
    */
   async handleWebhook(_event: unknown): Promise<void> {
-    this.ensureInitialized();
-        // @todo: Implement webhook handling for:
-    // - payment_intent.succeeded
-    // - payment_intent.failed
-    // - customer.subscription.created
-    // - customer.subscription.updated
-    // - customer.subscription.deleted
-    // - invoice.paid
-    // - invoice.payment_failed
-    
-    throw new Error('Payment integration not yet implemented');
+    console.warn('Webhooks are handled by Supabase Edge Function');
+    throw new Error('Webhooks are handled server-side');
   }
 
   /**
-   * Get pricing plans
+   * Get pricing plans from LemonSqueezy constants
    */
   getPricingPlans() {
     return [
@@ -192,47 +206,33 @@ class PaymentService implements IPaymentService {
       },
       {
         id: 'pro-monthly',
-        name: 'Pro (Monthly)',
+        name: PRICING_PLANS.pro.name,
         tier: 'pro' as const,
-        price: 4.99,
-        currency: 'USD',
-        interval: 'month' as const,
-        features: [
-          '1,583 text queries/month',
-          '328 image queries/month',
-          'Enhanced AI features',
-          'Priority support',
-          'No ads',
-          'Grounding search'
-        ],
+        price: PRICING_PLANS.pro.price,
+        currency: PRICING_PLANS.pro.currency,
+        interval: PRICING_PLANS.pro.interval,
+        features: PRICING_PLANS.pro.features,
         isPopular: true
       },
       {
         id: 'vanguard-yearly',
-        name: 'Pro Vanguard (Yearly)',
+        name: PRICING_PLANS.vanguard_pro.name,
         tier: 'vanguard_pro' as const,
-        price: 30,
-        currency: 'USD',
-        interval: 'year' as const,
-        features: [
-          '1,583 text queries/month',
-          '328 image queries/month',
-          'All Pro features',
-          'Lifetime price guarantee',
-          'Exclusive Vanguard badge',
-          'Founder\'s Council access',
-          'Beta feature access',
-          'Earn by playing (coming soon)'
-        ]
+        price: PRICING_PLANS.vanguard_pro.price,
+        currency: PRICING_PLANS.vanguard_pro.currency,
+        interval: PRICING_PLANS.vanguard_pro.interval,
+        features: PRICING_PLANS.vanguard_pro.features,
       }
     ];
   }
 
-  private ensureInitialized(): void {
-    if (!this.isInitialized) {
-      throw new Error('PaymentService not initialized. Call initialize() first.');
-    }
+  /**
+   * Get customer portal URL
+   */
+  getCustomerPortalUrl(): string {
+    return getCustomerPortalUrl();
   }
 }
 
 export const paymentService = new PaymentService();
+

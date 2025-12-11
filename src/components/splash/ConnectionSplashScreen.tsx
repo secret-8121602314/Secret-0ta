@@ -23,13 +23,8 @@ const ConnectionSplashScreen: React.FC<ConnectionSplashScreenProps> = ({ isOpen,
         {/* Card container */}
         <div className="bg-gradient-to-b from-[#1A1A1A]/90 to-[#0D0D0D]/90 border border-[#2A2A2A] rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-2xl">
           
-          {/* Mascot with glow */}
+          {/* Mascot */}
           <div className="relative flex justify-center mb-4 sm:mb-6">
-            {/* Glow effect */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-32 h-32 sm:w-40 sm:h-40 bg-green-500/20 rounded-full blur-3xl animate-pulse"></div>
-            </div>
-            
             {/* Mascot image */}
             <img
               src="/images/mascot/5.2.png"

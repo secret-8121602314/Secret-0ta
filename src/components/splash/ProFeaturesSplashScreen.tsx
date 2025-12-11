@@ -3,6 +3,8 @@ import { HandsFreeIcon } from '../ui/HandsFreeIcon';
 import KeyboardIcon from '../ui/KeyboardIcon';
 import { AppLoadingScreen } from '../ui/AppLoadingScreen';
 import { motion, AnimatePresence } from 'framer-motion';
+import PaymentModal from '../modals/PaymentModal';
+import { authService } from '../../services/authService';
 
 interface ProFeaturesSplashScreenProps {
   onComplete: () => void;
@@ -13,16 +15,18 @@ interface ProFeaturesSplashScreenProps {
 // Full feature card for desktop
 const FullFeature: React.FC<{ title: string; description: string; children: React.ReactNode }> = ({ title, description, children }) => (
   <motion.div 
-    className="flex items-start gap-4 p-4 bg-gradient-to-r from-[#1C1C1C]/80 to-[#0A0A0A]/80 backdrop-blur-xl rounded-xl border border-neutral-800/60 hover:border-neutral-700/80 transition-all duration-300"
-    whileHover={{ scale: 1.01 }}
+    className="flex items-start gap-3 sm:gap-4 p-4 sm:p-5 bg-gradient-to-br from-[#1C1C1C]/90 to-[#0A0A0A]/80 backdrop-blur-xl rounded-xl border border-neutral-800/60 hover:border-neutral-700/80 hover:shadow-lg hover:shadow-[#FF4D4D]/10 transition-all duration-300"
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    whileHover={{ scale: 1.02, y: -2 }}
     transition={{ type: 'spring', stiffness: 300, damping: 20 }}
   >
-    <div className="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-lg bg-gradient-to-br from-[#FF4D4D]/20 to-[#FFAB40]/20 border border-neutral-700/60">
+    <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-xl bg-gradient-to-br from-[#FF4D4D]/20 to-[#FFAB40]/20 border border-neutral-700/60 shadow-inner">
        {children}
     </div>
     <div className="flex-1 min-w-0">
-      <h3 className="text-sm font-semibold text-white mb-1">{title}</h3>
-      <p className="text-xs text-[#A3A3A3] leading-relaxed">{description}</p>
+      <h3 className="text-sm sm:text-base font-semibold text-white mb-1.5">{title}</h3>
+      <p className="text-xs sm:text-sm text-[#A3A3A3] leading-relaxed">{description}</p>
     </div>
   </motion.div>
 );
@@ -46,6 +50,23 @@ const vanguardFeatures = [
 const ProFeaturesSplashScreen: React.FC<ProFeaturesSplashScreenProps> = ({ onComplete, onUpgrade, onUpgradeToVanguard }) => {
   const [activeTab, setActiveTab] = useState<'pro' | 'vanguard'>('pro');
   const [isMounted, setIsMounted] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const user = authService.getCurrentUser();
+
+  // Handle checkout completion - close payment modal and go to chat
+  const handleCheckoutSuccess = () => {
+    console.log('💳 Checkout success - navigating to chat');
+    setShowPaymentModal(false);
+    // Navigate to chat after successful upgrade
+    onComplete();
+  };
+  
+  // Handle checkout close - close payment modal and stay on splash
+  const handleCheckoutClose = () => {
+    console.log('❌ Checkout closed - closing payment modal, staying on splash');
+    setShowPaymentModal(false);
+    // Keep user on splash screen (they can click "Maybe Later" to proceed)
+  };
 
   React.useEffect(() => {
     setIsMounted(true);
@@ -59,21 +80,27 @@ const ProFeaturesSplashScreen: React.FC<ProFeaturesSplashScreenProps> = ({ onCom
   const isVanguard = activeTab === 'vanguard';
 
   return (
-    <div className="h-screen bg-gradient-to-br from-[#111111] to-[#0A0A0A] text-[#F5F5F5] flex flex-col font-inter overflow-hidden">
+    <div className="h-screen bg-gradient-to-br from-[#111111] via-[#0F0F0F] to-[#0A0A0A] text-[#F5F5F5] flex flex-col font-inter overflow-hidden relative">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#FF4D4D]/5 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#FFAB40]/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+      </div>
+
       {/* Tab Switcher - Top */}
-      <div className="flex-shrink-0 px-5 pt-6 sm:pt-4 pb-2">
-        <div className="w-full max-w-xs mx-auto p-1 bg-[#1A1A1A]/80 backdrop-blur-sm rounded-xl flex items-center gap-1">
+      <div className="flex-shrink-0 px-4 sm:px-6 pt-5 sm:pt-6 md:pt-8 pb-3 sm:pb-4 relative z-10">
+        <div className="w-full max-w-sm mx-auto p-1.5 bg-[#1A1A1A]/90 backdrop-blur-md rounded-2xl flex items-center gap-2 shadow-xl border border-neutral-800/50">
           <motion.button 
             onClick={() => setActiveTab('pro')} 
-            className={`w-1/2 py-2 text-xs font-bold rounded-lg transition-colors duration-200 ${activeTab === 'pro' ? 'bg-gradient-to-r from-[#424242] to-[#2A2A2A] text-white shadow-md' : 'text-neutral-400'}`}
-            whileTap={{ scale: 0.95 }}
+            className={`w-1/2 py-2.5 sm:py-3 text-xs sm:text-sm font-bold rounded-xl transition-all duration-300 ${activeTab === 'pro' ? 'bg-gradient-to-r from-[#424242] to-[#2A2A2A] text-white shadow-lg' : 'text-neutral-400 hover:text-neutral-300'}`}
+            whileTap={{ scale: 0.97 }}
           >
             Pro
           </motion.button>
           <motion.button 
             onClick={() => setActiveTab('vanguard')} 
-            className={`w-1/2 py-2 text-xs font-bold rounded-lg transition-colors duration-200 ${activeTab === 'vanguard' ? 'bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] text-white shadow-md' : 'text-neutral-400'}`}
-            whileTap={{ scale: 0.95 }}
+            className={`w-1/2 py-2.5 sm:py-3 text-xs sm:text-sm font-bold rounded-xl transition-all duration-300 ${activeTab === 'vanguard' ? 'bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] text-white shadow-lg' : 'text-neutral-400 hover:text-neutral-300'}`}
+            whileTap={{ scale: 0.97 }}
           >
             Pro Vanguard
           </motion.button>
@@ -81,107 +108,188 @@ const ProFeaturesSplashScreen: React.FC<ProFeaturesSplashScreenProps> = ({ onCom
       </div>
 
       {/* Main Content - Mascot and header above list, centered, mobile first */}
-      <main className="flex-1 px-5 sm:px-6 py-2 overflow-hidden lg:overflow-y-auto">
-        <div className="h-full max-w-5xl mx-auto flex flex-col lg:block">
+      <main className="flex-1 px-4 sm:px-6 py-2 sm:py-4 overflow-hidden lg:overflow-y-auto relative z-10">
+        <div className="h-full max-w-7xl mx-auto flex flex-col lg:block">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
               className="h-full"
-              initial={{ opacity: 0, x: activeTab === 'pro' ? -20 : 20 }}
+              initial={{ opacity: 0, x: activeTab === 'pro' ? -30 : 30 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: activeTab === 'pro' ? 20 : -20 }}
-              transition={{ duration: 0.2 }}
+              exit={{ opacity: 0, x: activeTab === 'pro' ? 30 : -30 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
             >
               {/* Mobile Layout - Consistent structure for both tabs */}
-              <div className="lg:hidden flex flex-col items-center justify-between h-full py-3 sm:py-4">
+              <div className="lg:hidden flex flex-col items-center justify-between h-full py-2 sm:py-4">
                 {/* Top: Mascot and header */}
                 <div className="flex flex-col items-center flex-shrink-0">
-                  <div className="relative">
+                  <motion.div 
+                    className="relative"
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.4, delay: 0.1 }}
+                  >
+                    <div className={`absolute inset-0 ${isVanguard ? 'bg-amber-500/20' : 'bg-[#FF4D4D]/20'} rounded-2xl blur-2xl`}></div>
                     <img 
                       src={isVanguard ? '/images/mascot/vanguard-user.png' : '/images/mascot/pro-user.png'}
                       alt={isVanguard ? 'Vanguard Mascot' : 'Pro Mascot'}
-                      className="w-56 h-56 sm:w-64 sm:h-64 md:w-72 md:h-72 object-contain rounded-xl"
+                      className="relative w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 object-contain rounded-xl"
                       data-no-viewer="true"
                     />
-                  </div>
-                  <h2 className={`mt-2 sm:mt-3 text-base sm:text-lg md:text-xl font-bold text-center ${
-                    isVanguard 
-                      ? 'text-amber-300' 
-                      : 'bg-clip-text text-transparent bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40]'
-                  }`}>
+                  </motion.div>
+                  <motion.h2 
+                    className={`mt-3 sm:mt-4 text-lg sm:text-xl md:text-2xl font-bold text-center ${
+                      isVanguard 
+                        ? 'bg-clip-text text-transparent bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300' 
+                        : 'bg-clip-text text-transparent bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40]'
+                    }`}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
                     {isVanguard ? 'Founding Member' : 'Otagon Pro'}
-                  </h2>
-                  <p className="text-xs sm:text-sm text-neutral-400 text-center mt-1 px-2 mb-2">
-                    {isVanguard ? 'Shape the future' : 'Ultimate companion'}
+                  </motion.h2>
+                  
+                  {/* Pricing Badge */}
+                  <motion.div 
+                    className={`mt-2 px-4 py-2 rounded-full ${
+                      isVanguard 
+                        ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/50' 
+                        : 'bg-gradient-to-r from-[#FF4D4D]/20 to-[#FFAB40]/20 border border-[#FFAB40]/50'
+                    }`}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <p className={`text-base sm:text-lg font-bold ${isVanguard ? 'text-amber-300' : 'text-[#FFAB40]'}`}>
+                      {isVanguard ? '$35/year' : '$5/month'}
+                    </p>
+                  </motion.div>
+                  
+                  <p className="text-xs sm:text-sm text-neutral-400 text-center mt-2 px-4">
+                    {isVanguard ? 'Shape the future of gaming' : 'Your ultimate gaming companion'}
                   </p>
                 </div>
 
-                {/* Middle: Badge (Vanguard only) with consistent spacing */}
-                <div className="flex-shrink-0 my-2" style={{ minHeight: '40px' }}>
+                {/* Middle: Badge with consistent spacing */}
+                <motion.div 
+                  className="flex-shrink-0 my-3 sm:my-4"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                >
                   {isVanguard && (
-                    <div className="py-1.5 px-3 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/40 rounded-lg">
+                    <div className="py-2 px-4 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/40 rounded-xl shadow-lg">
                       <p className="text-xs sm:text-sm font-semibold text-amber-300 text-center">✨ All Pro features included!</p>
                     </div>
                   )}
                   {!isVanguard && (
-                    <div className="py-1.5 px-3 bg-gradient-to-r from-[#FF4D4D]/20 to-[#FFAB40]/20 border border-[#FFAB40]/40 rounded-lg">
-                      <p className="text-xs sm:text-sm font-semibold text-[#FFAB40] text-center">✨ Pro features included!</p>
+                    <div className="py-2 px-4 bg-gradient-to-r from-[#FF4D4D]/20 to-[#FFAB40]/20 border border-[#FFAB40]/40 rounded-xl shadow-lg">
+                      <p className="text-xs sm:text-sm font-semibold text-[#FFAB40] text-center">✨ Everything you need to dominate</p>
                     </div>
                   )}
-                </div>
+                </motion.div>
 
                 {/* Bottom: Features list - aligned at same height */}
                 <div className="flex-1 w-full flex flex-col justify-start overflow-hidden min-h-0">
-                  <div className="space-y-1.5 sm:space-y-2 w-full max-w-xs mx-auto overflow-y-auto px-1" style={{ maxHeight: '35vh' }}>
-                    {currentFeatures.map(f => (
-                      <div key={f.title} className="flex items-center gap-2 sm:gap-3 py-1.5 sm:py-2 px-2.5 rounded-lg bg-[#181818]/60 border border-neutral-800/40">
-                        <svg className={`w-5 h-5 flex-shrink-0 ${isVanguard ? 'text-amber-400' : 'text-[#FFAB40]'}`} fill="currentColor" viewBox="0 0 20 20">
+                  <div className="space-y-2 sm:space-y-2.5 w-full max-w-md mx-auto overflow-y-auto px-2 py-1" style={{ maxHeight: '38vh' }}>
+                    {currentFeatures.map((f, index) => (
+                      <motion.div 
+                        key={f.title} 
+                        className={`flex items-center gap-3 py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl ${
+                          isVanguard 
+                            ? 'bg-gradient-to-r from-[#1C1C1C]/90 to-[#0A0A0A]/80 border border-amber-500/20' 
+                            : 'bg-gradient-to-r from-[#1C1C1C]/90 to-[#0A0A0A]/80 border border-neutral-800/40'
+                        } backdrop-blur-sm shadow-md`}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.5 + index * 0.05 }}
+                      >
+                        <svg className={`w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 ${isVanguard ? 'text-amber-400' : 'text-[#FFAB40]'}`} fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
-                        <span className="text-sm sm:text-base text-neutral-200 font-medium">{f.title}</span>
-                      </div>
+                        <span className="text-sm sm:text-base text-neutral-100 font-medium flex-1">{f.title}</span>
+                      </motion.div>
                     ))}
                   </div>
                 </div>
               </div>
 
               {/* Desktop Layout - Full cards with mascot */}
-              <div className="hidden lg:flex h-full gap-8 items-center">
+              <div className="hidden lg:flex h-full gap-10 xl:gap-12 items-center py-4">
                 {/* Mascot Side - Desktop */}
-                <div className="w-1/3 flex flex-col items-center justify-center">
+                <motion.div 
+                  className="w-2/5 flex flex-col items-center justify-center"
+                  initial={{ opacity: 0, x: -30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
                   <div className="relative">
+                    <div className={`absolute inset-0 ${isVanguard ? 'bg-amber-500/20' : 'bg-[#FF4D4D]/20'} rounded-3xl blur-3xl`}></div>
                     <img 
                       src={isVanguard ? '/images/mascot/vanguard-user.png' : '/images/mascot/pro-user.png'} 
                       alt={isVanguard ? 'Vanguard Mascot' : 'Pro Mascot'}
-                      className="w-96 h-96 xl:w-[28rem] xl:h-[28rem] object-contain rounded-2xl"
+                      className="relative w-80 h-80 xl:w-96 xl:h-96 object-contain rounded-2xl"
                       data-no-viewer="true"
                     />
                   </div>
-                  <h2 className={`mt-4 text-2xl xl:text-3xl font-bold text-center bg-clip-text text-transparent ${
+                  <h2 className={`mt-6 text-3xl xl:text-4xl font-bold text-center bg-clip-text text-transparent ${
                     isVanguard 
                       ? 'bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300' 
                       : 'bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40]'
                   }`}>
                     {isVanguard ? 'Become a Founding Member' : 'Supercharge with Pro'}
                   </h2>
-                  <p className="text-sm text-neutral-400 text-center mt-2">
+                  
+                  {/* Pricing Badge - Desktop */}
+                  <div className={`mt-4 px-6 py-3 rounded-2xl shadow-2xl ${
+                    isVanguard 
+                      ? 'bg-gradient-to-r from-amber-500/30 to-orange-500/30 border-2 border-amber-500/60' 
+                      : 'bg-gradient-to-r from-[#FF4D4D]/30 to-[#FFAB40]/30 border-2 border-[#FFAB40]/60'
+                  }`}>
+                    <p className={`text-2xl font-bold text-center ${isVanguard ? 'text-amber-300' : 'text-white'}`}>
+                      {isVanguard ? '$35/year' : '$5/month'}
+                    </p>
+                    {isVanguard && (
+                      <p className="text-xs text-amber-300/70 text-center mt-1">Locked in forever</p>
+                    )}
+                  </div>
+                  
+                  <p className="text-base text-neutral-400 text-center mt-4 max-w-sm">
                     {isVanguard ? 'Join the elite. Shape the future of gaming.' : 'Unlock the ultimate gaming companion.'}
                   </p>
-                </div>
+                </motion.div>
 
                 {/* Features Side - Desktop */}
-                <div className="w-2/3 flex flex-col justify-center">
+                <motion.div 
+                  className="w-3/5 flex flex-col justify-center"
+                  initial={{ opacity: 0, x: 30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1 }}
+                >
                   {isVanguard && (
-                    <div className="mb-4 py-3 px-4 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/40 rounded-xl">
-                      <p className="text-sm font-semibold text-amber-300 text-center">✨ All Pro features are included!</p>
-                    </div>
+                    <motion.div 
+                      className="mb-6 py-4 px-5 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/40 rounded-2xl shadow-xl"
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <p className="text-base font-semibold text-amber-300 text-center">✨ All Pro features are included!</p>
+                    </motion.div>
                   )}
-                  <div className="grid grid-cols-2 gap-3">
-                    {currentFeatures.map(f => (
-                      <FullFeature key={f.title} title={f.title} description={f.description}>{f.icon}</FullFeature>
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 xl:gap-5">
+                    {currentFeatures.map((f, index) => (
+                      <motion.div
+                        key={f.title}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 + index * 0.1 }}
+                      >
+                        <FullFeature title={f.title} description={f.description}>{f.icon}</FullFeature>
+                      </motion.div>
                     ))}
                   </div>
-                </div>
+                </motion.div>
               </div>
             </motion.div>
           </AnimatePresence>
@@ -189,32 +297,44 @@ const ProFeaturesSplashScreen: React.FC<ProFeaturesSplashScreenProps> = ({ onCom
       </main>
 
       {/* Footer - Sticky */}
-      <footer className="flex-shrink-0 bg-gradient-to-t from-[#0A0A0A] to-transparent px-6 sm:px-8 pt-2 pb-6 sm:pb-5">
-        <div className="w-full max-w-md mx-auto space-y-2">
-          {/* Upgrade Button - Disabled */}
+      <footer className="flex-shrink-0 bg-gradient-to-t from-[#0A0A0A]/95 via-[#0F0F0F]/90 to-transparent px-4 sm:px-6 md:px-8 pt-3 sm:pt-4 pb-5 sm:pb-6 md:pb-7 relative z-10 border-t border-neutral-800/30">
+        <div className="w-full max-w-xl mx-auto space-y-2.5 sm:space-y-3">
+          {/* Upgrade Button - Now Functional */}
           <motion.button
-            onClick={activeTab === 'pro' ? onUpgrade : onUpgradeToVanguard}
-            disabled
-            className="w-full font-bold py-3 px-6 rounded-xl cursor-not-allowed opacity-50 text-sm flex items-center justify-center gap-2 bg-gradient-to-r from-neutral-600 to-neutral-500 text-neutral-300"
+            onClick={() => setShowPaymentModal(true)}
+            className={`w-full font-bold py-3 sm:py-4 md:py-4 px-4 sm:px-6 md:px-6 rounded-xl sm:rounded-xl text-sm sm:text-base md:text-base flex items-center justify-center gap-2 sm:gap-2.5 shadow-2xl transition-all duration-300 ${
+              isVanguard 
+                ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 hover:from-amber-400 hover:via-orange-400 hover:to-amber-400' 
+                : 'bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] hover:from-[#FF6B6B] hover:to-[#FFB960]'
+            } text-white hover:shadow-[0_0_40px_rgba(255,77,77,0.4)]`}
+            whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            <svg className="w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
             </svg>
-            {activeTab === 'pro' ? '$4.99/month - Coming Soon' : '$30/year - Coming Soon'}
+            <span className="font-extrabold">
+              {activeTab === 'pro' ? 'Upgrade to Pro - $5/month' : 'Join Vanguard - $35/year'}
+            </span>
           </motion.button>
           
           {/* Maybe Later Button */}
           <motion.button
             onClick={onComplete}
-            className="w-full font-medium py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#FF4D4D]/30 to-[#FFAB40]/30 border border-transparent hover:border-transparent transition-all duration-200 text-xs flex items-center justify-center gap-2 relative overflow-hidden group"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            className="w-full font-semibold py-2.5 sm:py-3 md:py-3.5 px-4 sm:px-6 rounded-xl sm:rounded-xl bg-gradient-to-r from-[#FF4D4D]/30 to-[#FFAB40]/30 border-2 border-transparent hover:border-[#FF4D4D]/50 transition-all duration-300 text-xs sm:text-sm md:text-base flex items-center justify-center gap-2 relative overflow-hidden group"
+            whileHover={{ scale: 1.01, y: -1 }}
+            whileTap={{ scale: 0.99 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
           >
             {/* Gradient border effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#FF4D4D] via-[#FFAB40] to-[#FF4D4D] opacity-40 group-hover:opacity-60 transition-opacity duration-200 rounded-xl -z-10"></div>
-            <div className="absolute inset-[1px] bg-gradient-to-br from-[#111111] to-[#0A0A0A] rounded-xl group-hover:from-[#1A1A1A] group-hover:to-[#0F0F0F] transition-colors duration-200"></div>
-            <svg className="w-3.5 h-3.5 relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40]" fill="none" stroke="url(#gradient)" viewBox="0 0 24 24">
+            <div className="absolute inset-0 bg-gradient-to-r from-[#FF4D4D] via-[#FFAB40] to-[#FF4D4D] opacity-30 group-hover:opacity-50 transition-opacity duration-300 rounded-xl -z-10"></div>
+            <div className="absolute inset-[2px] bg-gradient-to-br from-[#111111] to-[#0A0A0A] rounded-xl group-hover:from-[#1A1A1A] group-hover:to-[#0F0F0F] transition-colors duration-300"></div>
+            <svg className="w-4 h-4 sm:w-5 sm:h-5 relative z-10 flex-shrink-0" fill="none" stroke="url(#gradient)" viewBox="0 0 24 24">
               <defs>
                 <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#FF4D4D" />
@@ -223,10 +343,22 @@ const ProFeaturesSplashScreen: React.FC<ProFeaturesSplashScreenProps> = ({ onCom
               </defs>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40]">Maybe Later</span>
+            <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] font-bold">Maybe Later</span>
           </motion.button>
         </div>
       </footer>
+      
+      {/* Payment Modal */}
+      {user && (
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          user={user}
+          defaultTier={activeTab === 'pro' ? 'pro' : 'vanguard_pro'}
+          onCheckoutSuccess={handleCheckoutSuccess}
+          onCheckoutClose={handleCheckoutClose}
+        />
+      )}
     </div>
   );
 };

@@ -12,6 +12,7 @@ import FeaturesConnectedRoute from './routes/FeaturesConnectedRoute';
 import ProFeaturesRoute from './routes/ProFeaturesRoute';
 import MainAppRoute from './routes/MainAppRoute';
 import RootLayout from './routes/RootLayout';
+import PaymentSuccess from '../components/PaymentSuccess';
 
 /**
  * Router loader: Check authentication and onboarding status
@@ -37,15 +38,48 @@ async function authLoader({ request }: LoaderFunctionArgs) {
     .rpc('get_complete_user_data', { p_auth_user_id: session.user.id });
 
   if (rpcError || !rpcData || rpcData.length === 0) {
-    // If user has a session but no database record, redirect to onboarding
+    // New user: DB record doesn't exist yet
+    // Create the user record in the database
     if (session) {
-            if (pathname === '/' || pathname === '/login') {
-        return redirect('/onboarding');
+      console.log('[authLoader] New user detected - creating user record in database');
+      
+      // Get user metadata for name and avatar
+      const authUser = session.user;
+      const fullName = (authUser.user_metadata?.full_name || authUser.user_metadata?.name || 'User') as string;
+      const avatarUrl = authUser.user_metadata?.avatar_url as string | undefined;
+      
+      // Create user record via RPC
+      const { error: createError } = await supabase.rpc('create_user_record', {
+        p_auth_user_id: authUser.id,
+        p_email: authUser.email || '',
+        p_full_name: fullName,
+        p_avatar_url: avatarUrl,
+        p_is_developer: false,
+        p_tier: 'free'
+      });
+      
+      if (createError) {
+        // Check if it's a duplicate key error (user already exists)
+        if (createError.code !== '23505' && !createError.message?.includes('duplicate key')) {
+          console.error('[authLoader] Error creating user record:', createError);
+        } else {
+          console.log('[authLoader] User record already exists (duplicate key)');
+        }
+      } else {
+        console.log('[authLoader] User record created successfully');
       }
-      return { user: null, onboardingStatus: 'initial' as OnboardingStatus };
+      
+      // Return minimal user object so onboarding can start
+      const minimalUser: Partial<User> = {
+        authUserId: session.user.id,
+        email: session.user.email || '',
+        tier: 'free' as UserTier,
+        onboardingCompleted: false,
+      };
+      return { user: minimalUser, onboardingStatus: 'initial' as OnboardingStatus };
     }
     
-        return { user: null, onboardingStatus: 'login' as OnboardingStatus };
+    return { user: null, onboardingStatus: 'login' as OnboardingStatus };
   }
 
   const userData = rpcData[0];
@@ -100,8 +134,22 @@ async function onboardingLoader({ request }: LoaderFunctionArgs) {
   const result = await authLoader({ request, params: {}, context: {} });
   const { user, onboardingStatus } = result as { user: Partial<User>; onboardingStatus: string };
   
+  // If no user AND no session, redirect to login
   if (!user) {
-        return redirect('/');
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.log('[onboardingLoader] No session found - redirecting to login');
+      return redirect('/');
+    }
+    // If there's a session but no user, create minimal user for onboarding
+    console.log('[onboardingLoader] Session exists but no user - creating minimal user');
+    const minimalUser: Partial<User> = {
+      authUserId: session.user.id,
+      email: session.user.email || '',
+      tier: 'free' as UserTier,
+      onboardingCompleted: false,
+    };
+    return { user: minimalUser, onboardingStatus: 'initial' as OnboardingStatus };
   }
 
     const currentPath = new URL(request.url).pathname;
@@ -144,6 +192,14 @@ async function appLoader({ request }: LoaderFunctionArgs) {
         return redirect('/');
   }
 
+  // Check if onboarding was just marked complete (bypass DB check)
+  const onboardingJustCompleted = sessionStorage.getItem('otagon_onboarding_complete');
+  if (onboardingJustCompleted === 'true') {
+    console.log('[appLoader] Onboarding bypass flag detected - allowing access to app');
+    sessionStorage.removeItem('otagon_onboarding_complete');
+    return { user, onboardingStatus: 'complete' };
+  }
+
     if (onboardingStatus !== 'complete') {
         return redirect('/onboarding');
   }
@@ -173,6 +229,10 @@ const routes: RouteObject[] = [
       {
         path: '/auth/callback',
         element: <AuthCallbackRoute />,
+      },
+      {
+        path: '/payment-success',
+        element: <PaymentSuccess />,
       },
       {
         path: '/onboarding',

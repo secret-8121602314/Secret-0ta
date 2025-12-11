@@ -13,8 +13,8 @@ const ProFeaturesRoute: React.FC = () => {
   const { user } = useLoaderData() as { user: User | null };
 
   const handleComplete = async () => {
-        // Update database FIRST to avoid race condition with router loader
-    if (user) {
+    // Update database to mark onboarding complete
+    if (user?.authUserId) {
       try {
         const { error } = await supabase
           .from('users')
@@ -33,14 +33,25 @@ const ProFeaturesRoute: React.FC = () => {
         if (error) {
           console.error('[ProFeaturesRoute] DB update failed:', error);
         } else {
-                  }
+          console.log('[ProFeaturesRoute] Onboarding marked complete');
+        }
+        
+        // Wait a moment for DB to propagate
+        await new Promise(resolve => setTimeout(resolve, 200));
       } catch (error) {
         console.error('[ProFeaturesRoute] DB update error:', error);
       }
+    } else {
+      console.warn('[ProFeaturesRoute] No user authUserId - user may still be initializing');
+      // For new users, wait for DB trigger to complete
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
     
-    // Navigate after DB update to prevent race condition
-    navigate('/app');
+    // Set flag to bypass onboarding check (appLoader will see this)
+    sessionStorage.setItem('otagon_onboarding_complete', 'true');
+    
+    // Navigate to app
+    navigate('/app', { replace: true });
   };
 
   const handleUpgrade = () => {

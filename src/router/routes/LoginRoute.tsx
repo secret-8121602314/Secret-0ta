@@ -24,9 +24,11 @@ const LoginRoute: React.FC = () => {
     }
   }, [loaderData, navigate]);
 
-  const handleComplete = () => {
-    // After login, navigate to onboarding (loader will determine correct step)
-    navigate('/onboarding');
+  const handleComplete = async () => {
+    // After login completes, wait a moment for Supabase session to settle
+    // Then navigate to onboarding (loader will fetch fresh user data)
+    await new Promise(resolve => setTimeout(resolve, 100));
+    navigate('/onboarding', { replace: true });
   };
 
   const handleBackToLanding = () => {

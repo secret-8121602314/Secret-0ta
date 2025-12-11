@@ -290,6 +290,11 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
             localStorage.setItem('otakon_remember_me', 'true');
             localStorage.setItem('otakon_remembered_email', email);
           }
+          
+          // ✅ FIX: Wait for Supabase session to persist before navigation
+          // This prevents "stuck loading" issue where loader runs before session is ready
+          await new Promise(resolve => setTimeout(resolve, 300));
+          
           // Navigate to app now that authentication is complete
           onComplete();
         }
