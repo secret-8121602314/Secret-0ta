@@ -1,6 +1,6 @@
 // Service Worker for Otagon PWA - Performance Optimized with Enhanced Background Sync
-// Version: v1.3.6-pwa-android-fix - Wake lock and media session improvements
-const CACHE_VERSION = 'v1.3.6-pwa-android-fix';
+// Version: v1.3.7-cold-start-fix - Fix black screen on cold start after delay
+const CACHE_VERSION = 'v1.3.7-cold-start-fix';
 const CACHE_NAME = `otagon-${CACHE_VERSION}`;
 const CHAT_CACHE_NAME = `otagon-chat-${CACHE_VERSION}`;
 const STATIC_CACHE = `otagon-static-${CACHE_VERSION}`;
@@ -8,6 +8,10 @@ const API_CACHE = `otagon-api-${CACHE_VERSION}`;
 const AUTH_CACHE = `otagon-auth-${CACHE_VERSION}`;
 const BASE_PATH = '';
 let ttsKeepAliveInterval = null;
+
+// ✅ PWA COLD START FIX: Track last activation time
+let lastActivationTime = Date.now();
+const COLD_START_THRESHOLD = 60000; // 60 seconds
 
 // Static assets to precache
 const urlsToCache = [
@@ -90,7 +94,10 @@ self.addEventListener('activate', (event) => {
       
       // Take control of all clients immediately
       await self.clients.claim();
-      console.log('[SW] Activation complete, claimed all clients');
+      
+      // ✅ PWA COLD START FIX: Reset activation timestamp
+      lastActivationTime = Date.now();
+      console.log('[SW] Activation complete, claimed all clients, reset activation time');
     })()
   );
 });
@@ -165,7 +172,30 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method === 'GET' && url.origin === self.location.origin) {
     event.respondWith(
       (async () => {
-        // Check cache first
+        // ✅ PWA COLD START FIX: After cold start threshold, use network-first for critical assets
+        const timeSinceActivation = Date.now() - lastActivationTime;
+        const isColdStart = timeSinceActivation > COLD_START_THRESHOLD;
+        const isCriticalAsset = event.request.url.includes('.js') || event.request.url.includes('.css');
+        
+        if (isColdStart && isCriticalAsset) {
+          // Network-first for critical assets on cold start
+          try {
+            const response = await fetch(event.request);
+            if (response.status === 200) {
+              const responseToCache = response.clone();
+              const cache = await caches.open(STATIC_CACHE);
+              cache.put(event.request, responseToCache);
+            }
+            return response;
+          } catch (error) {
+            // Fall back to cache if network fails
+            const cached = await caches.match(event.request);
+            if (cached) return cached;
+            throw error;
+          }
+        }
+        
+        // Check cache first (normal cache-first)
         const cached = await caches.match(event.request);
         if (cached) {
           // Return cached version immediately
