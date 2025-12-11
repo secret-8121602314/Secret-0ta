@@ -947,11 +947,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
           </div>
           
                         <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-3 md:mb-6 text-white leading-tight">
-                            Never Get Stuck Again
+                            Beat Every Challenge. Keep Every Secret.
                         </h2>
                         
                         <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-neutral-300 mb-6 md:mb-8 font-medium px-4">
-                            Get instant, spoiler-free hints without leaving your game
+                            Get instant, AI-powered hints on your phone while playing PC games. No spoilers, no alt-tabbing, just pure gaming
                         </p>
                         
                         {/* Social Proof - HIDDEN FOR NOW */}
@@ -1077,18 +1077,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                             ) : (
                                 <button
                                     onClick={resetHintDemo}
-                                    className="w-full group flex items-center justify-center gap-2 bg-transparent border-2 border-green-400/60 text-green-400 font-medium py-4 px-6 rounded-xl transition-all duration-300 hover:border-green-400 hover:bg-green-400/10 hover:text-green-400 hover:shadow-[0_0_20px_rgba(74,222,128,0.2)]"
+                                    className="w-full group flex items-center justify-center gap-2 bg-transparent border-2 border-[#E53A3A]/60 text-[#E53A3A] font-medium py-4 px-6 rounded-xl transition-all duration-300 hover:border-[#E53A3A] hover:bg-[#E53A3A]/10 hover:text-[#E53A3A] hover:shadow-[0_0_20px_rgba(229,58,58,0.2)]"
                                 >
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                     </svg>
-                                    <span>Try Again</span>
+                                    <span>Try Different Game</span>
                                 </button>
                             )}
                         </div>
                         
                         <p className="text-xl md:text-2xl text-neutral-300 max-w-4xl mx-auto mb-16 mt-14 leading-relaxed">
-              Otagon sees your screen and gives you the perfect nudge to keep you playing—without ruining the surprise. The fastest way to snap a screenshot, share with friends, and get gaming hints in seconds. Stop searching, start playing.
+              Stuck on a puzzle? Can't find that hidden path? Otagon sees exactly what you see and delivers the perfect hint—not the solution. Snap a screenshot, get unstuck in seconds, and keep that 'aha!' moment all for yourself. No more tab-hopping through spoiler-filled wikis.
             </p>
 
                         {/* Enhanced Waitlist Form */}
@@ -1119,7 +1119,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                                 Joining...
                                             </div>
                                         ) : (
-                                            'Join the Waitlist'
+                                            'Save My Spot - It\'s Free'
                                         )}
                                     </span>
                                 </button>
@@ -1178,7 +1178,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 </div>
                                 <h3 className="text-2xl font-bold text-white mb-4">Press a Hotkey on Your PC</h3>
                                 <p className="text-lg text-neutral-300 leading-relaxed">
-                                    Instantly capture and analyze PC screenshots
+                                    One hotkey press captures your stuck moment—no fumbling with menus
                                 </p>
                             </div>
                             
@@ -1197,7 +1197,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 </div>
                                 <h3 className="text-2xl font-bold text-white mb-4">Get an Instant Hint and Gameplay Screenshot on Your Phone</h3>
                                 <p className="text-lg text-neutral-300 leading-relaxed">
-                                    AI analyzes your situation and delivers spoiler-free hints to your mobile or second monitor
+                                    AI analyzes your exact situation and beams spoiler-free guidance straight to your phone or second monitor in seconds
                                 </p>
                             </div>
                             
@@ -1216,7 +1216,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 </div>
                                 <h3 className="text-2xl font-bold text-white mb-4">Keep Playing</h3>
                                 <p className="text-lg text-neutral-300 leading-relaxed">
-                                    Get the nudge you need and dive back into action without alt-tabbing or overlays
+                                    Get just enough help to crack it yourself—then jump right back in without alt-tabbing or overlays
                                 </p>
                             </div>
                         </div>
@@ -1234,23 +1234,23 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                             features={[
                                 {
                                     title: "Powered by Google Gemini",
-                                    description: "Experience cutting-edge AI assistance powered by Google's advanced Gemini technology for accurate, context-aware gaming help.",
+                                    description: "Google Gemini AI reads your screen like a pro gamer—delivering pinpoint hints that understand exactly where you are and what you need.",
                                     image: geminiLogo,
                                     isGemini: true,
                                 },
                                 {
                                     title: "From First Screenshot to Victory",
-                                    description: "Upload a screenshot. Otagon identifies your game and becomes your personal guide—no spoilers, full context.",
+                                    description: "One screenshot. Instant game recognition. From that moment on, Otagon becomes your personalized guide—no spoilers, just smart assistance.",
                                     image: feature1
                                 },
                                 {
                                     title: "Play Your Way",
-                                    description: "Story-driven explorer? Completionist? Speedrunner? Tell us once, and every hint, strategy, and insight matches your playstyle.",
+                                    description: "Tell Otagon once: Are you here for the story? Hunting 100% completion? Speedrunning? Every hint adapts to YOUR playstyle.",
                                     image: feature2
                                 },
                                 {
                                     title: <><span>Stay Focused, Stay Ahead</span><ProBadge /></>,
-                                    description: "Skip the wiki-hunting. Otagon provides quest tips, secret locations, build optimization—all without spoiling your discovery.",
+                                    description: "No more wiki rabbit holes. Get quest tips, secret locations, and build optimization—all without accidentally reading major spoilers.",
                                     image: feature6,
                                     altText: "Stay Focused, Stay Ahead - Pro feature showing quest tips and build optimization"
                                 },
@@ -1382,7 +1382,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-3">Souls-likes & Action RPGs</h3>
                                 <p className="text-neutral-300 leading-relaxed">
-                                    Master tough bosses and find hidden paths without rage-quitting. We'll give you a hint, not the easy way out.
+                                    Stuck on that boss again? Get the hint you need without turning easy mode on. Master the challenge, keep the glory.
               </p>
             </div>
 
@@ -1424,7 +1424,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-3">RPGs</h3>
                                 <p className="text-neutral-300 leading-relaxed">
-                                    Uncover deep lore and track complex quests without accidentally reading major story spoilers.
+                                    100+ hours in and lost on a quest? Get direction without accidentally learning who betrays you in Act 3.
               </p>
             </div>
 
@@ -1442,7 +1442,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-3">Puzzle Games</h3>
                                 <p className="text-neutral-300 leading-relaxed">
-                                    Get a clue for that brain-bending puzzle, not the entire solution. Preserve your "aha!" moment.
+                                    That 'aha!' moment is yours to earn. We'll give you a nudge, never the solution.
               </p>
             </div>
 
@@ -1453,7 +1453,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-3">Open-World Adventures</h3>
                                 <p className="text-neutral-300 leading-relaxed">
-                                    Hunt down every last collectible and conquer secret challenges with a gentle nudge in the right direction.
+                                    That collectible you're missing? That secret area? Get pointed in the right direction without a full map reveal.
               </p>
             </div>
 
@@ -1518,7 +1518,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-3">Metroidvanias</h3>
                                 <p className="text-neutral-300 leading-relaxed">
-                                    Lost after finding a new power? Discover which hidden path just opened up without checking a full map.
+                                    Just got a new ability but lost? Find out which hidden path unlocked without spoiling the entire map.
               </p>
             </div>
 
@@ -1543,7 +1543,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-3">Survival & Crafting</h3>
                                 <p className="text-neutral-300 leading-relaxed">
-                                    Need a specific resource? Learn where to find it or what recipe you're missing to build your ultimate base.
+                                    Missing one resource for that upgrade? Find out where to look or what recipe you need without endless wiki tabs.
                                 </p>
                             </div>
                         </div>
@@ -1796,9 +1796,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                     </div>
                                     <div className={`overflow-hidden transition-all duration-300 ${expandedFaq === 0 ? 'max-h-40 mt-4' : 'max-h-0'}`}>
                                         <p className="text-neutral-400 leading-relaxed">
-                                            Press a hotkey while gaming, and Otagon instantly captures your screen. Our AI analyzes 
-                                            the context using Google Gemini and sends spoiler-free hints to your phone or second monitor, 
-                                            so you never have to leave your game.
+                                            Press F1 while gaming (or snap a photo on console). Otagon's AI reads your screen, figures out exactly where you're stuck, and sends a spoiler-free hint to your phone—all in under 3 seconds. You never leave your game.
                                         </p>
                                     </div>
                                 </div>
@@ -1927,9 +1925,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                             <div className="max-w-4xl mx-auto mb-12">
                                 <div className="bg-gradient-to-r from-[#0F0F0F]/60 to-[#1A1A1A]/60 border-2 border-neutral-700/60 rounded-2xl p-8 md:p-10 backdrop-blur-sm">
                                     <p className="text-[#CFCFCF] leading-relaxed text-lg md:text-xl italic">
-                                        "Like you, I've spent my life passionate about games. From getting lost in the deep lore of modern RPGs
-                                        to the frustration of needing a small hint and getting a massive spoiler in return. That's why I built Otagon
-                                        - to preserve the magic of discovery while giving you just the nudge you need."
+                                        "I've rage-quit games because one Google search spoiled the entire ending. I've wasted hours stuck because I was too stubborn to look it up. Otagon is the tool I wish I had growing up—smart help that respects your journey."
               </p>
             </div>
           </div>
