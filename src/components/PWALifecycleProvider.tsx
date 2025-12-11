@@ -105,21 +105,6 @@ export function PWALifecycleProvider({ children }: PWALifecycleProviderProps) {
         navigate('/earlyaccess', { replace: true });
       }
     }
-
-    // ✅ PWA BLACK SCREEN FIX: Force DOM repaint on cold start
-    // This handles the case where PWA is opened after being completely closed
-    if (isPWAMode()) {
-      console.log('📱 [PWA-Router] Cold start detected, forcing DOM repaint');
-      // Small delay to ensure DOM is fully ready
-      const timer = setTimeout(() => {
-        document.body.style.display = 'none';
-        void document.body.offsetHeight; // Force reflow
-        document.body.style.display = '';
-        console.log('📱 [PWA-Router] DOM repaint complete');
-      }, 100);
-
-      return () => clearTimeout(timer);
-    }
   }, [navigate, location.pathname]);
 
   // Set up event listeners
