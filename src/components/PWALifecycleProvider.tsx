@@ -39,6 +39,15 @@ export function PWALifecycleProvider({ children }: PWALifecycleProviderProps) {
         return;
       }
 
+      // ✅ BLACK SCREEN FIX: Force UI update immediately on visibility
+      // This prevents black screen when app comes back from locked screen
+      console.log('📱 [PWA-Router] Forcing UI update to prevent black screen');
+      
+      // Force a DOM repaint by touching the body
+      document.body.style.display = 'none';
+      void document.body.offsetHeight; // Force reflow
+      document.body.style.display = '';
+
       // Only check auth if app was in background for more than threshold
       if (isPWAMode() && backgroundDuration > PWA_BACKGROUND_THRESHOLD) {
         console.log('📱 [PWA-Router] Long background detected, validating session...');
