@@ -52,11 +52,11 @@ Just when you think you've won, Phase 2 begins with Scarlet Rot that eats your H
 
 ## How Otagon Helps You Win
 
-**Before the fight:** Open your equipment screen and let Otagon analyze your build. Instead of generic "use Rivers of Blood" advice, Otagon sees what you actually own and suggests optimal loadouts.
+**Before the fight:** Snap a screenshot of your equipment screen and Otagon analyzes your current build. Instead of generic "use Rivers of Blood" advice, Otagon suggests optimal stat allocations and gear combinations based on what's visible.
 
-**During the fight:** When you keep dying to the same move, Otagon identifies the telegraph and explains the counter—like throwing a Freezing Pot to interrupt Waterfowl Dance.
+**During the fight:** Struggling with a specific attack? Ask Otagon about the move you're dying to, and it explains the telegraph and counter—like throwing a Freezing Pot to interrupt Waterfowl Dance.
 
-**Status Management:** Otagon monitors your Scarlet Rot buildup and reminds you to use Preserving Boluses before the status procs.
+**Strategic Planning:** Otagon provides comprehensive status effect management strategies, including when to use Preserving Boluses for Scarlet Rot and optimal consumable loadouts for the fight.
 
 ## Pro Tips
 
@@ -96,11 +96,11 @@ Remembering if "Tavern Brawler" stacks with specific potions requires deep D&D k
 
 ## How Otagon Prevents Disaster
 
-**The "Diplomacy Check":** Before choosing dialogue options with major NPCs, Otagon warns you of high-risk choices that could result in instant party wipes.
+**Strategic Consultation:** Before major story moments, ask Otagon about potential consequences of dialogue choices. Get warned about high-risk decisions that could result in combat or locked storylines.
 
-**Boss Mechanic Scout:** Entering the Owlbear Cave? Otagon tells you the Owlbear Mate will join if the mother calls—use Silence to prevent it.
+**Enemy Intel:** Planning to enter the Owlbear Cave? Otagon explains that the Owlbear Mate will join if the mother calls—and suggests using Silence to prevent it.
 
-**Puzzle Solver:** Stuck in the Gauntlet of Shar? Otagon guides you through the Soft-Step Trial without trial and error.
+**Puzzle Guidance:** Stuck in the Gauntlet of Shar? Otagon walks you through the Soft-Step Trial mechanics and provides step-by-step solutions without trial and error.
 
 ## Fighting Raphael: Step by Step
 
@@ -145,11 +145,11 @@ Which crop makes the most money in Summer? It depends on kegs, jars, or selling 
 
 ## How Otagon Becomes Your Farmhand
 
-**Instant Item Identification:** Hover over an item, and Otagon tells you if it's needed for a bundle AND who loves it as a gift.
+**Item Knowledge Base:** Ask Otagon about any item—it tells you if it's needed for Community Center bundles AND which villagers love it as a gift.
 
-**The Social Coordinator:** Walk into the Saloon and Otagon identifies who to gift based on what you're carrying.
+**Social Planning:** Wondering who to befriend? Otagon explains each villager's loved gifts, schedules, and heart event requirements so you can plan your social strategy.
 
-**Location Scout:** Stuck finding Golden Walnuts? Otagon spots hidden dig spots and puzzle solutions.
+**Completion Guide:** Stuck finding Golden Walnuts? Share a screenshot of your location and Otagon identifies hidden dig spots, or ask for walnut locations by area.
 
 ## Year 1 Community Center Strategy
 
@@ -193,11 +193,11 @@ Finding specific grapple points to reach the Demon Bell or hidden Shinobi paths 
 
 ## How Otagon Teaches You the Rhythm
 
-**Stance Analysis:** When you're stuck, Otagon identifies the specific attack animation and explains the counter timing.
+**Attack Pattern Guide:** Describe which attack keeps killing you, and Otagon identifies the specific animation and explains the precise counter timing.
 
-**The Mikiri Trainer:** Otagon explains that you must dodge FORWARD into thrust attacks, not away from them.
+**Technique Mastery:** Struggling with Perilous Attacks? Otagon teaches you that Mikiri Counter requires dodging FORWARD into thrust attacks, not away from them.
 
-**Resource Management:** Otagon reminds you when to use Ceremonial Tanto or switch to non-emblem Combat Arts.
+**Strategic Loadout:** Otagon advises when to use Ceremonial Tanto for extra emblems and which non-emblem Combat Arts work best for different boss phases.
 
 ## Defeating Sword Saint Isshin
 
@@ -241,11 +241,11 @@ Finding every grub and mask shard means backtracking through the entire map hitt
 
 ## How Otagon Guides Your Knight
 
-**"Where am I?":** Otagon recognizes room layouts and tells you the nearest bench or Cornifer location.
+**Navigation Help:** Lost in Deepnest? Share a screenshot and Otagon identifies your location and directs you to the nearest bench or Cornifer's position.
 
-**Boss Preparation:** For Watcher Knights, Otagon suggests Sharp Shadow for dash damage and reveals the breakable ceiling that kills one knight instantly.
+**Boss Strategy:** Facing Watcher Knights? Otagon recommends Sharp Shadow for dash damage and reveals the secret breakable ceiling that lets you kill one knight before the fight starts.
 
-**Secret Spotter:** Otagon identifies faint cracks in walls that hide secret paths.
+**Secret Finder:** Share screenshots of suspicious walls and Otagon identifies breakable surfaces that hide secret paths, or ask about collectible locations by area.
 
 ## Path of Pain Strategy
 
@@ -289,11 +289,11 @@ Knowing which card to play to bait a Scorch requires counting cards.
 
 ## How Otagon Channels Your Witcher Senses
 
-**Instant Monster ID:** See a flying beast? Otagon identifies it as a Royal Griffin, vulnerable to Hybrid Oil, Grapeshot, and Aard—and warns against Igni.
+**Monster Knowledge:** Snap a screenshot of a creature and Otagon identifies it—Royal Griffin requires Hybrid Oil, Grapeshot, and Aard. It warns that Igni is ineffective.
 
-**Inventory Cleanup:** Otagon identifies that you have 50 Drowner Brains but only need 5 for crafting.
+**Crafting Guidance:** Ask Otagon about any alchemy ingredient and it explains which recipes need it and how many you should keep versus sell.
 
-**Gwent Assistant:** Otagon tracks hero cards played and warns when the opponent likely has a Scorch.
+**Gwent Strategy:** Share a screenshot of the Gwent board and Otagon analyzes card positions, suggests optimal plays, and warns about common opponent strategies like Scorch.
 
 ## Contract Walkthrough: Byways Murders
 
@@ -337,11 +337,11 @@ Calculating if "+100% adjacency" or "+1 Science per population" yields more requ
 
 ## How Otagon Plans Your Empire
 
-**The Terrain Scanner:** With a Settler ready, Otagon identifies the tile surrounded by 3 Mountains and a Geothermal Vent for a +5 Science Campus.
+**District Planning:** Share a screenshot of potential settle locations and Otagon identifies optimal tiles—like that spot surrounded by 3 Mountains and a Geothermal Vent for a +5 Science Campus.
 
-**Wonder Eligibility:** Otagon tells you if Petra is efficient based on your Desert Hills count.
+**Wonder Consultation:** Considering Petra? Share your city view and Otagon evaluates if you have enough Desert Hills tiles to make it worthwhile.
 
-**Victory Condition Check:** Otagon tracks your Tourism output and suggests focusing on Flight research for Seaside Resorts.
+**Victory Strategy:** Share your progress screen and Otagon analyzes your Tourism output, Science lead, or Military strength to suggest optimal victory path adjustments.
 
 ## Germany Industrial Empire Strategy
 
@@ -385,11 +385,11 @@ Many of the best weapons are missable if you make wrong quest choices.
 
 ## How Otagon Upgrades Your Cyberdeck
 
-**The Matrix Solver:** Otagon finds the solution path that unlocks all 3 Datamine rewards instantly.
+**Breach Protocol Help:** Share a screenshot of a Breach Protocol puzzle and Otagon analyzes the grid to find solution paths that unlock all 3 Datamine rewards.
 
-**Build Doctor:** For stealth hacking, Otagon recommends Intelligence 20, Overclock perk, and Tetratronic Rippler Cyberdeck.
+**Build Consulting:** Planning a stealth hacking build? Otagon recommends Intelligence 20, Overclock perk, and Tetratronic Rippler Cyberdeck with detailed explanations.
 
-**Cyberware Capacity:** Otagon identifies optimal Chrome upgrades based on your attributes.
+**Cyberware Planning:** Share your character sheet and Otagon suggests optimal Chrome upgrades based on your current attribute distribution and playstyle.
 
 ## Arasaka Tower Infiltration
 
@@ -433,11 +433,11 @@ Wasting a grenade to strip armor when you have Shredder available leaves you wit
 
 ## How Otagon Commands Your Squad
 
-**Fog of War Scanner:** Before dashing forward, Otagon warns if the position exposes you to unrevealed enemies.
+**Tactical Consultation:** Share a screenshot of the battlefield and Otagon analyzes enemy positions, cover quality, and suggests optimal movement that minimizes pod activation risk.
 
-**Kill Probability Calculator:** With a 65% shot, Otagon recommends grenades for guaranteed damage plus cover destruction.
+**Probability Analysis:** Share the shot screen and Otagon helps you decide—with a 65% shot, should you take it or use grenades for guaranteed damage plus cover destruction?
 
-**Tech Tree Guidance:** Otagon prioritizes Magnetic Weapons research over Autopsies.
+**Research Strategy:** Otagon guides your tech tree decisions, explaining why Magnetic Weapons should generally be prioritized over Autopsies for faster power spikes.
 
 ## Blacksite Clearance Strategy
 
@@ -481,11 +481,11 @@ Finding Plantera's pink bulb in the Underground Jungle requires defeating all th
 
 ## How Otagon Organizes the Chaos
 
-**"What Can I Craft?":** Open a chest and Otagon identifies craftable items from your materials.
+**Crafting Knowledge:** Ask Otagon "what can I make with Hellstone?" and it lists all craftable items and their recipes, so you know what to work toward.
 
-**Boss Progression Tracker:** Otagon tells you the next target and what materials to craft the summoning item.
+**Progression Guide:** Otagon explains boss order and tells you exactly what materials you need to craft each summoning item—no wiki tab-switching needed.
 
-**Rare Item Hunter:** Need a Nazar? Otagon sends you to the Dungeon for Cursed Skulls, not the Jungle.
+**Item Location Guide:** Need a Nazar? Otagon directs you to the Dungeon to farm Cursed Skulls, explaining drop rates and optimal farming strategies.
 
 ## Crafting the Terra Blade
 
@@ -529,11 +529,11 @@ Finding Ancient Debris in the Nether or a specific biome for building is time-co
 
 ## How Otagon Engineers Your World
 
-**Circuit Debugger:** Otagon identifies why your Redstone signal isn't reaching the piston and suggests fixes.
+**Redstone Troubleshooting:** Share a screenshot of your circuit and Otagon analyzes why the signal isn't reaching the piston—explaining power levels, repeater delays, and suggests fixes.
 
-**Blueprint Library:** Ask for a machine and Otagon shows layer-by-layer schematics.
+**Design Reference:** Ask for any contraption design and Otagon explains it step-by-step—mob farms, item sorters, flying machines—with clear layer-by-layer instructions.
 
-**Biome Finder:** Otagon helps you locate specific biomes based on world generation patterns.
+**Exploration Guide:** Otagon explains biome location patterns and optimal search strategies for finding rare biomes like Mushroom Islands or Ice Spikes.
 
 ## Building an Iron Farm
 
@@ -577,11 +577,11 @@ Advanced Oil produces Heavy, Light, and Petroleum. If one output fills up, the e
 
 ## How Otagon Debugs Your Factory
 
-**The Ratio Calculator:** Otagon identifies that you need exactly 2 Gear assemblers to keep 10 Red Science running at 100%.
+**Production Ratios:** Ask Otagon about any production chain and it calculates exact ratios—like needing exactly 2 Gear assemblers to keep 10 Red Science assemblers running at 100%.
 
-**Bottleneck Spotter:** Otagon analyzes pipes and identifies that full Heavy Oil tanks have deadlocked refineries.
+**Screenshot Analysis:** Share your factory layout and Otagon identifies bottlenecks—like spotting that full Heavy Oil tanks are preventing crude oil processing.
 
-**Blueprint Helper:** Otagon shows the 4-4 Balancer schematic for even belt throughput.
+**Design Library:** Need a specific setup? Otagon describes balancers, rail intersections, and production layouts with clear explanations you can reference while building.
 
 ## Launching Your First Rocket
 
@@ -682,11 +682,11 @@ His attacks have deliberately delayed timing. You'll roll too early every time.
 
 ## How Otagon Coaches You Through
 
-**Camera Tips:** Otagon suggests unlocking during Phase 1 and targeting the dragon's head manually.
+**Camera Strategy:** Otagon advises unlocking your camera during Phase 1 and manually targeting the dragon's head for better visibility.
 
-**Timing Windows:** Otagon identifies the delay pattern—wait for his arm to reach the top of the swing before rolling.
+**Attack Pattern Breakdown:** Ask about specific attacks and Otagon explains the precise timing—like waiting for his arm to reach the top of the swing before rolling.
 
-**Build Analysis:** Lightning resistance gear makes Phase 2 significantly easier.
+**Build Consultation:** Share your equipment screen and Otagon suggests improvements—like adding lightning resistance gear that makes Phase 2 significantly easier.
 
 ## Victory Strategy
 
@@ -730,11 +730,11 @@ Phase transitions include arena-wide fire attacks. You must reach the safe zones
 
 ## How Otagon Prepares Your Hunt
 
-**Equipment Check:** Otagon verifies you have Fire Resistance 20+, Heavy Artillery for cannons, and Partbreaker for head damage.
+**Build Checklist:** Before fighting Fatalis, Otagon provides a complete loadout checklist—Fire Resistance 20+, Heavy Artillery for cannons, and Partbreaker for head damage.
 
-**Attack Windows:** Otagon identifies which attacks have long recovery animations for safe damage.
+**Pattern Recognition:** Otagon explains which Fatalis attacks have long recovery animations where you can safely deal damage.
 
-**Siege Weapon Timing:** Otagon reminds you when the Dragonator and Roaming Ballista are ready.
+**Siege Weapon Guide:** Otagon teaches you optimal Dragonator and Roaming Ballista timing windows so you maximize their damage potential.
 
 ## Hunt Strategy
 
@@ -778,11 +778,11 @@ Tight Deadline forces aggressive play. No more careful room-by-room approaches.
 
 ## How Otagon Optimizes Your Escapes
 
-**Modifier Advice:** Otagon suggests which Pact options give Heat with minimal difficulty increase.
+**Heat Planning:** Otagon explains which Pact of Punishment modifiers give Heat with minimal difficulty increase—like Hard Labor over Extreme Measures.
 
-**Boon Synergies:** Otagon identifies which god combinations work with your current weapon aspect.
+**Build Strategy:** Ask about any weapon aspect and Otagon explains optimal god combinations and Boon synergies for maximum effectiveness.
 
-**Boss Patterns:** At higher Heat, bosses have new attack patterns. Otagon explains the changes.
+**Difficulty Scaling:** Otagon details how boss patterns change at higher Heat levels and strategies to counter new attack patterns.
 
 ## Heat 32 Strategy
 
@@ -826,11 +826,11 @@ Leviathans patrol certain biomes. One wrong turn and you're lunch.
 
 ## How Otagon Guides Your Dive
 
-**Resource Location:** Otagon identifies which biomes contain specific materials for crafting.
+**Material Guide:** Need Nickel Ore? Otagon tells you which biomes contain specific materials and the depths you need to reach.
 
-**Depth Planning:** Otagon calculates if your oxygen supply is sufficient for your planned dive.
+**Dive Strategy:** Planning a deep expedition? Otagon helps calculate oxygen requirements and suggests vehicle upgrades or base placement for safe exploration.
 
-**Creature Warnings:** Otagon tells you which biomes have Leviathan spawns and safe routes around them.
+**Danger Zones:** Otagon maps out which biomes have Leviathan spawns and explains safe navigation routes to avoid deadly encounters.
 
 ## Progression Path
 
@@ -874,11 +874,11 @@ Internalizing thoughts changes your stats. Some are traps that hurt your build.
 
 ## How Otagon Reads the Room
 
-**Skill Check Analysis:** Otagon tells you which skills influence upcoming checks and whether to attempt now or level up first.
+**Check Preparation:** Ask about any dialogue situation and Otagon explains which skills influence the check and whether your current stats are sufficient.
 
-**Thought Evaluation:** Otagon explains what each Thought does before you commit to internalizing it.
+**Thought Cabinet Guide:** Considering a new Thought? Otagon explains its full effects before you commit to internalizing it.
 
-**Dialogue Impact:** Otagon warns when dialogue choices have major consequences.
+**Consequence Awareness:** Otagon provides context on major dialogue choices so you understand potential story impacts before selecting options.
 
 ## Build Archetypes
 
@@ -922,11 +922,11 @@ Spreading stats across colors is no longer viable. You must commit to Brutality,
 
 ## How Otagon Sharpens Your Runs
 
-**Weapon Synergies:** Otagon identifies which weapon combinations proc critical hits and DoT stacking.
+**Build Synergies:** Ask about any weapon and Otagon explains which combinations proc critical hits and enable DoT stacking for maximum damage.
 
-**Route Optimization:** Otagon suggests biome paths based on your current build and scroll needs.
+**Path Planning:** Share your current build and Otagon suggests optimal biome routes to find complementary items and scrolls you need.
 
-**Boss Patterns:** Otagon explains attack tells you're missing at higher difficulties.
+**Pattern Guide:** Struggling with a boss at 5BC? Otagon breaks down attack patterns and telegraphs you might be missing at higher difficulties.
 
 ## 5BC Strategy
 
@@ -970,11 +970,11 @@ Some locations are only accessible at certain points in the loop.
 
 ## How Otagon Guides Without Spoiling
 
-**Hint System:** Otagon gives graduated hints—a nudge first, then more detail if needed.
+**Progressive Hints:** Ask for help and Otagon provides graduated hints—starting with a gentle nudge, then offering more detail if you request it.
 
-**Clue Verification:** Stuck somewhere? Otagon confirms if you have the prerequisite knowledge or suggests where to look first.
+**Knowledge Check:** Stuck on a puzzle? Otagon confirms whether you've found all prerequisite clues or suggests which planet to explore first.
 
-**Mechanic Explanation:** Otagon explains planet physics without revealing the story implications.
+**Physics Tutorial:** Otagon explains each planet's unique mechanics—time loops, gravity changes, planetary movement—without spoiling story revelations.
 
 ## Exploration Tips
 
@@ -1028,11 +1028,11 @@ Otagon acts as your City Planner, analyzing road layout screenshots to identify 
 
 ## How Otagon Solves Gridlock
 
-**Traffic Doctor:** Capture a busy intersection. Otagon analyzes: "Problem: Left turns are blocking straight traffic. Solution: Remove the traffic light. Add a dedicated left-turn lane. Or replace with a Turbo Roundabout."
+**Traffic Analysis:** Capture a screenshot of a congested intersection and Otagon diagnoses the problem: "Left turns are blocking through traffic. Solution: Remove the traffic light, add a dedicated turn lane, or use a Turbo Roundabout."
 
-**Zoning Balancer:** "Why is high density demand low?" → "Your land value is too low. Build parks and schools nearby."
+**Demand Diagnosis:** Ask "Why is high density demand low?" and Otagon explains factors—land value, services, noise pollution—with specific solutions like adding parks and schools.
 
-**Public Transit Planner:** "Where to put the Metro?" → "Connect High Density Residential to Office Zones. Use straight lines, not circles."
+**Transit Strategy:** Planning a Metro? Otagon advises optimal placement—connecting High Density Residential to Office Zones with straight, efficient routes rather than circular lines.
 
 ## Step-by-Step: Building a Cargo Hub
 
@@ -1096,17 +1096,11 @@ Managing 20 settlements via pip-boy menu is clunky. Otagon acts as your Pip-Boy 
 
 ## How Otagon Solves Scavenging
 
-**Component Scanner:** Look at a shelf. Ask: "Scan for Screws."
+**Component Knowledge:** Ask "What items give me Screws?" and Otagon lists valuable junk—Desk Fans (2 Screws), Toy Cars (1 Screw), Typewriters (2 Screws)—so you know what to grab.
 
-Otagon: "Items detected: Desk Fan (2 Screws), Toy Car (1 Screw). Ignore the Empty Milk Bottle."
+**Farming Efficiency:** Planning an Adhesive farm? Otagon explains Vegetable Starch crafting: 3 Corn, 3 Mutfruit, 3 Tato, 1 Purified Water yields 5 Adhesive. Plant in 1:1:1 ratio.
 
-**Farm Calculator:** "Adhesive Farm setup?"
-
-Otagon: "To craft Vegetable Starch (5 Adhesive): 3 Corn, 3 Mutfruit, 3 Tato, 1 Purified Water. Plant in 1:1:1 ratio."
-
-**Weapon Modder:** "Materials for Suppressor?"
-
-Otagon: "Need 4 Aluminum, 2 Adhesive, 4 Plastic. Short on Aluminum. Go to Mahkra Fishpacking—trays are aluminum."
+**Crafting Requirements:** Ask about any weapon mod and Otagon lists exact materials needed. Want a Suppressor? You need 4 Aluminum, 2 Adhesive, 4 Plastic—and Otagon tells you Mahkra Fishpacking has aluminum trays.
 
 ## Step-by-Step: Building a Water Empire
 
