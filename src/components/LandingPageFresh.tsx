@@ -20,6 +20,7 @@ import feature5 from '../assets/images/feature-images/feature5.png';
 import feature6 from '../assets/images/feature-images/feature6.png';
 import geminiLogo from '../assets/images/landing/google.png';
 import pcAppImage from '../assets/images/landing/PC app.png';
+import dragonVideo from '../assets/video/dragon_60fps.mp4';
 
 const GamepadIcon = ({ className }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -990,13 +991,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                             <div className="bg-transparent rounded-2xl p-6 min-h-[320px] sm:min-h-[360px] relative">
                                 {/* Idle State - Prompt to interact */}
                                 <div className={`flex flex-col items-center justify-center py-10 px-6 text-center space-y-4 transition-all duration-300 ${hintDemoState === 'idle' ? 'opacity-100' : 'opacity-0 absolute inset-0 pointer-events-none'}`}>
-                                    <img
-                                        src="/images/mascot/4.png"
-                                        alt="Otagon Mascot"
-                                        className="w-56 h-56 sm:w-64 sm:h-64 object-contain aspect-square mx-auto"
+                                    <video
+                                        src={dragonVideo}
+                                        autoPlay
+                                        muted
+                                        playsInline
+                                        className="w-52 h-52 sm:w-64 sm:h-64 object-cover aspect-square mx-auto scale-110"
                                         data-no-viewer="true"
                                         onError={(e) => {
-                                            const target = e.target as HTMLImageElement;
+                                            const target = e.target as HTMLVideoElement;
                                             target.style.display = 'none';
                                         }}
                                     />
