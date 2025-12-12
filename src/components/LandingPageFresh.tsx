@@ -991,16 +991,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                             <div className="bg-transparent rounded-2xl p-6 min-h-[320px] sm:min-h-[360px] relative">
                                 {/* Idle State - Prompt to interact */}
                                 <div className={`flex flex-col items-center justify-center py-10 px-6 text-center space-y-4 transition-all duration-300 ${hintDemoState === 'idle' ? 'opacity-100' : 'opacity-0 absolute inset-0 pointer-events-none'}`}>
-                                    <video
-                                        src={dragonVideo}
-                                        autoPlay
-                                        muted
-                                        playsInline
-                                        preload="metadata"
-                                        className="w-52 h-52 sm:w-64 sm:h-64 object-cover aspect-square mx-auto scale-110"
+                                    <img
+                                        src="/images/mascot/4.png"
+                                        alt="Otagon Mascot"
+                                        className="w-56 h-56 sm:w-64 sm:h-64 object-contain aspect-square mx-auto"
                                         data-no-viewer="true"
                                         onError={(e) => {
-                                            const target = e.target as HTMLVideoElement;
+                                            const target = e.target as HTMLImageElement;
                                             target.style.display = 'none';
                                         }}
                                     />
