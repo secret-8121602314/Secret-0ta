@@ -1653,11 +1653,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 </div>
                                 <ul className="space-y-3 mb-8">
                                     <FeatureListItem>55 Text | 25 Image Queries/month</FeatureListItem>
-                                    <FeatureListItem>Knowledge till January 2025</FeatureListItem>
-                                    <FeatureListItem>Standard AI Model</FeatureListItem>
-                                    <FeatureListItem>PC-to-Mobile Sync</FeatureListItem>
-                                    <FeatureListItem>Progress Tracking</FeatureListItem>
-                                    <FeatureListItem>7 day free trial for Pro</FeatureListItem>
+                                    <FeatureListItem>4 Web Searches/month</FeatureListItem>
+                                    <FeatureListItem>Knowledge up to January 2025</FeatureListItem>
+                                    <FeatureListItem>Cross-platform sync (PC & Mobile)</FeatureListItem>
+                                    <FeatureListItem>Real-time progress tracking</FeatureListItem>
+                                    <FeatureListItem>7-day Pro trial included</FeatureListItem>
                                 </ul>
                                 <div className="mt-auto">
                                     <button
@@ -1683,14 +1683,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                     <p className="text-green-400 font-medium text-sm mt-1">Lifetime Price Guarantee!</p>
                                 </div>
                                 <ul className="space-y-3 mb-6">
-                                    <FeatureListItem>Everything in Free, plus:</FeatureListItem>
+                                    <FeatureListItem>Everything in Pro, plus:</FeatureListItem>
                                     <FeatureListItem>1,583 Text | 328 Image Queries/month</FeatureListItem>
-                                    <FeatureListItem>Up-to-date knowledge using web search</FeatureListItem>
-                                    <FeatureListItem>Advanced AI Model</FeatureListItem>
-                                    <FeatureListItem>Build Your Game Library</FeatureListItem>
-                                    <FeatureListItem>Hands-Free & AI Mode Toggle</FeatureListItem>
-                                    <FeatureListItem>Batch Screenshot Capture</FeatureListItem>
-                                    <FeatureListItem>Priority Support & No Ads</FeatureListItem>
+                                    <FeatureListItem>30 Web Searches/month</FeatureListItem>
+                                    <FeatureListItem>Exclusive rare legendary profile icon</FeatureListItem>
+                                    <FeatureListItem>Founding member status & recognition</FeatureListItem>
+                                    <FeatureListItem>Lifetime price lock guarantee</FeatureListItem>
+                                    <FeatureListItem>Early access to new features</FeatureListItem>
+                                    <FeatureListItem>VIP priority support</FeatureListItem>
                                 </ul>
                                 <div className="mt-auto">
                                     <button 
@@ -1713,13 +1713,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 </div>
                                 <ul className="space-y-3 mb-8">
                                     <FeatureListItem>Everything in Free, plus:</FeatureListItem>
-                                    <FeatureListItem>1,583 Text + 328 Image Queries per month</FeatureListItem>
-                                    <FeatureListItem>Real-time web search for latest info</FeatureListItem>
-                                    <FeatureListItem>Advanced AI model for deeper insights</FeatureListItem>
-                                    <FeatureListItem>Build Your Game Library with insight tabs</FeatureListItem>
-                                    <FeatureListItem>Hands-Free mode & AI toggle for screenshots</FeatureListItem>
-                                    <FeatureListItem>Batch screenshot capture (F2 hotkey)</FeatureListItem>
-                                    <FeatureListItem>Priority support & ad-free experience</FeatureListItem>
+                                    <FeatureListItem>1,583 Text | 328 Image Queries/month</FeatureListItem>
+                                    <FeatureListItem>30 Web Searches/month</FeatureListItem>
+                                    <FeatureListItem>Wiki-like subtabs that update with your progress</FeatureListItem>
+                                    <FeatureListItem>Hands-free mode with AI screenshot toggle</FeatureListItem>
+                                    <FeatureListItem>Batch screenshot capture (F2 shortcut)</FeatureListItem>
+                                    <FeatureListItem>Priority support & completely ad-free</FeatureListItem>
                                 </ul>
                                 <div className="mt-auto">
                                     <button 
