@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS public.game_knowledge_cache (
     game_name TEXT NOT NULL,
     game_slug TEXT, -- For URL-friendly lookups
     
-    -- Comprehensive game knowledge (32K+ tokens)
+    -- Comprehensive game knowledge (up to 60K tokens for maximum detail)
     comprehensive_knowledge TEXT NOT NULL,
     knowledge_summary TEXT, -- Short summary for quick reference
     

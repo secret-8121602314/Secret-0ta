@@ -898,7 +898,7 @@ This keeps subtabs useful without losing important context.`
   const profile = playerProfile || profileAwareTabService.getDefaultProfile();
   const profileContext = profileAwareTabService.buildProfileContext(profile);
 
-  // 🎮 Inject FULL 32K game knowledge context if available (from global cache)
+  // 🎮 Inject FULL 60K game knowledge context if available (from global cache)
   // Look up IGDB ID from library by game title
   let gameKnowledgeContext = '';
   if (conversation.gameTitle) {

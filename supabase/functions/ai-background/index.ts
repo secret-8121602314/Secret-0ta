@@ -196,7 +196,7 @@ serve(async (req) => {
         image, 
         systemPrompt, 
         temperature = 0.7, 
-        maxTokens = 8192,
+        maxTokens = 60000, // Default 60K for comprehensive game knowledge (can be overridden)
         model = 'gemini-2.5-flash',
         tools: requestTools = []
       } = body;

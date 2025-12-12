@@ -2,13 +2,13 @@
  * Background Game Knowledge Fetcher Service
  * 
  * When a game tab is created by Pro/Vanguard users, this service makes a NON-BLOCKING
- * Gemini call WITH GROUNDING to fetch comprehensive game knowledge (32K+ tokens) and
+ * Gemini call WITH GROUNDING to fetch comprehensive game knowledge (60K tokens) and
  * stores it in the GLOBAL Supabase cache for ALL users to benefit from.
  * 
  * Key Changes (Dec 2025):
  * - Uses Supabase global cache instead of LocalStorage
  * - Enables Google Search grounding for real-time accuracy
- * - Increased token limit: 4096 → 32000 for comprehensive knowledge
+ * - Increased token limit: 4096 → 32000 → 60000 for maximum comprehensive knowledge
  * - Removed truncation - store full knowledge for RAG context
  * - One-time LocalStorage → Supabase migration on init
  * 
@@ -37,12 +37,14 @@ const getEdgeFunctionUrl = () => {
 
 /**
  * Enhanced knowledge extraction prompt for owned games
- * Designed to produce comprehensive, RAG-friendly content
+ * Designed to produce comprehensive, RAG-friendly content (60K tokens)
  */
 const getKnowledgePrompt = (gameName: string): string => `
-You are a comprehensive gaming knowledge expert. Provide extremely detailed, encyclopedic information about "${gameName}".
+You are a comprehensive gaming knowledge expert. Provide EXTREMELY DETAILED, EXHAUSTIVE, encyclopedic information about "${gameName}".
 
-Your response will be used as a knowledge base for an AI gaming assistant. Be thorough and cover EVERYTHING a player might ask about.
+Your response will be used as a knowledge base for an AI gaming assistant. Be MAXIMALLY THOROUGH and cover EVERYTHING a player might ask about.
+
+IMPORTANT: You have 60,000 tokens available. Use them ALL to provide the most comprehensive game knowledge possible. Include extensive details, examples, specific numbers, exact locations, detailed strategies, and thorough explanations for every section.
 
 ## CORE GAME MECHANICS
 - Complete gameplay systems breakdown
@@ -241,7 +243,7 @@ async function fetchGameKnowledge(igdbGameId: number, gameName: string): Promise
     }
     console.log(`🎮 [GameKnowledge] ✅ Auth session found, proceeding with fetch...`);
 
-    console.log(`📡 [GEMINI CALL #1] 🎮 Game Knowledge Fetch | Game: ${gameName} | Type: BACKGROUND | Grounding: YES | Max Tokens: 32000`);
+    console.log(`📡 [GEMINI CALL #1] 🎮 Game Knowledge Fetch | Game: ${gameName} | Type: BACKGROUND | Grounding: YES | Max Tokens: 60000`);
     
     // Make API call with GROUNDING ENABLED and 32K tokens
     const response = await fetch(getEdgeFunctionUrl(), {
@@ -255,8 +257,8 @@ async function fetchGameKnowledge(igdbGameId: number, gameName: string): Promise
         requestType: 'text',
         model: 'gemini-2.5-flash',
         temperature: 0.7,
-        maxTokens: 32000, // Increased from 4096 for comprehensive knowledge
-        systemPrompt: 'You are a comprehensive gaming knowledge expert. Provide extremely detailed, accurate, and practical gaming information. Use Google Search grounding to ensure all information is up-to-date and accurate.',
+        maxTokens: 60000, // Increased to 60K for maximum comprehensive knowledge
+        systemPrompt: 'You are a comprehensive gaming knowledge expert. Provide EXTREMELY detailed, exhaustive, accurate, and practical gaming information. Use ALL available tokens to create the most comprehensive knowledge base possible. Use Google Search grounding to ensure all information is up-to-date and accurate.',
         // Enable Google Search grounding for real-time accuracy
         useGrounding: true,
         groundingConfig: {
