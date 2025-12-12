@@ -14,6 +14,7 @@ import ErrorBoundary from '../ErrorBoundary';
 import TTSControls from '../ui/TTSControls';
 import SuggestedPrompts from './SuggestedPrompts';
 import { ActiveSessionToggle } from '../ui/ActiveSessionToggle';
+import { GroundingToggle } from '../GroundingToggle';
 import SubTabs from './SubTabs';
 import { gameTabService } from '../../services/gameTabService';
 import { tabManagementService } from '../../services/tabManagementService';
@@ -393,6 +394,12 @@ interface ChatInterfaceProps {
   onStop?: () => void;
   isManualUploadMode?: boolean;
   onToggleManualUploadMode?: () => void;
+  onScreenshotFirstUse?: () => void;
+  isGroundingEnabled?: boolean;
+  onToggleGrounding?: () => void;
+  onRequestGroundingConfirmation?: (query: string) => void;
+  aiMessagesQuota?: number;
+  onGroundingQuotaExceeded?: () => void;
   suggestedPrompts?: string[];
   onSuggestedPromptClick?: (prompt: string) => void;
   activeSession?: ActiveSessionState;
@@ -422,6 +429,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onStop,
   isManualUploadMode = false,
   onToggleManualUploadMode,
+  onScreenshotFirstUse,
+  isGroundingEnabled = true,
+  onToggleGrounding,
+  onRequestGroundingConfirmation,
+  aiMessagesQuota = 0,
+  onGroundingQuotaExceeded,
   suggestedPrompts = [],
   onSuggestedPromptClick,
   activeSession,
@@ -961,7 +974,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     key={prompt.text}
                     onClick={() => {
                       setIsQuickActionsExpanded(false);
-                      onSuggestedPromptClick?.(prompt.text);
+                      // Check if web search is enabled for gaming news prompts
+                      if (!isGroundingEnabled && onRequestGroundingConfirmation) {
+                        onRequestGroundingConfirmation(prompt.text);
+                      } else {
+                        onSuggestedPromptClick?.(prompt.text);
+                      }
                     }}
                     disabled={isLoading}
                     className="group relative px-3 py-3 rounded-xl bg-gradient-to-br from-[#1C1C1C] to-[#0F0F0F] hover:from-[#252525] hover:to-[#1A1A1A] border border-[#424242]/30 hover:border-[#E53A3A]/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-left overflow-hidden min-h-[88px]"
@@ -1253,6 +1271,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 </svg>
               </button>
 
+              {/* Web Search Toggle - Show for all users with quota display */}
+              {onToggleGrounding && onGroundingQuotaExceeded && (
+                <GroundingToggle
+                  isEnabled={isGroundingEnabled}
+                  aiMessagesQuota={aiMessagesQuota}
+                  onToggle={onToggleGrounding}
+                  onQuotaExceeded={onGroundingQuotaExceeded}
+                />
+              )}
+
               {/* Only show ScreenshotButton and ManualUploadToggle when connected to PC */}
               {isPCConnected && (
                 <>
@@ -1267,6 +1295,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     isManualUploadMode={isManualUploadMode}
                     onRequestConnect={onRequestConnect}
                     usage={{ tier: userTier as import('../../types').UserTier }}
+                    onFirstUse={onScreenshotFirstUse}
                   />
                 </>
               )}

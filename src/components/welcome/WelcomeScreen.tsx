@@ -777,7 +777,7 @@ const AdvancedFeaturesTab = () => (
         <div className="bg-surface/30 border border-surface-light/20 rounded-lg p-3 sm:p-4">
           <h3 className="font-semibold text-text-primary mb-2 sm:mb-3 flex items-center text-sm sm:text-base">
             <span className="text-green-400 mr-1 sm:mr-2">🌐</span>
-            Web Search (Grounding)
+            Web Search
           </h3>
           <p className="text-xs sm:text-sm text-text-muted mb-2 sm:mb-3">
             Get up-to-date information with real-time web search integration.

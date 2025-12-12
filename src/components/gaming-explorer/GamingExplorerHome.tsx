@@ -46,6 +46,8 @@ interface GamingExplorerHomeProps {
   onOpenGameInfo: (gameData: IGDBGameData, gameName: string) => void;
   onSendNewsQuery?: (query: string) => void;
   onSwitchToLibraryTab?: (section: LibraryCategory) => void;
+  isGroundingEnabled?: boolean;
+  onRequestGroundingConfirmation?: (query: string) => void;
 }
 
 // Import LibraryCategory type for proper typing
@@ -121,7 +123,7 @@ const gameCategories = [
   { id: 'strategy', name: 'Strategy', query: 'best strategy games' },
 ];
 
-const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGameInfo, onSendNewsQuery, onSwitchToLibraryTab }) => {
+const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGameInfo, onSendNewsQuery, onSwitchToLibraryTab, isGroundingEnabled, onRequestGroundingConfirmation }) => {
   // Featured games from IGDB
   const [featuredGames, setFeaturedGames] = useState<IGDBGameData[]>([]);
   const [loadingFeatured, setLoadingFeatured] = useState(false);
@@ -437,7 +439,13 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
       return;
     }
 
-    // Log the generation to track 24-hour limit
+    // Check if grounding is enabled - if not, show confirmation modal
+    if (!isGroundingEnabled && onRequestGroundingConfirmation) {
+      onRequestGroundingConfirmation(prompt.prompt);
+      return;
+    }
+
+    // Log the generation to track 24-hour limit (only when actually sending)
     newsCacheStorage.logGeneration(user.id, prompt.id);
 
     // If we have the callback, use it to send the query to Game Hub
@@ -447,7 +455,7 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
       // Fallback: show toast that this feature needs the main app
       toastService.info('Please use this feature from the main app');
     }
-  }, [user.id, onSendNewsQuery]);
+  }, [user.id, onSendNewsQuery, isGroundingEnabled, onRequestGroundingConfirmation]);
 
   // Check if a prompt was used in last 24 hours
   const isPromptOnCooldown = useCallback((promptType: NewsPromptType): boolean => {

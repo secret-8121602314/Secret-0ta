@@ -76,37 +76,42 @@ const CreditModal: React.FC<CreditModalProps> = ({ isOpen, onClose, onUpgrade, u
   const isPaidUser = tier === 'pro' || tier === 'vanguard_pro';
 
   return (
-    <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in p-4" onClick={onClose}>
       <div 
-        className="bg-[#1C1C1C]/90 backdrop-blur-md border border-[#424242]/60 rounded-2xl shadow-2xl p-8 w-full max-w-sm m-4 relative animate-scale-in"
+        className="bg-[#1C1C1C]/90 backdrop-blur-md border border-[#424242]/60 rounded-2xl shadow-2xl w-full max-w-sm relative animate-scale-in flex flex-col max-h-[90vh]"
         style={{
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          onClick={onClose}
-          className="absolute top-6 right-6 text-[#6E6E6E] hover:text-[#F5F5F5] transition-colors"
-          aria-label="Close modal"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
-        
-        <div className="flex justify-center mb-4">
-          <img
-            src="/images/mascot/8.png"
-            alt="Credits"
-            className="w-28 h-28 sm:w-32 sm:h-32 md:w-40 md:h-40 object-contain aspect-square"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-            }}
-          />
+        {/* Fixed header with close button */}
+        <div className="flex-shrink-0 p-6 pb-0 relative">
+          <button
+            onClick={onClose}
+            className="absolute top-6 right-6 text-[#6E6E6E] hover:text-[#F5F5F5] transition-colors z-10"
+            aria-label="Close modal"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+          
+          <div className="flex justify-center mb-4">
+            <img
+              src="/images/mascot/8.png"
+              alt="Credits"
+              className="w-28 h-28 sm:w-32 sm:h-32 object-contain aspect-square"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+              }}
+            />
+          </div>
+          
+          <h2 className="text-2xl font-bold text-[#F5F5F5] mb-2">Monthly Credits</h2>
+          <p className="text-[#A3A3A3] mb-6">Your usage resets at the start of each month.</p>
         </div>
         
-        <h2 className="text-2xl font-bold text-[#F5F5F5] mb-2">Monthly Credits</h2>
-        <p className="text-[#A3A3A3] mb-8">Your usage resets at the start of each month.</p>
-        
+        {/* Scrollable content area */}
+        <div className="flex-1 overflow-y-auto px-6 pb-6 scrollbar-thin scrollbar-thumb-[#424242] scrollbar-track-transparent">
         <div className="space-y-6">
           <div className="flex items-center gap-4 bg-[#2E2E2E]/40 backdrop-blur-sm p-4 rounded-lg border border-[#424242]/30">
             <TextIcon className="w-8 h-8 text-sky-400 flex-shrink-0" />
@@ -203,18 +208,22 @@ const CreditModal: React.FC<CreditModalProps> = ({ isOpen, onClose, onUpgrade, u
             </>
           )}
         </div>
+        </div>
 
+        {/* Fixed footer for free tier */}
         {tier === 'free' && (
-          <div className="mt-8 bg-[#2E2E2E]/30 backdrop-blur-sm p-4 rounded-lg border border-[#424242]/30">
-            <button
-              onClick={() => {
-                setShowPaymentModal(true);
-              }}
-              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-bold py-3 px-4 rounded-lg transition-transform transform hover:scale-105"
-            >
-              <StarIcon className="w-5 h-5" />
-              Upgrade to Pro for More
-            </button>
+          <div className="flex-shrink-0 px-6 pb-6 pt-0">
+            <div className="bg-[#2E2E2E]/30 backdrop-blur-sm p-4 rounded-lg border border-[#424242]/30">
+              <button
+                onClick={() => {
+                  setShowPaymentModal(true);
+                }}
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-bold py-3 px-4 rounded-lg transition-transform transform hover:scale-105"
+              >
+                <StarIcon className="w-5 h-5" />
+                Upgrade to Pro for More
+              </button>
+            </div>
           </div>
         )}
       </div>

@@ -18,6 +18,7 @@ import { tabManagementService } from '../services/tabManagementService';
 import { subtabsService } from '../services/subtabsService';
 import { ttsService } from '../services/ttsService';
 import { toastService } from '../services/toastService';
+import { groundingControlService } from '../services/groundingControlService';
 // import { MessageRoutingService } from '../services/messageRoutingService'; // Not currently used
 import { sessionService } from '../services/sessionService';
 import { fetchIGDBGameData, IGDBGameData, getSidebarCoverUrl } from '../services/igdbService';
@@ -32,6 +33,8 @@ import HandsFreeModal from './modals/HandsFreeModal';
 import AddGameModal from './modals/AddGameModal';
 import GameInfoModal from './modals/GameInfoModal';
 import FeedbackModal from './modals/FeedbackModal';
+import { GroundingConfirmationModal } from './modals/GroundingConfirmationModal';
+import { FeatureInfoModal } from './modals/FeatureInfoModal';
 import Logo from './ui/Logo';
 import CreditIndicator from './ui/CreditIndicator';
 import HandsFreeToggle from './ui/HandsFreeToggle';
@@ -114,6 +117,12 @@ const MainApp: React.FC<MainAppProps> = ({
   onProfileSetupDismiss,
 }) => {
   const [user, setUser] = useState<User | null>(null);
+  
+  // DEBUG: Log user changes
+  useEffect(() => {
+    console.log('🔥🔥🔥 [MainApp] USER STATE CHANGED:', user);
+  }, [user]);
+  
   const [conversations, setConversations] = useState<Conversations>({});
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -140,6 +149,21 @@ const MainApp: React.FC<MainAppProps> = ({
     const saved = localStorage.getItem('otakon_manual_upload_mode');
     return saved !== null ? saved === 'true' : true;
   });
+  
+  // Grounding toggle state
+  const [isGroundingEnabled, setIsGroundingEnabled] = useState(() => {
+    const saved = localStorage.getItem('otakon_grounding_enabled');
+    return saved !== null ? saved === 'true' : false; // Default to OFF (user must toggle ON)
+  });
+  const [aiMessagesQuota, setAiMessagesQuota] = useState<number>(0); // Will be fetched from server based on user tier and usage
+  const [groundingConfirmationOpen, setGroundingConfirmationOpen] = useState(false);
+  const [pendingGroundingQuery, setPendingGroundingQuery] = useState<string | null>(null);
+  
+  // Feature info modal states
+  const [playPauseInfoOpen, setPlayPauseInfoOpen] = useState(false);
+  const [screenshotInfoOpen, setScreenshotInfoOpen] = useState(false);
+  const [aiModeInfoOpen, setAiModeInfoOpen] = useState(false);
+  
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [creditModalOpen, setCreditModalOpen] = useState(false);
@@ -276,6 +300,50 @@ const MainApp: React.FC<MainAppProps> = ({
   useEffect(() => {
     localStorage.setItem('otakon_manual_upload_mode', String(isManualUploadMode));
   }, [isManualUploadMode]);
+
+  // Persist grounding toggle state to localStorage
+  useEffect(() => {
+    localStorage.setItem('otakon_grounding_enabled', String(isGroundingEnabled));
+  }, [isGroundingEnabled]);
+
+  // Helper function to refresh quota from server
+  const refreshQuota = useCallback(async () => {
+    if (!user?.authUserId) {
+      console.log('[MainApp] No user authUserId, setting quota to 0');
+      setAiMessagesQuota(0);
+      return;
+    }
+
+    try {
+      console.log('[MainApp] Fetching quota for user:', user.authUserId, 'tier:', user.tier);
+      const quota = await groundingControlService.getRemainingQuota(
+        user.authUserId,
+        user.tier as 'free' | 'pro' | 'vanguard_pro'
+      );
+      
+      console.log('[MainApp] Quota received:', quota);
+      console.log('[MainApp] Setting aiMessagesQuota to:', quota.aiMessages.remaining);
+      
+      // Set the remaining AI messages quota (30 - used)
+      setAiMessagesQuota(quota.aiMessages.remaining);
+    } catch (err) {
+      console.error('[MainApp] Failed to refresh grounding quota:', err);
+      // On error, show full quota based on tier
+      const tierLimits = {
+        free: 0,
+        pro: 30,
+        vanguard_pro: 30
+      };
+      const fallbackQuota = tierLimits[user.tier as keyof typeof tierLimits] || 0;
+      console.log('[MainApp] Using fallback quota:', fallbackQuota, 'for tier:', user.tier);
+      setAiMessagesQuota(fallbackQuota);
+    }
+  }, [user?.authUserId, user?.tier]);
+
+  // Fetch AI messages quota on user change
+  useEffect(() => {
+    refreshQuota();
+  }, [refreshQuota]);
 
   // ✅ CRITICAL: Load suggested prompts from last AI message when conversation changes
   useEffect(() => {
@@ -1507,6 +1575,96 @@ const MainApp: React.FC<MainAppProps> = ({
     setCreditModalOpen(false);
   };
 
+  const handleGroundingToggle = () => {
+    // If user is trying to turn OFF, just do it immediately
+    if (isGroundingEnabled) {
+      setIsGroundingEnabled(false);
+      return;
+    }
+
+    // Check if user has seen the confirmation before
+    const hasSeenConfirmation = localStorage.getItem('otakon_web_search_confirmed') === 'true';
+    
+    // For free users: always show confirmation (they have limited quota)
+    // For pro/vanguard users: show confirmation only the first time
+    if (currentUser.tier === 'free' || !hasSeenConfirmation) {
+      setGroundingConfirmationOpen(true);
+      return;
+    }
+
+    // Pro/vanguard users who have seen the confirmation can toggle directly
+    setIsGroundingEnabled(true);
+    toastService.success('Web search enabled');
+  };
+
+  const handleGroundingConfirmationConfirm = async () => {
+    setIsGroundingEnabled(true);
+    setGroundingConfirmationOpen(false);
+    
+    // Mark that user has seen and accepted the confirmation
+    localStorage.setItem('otakon_web_search_confirmed', 'true');
+    
+    toastService.success('Web search enabled');
+    
+    // If there was a pending query, send it now
+    if (pendingGroundingQuery) {
+      const query = pendingGroundingQuery;
+      setPendingGroundingQuery(null);
+      
+      // Small delay to ensure grounding state is persisted
+      setTimeout(async () => {
+        try {
+          await handleSendMessage(query);
+        } catch (error) {
+          console.error('[MainApp] Error sending pending query:', error);
+          setIsLoading(false);
+        }
+      }, 100);
+    }
+  };
+
+  const handleGroundingConfirmationCancel = () => {
+    setGroundingConfirmationOpen(false);
+    setPendingGroundingQuery(null);
+  };
+
+  const handleRequestGroundingConfirmation = (query: string) => {
+    setPendingGroundingQuery(query);
+    setGroundingConfirmationOpen(true);
+  };
+  
+  // Feature info modal handlers
+  const handlePlayPauseToggle = () => {
+    const hasSeenInfo = localStorage.getItem('otakon_play_pause_info_seen') === 'true';
+    
+    if (!hasSeenInfo) {
+      setPlayPauseInfoOpen(true);
+      return;
+    }
+    
+    // Toggle manual upload mode directly
+    setIsManualUploadMode(!isManualUploadMode);
+  };
+  
+  const handlePlayPauseInfoConfirm = () => {
+    localStorage.setItem('otakon_play_pause_info_seen', 'true');
+    setPlayPauseInfoOpen(false);
+    // Toggle the feature after user confirms
+    setIsManualUploadMode(!isManualUploadMode);
+  };
+  
+  const handleScreenshotInfoConfirm = () => {
+    localStorage.setItem('otakon_screenshot_info_seen', 'true');
+    setScreenshotInfoOpen(false);
+  };
+  
+  const handleAiModeInfoConfirm = () => {
+    localStorage.setItem('otakon_ai_mode_info_seen', 'true');
+    setAiModeInfoOpen(false);
+    // Toggle AI mode after user confirms
+    toggleAiMode();
+  };
+
   const handleUpgrade = () => {
     // TODO: Implement upgrade functionality
       };
@@ -1608,6 +1766,25 @@ const MainApp: React.FC<MainAppProps> = ({
       toastService.show('AI mode toggle is a Pro feature', 'info');
       return;
     }
+    
+    // Check if user has seen the AI mode info before
+    const hasSeenInfo = localStorage.getItem('otakon_ai_mode_info_seen') === 'true';
+    
+    if (!hasSeenInfo) {
+      // Show info modal on first toggle attempt
+      setAiModeInfoOpen(true);
+      return;
+    }
+    
+    // Toggle AI mode
+    toggleAiMode();
+  };
+  
+  const toggleAiMode = () => {
+    const currentUser = authService.getCurrentUser();
+    const isPro = currentUser?.tier === 'pro' || currentUser?.tier === 'vanguard_pro';
+    
+    if (!isPro) return;
     
     const newMode = !aiModeEnabled;
     setAiModeEnabled(newMode);
@@ -1753,6 +1930,14 @@ const MainApp: React.FC<MainAppProps> = ({
       // Switch to Game Hub if not already active
       if (activeConversation?.id !== gameHub.id) {
         await handleConversationSelect(gameHub.id);
+      }
+      
+      // Check if grounding is enabled
+      if (!isGroundingEnabled) {
+        // Show confirmation modal first
+        setPendingGroundingQuery(query);
+        setGroundingConfirmationOpen(true);
+        return;
       }
       
       // Small delay to ensure state is updated, then send the message
@@ -3018,7 +3203,8 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
         !!finalImageUrl,
         finalImageUrl,
         controller.signal,
-        currentGameIGDBData?.first_release_date // Pass IGDB release date for accurate post-cutoff grounding detection
+        currentGameIGDBData?.first_release_date, // Pass IGDB release date for accurate post-cutoff grounding detection
+        isGroundingEnabled // Pass user's manual grounding toggle state
       );
 
       console.log('✅ [MainApp] getChatResponseWithStructure completed, response:', {
@@ -4001,6 +4187,10 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
       setIsProcessingResponse(false);
       targetConversationIdRef.current = null;
       console.log('🔓 [MainApp] Processing lock released');
+      
+      // 🔄 Refresh quota after AI response completes
+      // This updates the badge to show remaining grounding searches
+      refreshQuota();
     }
   };
 
@@ -4361,7 +4551,13 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                   userTier={currentUser.tier}
                   onStop={handleStopAI}
                   isManualUploadMode={isManualUploadMode}
-                  onToggleManualUploadMode={() => setIsManualUploadMode(!isManualUploadMode)}
+                  onToggleManualUploadMode={handlePlayPauseToggle}
+                  onScreenshotFirstUse={() => setScreenshotInfoOpen(true)}
+                  isGroundingEnabled={isGroundingEnabled}
+                  onToggleGrounding={handleGroundingToggle}
+                  onRequestGroundingConfirmation={handleRequestGroundingConfirmation}
+                  aiMessagesQuota={aiMessagesQuota}
+                  onGroundingQuotaExceeded={() => setCreditModalOpen(true)}
                   suggestedPrompts={suggestedPrompts}
                   onSuggestedPromptClick={handleSuggestedPromptClick}
                   activeSession={session}
@@ -4442,6 +4638,9 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
         onClose={() => { haptic.modalClose(); setAddGameModalOpen(false); }}
         onCreateGame={handleCreateGame}
         onCloseSidebar={() => setSidebarOpen(false)}
+        isGroundingEnabled={isGroundingEnabled}
+        onToggleGrounding={handleGroundingToggle}
+        aiMessagesQuota={aiMessagesQuota}
       />
 
 
@@ -4508,6 +4707,103 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
         onClose={() => { haptic.modalClose(); setGamingExplorerOpen(false); }}
         user={currentUser}
         onSendNewsQuery={handleGamingExplorerNewsQuery}
+        isGroundingEnabled={isGroundingEnabled}
+        onRequestGroundingConfirmation={handleRequestGroundingConfirmation}
+      />
+
+      {/* Grounding Confirmation Modal */}
+      <GroundingConfirmationModal
+        isOpen={groundingConfirmationOpen}
+        onConfirm={handleGroundingConfirmationConfirm}
+        onCancel={handleGroundingConfirmationCancel}
+        userTier={currentUser.tier}
+        remainingQuota={aiMessagesQuota}
+      />
+
+      {/* Play/Pause Feature Info Modal */}
+      <FeatureInfoModal
+        isOpen={playPauseInfoOpen}
+        onClose={() => setPlayPauseInfoOpen(false)}
+        onConfirm={handlePlayPauseInfoConfirm}
+        title="Play/Pause Toggle"
+        description="Control how screenshots are sent to the AI"
+        icon={
+          <svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+        }
+        details={[
+          {
+            label: 'Play Mode (Auto)',
+            text: 'Screenshots are automatically sent to the AI for instant analysis. Perfect for getting real-time help during gameplay.'
+          },
+          {
+            label: 'Pause Mode (Manual)',
+            text: 'Screenshots are captured but wait for your review. You can manually send them when ready. Great for organizing multiple screenshots before analysis.'
+          }
+        ]}
+        tipText="You can toggle between modes anytime to match your gaming style!"
+      />
+
+      {/* Screenshot Feature Info Modal */}
+      <FeatureInfoModal
+        isOpen={screenshotInfoOpen}
+        onClose={() => setScreenshotInfoOpen(false)}
+        onConfirm={handleScreenshotInfoConfirm}
+        title="Screenshot Capture"
+        description="Capture gameplay moments for AI analysis"
+        icon={
+          <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21 15 16 10 5 21" />
+          </svg>
+        }
+        details={[
+          {
+            label: 'Single Shot',
+            text: 'Capture one screenshot at a time. Perfect for specific questions or moments you want help with.'
+          },
+          {
+            label: 'Multi Shot (Pro)',
+            text: 'Capture 5 screenshots in quick succession. Great for documenting sequences, combos, or complex situations.'
+          },
+          {
+            label: 'How It Works',
+            text: 'Connect your PC, then click the screenshot button to capture your gameplay. The AI will analyze it and provide helpful insights!'
+          }
+        ]}
+        tipText="Right-click or long-press the screenshot button to switch between single and multi-shot modes!"
+      />
+
+      {/* AI Mode Feature Info Modal */}
+      <FeatureInfoModal
+        isOpen={aiModeInfoOpen}
+        onClose={() => setAiModeInfoOpen(false)}
+        onConfirm={handleAiModeInfoConfirm}
+        title="AI Mode Toggle"
+        description="Control AI analysis of your screenshots"
+        icon={
+          <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <rect x="4" y="4" width="16" height="16" rx="2" />
+            <rect x="9" y="9" width="6" height="6" fill="currentColor" />
+            <line x1="9" y1="1" x2="9" y2="4" />
+            <line x1="15" y1="1" x2="15" y2="4" />
+            <line x1="9" y1="20" x2="9" y2="23" />
+            <line x1="15" y1="20" x2="15" y2="23" />
+          </svg>
+        }
+        details={[
+          {
+            label: 'AI Mode ON',
+            text: 'Screenshots are analyzed by AI to provide gaming tips, strategies, and helpful insights automatically.'
+          },
+          {
+            label: 'AI Mode OFF',
+            text: 'Screenshots are only stored in your gallery without AI analysis. Perfect for saving your gaming moments without using any credits!'
+          }
+        ]}
+        tipText="Turn OFF AI mode when you just want to archive gameplay memories without spending credits on analysis!"
       />
     </div>
   );

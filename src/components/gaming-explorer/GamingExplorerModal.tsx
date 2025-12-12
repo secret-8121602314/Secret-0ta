@@ -35,6 +35,8 @@ interface GamingExplorerModalProps {
   user: User;
   onSendNewsQuery?: (query: string) => void;
   onNavigateToLibrary?: (section: 'own' | 'favorite' | 'wishlist' | 'completed') => void;
+  isGroundingEnabled?: boolean;
+  onRequestGroundingConfirmation?: (query: string) => void;
 }
 
 const GamingExplorerModal: React.FC<GamingExplorerModalProps> = ({
@@ -43,6 +45,8 @@ const GamingExplorerModal: React.FC<GamingExplorerModalProps> = ({
   user,
   onSendNewsQuery,
   onNavigateToLibrary: _onNavigateToLibrary,
+  isGroundingEnabled,
+  onRequestGroundingConfirmation,
 }) => {
   const [activeTab, setActiveTab] = useState<ExplorerTab>('home');
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -268,6 +272,8 @@ const GamingExplorerModal: React.FC<GamingExplorerModalProps> = ({
                           user={user} 
                           onOpenGameInfo={handleOpenGameInfo}
                           onSendNewsQuery={onSendNewsQuery}
+                          isGroundingEnabled={isGroundingEnabled}
+                          onRequestGroundingConfirmation={onRequestGroundingConfirmation}
                           onSwitchToLibraryTab={(section: 'own' | 'favorite' | 'wishlist' | 'disliked') => {
                             // Switch to library tab and set the active category
                             setActiveTab('library');

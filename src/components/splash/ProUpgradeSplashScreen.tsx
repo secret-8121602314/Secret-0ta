@@ -85,7 +85,7 @@ const PRO_FEATURES = [
   },
   {
     icon: <SearchIcon />,
-    title: 'Grounding Search',
+    title: 'Web Search',
     description: 'Real-time info from the web'
   },
   {

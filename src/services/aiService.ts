@@ -762,6 +762,22 @@ class AIService {
    * 
    * @param igdbReleaseDate - Optional IGDB first_release_date (Unix seconds) for accurate post-cutoff detection
    */
+  /**
+   * 🏗️ Main AI Response Function - Returns structured response with sources
+   * 
+   * 🔒 SECURITY: Grounding Quota Validation
+   * - Client-side eligibility checks (checkGroundingEligibility) are for UX only
+   * - manualGroundingEnabled toggle affects UX, NOT actual enforcement
+   * - Edge Functions perform REAL validation server-side:
+   *   1. Query user tier from profiles table
+   *   2. Query usage from user_grounding_usage table
+   *   3. Strip tools[] if quota exceeded (request still succeeds)
+   *   4. Increment usage server-side AFTER successful grounded calls
+   * - Client cannot manipulate quota by changing localStorage, useState, or request parameters
+   * - This ensures secure billing and prevents abuse of Google Grounding API costs
+   * 
+   * @param manualGroundingEnabled - User's toggle preference (UX only, server decides)
+   */
   public async getChatResponseWithStructure(
     conversation: Conversation,
     user: User,
@@ -770,7 +786,8 @@ class AIService {
     hasImages: boolean = false,
     imageData?: string,
     abortSignal?: AbortSignal,
-    igdbReleaseDate?: number | null
+    igdbReleaseDate?: number | null,
+    manualGroundingEnabled: boolean = true
   ): Promise<AIResponse> {
     // Create cache key for this request - use full message hash to avoid collisions
     const hashString = (str: string) => {
@@ -990,11 +1007,19 @@ In addition to your regular response, provide structured data in the following o
         groundingQueryType = groundingCheck.queryType;
         groundingUsageType = groundingCheck.usageType;
         
+        // 🎯 MANUAL OVERRIDE: User can disable grounding via toggle (ONLY for chat messages, NOT game knowledge)
+        // Note: Game knowledge fetches don't call this function, they use Edge Function directly
+        if (useGrounding && !manualGroundingEnabled && groundingUsageType === 'ai_message') {
+          useGrounding = false;
+          console.log('🔒 [AIService] Grounding disabled by user toggle for AI message');
+        }
+        
         console.log('🔍 [AIService] Grounding eligibility:', {
           tier: user.tier,
           queryType: groundingQueryType,
           useGrounding,
           usageType: groundingUsageType,
+          manualToggle: manualGroundingEnabled,
           reason: groundingCheck.reason,
           remaining: groundingCheck.remainingQuota,
           igdbReleaseDate: igdbReleaseDate ? new Date(igdbReleaseDate * 1000).toISOString() : 'N/A'
@@ -1040,12 +1065,9 @@ In addition to your regular response, provide structured data in the following o
           throw new Error(edgeResponse.response || 'AI request failed');
         }
         
-        // 🎯 Track grounding usage if it was used
-        if (useGrounding && user?.authUserId) {
-          groundingControlService.incrementGroundingUsage(user.authUserId, groundingUsageType).catch(err => {
-            console.warn('[AIService] Failed to track grounding usage:', err);
-          });
-        }
+        // 🔒 SECURITY NOTE: Grounding usage tracking now handled server-side in Edge Functions
+        // Client-side tracking removed to prevent manipulation
+        // Edge Functions validate quota BEFORE grounding and increment usage AFTER successful calls
 
         const rawContent = edgeResponse.response;
         

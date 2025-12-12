@@ -29,11 +29,11 @@ import type { UserTier } from '../types';
 
 // ============================================================================
 // GROUNDING LIMITS BY TIER - SPLIT INTO TWO POOLS
-// Free tier: 0 (relies on global cache populated by Pro/Vanguard)
+// Free tier: 4 ai_message searches/month for user queries only
 // Pro/Vanguard: Game Knowledge (20/mo) + AI Messages (30/mo)
 // ============================================================================
 const GROUNDING_LIMITS: Record<UserTier, { gameKnowledge: number; aiMessages: number }> = {
-  free: { gameKnowledge: 0, aiMessages: 0 },           // NO grounding - uses cached knowledge
+  free: { gameKnowledge: 0, aiMessages: 4 },           // Free: 4 searches/month for user queries only
   pro: { gameKnowledge: 20, aiMessages: 30 },          // 20 game knowledge + 30 AI message searches/month
   vanguard_pro: { gameKnowledge: 20, aiMessages: 30 }  // 20 game knowledge + 30 AI message searches/month
 };
@@ -400,16 +400,19 @@ export async function getGroundingUsage(authUserId: string): Promise<{
   aiMessages: number;
   total: number;
 }> {
+  console.log('[GroundingControl] getGroundingUsage called for:', authUserId);
   const currentMonth = getCurrentMonthKey();
   const cached = usageCache.get(authUserId);
   
   // Return cached if fresh and same month
   if (cached && cached.month === currentMonth && Date.now() - cached.lastSync < CACHE_TTL) {
-    return {
+    const result = {
       gameKnowledge: cached.gameKnowledgeCount,
       aiMessages: cached.aiMessageCount,
       total: cached.count
     };
+    console.log('[GroundingControl] Returning cached usage:', result);
+    return result;
   }
   
   // If we know the table doesn't exist, use cache only
@@ -451,6 +454,19 @@ export async function getGroundingUsage(authUserId: string): Promise<{
     }
     
     dbTableExists = true;
+    
+    console.log('[GroundingControl] Raw data from DB:', data);
+    
+    // Handle null data (no record for this month yet)
+    if (!data) {
+      console.log('[GroundingControl] No usage record found for this month - user has full quota');
+      return {
+        gameKnowledge: 0,
+        aiMessages: 0,
+        total: 0
+      };
+    }
+    
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const gameKnowledgeCount = (data as any)?.game_knowledge_count || 0;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -557,21 +573,63 @@ export async function getRemainingQuota(authUserId: string, tier: UserTier): Pro
   gameKnowledge: { used: number; limit: number; remaining: number };
   aiMessages: { used: number; limit: number; remaining: number };
 }> {
-  const usage = await getGroundingUsage(authUserId);
-  const limits = GROUNDING_LIMITS[tier];
-  
-  return {
-    gameKnowledge: {
-      used: usage.gameKnowledge,
-      limit: limits.gameKnowledge,
-      remaining: Math.max(0, limits.gameKnowledge - usage.gameKnowledge)
-    },
-    aiMessages: {
-      used: usage.aiMessages,
-      limit: limits.aiMessages,
-      remaining: Math.max(0, limits.aiMessages - usage.aiMessages)
+  try {
+    // Handle undefined tier - default to 'free'
+    const userTier = tier || 'free';
+    console.log('[GroundingControl] getRemainingQuota called with:', { authUserId, tier: userTier });
+    
+    const usage = await getGroundingUsage(authUserId);
+    console.log('[GroundingControl] getGroundingUsage returned:', usage);
+    
+    const limits = GROUNDING_LIMITS[userTier];
+    console.log('[GroundingControl] Limits for tier:', limits);
+    
+    if (!usage) {
+      console.error('[GroundingControl] getGroundingUsage returned undefined');
+      return {
+        gameKnowledge: {
+          used: 0,
+          limit: limits.gameKnowledge,
+          remaining: limits.gameKnowledge
+        },
+        aiMessages: {
+          used: 0,
+          limit: limits.aiMessages,
+          remaining: limits.aiMessages
+        }
+      };
     }
-  };
+    
+    return {
+      gameKnowledge: {
+        used: usage.gameKnowledge,
+        limit: limits.gameKnowledge,
+        remaining: Math.max(0, limits.gameKnowledge - usage.gameKnowledge)
+      },
+      aiMessages: {
+        used: usage.aiMessages,
+        limit: limits.aiMessages,
+        remaining: Math.max(0, limits.aiMessages - usage.aiMessages)
+      }
+    };
+  } catch (err) {
+    console.error('[GroundingControl] Error in getRemainingQuota:', err);
+    // Handle undefined tier in error case too
+    const userTier = tier || 'free';
+    const limits = GROUNDING_LIMITS[userTier];
+    return {
+      gameKnowledge: {
+        used: 0,
+        limit: limits.gameKnowledge,
+        remaining: limits.gameKnowledge
+      },
+      aiMessages: {
+        used: 0,
+        limit: limits.aiMessages,
+        remaining: limits.aiMessages
+      }
+    };
+  }
 }
 
 // ============================================================================

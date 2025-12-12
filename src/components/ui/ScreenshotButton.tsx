@@ -8,6 +8,7 @@ interface ScreenshotButtonProps {
   isManualUploadMode: boolean;
   onRequestConnect?: () => void;
   usage?: { tier: UserTier };
+  onFirstUse?: () => void;
 }
 
 type Mode = 'single' | 'multi';
@@ -17,7 +18,8 @@ const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({
   isProcessing, 
   isManualUploadMode, 
   onRequestConnect,
-  usage 
+  usage,
+  onFirstUse
 }) => {
   const [mode, setMode] = useState<Mode>('single');
   const [menuOpen, setMenuOpen] = useState(false);
@@ -124,6 +126,13 @@ const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({
   const handleClick = async () => {
     if (!isConnected) { onRequestConnect?.(); return; }
     if (isProcessing) {
+      return;
+    }
+    
+    // Check if this is first time using screenshot feature
+    const hasSeenInfo = localStorage.getItem('otakon_screenshot_info_seen') === 'true';
+    if (!hasSeenInfo && onFirstUse) {
+      onFirstUse();
       return;
     }
     

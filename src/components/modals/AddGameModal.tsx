@@ -6,6 +6,9 @@ interface AddGameModalProps {
   onClose: () => void;
   onCreateGame: (gameName: string, query: string) => void;
   onCloseSidebar?: () => void;
+  isGroundingEnabled?: boolean;
+  onToggleGrounding?: () => void;
+  aiMessagesQuota?: { used: number; limit: number };
 }
 
 const AddGameModal: React.FC<AddGameModalProps> = ({
@@ -13,6 +16,9 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
   onClose,
   onCreateGame,
   onCloseSidebar,
+  isGroundingEnabled = false,
+  onToggleGrounding,
+  aiMessagesQuota,
 }) => {
   const [gameName, setGameName] = useState('');
   const [query, setQuery] = useState('');
@@ -96,6 +102,40 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
           >
             <XMarkIcon className="w-5 h-5" />
           </button>
+        </div>
+
+        {/* Grounding Search Toggle */}
+        <div className="px-6 pt-4 pb-2 border-b border-gray-700">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex-1">
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={isGroundingEnabled}
+                    onChange={onToggleGrounding}
+                    disabled={!onToggleGrounding}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-700 rounded-full peer-checked:bg-gradient-to-r peer-checked:from-[#E53A3A] peer-checked:to-[#D98C1F] transition-all duration-300 peer-disabled:opacity-50 peer-disabled:cursor-not-allowed" />
+                  <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 peer-checked:translate-x-5" />
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-white group-hover:text-gray-200 transition-colors">
+                    Web Search
+                  </span>
+                  {aiMessagesQuota && (
+                    <span className="ml-2 text-xs text-gray-400">
+                      ({aiMessagesQuota.used}/{aiMessagesQuota.limit})
+                    </span>
+                  )}
+                </div>
+              </label>
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 leading-relaxed">
+            ℹ️ Enable for games released after <span className="text-[#FF4D4D] font-semibold">January 2025</span>. Uses real-time web search to find the latest info. <span className="text-yellow-400">1 web search per game added.</span>
+          </p>
         </div>
 
         {/* Form */}
