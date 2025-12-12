@@ -491,6 +491,14 @@ function App() {
           console.log('📱 [PWA] Service worker cleared auth cache');
           // Service worker has cleared caches, we're ready for next login
           // No action needed here as PWA already reloaded via confirmLogout
+        } else if (event.data && event.data.type === 'CHECK_LOGOUT_FLAG') {
+          // ✅ PWA BLACK SCREEN FIX: Service worker asking if we just logged out
+          // Respond through the port provided
+          const hasFlag = !!localStorage.getItem('otakon_just_logged_out');
+          console.log('[App] SW checking logout flag:', hasFlag);
+          if (event.ports && event.ports[0]) {
+            event.ports[0].postMessage(hasFlag);
+          }
         }
       };
 
@@ -635,16 +643,21 @@ function App() {
     const isPWA = isPWAMode();
     
     if (isPWA) {
-      // ✅ PWA CRITICAL FIX: For PWA, force a full reload to clear all state
+      // ✅ PWA CRITICAL FIX: For PWA, force a full hard reload to clear all state
       // This prevents black screen and ensures clean login experience
-      console.log('📱 [PWA] Forcing full reload after logout to clear state');
+      console.log('📱 [PWA] Forcing full hard reload after logout to clear state');
       
       // Set a flag to indicate we just logged out
       localStorage.setItem('otakon_just_logged_out', 'true');
       
-      // ✅ CRITICAL FIX: Navigate to login page and reload immediately
-      // Using replace() ensures proper URL and prevents back button issues
-      window.location.replace('/earlyaccess');
+      // Navigate to root first (this clears URL state)
+      window.history.replaceState(null, '', '/');
+      
+      // ✅ CRITICAL FIX: Use reload(true) to force hard reload, bypassing ALL caches
+      // This ensures service worker doesn't serve stale content
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
       
       // ✅ CRITICAL: Return here to prevent any further code execution
       // Processing flag will be reset on reload

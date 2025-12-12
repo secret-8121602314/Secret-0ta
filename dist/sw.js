@@ -1,6 +1,6 @@
 // Service Worker for Otagon PWA - Performance Optimized with Enhanced Background Sync
-// Version: v1.3.9-logout-fix - Fix black screen on logout by preventing auth page caching
-const CACHE_VERSION = 'v1.3.9-logout-fix';
+// Version: v1.3.10-black-screen-fix - Fix black screen after PWA logout by forcing network fetch
+const CACHE_VERSION = 'v1.3.10-black-screen-fix';
 const CACHE_NAME = `otagon-${CACHE_VERSION}`;
 const CHAT_CACHE_NAME = `otagon-chat-${CACHE_VERSION}`;
 const STATIC_CACHE = `otagon-static-${CACHE_VERSION}`;
@@ -158,6 +158,36 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       (async () => {
         try {
+          // ✅ PWA BLACK SCREEN FIX: If just logged out, ALWAYS fetch from network (never cache)
+          // Check if logout flag exists in any client's storage
+          const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+          let justLoggedOut = false;
+          
+          for (const client of clients) {
+            try {
+              // Ask each client if they have the logout flag
+              const response = await new Promise((resolve) => {
+                const channel = new MessageChannel();
+                channel.port1.onmessage = (e) => resolve(e.data);
+                client.postMessage({ type: 'CHECK_LOGOUT_FLAG' }, [channel.port2]);
+                // Timeout after 100ms
+                setTimeout(() => resolve(false), 100);
+              });
+              if (response) {
+                justLoggedOut = true;
+                break;
+              }
+            } catch (e) {
+              // Ignore errors from closed clients
+            }
+          }
+          
+          if (justLoggedOut) {
+            console.log('[SW] Just logged out detected - forcing network-only fetch');
+            const response = await fetch(event.request, { cache: 'no-store' });
+            return response; // Don't cache this response
+          }
+          
           // Use navigation preload response if available (faster cold starts)
           const preloadResponse = event.preloadResponse ? await event.preloadResponse : null;
           if (preloadResponse) {
