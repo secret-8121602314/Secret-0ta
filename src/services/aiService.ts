@@ -19,9 +19,8 @@ import { groundingControlService, type GroundingQueryType, type GroundingUsageTy
 import { gameKnowledgeCacheService } from './gameKnowledgeCacheService';
 import { libraryStorage } from './gamingExplorerStorage';
 
-// ? SECURITY FIX: Use Edge Function proxy instead of exposed API key
-const USE_EDGE_FUNCTION = true; // Set to true to use secure server-side proxy
-const API_KEY = (import.meta as ViteImportMeta).env.VITE_GEMINI_API_KEY; // Only used if USE_EDGE_FUNCTION = false
+// ✅ SECURITY: Always use Edge Function proxy (API key never exposed to client)
+const USE_EDGE_FUNCTION = true;
 
 // ? FIX 1: Gemini API Safety Settings
 const SAFETY_SETTINGS: SafetySetting[] = [
@@ -68,39 +67,13 @@ class AIService {
       summarization: `${supabaseUrl}/functions/v1/ai-summarization`
     };
 
-    if (!USE_EDGE_FUNCTION) {
-      // Legacy: Direct API mode (only for development/testing)
-      if (!API_KEY) {
-        throw new Error("VITE_GEMINI_API_KEY is not set in the environment variables.");
-      }
-      this.genAI = new GoogleGenerativeAI(API_KEY);
-      // Using gemini-2.5-flash for all operations (enhanced performance)
-      // ? FIX 2: Apply safety settings to all model initializations
-      this.flashModel = this.genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash",
-        safetySettings: SAFETY_SETTINGS
-      });
-      this.proModel = this.genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash",
-        safetySettings: SAFETY_SETTINGS
-      });
-      // ? NEW: Model with Google Search grounding enabled
-      // Note: google_search is a valid Gemini 2.5 tool but not in the @google/generative-ai types yet
-      this.flashModelWithGrounding = this.genAI.getGenerativeModel({
-        model: "gemini-2.5-flash",
-        safetySettings: SAFETY_SETTINGS,
-        tools: [{
-          google_search: {}  // ? Gemini 2.5 syntax, works for both text and images
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        }] as any
-      });
-    } else {
-      // Edge Function mode: Initialize dummy models (won't be used)
-      this.genAI = {} as GoogleGenerativeAI;
-      this.flashModel = {} as GenerativeModel;
-      this.proModel = {} as GenerativeModel;
-      this.flashModelWithGrounding = {} as GenerativeModel;
-    }
+    // ✅ SECURITY: Edge Function mode only (no fallback to direct API)
+    // All AI calls are proxied through authenticated Supabase Edge Functions
+    // API keys are stored server-side and never exposed to client
+    this.genAI = {} as GoogleGenerativeAI;
+    this.flashModel = {} as GenerativeModel;
+    this.proModel = {} as GenerativeModel;
+    this.flashModelWithGrounding = {} as GenerativeModel;
   }
 
   // ✅ Track Edge Function calls for debugging rate limit issues
