@@ -1031,7 +1031,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       {/* Show for released game conversations only (not Game Hub, not unreleased) */}
       {/* Hide when Command Centre is active to prevent overlap */}
       {!showAutocomplete && conversation && !conversation.isGameHub && !conversation.isUnreleased && conversation.subtabs && conversation.subtabs.length > 0 && (
-        <div className="flex-shrink-0 px-3 pb-2 z-[70] relative">
+        <div className="flex-shrink-0 px-3 pb-2 z-20 relative">
           <ErrorBoundary fallback={<SubTabsErrorFallback />}>
             <SubTabs
               key={`subtabs-${conversation.id}`}

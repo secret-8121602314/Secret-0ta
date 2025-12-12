@@ -117,11 +117,12 @@ class GameKnowledgeCacheService {
     // Layer 2: Check Supabase global cache
     // Using type assertion since this table is new and not in generated types yet
     try {
-      const { data, error } = await (supabase
-        .from('game_knowledge_cache' as 'games') // Type assertion for new table
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .from('game_knowledge_cache')
         .select('comprehensive_knowledge, version')
         .eq('igdb_id', igdbId)
-        .single() as unknown as Promise<{ data: GameKnowledgeRow | null; error: { code?: string; message?: string } | null }>);
+        .single() as { data: GameKnowledgeRow | null; error: { code?: string; message?: string } | null };
 
       if (error) {
         if (error.code !== 'PGRST116') { // Not "no rows returned"
@@ -235,10 +236,11 @@ class GameKnowledgeCacheService {
 
     // Check Supabase
     try {
-      const { count, error } = await (supabase
-        .from('game_knowledge_cache' as 'games') // Type assertion for new table
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { count, error } = await (supabase as any)
+        .from('game_knowledge_cache')
         .select('*', { count: 'exact', head: true })
-        .eq('igdb_id', igdbId) as unknown as Promise<{ count: number | null; error: { message?: string } | null }>);
+        .eq('igdb_id', igdbId) as { count: number | null; error: { message?: string } | null };
 
       if (error) {
         console.warn(`🎮 [GameKnowledgeCache] Exists check error:`, error);

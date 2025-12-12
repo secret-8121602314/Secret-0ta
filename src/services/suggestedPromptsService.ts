@@ -123,20 +123,36 @@ class SuggestedPromptsService {
    * Process AI-generated suggestions and format them for display
    */
   public processAISuggestions(suggestions: unknown): string[] {
-        // Handle different types of suggestions
+    // Handle different types of suggestions
     console.log('🔧 [SuggestedPromptsService] processAISuggestions INPUT:', suggestions);
     console.log('🔧 [SuggestedPromptsService] INPUT type:', typeof suggestions);
     console.log('🔧 [SuggestedPromptsService] INPUT is Array:', Array.isArray(suggestions));
+    console.log('🔧 [SuggestedPromptsService] INPUT JSON:', JSON.stringify(suggestions));
     
     if (!suggestions) {
-            console.log('🔧 [SuggestedPromptsService] No suggestions - returning []');
-            return [];
+      console.log('🔧 [SuggestedPromptsService] No suggestions - returning []');
+      return [];
+    }
+    
+    // ✅ FIX: Handle empty array case
+    if (Array.isArray(suggestions) && suggestions.length === 0) {
+      console.log('🔧 [SuggestedPromptsService] Empty array - returning []');
+      return [];
     }
     
     let suggestionsArray: string[] = [];
     
     if (Array.isArray(suggestions)) {
-            suggestionsArray = suggestions;
+      console.log('🔧 [SuggestedPromptsService] Input is array, checking elements...');
+      // ✅ FIX: Flatten nested arrays and filter non-strings
+      suggestionsArray = suggestions.flat().filter((item): item is string => {
+        const isValidString = typeof item === 'string' && item.trim().length > 0;
+        if (!isValidString && item !== null && item !== undefined) {
+          console.log('🔧 [SuggestedPromptsService] Filtering out non-string item:', item, typeof item);
+        }
+        return isValidString;
+      });
+      console.log('🔧 [SuggestedPromptsService] Array after filtering:', suggestionsArray);
     } else if (typeof suggestions === 'string') {
             // Clean up common formatting issues first
       let cleanedSuggestions = suggestions.trim();

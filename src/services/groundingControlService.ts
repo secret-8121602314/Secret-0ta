@@ -12,7 +12,7 @@
  * - Free tier: NO grounding (0x/month) - relies on global game knowledge cache
  *   populated by Pro/Vanguard users. Seamless fallback to training data.
  * - Pro tier: Moderate grounding (30x/month) - includes live service meta
- * - Vanguard Pro: Liberal grounding (100x/month) - full access
+ * - Vanguard Pro: Moderate grounding (30x/month) - same as Pro tier
  * 
  * GLOBAL CACHE SYSTEM:
  * - Pro/Vanguard users trigger game knowledge fetches WITH grounding
@@ -28,14 +28,18 @@ import { supabase } from '../lib/supabase';
 import type { UserTier } from '../types';
 
 // ============================================================================
-// GROUNDING LIMITS BY TIER
+// GROUNDING LIMITS BY TIER - SPLIT INTO TWO POOLS
 // Free tier: 0 (relies on global cache populated by Pro/Vanguard)
+// Pro/Vanguard: Game Knowledge (20/mo) + AI Messages (30/mo)
 // ============================================================================
-const GROUNDING_LIMITS: Record<UserTier, number> = {
-  free: 0,            // NO grounding - uses cached knowledge from global cache
-  pro: 30,            // 30 grounded searches per month  
-  vanguard_pro: 100   // 100 grounded searches per month
+const GROUNDING_LIMITS: Record<UserTier, { gameKnowledge: number; aiMessages: number }> = {
+  free: { gameKnowledge: 0, aiMessages: 0 },           // NO grounding - uses cached knowledge
+  pro: { gameKnowledge: 20, aiMessages: 30 },          // 20 game knowledge + 30 AI message searches/month
+  vanguard_pro: { gameKnowledge: 20, aiMessages: 30 }  // 20 game knowledge + 30 AI message searches/month
 };
+
+// Usage type for tracking
+export type GroundingUsageType = 'game_knowledge' | 'ai_message';
 
 // ============================================================================
 // LIVE SERVICE / MULTIPLAYER GAMES
@@ -269,62 +273,70 @@ export function classifyQuery(
 export function shouldUseGrounding(
   queryType: GroundingQueryType,
   tier: UserTier,
-  monthlyUsage: number
-): { useGrounding: boolean; reason: string } {
+  gameKnowledgeUsage: number,
+  aiMessageUsage: number
+): { useGrounding: boolean; reason: string; usageType: GroundingUsageType } {
   
-  // Check if user has remaining grounding quota
-  const limit = GROUNDING_LIMITS[tier];
-  if (monthlyUsage >= limit) {
-    return {
-      useGrounding: false,
-      reason: `Monthly grounding limit reached (${monthlyUsage}/${limit}). AI will use training knowledge.`
-    };
-  }
+  const limits = GROUNDING_LIMITS[tier];
   
-  // Post-cutoff games - ALWAYS need grounding (AI doesn't know them)
+  // Post-cutoff games - Use game knowledge pool
   if (queryType === 'post_cutoff_game') {
-    return {
-      useGrounding: true,
-      reason: 'Game released after AI knowledge cutoff (Jan 2025) - web search required'
-    };
-  }
-  
-  // Live service meta - NEEDS grounding for accurate current info
-  if (queryType === 'live_service_meta') {
-    // Free tier gets limited live service support
-    if (tier === 'free' && monthlyUsage >= 4) {
+    if (gameKnowledgeUsage >= limits.gameKnowledge) {
       return {
         useGrounding: false,
-        reason: 'Free tier live service meta limited - upgrade for more current data'
+        reason: `Game knowledge limit reached (${gameKnowledgeUsage}/${limits.gameKnowledge}). AI will use training knowledge.`,
+        usageType: 'game_knowledge'
       };
     }
     return {
       useGrounding: true,
-      reason: 'Live service game - current meta/patch info requires web search'
+      reason: 'Game released after AI knowledge cutoff (Jan 2025) - web search required',
+      usageType: 'game_knowledge'
     };
   }
   
-  // Current news - use grounding if quota available
+  // All other queries use AI message pool
+  if (aiMessageUsage >= limits.aiMessages) {
+    return {
+      useGrounding: false,
+      reason: `AI message limit reached (${aiMessageUsage}/${limits.aiMessages}). AI will use training knowledge.`,
+      usageType: 'ai_message'
+    };
+  }
+  
+  // Live service meta - use AI message pool
+  if (queryType === 'live_service_meta') {
+    return {
+      useGrounding: true,
+      reason: 'Live service game - current meta/patch info requires web search',
+      usageType: 'ai_message'
+    };
+  }
+  
+  // Current news - use AI message pool
   if (queryType === 'current_news') {
     return {
       useGrounding: true,
-      reason: 'Current news query requires web search'
+      reason: 'Current news query requires web search',
+      usageType: 'ai_message'
     };
   }
   
-  // Patch notes - use grounding for all tiers (important for accuracy)
+  // Patch notes - use AI message pool
   if (queryType === 'patch_notes') {
     return {
       useGrounding: true,
-      reason: 'Recent patch notes require web search'
+      reason: 'Recent patch notes require web search',
+      usageType: 'ai_message'
     };
   }
   
-  // Release dates - use grounding (dates change frequently)
+  // Release dates - use AI message pool
   if (queryType === 'release_dates') {
     return {
       useGrounding: true,
-      reason: 'Release date verification via web search'
+      reason: 'Release date verification via web search',
+      usageType: 'ai_message'
     };
   }
   
@@ -332,7 +344,8 @@ export function shouldUseGrounding(
   if (queryType === 'game_help') {
     return {
       useGrounding: false,
-      reason: 'Known game - AI has comprehensive training knowledge'
+      reason: 'Known game - AI has comprehensive training knowledge',
+      usageType: 'ai_message'
     };
   }
   
@@ -340,14 +353,16 @@ export function shouldUseGrounding(
   if (queryType === 'general_knowledge') {
     return {
       useGrounding: false,
-      reason: 'General gaming knowledge - AI can answer from training'
+      reason: 'General gaming knowledge - AI can answer from training',
+      usageType: 'ai_message'
     };
   }
   
   // Default: no grounding
   return {
     useGrounding: false,
-    reason: 'Default: use AI knowledge'
+    reason: 'Default: use AI knowledge',
+    usageType: 'ai_message'
   };
 }
 
@@ -356,7 +371,13 @@ export function shouldUseGrounding(
 // ============================================================================
 
 // In-memory cache of monthly usage (refreshed from DB periodically)
-const usageCache: Map<string, { count: number; month: string; lastSync: number }> = new Map();
+const usageCache: Map<string, { 
+  count: number; 
+  gameKnowledgeCount: number;
+  aiMessageCount: number;
+  month: string; 
+  lastSync: number;
+}> = new Map();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minute cache
 
 // Flag to track if DB table exists (avoid repeated failures)
@@ -371,21 +392,33 @@ function getCurrentMonthKey(): string {
 }
 
 /**
- * Get user's grounding usage for current month
+ * Get user's grounding usage for current month (split by type)
  * Falls back to in-memory tracking if DB table doesn't exist yet
  */
-export async function getGroundingUsage(authUserId: string): Promise<number> {
+export async function getGroundingUsage(authUserId: string): Promise<{
+  gameKnowledge: number;
+  aiMessages: number;
+  total: number;
+}> {
   const currentMonth = getCurrentMonthKey();
   const cached = usageCache.get(authUserId);
   
   // Return cached if fresh and same month
   if (cached && cached.month === currentMonth && Date.now() - cached.lastSync < CACHE_TTL) {
-    return cached.count;
+    return {
+      gameKnowledge: cached.gameKnowledgeCount,
+      aiMessages: cached.aiMessageCount,
+      total: cached.count
+    };
   }
   
   // If we know the table doesn't exist, use cache only
   if (dbTableExists === false) {
-    return cached?.count || 0;
+    return {
+      gameKnowledge: cached?.gameKnowledgeCount || 0,
+      aiMessages: cached?.aiMessageCount || 0,
+      total: cached?.count || 0
+    };
   }
   
   try {
@@ -393,38 +426,59 @@ export async function getGroundingUsage(authUserId: string): Promise<number> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from('user_grounding_usage')
-      .select('usage_count')
+      .select('usage_count, game_knowledge_count, ai_message_count')
       .eq('auth_user_id', authUserId)
       .eq('month_year', currentMonth)
-      .maybeSingle(); // Use maybeSingle() instead of single() to handle 0 or 1 rows gracefully
+      .maybeSingle();
     
     if (error) {
-      // Check if table doesn't exist (various error codes for different scenarios)
+      // Check if table doesn't exist
       if (error.code === '42P01' || error.code === 'PGRST205' || error.message?.includes('does not exist') || error.message?.includes('Could not find')) {
         console.warn('[GroundingControl] DB table not yet created, using in-memory tracking');
         dbTableExists = false;
-        return cached?.count || 0;
+        return {
+          gameKnowledge: cached?.gameKnowledgeCount || 0,
+          aiMessages: cached?.aiMessageCount || 0,
+          total: cached?.count || 0
+        };
       }
-      // Don't check for PGRST116 anymore since maybeSingle() handles not found
       console.error('[GroundingControl] Failed to fetch usage:', error);
-      return cached?.count || 0;
+      return {
+        gameKnowledge: cached?.gameKnowledgeCount || 0,
+        aiMessages: cached?.aiMessageCount || 0,
+        total: cached?.count || 0
+      };
     }
     
     dbTableExists = true;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const count = (data as any)?.usage_count || 0;
+    const gameKnowledgeCount = (data as any)?.game_knowledge_count || 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const aiMessageCount = (data as any)?.ai_message_count || 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const totalCount = (data as any)?.usage_count || 0;
     
     // Update cache
     usageCache.set(authUserId, {
-      count,
+      count: totalCount,
+      gameKnowledgeCount,
+      aiMessageCount,
       month: currentMonth,
       lastSync: Date.now()
     });
     
-    return count;
+    return {
+      gameKnowledge: gameKnowledgeCount,
+      aiMessages: aiMessageCount,
+      total: totalCount
+    };
   } catch (err) {
     console.error('[GroundingControl] Error fetching usage:', err);
-    return cached?.count || 0;
+    return {
+      gameKnowledge: cached?.gameKnowledgeCount || 0,
+      aiMessages: cached?.aiMessageCount || 0,
+      total: cached?.count || 0
+    };
   }
 }
 
@@ -432,17 +486,24 @@ export async function getGroundingUsage(authUserId: string): Promise<number> {
  * Increment user's grounding usage for current month
  * Falls back to in-memory tracking if DB table doesn't exist yet
  */
-export async function incrementGroundingUsage(authUserId: string): Promise<void> {
+export async function incrementGroundingUsage(authUserId: string, usageType: GroundingUsageType = 'ai_message'): Promise<void> {
   const currentMonth = getCurrentMonthKey();
   
   // Update in-memory cache first (always works)
   const cached = usageCache.get(authUserId);
   if (cached && cached.month === currentMonth) {
     cached.count++;
+    if (usageType === 'game_knowledge') {
+      cached.gameKnowledgeCount++;
+    } else {
+      cached.aiMessageCount++;
+    }
     cached.lastSync = Date.now();
   } else {
     usageCache.set(authUserId, {
       count: 1,
+      gameKnowledgeCount: usageType === 'game_knowledge' ? 1 : 0,
+      aiMessageCount: usageType === 'ai_message' ? 1 : 0,
       month: currentMonth,
       lastSync: Date.now()
     });
@@ -450,22 +511,18 @@ export async function incrementGroundingUsage(authUserId: string): Promise<void>
   
   // If we know the table doesn't exist, skip DB update
   if (dbTableExists === false) {
-    console.log(`🔍 [GroundingControl] Incremented usage (in-memory) for ${authUserId} (month: ${currentMonth})`);
+    console.log(`🔍 [GroundingControl] Incremented ${usageType} usage (in-memory) for ${authUserId} (month: ${currentMonth})`);
     return;
   }
   
   try {
-    // Try to upsert to database
+    // Call the Supabase function with usage type
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
-      .from('user_grounding_usage')
-      .upsert({
-        auth_user_id: authUserId,
-        month_year: currentMonth,
-        usage_count: usageCache.get(authUserId)?.count || 1,
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'auth_user_id,month_year'
+      .rpc('increment_grounding_usage', {
+        p_auth_user_id: authUserId,
+        p_month_year: currentMonth,
+        p_usage_type: usageType
       });
     
     if (error) {
@@ -494,12 +551,27 @@ export async function incrementGroundingUsage(authUserId: string): Promise<void>
 }
 
 /**
- * Get remaining grounding quota for user
+ * Get remaining grounding quota for user (both pools)
  */
-export async function getRemainingQuota(authUserId: string, tier: UserTier): Promise<number> {
+export async function getRemainingQuota(authUserId: string, tier: UserTier): Promise<{
+  gameKnowledge: { used: number; limit: number; remaining: number };
+  aiMessages: { used: number; limit: number; remaining: number };
+}> {
   const usage = await getGroundingUsage(authUserId);
-  const limit = GROUNDING_LIMITS[tier];
-  return Math.max(0, limit - usage);
+  const limits = GROUNDING_LIMITS[tier];
+  
+  return {
+    gameKnowledge: {
+      used: usage.gameKnowledge,
+      limit: limits.gameKnowledge,
+      remaining: Math.max(0, limits.gameKnowledge - usage.gameKnowledge)
+    },
+    aiMessages: {
+      used: usage.aiMessages,
+      limit: limits.aiMessages,
+      remaining: Math.max(0, limits.aiMessages - usage.aiMessages)
+    }
+  };
 }
 
 // ============================================================================
@@ -526,25 +598,49 @@ export async function checkGroundingEligibility(
   useGrounding: boolean; 
   queryType: GroundingQueryType;
   reason: string;
-  remainingQuota: number;
+  usageType: GroundingUsageType;
+  remainingQuota: {
+    gameKnowledge: { used: number; limit: number; remaining: number };
+    aiMessages: { used: number; limit: number; remaining: number };
+  };
 }> {
   // Classify the query (now with IGDB release date for accurate cutoff detection)
   const queryType = classifyQuery(userMessage, gameTitle, igdbReleaseDate);
   
   // Get current usage
   const usage = await getGroundingUsage(authUserId);
-  const limit = GROUNDING_LIMITS[tier];
-  const remainingQuota = Math.max(0, limit - usage);
+  const limits = GROUNDING_LIMITS[tier];
+  const remainingQuota = {
+    gameKnowledge: {
+      used: usage.gameKnowledge,
+      limit: limits.gameKnowledge,
+      remaining: Math.max(0, limits.gameKnowledge - usage.gameKnowledge)
+    },
+    aiMessages: {
+      used: usage.aiMessages,
+      limit: limits.aiMessages,
+      remaining: Math.max(0, limits.aiMessages - usage.aiMessages)
+    }
+  };
   
   // Determine if grounding should be used
-  const { useGrounding, reason } = shouldUseGrounding(queryType, tier, usage);
+  const { useGrounding, reason, usageType } = shouldUseGrounding(
+    queryType, 
+    tier, 
+    usage.gameKnowledge, 
+    usage.aiMessages
+  );
   
   console.log(`🔍 [GroundingControl] Check result:`, {
     tier,
     queryType,
     useGrounding,
+    usageType,
     reason,
-    usage: `${usage}/${limit}`,
+    usage: {
+      gameKnowledge: `${usage.gameKnowledge}/${limits.gameKnowledge}`,
+      aiMessages: `${usage.aiMessages}/${limits.aiMessages}`
+    },
     remainingQuota,
     igdbReleaseDate: igdbReleaseDate ? new Date(igdbReleaseDate * 1000).toISOString() : 'N/A'
   });
@@ -553,6 +649,7 @@ export async function checkGroundingEligibility(
     useGrounding,
     queryType,
     reason,
+    usageType,
     remainingQuota
   };
 }

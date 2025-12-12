@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User } from '../../types';
 import StarIcon from '../ui/StarIcon';
 import TextIcon from '../ui/TextIcon';
 import ImageIcon from '../ui/ImageIcon';
 import PaymentModal from './PaymentModal';
+import { groundingControlService } from '../../services/groundingControlService';
+import { unreleasedTabLimitService } from '../../services/unreleasedTabLimitService';
 
 interface CreditModalProps {
   isOpen: boolean;
@@ -14,6 +16,41 @@ interface CreditModalProps {
 
 const CreditModal: React.FC<CreditModalProps> = ({ isOpen, onClose, onUpgrade, user }) => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [groundingQuota, setGroundingQuota] = useState<{
+    gameKnowledge: { used: number; limit: number; remaining: number };
+    aiMessages: { used: number; limit: number; remaining: number };
+  } | null>(null);
+  const [unreleasedTabInfo, setUnreleasedTabInfo] = useState<{
+    currentCount: number;
+    limit: number;
+  } | null>(null);
+  
+  // Fetch grounding quota for Pro/Vanguard users
+  useEffect(() => {
+    if ((user.tier === 'pro' || user.tier === 'vanguard_pro') && user.authUserId && isOpen) {
+      groundingControlService.getRemainingQuota(user.authUserId, user.tier)
+        .then(setGroundingQuota)
+        .catch(err => {
+          console.error('Failed to fetch grounding quota:', err);
+        });
+    }
+  }, [user.tier, user.authUserId, isOpen]);
+  
+  // Fetch unreleased tab info for all users
+  useEffect(() => {
+    if (user.authUserId && isOpen) {
+      unreleasedTabLimitService.canCreateUnreleasedTab(user.authUserId, user.tier)
+        .then(result => {
+          setUnreleasedTabInfo({
+            currentCount: result.currentCount,
+            limit: result.limit
+          });
+        })
+        .catch(err => {
+          console.error('Failed to fetch unreleased tab info:', err);
+        });
+    }
+  }, [user.authUserId, user.tier, isOpen]);
   
   // Handle checkout completion - close all modals
   const handleCheckoutSuccess = () => {
@@ -36,6 +73,7 @@ const CreditModal: React.FC<CreditModalProps> = ({ isOpen, onClose, onUpgrade, u
   const { textCount, textLimit, imageCount, imageLimit, tier } = user.usage;
   const textRemaining = Math.max(0, textLimit - textCount);
   const imageRemaining = Math.max(0, imageLimit - imageCount);
+  const isPaidUser = tier === 'pro' || tier === 'vanguard_pro';
 
   return (
     <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in" onClick={onClose}>
@@ -91,6 +129,79 @@ const CreditModal: React.FC<CreditModalProps> = ({ isOpen, onClose, onUpgrade, u
               </p>
             </div>
           </div>
+
+          {/* ALL USERS: Show unreleased game tab limits */}
+          {unreleasedTabInfo && (
+            <>
+              <div className="pt-4 border-t border-[#424242]/30">
+                <p className="text-sm font-semibold text-[#CFCFCF] mb-3">Unreleased Game Tabs</p>
+              </div>
+              
+              <div className="flex items-center gap-4 bg-[#2E2E2E]/40 backdrop-blur-sm p-4 rounded-lg border border-[#424242]/30">
+                <svg className="w-8 h-8 text-rose-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-[#CFCFCF]">Games Not Yet Released</p>
+                  <p className="text-2xl font-bold text-white">
+                    {(unreleasedTabInfo.limit - unreleasedTabInfo.currentCount).toLocaleString()}
+                    <span className="text-base font-normal text-[#A3A3A3]"> / {unreleasedTabInfo.limit.toLocaleString()}</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-[#2E2E2E]/20 backdrop-blur-sm p-3 rounded-lg border border-[#424242]/20">
+                <p className="text-xs text-[#A3A3A3] leading-relaxed">
+                  <span className="font-semibold text-[#CFCFCF]">ℹ️ About Unreleased Games:</span> {isPaidUser 
+                    ? 'You can create tabs for games not yet released. These tabs have limited features (Discuss mode only, no subtabs) until the game launches.' 
+                    : 'You can create up to 3 tabs for unreleased games. These have limited features (Discuss mode only, no subtabs or AI insights). Upgrade to Pro for 10 unreleased game tabs.'}
+                </p>
+              </div>
+            </>
+          )}
+
+          {/* Pro/Vanguard: Show grounding quota */}
+          {isPaidUser && groundingQuota && (
+            <>
+              <div className="pt-4 border-t border-[#424242]/30">
+                <p className="text-sm font-semibold text-[#CFCFCF] mb-3">Internet Searches (Google Grounding)</p>
+              </div>
+              
+              <div className="flex items-center gap-4 bg-[#2E2E2E]/40 backdrop-blur-sm p-4 rounded-lg border border-[#424242]/30">
+                <svg className="w-8 h-8 text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-[#CFCFCF]">Game Knowledge (New Games)</p>
+                  <p className="text-2xl font-bold text-white">
+                    {groundingQuota.gameKnowledge.remaining.toLocaleString()}
+                    <span className="text-base font-normal text-[#A3A3A3]"> / {groundingQuota.gameKnowledge.limit.toLocaleString()}</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 bg-[#2E2E2E]/40 backdrop-blur-sm p-4 rounded-lg border border-[#424242]/30">
+                <svg className="w-8 h-8 text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-[#CFCFCF]">AI Messages (News, Patches, Meta)</p>
+                  <p className="text-2xl font-bold text-white">
+                    {groundingQuota.aiMessages.remaining.toLocaleString()}
+                    <span className="text-base font-normal text-[#A3A3A3]"> / {groundingQuota.aiMessages.limit.toLocaleString()}</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-[#2E2E2E]/20 backdrop-blur-sm p-3 rounded-lg border border-[#424242]/20">
+                <p className="text-xs text-[#A3A3A3] leading-relaxed">
+                  <span className="font-semibold text-[#CFCFCF]">ℹ️ About Internet Searches:</span> When limits are reached, 
+                  Otagon will rely on training knowledge (accurate for games before Jan 2025). 
+                  New releases and live game meta may be outdated.
+                </p>
+              </div>
+            </>
+          )}
         </div>
 
         {tier === 'free' && (

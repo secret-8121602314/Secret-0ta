@@ -15,7 +15,7 @@ import { supabase } from '../lib/supabase';
 import { ConversationService } from './conversationService';
 import { behaviorService } from './ai/behaviorService';
 import { correctionService } from './ai/correctionService';
-import { groundingControlService, type GroundingQueryType } from './groundingControlService';
+import { groundingControlService, type GroundingQueryType, type GroundingUsageType } from './groundingControlService';
 import { gameKnowledgeCacheService } from './gameKnowledgeCacheService';
 import { libraryStorage } from './gamingExplorerStorage';
 
@@ -603,9 +603,16 @@ class AIService {
         };
       }
 
+      // Extract suggestions from tags if available
+      const extractedSuggestions = tags.get('SUGGESTIONS');
+      const suggestions = Array.isArray(extractedSuggestions) ? extractedSuggestions : [];
+      
+      console.log('🎯 [AIService] Final suggestions for AIResponse:', suggestions);
+      
       const aiResponse: AIResponse = {
         content: cleanContent,
-        suggestions: [],
+        suggestions: suggestions,
+        followUpPrompts: suggestions, // ✅ Set followUpPrompts from SUGGESTIONS tag
         otakonTags: tags,
         rawContent: rawContent,
         gamePillData,
@@ -969,6 +976,7 @@ In addition to your regular response, provide structured data in the following o
       // Web search only for: latest news (free: 4x/mo), patch notes, release dates (pro+)
       let useGrounding = false;
       let groundingQueryType: GroundingQueryType = 'general_knowledge';
+      let groundingUsageType: GroundingUsageType = 'ai_message';
       
       if (user?.authUserId) {
         const groundingCheck = await groundingControlService.checkGroundingEligibility(
@@ -980,11 +988,13 @@ In addition to your regular response, provide structured data in the following o
         );
         useGrounding = groundingCheck.useGrounding;
         groundingQueryType = groundingCheck.queryType;
+        groundingUsageType = groundingCheck.usageType;
         
         console.log('🔍 [AIService] Grounding eligibility:', {
           tier: user.tier,
           queryType: groundingQueryType,
           useGrounding,
+          usageType: groundingUsageType,
           reason: groundingCheck.reason,
           remaining: groundingCheck.remainingQuota,
           igdbReleaseDate: igdbReleaseDate ? new Date(igdbReleaseDate * 1000).toISOString() : 'N/A'
@@ -1032,7 +1042,7 @@ In addition to your regular response, provide structured data in the following o
         
         // 🎯 Track grounding usage if it was used
         if (useGrounding && user?.authUserId) {
-          groundingControlService.incrementGroundingUsage(user.authUserId).catch(err => {
+          groundingControlService.incrementGroundingUsage(user.authUserId, groundingUsageType).catch(err => {
             console.warn('[AIService] Failed to track grounding usage:', err);
           });
         }
@@ -1247,6 +1257,13 @@ In addition to your regular response, provide structured data in the following o
         console.log('🤖 [AIService] Gemini response keys:', Object.keys(structuredData));
         console.log('🤖 [AIService] followUpPrompts:', structuredData.followUpPrompts);
         console.log('🤖 [AIService] followUpPrompts length:', structuredData.followUpPrompts?.length);
+        console.log('🤖 [AIService] followUpPrompts content:', JSON.stringify(structuredData.followUpPrompts));
+        console.log('🤖 [AIService] followUpPrompts isArray:', Array.isArray(structuredData.followUpPrompts));
+        console.log('🤖 [AIService] followUpPrompts typeof:', typeof structuredData.followUpPrompts);
+        if (Array.isArray(structuredData.followUpPrompts) && structuredData.followUpPrompts.length > 0) {
+          console.log('🤖 [AIService] followUpPrompts[0] typeof:', typeof structuredData.followUpPrompts[0]);
+          console.log('🤖 [AIService] followUpPrompts[0] value:', structuredData.followUpPrompts[0]);
+        }
         console.log('🤖 [AIService] stateUpdateTags:', structuredData.stateUpdateTags);
         
         // ✅ FALLBACK: If stateUpdateTags is empty/missing, try to extract progress from content
@@ -1926,3 +1943,6 @@ NOW generate COMPREHENSIVE valid JSON for ALL these tab IDs (MUST include every 
 }
 
 export const aiService = new AIService();
+
+
+

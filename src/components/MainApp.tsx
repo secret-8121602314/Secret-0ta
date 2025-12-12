@@ -119,6 +119,18 @@ const MainApp: React.FC<MainAppProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([]);
+  
+  // ✅ DEBUG: Track all changes to suggestedPrompts
+  useEffect(() => {
+    console.log('🎯 [MainApp] suggestedPrompts STATE CHANGED:', {
+      prompts: suggestedPrompts,
+      length: suggestedPrompts.length,
+      isAISettingFlag: isSettingSuggestionsFromAI.current,
+      activeConvId: activeConversation?.id,
+      trace: new Error().stack?.split('\n').slice(1, 5).join('\n')
+    });
+  }, [suggestedPrompts, activeConversation?.id]);
+  
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   
   // Active session management
@@ -1289,9 +1301,8 @@ const MainApp: React.FC<MainAppProps> = ({
       const isCurrentTab = session.currentGameId === id;
       if (!isCurrentTab && targetConv && gameTabService.isGameTab(targetConv) && !targetConv.isGameHub && !targetConv.isUnreleased) {
         setActiveSession(id, true);
-      } else if (!isCurrentTab && (!targetConv || targetConv.isGameHub)) {
-        setActiveSession('', false);
       }
+      // Note: No auto-switching to planning mode - toggle only applies to game-specific tabs
     } else {
       // ✅ PERFORMANCE FIX: Update UI immediately without waiting for database sync
       console.error('🔄 [MainApp] ⚡ Instant UI update for conversation:', id);
@@ -1304,9 +1315,8 @@ const MainApp: React.FC<MainAppProps> = ({
       const isCurrentTab = session.currentGameId === id;
       if (!isCurrentTab && gameTabService.isGameTab(targetConversation) && !targetConversation.isGameHub && !targetConversation.isUnreleased) {
         setActiveSession(id, true);
-      } else if (!isCurrentTab && (!targetConversation || targetConversation.isGameHub)) {
-        setActiveSession('', false);
       }
+      // Note: No auto-switching to planning mode - toggle only applies to game-specific tabs
       
       // ✅ CRITICAL FIX: Save current conversations state to DB BEFORE switching
       // This ensures the new tab is persisted even if user switches quickly
@@ -2993,6 +3003,13 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
         }
       }
 
+      console.log('🚀 [MainApp] About to call getChatResponseWithStructure with:', {
+        conversationId: conversationWithOptimizedContext.id,
+        messageLength: message.length,
+        hasImage: !!finalImageUrl,
+        sessionActive: session.isActive && session.currentGameId === activeConversation.id
+      });
+
       const response = await aiService.getChatResponseWithStructure(
         conversationWithOptimizedContext,
         user,
@@ -3003,6 +3020,19 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
         controller.signal,
         currentGameIGDBData?.first_release_date // Pass IGDB release date for accurate post-cutoff grounding detection
       );
+
+      console.log('✅ [MainApp] getChatResponseWithStructure completed, response:', {
+        hasContent: !!response.content,
+        contentLength: response.content?.length,
+        hasFollowUpPrompts: !!response.followUpPrompts,
+        hasSuggestions: !!response.suggestions,
+        followUpPromptsRaw: JSON.stringify(response.followUpPrompts),
+        suggestionsRaw: JSON.stringify(response.suggestions),
+        followUpPromptsLength: response.followUpPrompts?.length || 0,
+        suggestionsLength: response.suggestions?.length || 0
+      });
+      console.log('🔍 [MainApp] FULL followUpPrompts array:', response.followUpPrompts);
+      console.log('🔍 [MainApp] FULL suggestions array:', response.suggestions);
 
       // Check if request was aborted before adding response to conversation
       if (controller.signal.aborted) {
@@ -3015,10 +3045,14 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
       console.log('🔍 [MainApp] suggestionsToUse type:', typeof suggestionsToUse);
       console.log('🔍 [MainApp] suggestionsToUse is Array:', Array.isArray(suggestionsToUse));
       console.log('🔍 [MainApp] suggestionsToUse length:', Array.isArray(suggestionsToUse) ? suggestionsToUse.length : 'N/A');
+      console.log('🔍 [MainApp] suggestionsToUse content:', JSON.stringify(suggestionsToUse));
+      console.log('🔍 [MainApp] response.followUpPrompts type:', typeof response.followUpPrompts, 'isArray:', Array.isArray(response.followUpPrompts), 'length:', response.followUpPrompts?.length);
+      console.log('🔍 [MainApp] response.suggestions type:', typeof response.suggestions, 'isArray:', Array.isArray(response.suggestions), 'length:', response.suggestions?.length);
       
       const processedSuggestions = suggestedPromptsService.processAISuggestions(suggestionsToUse);
       console.log('🔍 [MainApp] AFTER processAISuggestions:', processedSuggestions);
       console.log('🔍 [MainApp] processedSuggestions length:', processedSuggestions.length);
+      console.log('🔍 [MainApp] processedSuggestions content:', JSON.stringify(processedSuggestions));
 
       const aiMessage = {
         id: `msg_${Date.now() + 1}`,
@@ -3658,7 +3692,8 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                 console.log('✅ [MainApp] Using AI-generated suggestions:', processedSuggestions);
                 isSettingSuggestionsFromAI.current = true; // Prevent useEffect override
                 setSuggestedPrompts(processedSuggestions);
-                setTimeout(() => { isSettingSuggestionsFromAI.current = false; }, 100); // Reset after state update
+                // ✅ INCREASED TIMEOUT: Give more time for state update to complete before allowing useEffect
+                setTimeout(() => { isSettingSuggestionsFromAI.current = false; }, 500); // Reset after state update
                 // 🔄 Record shown prompts to prevent future repetition
                 if (user?.authUserId) {
                   const promptsToRecord = processedSuggestions.map(p => ({
@@ -3787,7 +3822,8 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               console.log('✅ [MainApp] Setting AI-provided suggestions (no migration):', processedSuggestions);
               isSettingSuggestionsFromAI.current = true; // Prevent useEffect override
               setSuggestedPrompts(processedSuggestions);
-              setTimeout(() => { isSettingSuggestionsFromAI.current = false; }, 100); // Reset after state update
+              // ✅ INCREASED TIMEOUT: Give more time for state update to complete before allowing useEffect
+              setTimeout(() => { isSettingSuggestionsFromAI.current = false; }, 500); // Reset after state update
               // 🔄 Record shown prompts to prevent future repetition
               if (user?.authUserId) {
                 const gameTitle = activeConversation.isGameHub ? null : (activeConversation.gameTitle ?? null);
@@ -3858,7 +3894,8 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
           console.log('✅ [MainApp] Using AI suggestions (no GAME_ID):', processedSuggestions);
           isSettingSuggestionsFromAI.current = true; // Prevent useEffect override
           setSuggestedPrompts(processedSuggestions);
-          setTimeout(() => { isSettingSuggestionsFromAI.current = false; }, 100); // Reset after state update
+          // ✅ INCREASED TIMEOUT: Give more time for state update to complete before allowing useEffect
+          setTimeout(() => { isSettingSuggestionsFromAI.current = false; }, 500); // Reset after state update
         } else {
           console.warn('⚠️ [MainApp] No AI suggestions (no GAME_ID) - using fallback');
           const fallbackSuggestions = suggestedPromptsService.getFallbackSuggestions(activeConversation.id, activeConversation.isGameHub);

@@ -35,9 +35,10 @@ export class SubtabsService {
    * MIGRATION STRATEGY: During transition period, write to BOTH table AND JSONB
    * to ensure backwards compatibility while normalized table is being adopted
    */
-  async setSubtabs(conversationId: string, subtabs: SubTab[]): Promise<boolean> {
+  async setSubtabs(conversationId: string, subtabs: SubTab[], isUpdate: boolean = false): Promise<boolean> {
     // ✅ Production uses normalized subtabs table only (no JSONB column in conversations)
-    console.error(`🔄 [SubtabsService] Writing ${subtabs.length} subtabs to normalized table for conversation:`, conversationId);
+    const operation = isUpdate ? 'Updating' : 'Creating';
+    console.error(`🔄 [SubtabsService] ${operation} ${subtabs.length} subtabs in normalized table for conversation:`, conversationId);
     
     const tableSuccess = await this.setSubtabsInTable(conversationId, subtabs);
     console.error(`  ✅ Table write:`, tableSuccess ? 'SUCCESS' : 'FAILED');

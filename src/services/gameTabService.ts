@@ -1097,7 +1097,7 @@ class GameTabService {
       console.error('🤖 [GameTabService] 🗑️ Clearing cache BEFORE subtabs write...');
       ConversationService.clearCache();
       
-      const success = await subtabsService.setSubtabs(conversation.id, updatedSubTabs);
+      const success = await subtabsService.setSubtabs(conversation.id, updatedSubTabs, true); // true = isUpdate
       if (!success) {
         throw new Error('Failed to update subtabs in database');
       }
