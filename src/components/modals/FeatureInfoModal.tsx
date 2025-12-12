@@ -24,7 +24,9 @@ export const FeatureInfoModal: React.FC<FeatureInfoModalProps> = ({
   details,
   tipText
 }) => {
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div 

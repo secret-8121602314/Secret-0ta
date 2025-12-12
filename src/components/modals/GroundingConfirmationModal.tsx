@@ -16,7 +16,9 @@ export const GroundingConfirmationModal: React.FC<GroundingConfirmationModalProp
   userTier,
   remainingQuota
 }) => {
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   const quotaInfo = {
     free: {
