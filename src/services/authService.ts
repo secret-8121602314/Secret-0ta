@@ -683,10 +683,16 @@ export class AuthService {
       
       // ✅ PWA FIX: Notify service worker to clear auth cache
       if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({
-          type: 'CLEAR_AUTH_CACHE'
-        });
-        console.log('🔐 [AuthService] Notified service worker to clear auth cache');
+        try {
+          navigator.serviceWorker.controller.postMessage({
+            type: 'CLEAR_AUTH_CACHE'
+          });
+          console.log('🔐 [AuthService] Notified service worker to clear auth cache');
+        } catch (swError) {
+          console.error('🔐 [AuthService] Failed to notify service worker:', swError);
+        }
+      } else {
+        console.warn('🔐 [AuthService] Service worker not available for cache clear');
       }
       
       // ✅ CRITICAL SECURITY FIX: Clear conversation service caches to prevent data leakage

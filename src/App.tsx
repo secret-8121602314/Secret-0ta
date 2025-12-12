@@ -473,8 +473,18 @@ function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appState.view, appState.onboardingStatus]);
 
-  // ✅ PWA FIX: Listen for service worker messages (e.g., AUTH_CACHE_CLEARED)
+  // ✅ PWA FIX: Listen for service worker messages and force-login events
   useEffect(() => {
+    // Listen for force-login-view event from PWALifecycleProvider
+    const handleForceLoginView = () => {
+      console.log('📱 [App] Force login view event received');
+      setIsInitializing(false);
+      setAuthState({ user: null, isLoading: false, error: null });
+      setAppState(prev => ({ ...prev, view: 'app', onboardingStatus: 'login' }));
+    };
+    
+    window.addEventListener('otakon:force-login-view', handleForceLoginView);
+    
     if ('serviceWorker' in navigator) {
       const handleServiceWorkerMessage = (event: MessageEvent) => {
         if (event.data && event.data.type === 'AUTH_CACHE_CLEARED') {
@@ -487,9 +497,14 @@ function App() {
       navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
 
       return () => {
+        window.removeEventListener('otakon:force-login-view', handleForceLoginView);
         navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage);
       };
     }
+    
+    return () => {
+      window.removeEventListener('otakon:force-login-view', handleForceLoginView);
+    };
   }, []);
 
   // Restore WebSocket connection on page load if there's a stored code
@@ -627,10 +642,9 @@ function App() {
       // Set a flag to indicate we just logged out
       localStorage.setItem('otakon_just_logged_out', 'true');
       
-      // Delay slightly to ensure storage is written
-      setTimeout(() => {
-        window.location.reload();
-      }, 100);
+      // ✅ CRITICAL FIX: Navigate to login page and reload immediately
+      // Using replace() ensures proper URL and prevents back button issues
+      window.location.replace('/earlyaccess');
       
       // ✅ CRITICAL: Return here to prevent any further code execution
       // Processing flag will be reset on reload

@@ -116,8 +116,9 @@ const MainAppRoute: React.FC = () => {
       // Set a flag to indicate we just logged out
       localStorage.setItem('otakon_just_logged_out', 'true');
       
-      // Navigate to login page (this will trigger reload with correct URL)
-      window.location.href = '/earlyaccess';
+      // ✅ CRITICAL FIX: Navigate and reload immediately to prevent black screen
+      // Using replace() to prevent back button issues
+      window.location.replace('/earlyaccess');
       
       // ✅ CRITICAL: Return here to prevent any further code execution
       return;

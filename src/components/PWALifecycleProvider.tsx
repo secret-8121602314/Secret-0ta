@@ -100,9 +100,19 @@ export function PWALifecycleProvider({ children }: PWALifecycleProviderProps) {
     if (justLoggedOut) {
       console.log('📱 [PWA-Router] Just logged out flag on mount, clearing and navigating to login');
       localStorage.removeItem('otakon_just_logged_out');
-      // Only navigate if not already on login page
+      
+      // ✅ CRITICAL FIX: Also clear any stale session data to prevent black screen
+      sessionStorage.clear();
+      
+      // ✅ CRITICAL FIX: If we're not at login page, navigate immediately
       if (location.pathname !== '/earlyaccess' && location.pathname !== '/') {
+        console.log('📱 [PWA-Router] Not on login page, navigating now');
         navigate('/earlyaccess', { replace: true });
+      } else {
+        // We're already on the login page, just ensure auth state is clear
+        console.log('📱 [PWA-Router] Already on login page after logout');
+        // Force a state update by dispatching a custom event
+        window.dispatchEvent(new CustomEvent('otakon:force-login-view'));
       }
     }
   }, [navigate, location.pathname]);

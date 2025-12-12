@@ -1,6 +1,6 @@
 // Service Worker for Otagon PWA - Performance Optimized with Enhanced Background Sync
-// Version: v1.3.8-inline-loading - Fix black screen with inline HTML loading screen
-const CACHE_VERSION = 'v1.3.8-inline-loading';
+// Version: v1.3.9-logout-fix - Fix black screen on logout by preventing auth page caching
+const CACHE_VERSION = 'v1.3.9-logout-fix';
 const CACHE_NAME = `otagon-${CACHE_VERSION}`;
 const CHAT_CACHE_NAME = `otagon-chat-${CACHE_VERSION}`;
 const STATIC_CACHE = `otagon-static-${CACHE_VERSION}`;
@@ -162,17 +162,37 @@ self.addEventListener('fetch', (event) => {
           const preloadResponse = event.preloadResponse ? await event.preloadResponse : null;
           if (preloadResponse) {
             console.log('[SW] Using preloaded response for navigation');
-            const responseToCache = preloadResponse.clone();
-            const cache = await caches.open(CACHE_NAME);
-            cache.put(event.request, responseToCache);
+            
+            // ✅ PWA LOGOUT FIX: Don't cache auth/login pages to prevent stale state
+            const isAuthPage = url.pathname.includes('/earlyaccess') || 
+                               url.pathname.includes('/login') || 
+                               url.pathname === '/';
+            if (!isAuthPage) {
+              const responseToCache = preloadResponse.clone();
+              const cache = await caches.open(CACHE_NAME);
+              cache.put(event.request, responseToCache);
+            } else {
+              console.log('[SW] Skipping cache for auth page:', url.pathname);
+            }
+            
             return preloadResponse;
           }
           
           const response = await fetch(event.request);
-          // Clone and cache the response
-          const responseToCache = response.clone();
-          const cache = await caches.open(CACHE_NAME);
-          cache.put(event.request, responseToCache);
+          
+          // ✅ PWA LOGOUT FIX: Don't cache auth/login pages to prevent stale state
+          const isAuthPage = url.pathname.includes('/earlyaccess') || 
+                             url.pathname.includes('/login') || 
+                             url.pathname === '/';
+          if (!isAuthPage) {
+            // Clone and cache the response
+            const responseToCache = response.clone();
+            const cache = await caches.open(CACHE_NAME);
+            cache.put(event.request, responseToCache);
+          } else {
+            console.log('[SW] Skipping cache for auth page:', url.pathname);
+          }
+          
           return response;
         } catch (error) {
           console.log('[SW] Network failed for navigation, trying cache:', error);
