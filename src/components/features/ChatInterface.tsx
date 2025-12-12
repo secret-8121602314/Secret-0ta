@@ -908,29 +908,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         <div ref={messagesEndRef} />
       </div>
 
-        {/* Sub-tabs Section - Absolute overlay at bottom of messages area */}
-        {/* Show for released game conversations only (not Game Hub, not unreleased) */}
-        {/* Hide when Command Centre is active to prevent overlap */}
-        {/* z-40 ensures SubTabs expanded panel appears ABOVE the Chat Thread Name header on mobile */}
-        {!showAutocomplete && conversation && !conversation.isGameHub && !conversation.isUnreleased && conversation.subtabs && conversation.subtabs.length > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 px-3 pb-2 z-40 pointer-events-none">
-            <div className="pointer-events-auto">
-          <ErrorBoundary fallback={<SubTabsErrorFallback />}>
-            <SubTabs
-              key={`subtabs-${conversation.id}`}
-              subtabs={conversation.subtabs}
-              isLoading={isLoading}
-              onFeedback={onFeedback}
-              onModifyTab={onModifySubtab}
-              onDeleteTab={onDeleteSubtab}
-              onRetrySubtab={onRetrySubtab}
-              onExpandedChange={setIsSubtabsExpanded}
-            />
-            </ErrorBoundary>
-            </div>
-          </div>
-        )}
-
         {/* Game Hub Quick Prompts - Absolute overlay at bottom of messages area */}
         {/* Only show in Game Hub tab */}
         {conversation?.isGameHub && (
@@ -1048,7 +1025,29 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
         )}
       </div>
-      {/* END Main Chat Area Container */}      {/* Floating Chat Input Section with Gradient Border */}
+      {/* END Main Chat Area Container */}
+
+      {/* Sub-tabs Section - Positioned BETWEEN messages and floating input */}
+      {/* Show for released game conversations only (not Game Hub, not unreleased) */}
+      {/* Hide when Command Centre is active to prevent overlap */}
+      {!showAutocomplete && conversation && !conversation.isGameHub && !conversation.isUnreleased && conversation.subtabs && conversation.subtabs.length > 0 && (
+        <div className="flex-shrink-0 px-3 pb-2 z-[70] relative">
+          <ErrorBoundary fallback={<SubTabsErrorFallback />}>
+            <SubTabs
+              key={`subtabs-${conversation.id}`}
+              subtabs={conversation.subtabs}
+              isLoading={isLoading}
+              onFeedback={onFeedback}
+              onModifyTab={onModifySubtab}
+              onDeleteTab={onDeleteSubtab}
+              onRetrySubtab={onRetrySubtab}
+              onExpandedChange={setIsSubtabsExpanded}
+            />
+          </ErrorBoundary>
+        </div>
+      )}
+
+      {/* Floating Chat Input Section with Gradient Border */}
       <div className="flex-shrink-0 bg-background/95 backdrop-blur-sm">
         <div className="mx-3 mt-3 mb-4 rounded-2xl p-px transition-all duration-300" style={{
           background: isFocused 

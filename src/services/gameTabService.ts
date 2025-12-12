@@ -26,6 +26,17 @@ function generateUUID(): string {
     });
 }
 
+// ✅ FIX 4: Track pending insight generation to prevent stuck loading states
+const pendingInsightGenerations = new Set<string>();
+
+/**
+ * Check if insight generation is currently running for a conversation
+ * Used by polling logic to detect if generation failed to start
+ */
+export function isGeneratingInsights(conversationId: string): boolean {
+  return pendingInsightGenerations.has(conversationId);
+}
+
 export interface GameTabCreationData {
   gameTitle: string;
   genre: string;
@@ -92,56 +103,11 @@ class GameTabService {
     let subTabs: SubTab[] = [];
     
     if (!data.isUnreleased && isPro) {
-      if (data.aiResponse) {
-        console.error('🎮 [GameTabService] Extracting subtabs from AI response');
-        
-        // ✅ PRIORITY 1: Check if AI provided pre-filled subtab content (gamePillData.wikiContent)
-        if (data.aiResponse.gamePillData?.wikiContent && Object.keys(data.aiResponse.gamePillData.wikiContent).length > 0) {
-          console.error('🎮 [GameTabService] Found gamePillData.wikiContent with', Object.keys(data.aiResponse.gamePillData.wikiContent).length, 'tabs');
-          
-          // Convert wikiContent to SubTab array with proper UUIDs
-          subTabs = Object.entries(data.aiResponse.gamePillData.wikiContent).map(([tabId, content]) => ({
-            id: generateUUID(), // ✅ Generate proper UUID instead of using string tabId
-            title: this.formatTabTitle(tabId),
-            type: this.determineTabType(tabId),
-            content: content,
-            isNew: false,
-            status: 'loaded' as const
-          }));
-          console.error('🎮 [GameTabService] Created', subTabs.length, 'subtabs from gamePillData.wikiContent');
-        }
-        // ✅ PRIORITY 2: Check for progressiveInsightUpdates
-        else if (data.aiResponse.progressiveInsightUpdates && data.aiResponse.progressiveInsightUpdates.length > 0) {
-          console.error('🎮 [GameTabService] Found progressiveInsightUpdates with', data.aiResponse.progressiveInsightUpdates.length, 'updates');
-          
-          subTabs = data.aiResponse.progressiveInsightUpdates.map(update => ({
-            id: generateUUID(), // ✅ Generate proper UUID
-            title: update.title,
-            type: this.determineTabType(update.tabId),
-            content: update.content,
-            isNew: false,
-            status: 'loaded' as const
-          }));
-          console.error('🎮 [GameTabService] Created', subTabs.length, 'subtabs from progressiveInsightUpdates');
-        }
-        // ✅ PRIORITY 3: Try to extract INSIGHT_UPDATE tags from AI content
-        else {
-          const extractedSubtabs = this.extractInsightsFromAIResponse(data.aiResponse, []);
-          
-          if (extractedSubtabs.length > 0) {
-            subTabs = extractedSubtabs;
-            console.error('🎮 [GameTabService] Created', subTabs.length, 'subtabs from INSIGHT_UPDATE tags');
-          } else {
-            // ✅ FALLBACK: Create template subtabs and populate them via background AI call
-            subTabs = this.generateInitialSubTabs(data.genre || 'Default', data.playerProfile, {});
-            console.error('🎮 [GameTabService] Created', subTabs.length, 'template subtabs (will populate via background AI using conversation context)');
-          }
-        }
-      } else {
-        // No AI response - create template subtabs for pro users
-        subTabs = this.generateInitialSubTabs(data.genre || 'Default', data.playerProfile, {});
-        console.error('🎮 [GameTabService] Created', subTabs.length, 'initial template subtabs (no AI response)');
-      }
+      // ✅ FIX: ALWAYS create template subtabs for new tabs
+      // progressiveInsightUpdates and gamePillData.wikiContent are for UPDATES, not initial content
+      // This ensures consistent subtab structure that can be properly updated later
+      subTabs = this.generateInitialSubTabs(data.genre || 'Default', data.playerProfile, {});
+      console.error('🎮 [GameTabService] Created', subTabs.length, 'template subtabs (will be populated by generateInitialInsights)');
     } else if (data.isUnreleased) {
       console.error('🎮 [GameTabService] Creating unreleased game tab (no subtabs, Discuss mode only)');
     } else {
@@ -751,6 +717,9 @@ class GameTabService {
     const gameTitle = conversation.gameTitle;
     console.error(`🤖 [GameTabService] 🔄 [${conversationId}] Generating initial insights for: ${gameTitle}`);
 
+    // ✅ FIX 4: Track generation start
+    pendingInsightGenerations.add(conversationId);
+    
     try {
       // ✅ SAFETY CHECK: Verify conversation still exists before starting expensive AI call
       const preCheckConversations = await ConversationService.getConversations(true);
@@ -1177,6 +1146,10 @@ class GameTabService {
       } catch (updateError) {
         console.error('🤖 [GameTabService] Failed to update error state:', updateError);
       }
+    } finally {
+      // ✅ FIX 4: Always remove from tracking, even on error
+      pendingInsightGenerations.delete(conversation.id);
+      console.error(`🤖 [GameTabService] [${conversation.id}] Generation tracking cleaned up`);
     }
   }
 
@@ -1553,7 +1526,7 @@ class GameTabService {
             } else {
               // First time converting to progressive structure
               // Existing content becomes collapsed history, new update is the latest
-              const collapsedExisting = `<details>\n<summary>📋 Initial Content</summary>\n\n${existingContent}\n\n</details>\n`;
+              const collapsedExisting = `<details>\n<summary>📋 Previous Updates</summary>\n\n${existingContent}\n\n</details>\n`;
               
               newContent = collapsedExisting + '\n\n' + latestMarker + '\n\n' + update.content;
             }

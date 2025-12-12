@@ -133,9 +133,10 @@ export function MarkdownRenderer({
           ),
           br: () => <br className="my-1" />,
           // Styled collapsible sections for update history
+          // Using CSS to add padding to content inside details (not the summary)
           details: ({ children, ...props }) => (
             <details 
-              className="my-3 rounded-lg border border-[#424242]/50 bg-[#1C1C1C]/50 overflow-hidden group"
+              className="my-3 rounded-lg border border-[#424242]/50 bg-[#1C1C1C]/50 overflow-hidden group [&>*:not(summary)]:px-4 [&>*:not(summary)]:py-3 [&>*:not(summary)]:border-t [&>*:not(summary)]:border-[#424242]/30"
               {...props}
             >
               {children}
@@ -148,7 +149,7 @@ export function MarkdownRenderer({
               {...props}
             >
               <span className="text-xs transition-transform group-open:rotate-90">▶</span>
-              {children}
+              📋 Previous Updates
             </summary>
           )
         }}

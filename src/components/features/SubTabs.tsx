@@ -358,8 +358,8 @@ const SubTabs: React.FC<SubTabsProps> = ({
           }`}>
             Lore & Insights
           </div>
-          {/* Unread updates notification dot */}
-          {hasUnreadUpdates && !isExpanded && !hasLoadingSubtabs && (
+          {/* Unread updates notification dot - show when there are updates or when content exists and collapsed */}
+          {!isExpanded && !hasLoadingSubtabs && (hasUnreadUpdates || (subtabs.some(tab => tab.content && tab.content !== 'Loading...'))) && (
             <div className="relative">
               <div className="w-2 h-2 rounded-full bg-[#FF4D4D] animate-pulse" />
               <div className="absolute inset-0 w-2 h-2 rounded-full bg-[#FF4D4D] animate-ping opacity-75" />
@@ -391,9 +391,9 @@ const SubTabs: React.FC<SubTabsProps> = ({
 
       {/* Collapsible Content - Overlay positioned ABOVE the button on ALL screen sizes
           Z-INDEX STACKING ORDER (mobile):
-          - z-[60]: Sidebar (when open)
+          - z-[70]: SubTabs expanded panel (this) - ABOVE progress bar and all headers
           - z-[55]: Sidebar backdrop (when open)
-          - z-50: SubTabs expanded panel (this)
+          - z-50: Floating chat input
           - z-40: SubTabs container (in ChatInterface)
           - z-30: Chat Thread Name header (in MainApp)
           
@@ -409,29 +409,45 @@ const SubTabs: React.FC<SubTabsProps> = ({
             onClick={() => setIsExpanded(false)}
           />
           {/* 
-            Fixed panel on mobile: Positioned between header elements and the button area.
-            Top: 150px accounts for header + progress bar + chat thread name
+            FIXED positioning on ALL screen sizes (like mobile) to ensure consistent z-index behavior
+            This ensures SubTabs always appears ABOVE progress bar and all other elements
+            
+            Mobile: Full width minus padding (left-3 right-3)
+            Desktop (lg+): Account for sidebar width (320px) + padding
+            
+            Top: accounts for header + progress bar + chat thread name
             Bottom: dynamically calculated from button position
             
-            Desktop (lg+): Uses absolute positioning with bottom-full to appear above the button.
-            
-            CRITICAL: Using CSS classes for ALL positioning to avoid JS/CSS breakpoint mismatch.
-            The mobile styles (top/bottom) are applied via a style tag inside, only when NOT at lg breakpoint.
+            Z-INDEX: z-[70] to appear above progress bar and all header elements
           */}
           <div
-            className="subtabs-panel z-50 animate-fade-in fixed left-3 right-3 lg:absolute lg:left-0 lg:right-0 lg:bottom-full lg:mb-2 lg:max-h-[60vh] lg:top-auto"
+            className="subtabs-panel animate-fade-in fixed left-3 right-3 z-[70] lg:max-h-[60vh]"
             style={{
-              // Mobile/tablet positioning - will be overridden by lg: classes on desktop
+              // Mobile/tablet positioning
               '--mobile-top': '150px',
               '--mobile-bottom': `${panelBottom}px`,
+              // Desktop: Account for sidebar (w-80 = 320px) + padding (24px)
+              '--desktop-left': 'calc(320px + 1.5rem)',
+              '--desktop-top': '180px',
+              '--desktop-bottom': `${panelBottom}px`,
+              '--desktop-max-height': 'calc(100vh - 220px)'
             } as React.CSSProperties}
           >
-            {/* Apply mobile positioning via inline style that only affects non-lg screens */}
+            {/* Apply positioning via inline styles for both mobile and desktop - FIXED on all breakpoints */}
             <style>{`
               @media (max-width: 1023px) {
                 .subtabs-panel {
                   top: var(--mobile-top) !important;
                   bottom: var(--mobile-bottom) !important;
+                }
+              }
+              @media (min-width: 1024px) {
+                .subtabs-panel {
+                  left: var(--desktop-left) !important;
+                  right: 1.5rem !important;
+                  top: var(--desktop-top) !important;
+                  bottom: var(--desktop-bottom) !important;
+                  max-height: var(--desktop-max-height) !important;
                 }
               }
             `}</style>
@@ -528,17 +544,6 @@ const SubTabs: React.FC<SubTabsProps> = ({
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018c.163 0 .326.02.485.06L17 4m-7 10v5a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
                         </svg>
                       </button>
-                      {onRetrySubtab && (
-                        <button
-                          onClick={() => onRetrySubtab(activeTab.id)}
-                          className="p-1.5 rounded-lg text-[#A3A3A3] hover:text-[#FF4D4D] hover:bg-[#FF4D4D]/10 transition-colors"
-                          title="Retry generating this tab"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                          </svg>
-                        </button>
-                      )}
                       {onRetrySubtab && (
                         <button
                           onClick={() => onRetrySubtab(activeTab.id)}

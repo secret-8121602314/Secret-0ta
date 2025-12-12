@@ -886,23 +886,25 @@ In addition to your regular response, provide structured data in the following o
    - GAME HUB MODE: Generate follow-ups about the SPECIFIC games/topics you just discussed
    - Example: If you explained a game's story, ask about specific characters or plot points from that game
    - DO NOT use generic gaming questions - tie them to what you just said`}
-2. **progressiveInsightUpdates** (array): ${!conversation.isGameHub ? `
+2. **progressiveInsightUpdates** (array): ${!conversation.isGameHub && conversation.subtabs && conversation.subtabs.length > 0 ? `
    **MANDATORY FOR GAME TABS**: Update subtabs when the conversation reveals new information!
    
    WHEN TO UPDATE SUBTABS:
-   - User defeats a boss/enemy → Update "story_so_far" with new progress
-   - User asks about story/lore → Update "story_so_far" or "game_lore"  
-   - User discovers an area → Update "points_of_interest" or "hidden_paths"
-   - User asks about builds/stats → Update "build_optimization" or "build_guide"
-   - User mentions items/gear → Update "missed_items" or relevant strategy tab
-   - User asks about quests → Update "quest_log" or "quest_guide"
-   - User discusses NPCs → Update "npc_interactions" or "npc_questlines"
+   - User defeats a boss/enemy → Update relevant tabs with new progress
+   - User asks about story/lore → Update story-related tabs
+   - User discovers an area → Update exploration/location tabs
+   - User asks about builds/stats → Update build/optimization tabs
+   - User mentions items/gear → Update item-related tabs
+   - User asks about quests → Update quest-related tabs
+   - User discusses NPCs → Update NPC-related tabs
    - User shares progress screenshots → Update relevant tabs with what's shown
    
-   AVAILABLE SUBTAB IDs (use these exact IDs):
-   story_so_far, game_lore, missed_items, build_guide, quest_log, build_optimization,
-   boss_strategy, hidden_paths, points_of_interest, npc_interactions, pro_tips,
-   combat_strategies, quest_guide, lore_exploration, exploration_tips
+   AVAILABLE SUBTABS FOR THIS CONVERSATION (use these EXACT tabIds and titles):
+   ${conversation.subtabs.map(tab => {
+     // Convert title to snake_case for tabId (e.g., "Story So Far" -> "story_so_far")
+     const tabId = tab.title.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+     return `- "${tabId}" (${tab.title})`;
+   }).join('\n   ')}
    
    FORMAT:
    [{ "tabId": "story_so_far", "title": "Story So Far", "content": "Updated content here..." }]
@@ -912,6 +914,7 @@ In addition to your regular response, provide structured data in the following o
    - Include details from what was just discussed
    - Use markdown formatting (bold, bullets, etc.)
    - Keep content game-specific and actionable
+   - Use the EXACT tabIds listed above (not generic ones)
    ` : 'Not applicable for Game Hub - subtabs exist only in game-specific tabs'}
 3. **stateUpdateTags** (array of strings): Track game state changes. ALWAYS include these for game conversations:
    - "PROGRESS: XX" (0-100) - **REQUIRED for game tabs**: Estimate player's game completion percentage
