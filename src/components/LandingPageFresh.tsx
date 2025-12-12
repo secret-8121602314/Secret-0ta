@@ -10,6 +10,7 @@ import useEmblaCarousel from 'embla-carousel-react';
 import Autoplay from 'embla-carousel-autoplay';
 import { AITextLoading } from './ui/AITextLoading';
 import { blogPosts, BlogPost } from '../data/blogPosts';
+import { BlinkBlur } from 'react-loading-indicators';
 
 // Import feature images
 import feature1 from '../assets/images/feature-images/feature1.png';
@@ -538,6 +539,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
   const [scrollY, setScrollY] = useState(0);
   const backgroundRef = useRef<HTMLDivElement>(null);
 
+  // Landing page loading state
+  const [isPageLoading, setIsPageLoading] = useState(true);
+  const [showLogo, setShowLogo] = useState(false);
+
   // Interactive hint demo states
   const [hintDemoState, setHintDemoState] = useState<'idle' | 'loading' | 'streaming' | 'revealed'>('idle');
   const [streamedText, setStreamedText] = useState('');
@@ -597,6 +602,66 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Only run once on mount to check initial URL
+
+    // Page loading effect - wait for images and content to load
+    useEffect(() => {
+        const startTime = Date.now();
+        const minLoadTime = 2000; // Minimum 2 seconds
+
+        // List of critical images to preload
+        const imagesToLoad = [
+            feature1,
+            feature2,
+            feature3,
+            feature4,
+            feature5,
+            feature6,
+            geminiLogo,
+            pcAppImage,
+            '/images/landing/hint.jpg',
+            '/images/landing/hint2.webp',
+            '/images/mascot/1.png',
+            '/images/otagon-logo.png'
+        ];
+
+        let loadedCount = 0;
+        const totalImages = imagesToLoad.length;
+        let imagesLoaded = false;
+
+        const checkAllLoaded = () => {
+            loadedCount++;
+            if (loadedCount >= totalImages) {
+                imagesLoaded = true;
+                const elapsed = Date.now() - startTime;
+                const remainingTime = Math.max(0, minLoadTime - elapsed);
+
+                // Wait for minimum time before hiding loading screen
+                setTimeout(() => {
+                    setIsPageLoading(false);
+                    // Start fade-in effect right when loading animation ends (at 2 second mark)
+                    setShowLogo(true);
+                }, remainingTime);
+            }
+        };
+
+        // Preload all images
+        imagesToLoad.forEach((src) => {
+            const img = new Image();
+            img.onload = checkAllLoaded;
+            img.onerror = checkAllLoaded; // Count errors too to prevent infinite loading
+            img.src = src;
+        });
+
+        // Fallback timeout - show page after 5 seconds regardless
+        const timeout = setTimeout(() => {
+            if (!imagesLoaded) {
+                setIsPageLoading(false);
+                setShowLogo(true);
+            }
+        }, 5000);
+
+        return () => clearTimeout(timeout);
+    }, []);
 
     // Prevent PWA install prompt on landing page
     useEffect(() => {
@@ -853,7 +918,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
     };
 
   return (
-        <div 
+        <>
+            {/* Loading Screen Overlay */}
+            {isPageLoading && (
+                <div className="fixed inset-0 z-[9999] bg-black flex items-center justify-center">
+                    <BlinkBlur color="#ff4d00" size="medium" text="" textColor="" />
+                </div>
+            )}
+
+            <div 
             ref={backgroundRef}
             className="text-white font-inter relative custom-scrollbar animate-fade-in"
             style={{
@@ -865,7 +938,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                 overflowX: 'hidden',
                 overflowY: 'auto',
                 WebkitOverflowScrolling: 'touch',
-                touchAction: 'pan-y pinch-zoom'
+                touchAction: 'pan-y pinch-zoom',
+                opacity: isPageLoading ? 0 : 1,
+                transition: 'opacity 0.5s ease-in-out'
             }}
         >
             {/* Enhanced Background Glows */}
@@ -928,7 +1003,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                     
                     <div className="container mx-auto px-6 relative overflow-visible">
                         <div className="flex flex-col items-center justify-center gap-1 md:gap-4 mb-4 md:mb-10 overflow-visible">
-                            <Logo className="h-32 w-32" spinOnce={true} />
+                            <div
+                              style={{
+                                opacity: showLogo ? 1 : 0,
+                                transition: 'opacity 0.6s ease-in-out'
+                              }}
+                            >
+                              <Logo className="h-32 w-32" spinOnce={showLogo} />
+                            </div>
                             <div className="relative inline-block">
                               <h1 
                                   className="text-6xl md:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] leading-none py-2"
@@ -2057,6 +2139,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
             
 
     </div>
+    </>
   );
 };
 

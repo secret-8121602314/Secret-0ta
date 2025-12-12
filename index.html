@@ -388,18 +388,55 @@
         display: flex;
       }
       
-      #pwa-loading-screen img {
-        width: 80px;
-        height: 80px;
-        margin-bottom: 16px;
-      }
-      
       #pwa-loading-screen .loading-spinner {
-        display: none;
+        width: 60px;
+        height: 60px;
+        position: relative;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: center;
       }
       
-      @keyframes pwa-spin {
-        to { transform: rotate(360deg); }
+      #pwa-loading-screen .loading-spinner span {
+        width: 12px;
+        height: 12px;
+        background: #ff4d00;
+        border-radius: 50%;
+        filter: blur(2px);
+        animation: pwa-blink-blur 1.4s ease-in-out infinite;
+      }
+      
+      #pwa-loading-screen .loading-spinner span:nth-child(1) {
+        animation-delay: 0s;
+      }
+      
+      #pwa-loading-screen .loading-spinner span:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      
+      #pwa-loading-screen .loading-spinner span:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+      
+      @keyframes pwa-blink-blur {
+        0%, 100% { 
+          opacity: 0.3; 
+          transform: scale(0.8);
+          filter: blur(4px);
+        }
+        50% { 
+          opacity: 1; 
+          transform: scale(1.2);
+          filter: blur(1px);
+        }
+      }
+      
+      /* Hide loading screen once React mounts */
+      .react-mounted #pwa-loading-screen {
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease-out;
       }
       
       /* Hide loading screen once React mounts */
@@ -418,8 +455,11 @@
   <body>
     <!-- Inline loading screen - visible immediately before React loads (only on PWA/earlyaccess) -->
     <div id="pwa-loading-screen">
-      <img src="/images/otagon-logo.png" alt="Otagon" />
-      <div class="loading-spinner"></div>
+      <div class="loading-spinner">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
     </div>
     
     <div id="root"></div>
