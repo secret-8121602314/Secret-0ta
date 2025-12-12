@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate, useLoaderData, useSearchParams } from 'react-router-dom';
+import { useNavigate, useLoaderData, useSearchParams, useRevalidator } from 'react-router-dom';
 import MainApp from '../../components/MainApp';
 import AboutModal from '../../components/modals/AboutModal';
 import PrivacyModal from '../../components/modals/PrivacyModal';
@@ -16,6 +16,7 @@ import { isPWAMode } from '../../utils/pwaDetection';
  */
 const MainAppRoute: React.FC = () => {
   const navigate = useNavigate();
+  const revalidator = useRevalidator();
   // User from loader is used for profile setup banner logic
   const { user } = useLoaderData() as { user: User | null };
   const [searchParams, setSearchParams] = useSearchParams();
@@ -293,42 +294,30 @@ const MainAppRoute: React.FC = () => {
           try {
             // Save profile data and mark setup as complete
             const { onboardingService } = await import('../../services/onboardingService');
-            const { authService } = await import('../../services/authService');
             
             if (user?.authUserId) {
               await onboardingService.markProfileSetupComplete(user.authUserId, profileData as unknown as Record<string, unknown>);
               
-              // Refresh user data to get updated hasProfileSetup flag
-              await authService.refreshUser();
-              
-              // Force re-render by navigating to same route
-              navigate('/app', { replace: true });
+              // Trigger router to refetch user data from loader
+              revalidator.revalidate();
             }
           } catch (error) {
             console.error('Error completing profile setup:', error);
-            // Reload as fallback
-            window.location.reload();
           }
         }}
         onProfileSetupDismiss={async () => {
           try {
             // Mark as dismissed in database (without saving profile data)
             const { onboardingService } = await import('../../services/onboardingService');
-            const { authService } = await import('../../services/authService');
             
             if (user?.authUserId) {
               await onboardingService.markProfileSetupComplete(user.authUserId, {});
               
-              // Refresh user data to get updated hasProfileSetup flag
-              await authService.refreshUser();
-              
-              // Force re-render by navigating to same route
-              navigate('/app', { replace: true });
+              // Trigger router to refetch user data from loader
+              revalidator.revalidate();
             }
           } catch (error) {
             console.error('Error dismissing profile setup:', error);
-            // Reload as fallback
-            window.location.reload();
           }
         }}
       />
