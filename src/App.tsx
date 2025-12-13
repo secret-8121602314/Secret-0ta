@@ -650,10 +650,10 @@ function App() {
       // Set a flag to indicate we just logged out
       localStorage.setItem('otakon_just_logged_out', 'true');
       
-      // Navigate to root first (this clears URL state)
-      window.history.replaceState(null, '', '/');
+      // Navigate to login page first (this clears URL state)
+      window.history.replaceState(null, '', '/earlyaccess');
       
-      // ✅ CRITICAL FIX: Use reload(true) to force hard reload, bypassing ALL caches
+      // ✅ CRITICAL FIX: Use reload() to force hard reload, bypassing ALL caches
       // This ensures service worker doesn't serve stale content
       setTimeout(() => {
         window.location.reload();

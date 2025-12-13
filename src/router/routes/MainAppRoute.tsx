@@ -117,8 +117,8 @@ const MainAppRoute: React.FC = () => {
       // Set a flag to indicate we just logged out
       localStorage.setItem('otakon_just_logged_out', 'true');
       
-      // Navigate to root first (this clears URL state)
-      window.history.replaceState(null, '', '/');
+      // Navigate to login page first (this clears URL state)
+      window.history.replaceState(null, '', '/earlyaccess');
       
       // ✅ CRITICAL FIX: Use reload() to force hard reload, bypassing ALL caches
       // Timeout ensures state is written first
