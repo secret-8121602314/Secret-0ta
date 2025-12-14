@@ -534,6 +534,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState('');
+  const [isSubmissionSuccessful, setIsSubmissionSuccessful] = useState(false);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
   const [scrollY, setScrollY] = useState(0);
@@ -894,6 +895,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
       const result = await WaitlistService.addToWaitlist(email, 'landing_page');
       
       if (result.success) {
+        setIsSubmissionSuccessful(true);
         if (result.alreadyExists) {
           setSubmitMessage('You\'re already on our waitlist! We\'ll email you when access is ready.');
         } else {
@@ -901,12 +903,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
         }
         setEmail('');
       } else {
+        setIsSubmissionSuccessful(false);
         setSubmitMessage(result.error || 'Failed to join waitlist. Please try again.');
       }
     } catch (error) {
       console.error('Waitlist submission error:', error);
       toastService.error('Failed to join waitlist. Please try again.');
       setSubmitMessage('An unexpected error occurred. Please try again.');
+      setIsSubmissionSuccessful(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -1191,8 +1195,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 </div>
                                 <button
               type="submit"
-              disabled={isSubmitting}
-                                    className="bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-bold py-4 sm:py-5 px-8 sm:px-12 rounded-xl transition-all duration-300 transform md:hover:scale-105 md:hover:shadow-2xl md:hover:shadow-[#E53A3A]/30 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100 text-base sm:text-lg relative overflow-hidden group min-h-[56px]"
+              disabled={isSubmitting || isSubmissionSuccessful}
+                                    className={`text-white font-bold py-4 sm:py-5 px-8 sm:px-12 rounded-xl transition-all duration-300 transform text-base sm:text-lg relative overflow-hidden group min-h-[56px] ${
+                                      isSubmissionSuccessful
+                                        ? 'bg-gradient-to-r from-[#10B981] to-[#059669] md:hover:scale-100 md:hover:shadow-2xl md:hover:shadow-[#10B981]/30 active:scale-100 disabled:opacity-100 disabled:cursor-not-allowed'
+                                        : 'bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] md:hover:scale-105 md:hover:shadow-2xl md:hover:shadow-[#E53A3A]/30 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100'
+                                    }`}
                                 >
                                     <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                                     <span className="relative z-10">
@@ -1200,6 +1208,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                             <div className="flex items-center justify-center">
                                                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
                                                 Joining...
+                                            </div>
+                                        ) : isSubmissionSuccessful ? (
+                                            <div className="flex items-center justify-center">
+                                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                </svg>
+                                                You're in!
                                             </div>
                                         ) : (
                                             'Save My Spot'
