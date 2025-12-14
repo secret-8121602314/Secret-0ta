@@ -830,7 +830,6 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
             >
               Privacy Policy
             </button>
-            .
           </p>
         </div>
         </div>
