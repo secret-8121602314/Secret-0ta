@@ -1202,7 +1202,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                                 Joining...
                                             </div>
                                         ) : (
-                                            'Save My Spot - It\'s Free'
+                                            'Save My Spot'
                                         )}
                                     </span>
                                 </button>
