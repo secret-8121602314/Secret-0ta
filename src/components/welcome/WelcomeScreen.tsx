@@ -84,7 +84,7 @@ const OverviewTab = () => (
     <div className="bg-gradient-to-br from-[#1C1C1C] to-[#0A0A0A] border border-[#FF4D4D]/30 rounded-xl p-4 sm:p-6 shadow-xl">
       <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-text-primary mb-3 sm:mb-4 flex items-center">
         <span className="mr-2 sm:mr-3">🎯</span>
-        What is Otagon?
+        Welcome to Otagon
       </h2>
       <p className="text-xs sm:text-sm md:text-base text-text-muted leading-relaxed mb-3 sm:mb-4">
         Otagon is your intelligent gaming companion powered by AI. It helps you overcome challenges, 
@@ -129,9 +129,9 @@ const OverviewTab = () => (
           </div>
         </li>
         <li className="flex items-start">
-          <span className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">2</span>
+          <span className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm mr-2 sm:mr-3">2</span>
           <div className="flex-1">
-            <h3 className="font-semibold text-text-primary mb-1">Create Game Tabs</h3>
+            <h3 className="font-semibold text-text-primary mb-0.5 sm:mb-1 text-sm sm:text-base">Create Game Tabs</h3>
             <p className="text-xs sm:text-sm text-text-muted">Mention a game or upload its screenshot to create a dedicated tab</p>
           </div>
         </li>
@@ -180,6 +180,7 @@ const FeaturesTab = () => {
     {
       icon: '📚',
       title: 'Smart Insight Tabs',
+      isPro: true,
       description: 'AI automatically generates and updates specialized tabs for story, tips, builds, and more.',
       tips: [
         'Story tab: Spoiler-free lore and character backgrounds',
@@ -210,13 +211,62 @@ const FeaturesTab = () => {
       ]
     },
     {
+      icon: '🤖',
+      title: 'AI Mode Toggle',
+      isPro: true,
+      description: 'Control whether screenshots are analyzed by AI or just saved.',
+      tips: [
+        'AI ON: Screenshots analyzed automatically (default)',
+        'AI OFF: Screenshots saved without analysis - no credits used',
+        'Perfect for capturing moments to share without spending queries',
+        'Toggle anytime from the header AI button'
+      ]
+    },
+    {
+      icon: '🌐',
+      title: 'Web Search',
+      isPro: true,
+      description: 'Get real-time information with Google-powered web search.',
+      tips: [
+        'Latest patch notes, updates, and meta changes',
+        'Current event information and limited-time content',
+        'Essential for games released after January 2025',
+        'Toggle on/off per query with web search button'
+      ]
+    },
+    {
+      icon: '📸',
+      title: 'Batch Screenshot Capture',
+      isPro: true,
+      description: 'Capture multiple screenshots from recent gameplay with F2 hotkey.',
+      tips: [
+        'Captures last 5 minutes of gameplay screenshots',
+        'AI analyzes all images for comprehensive context',
+        'Perfect for complex boss fights or puzzle sequences',
+        'Requires PC connection'
+      ]
+    },
+    {
       icon: '🎤',
-      title: 'Hands-Free Mode',
+      title: 'Hands-Free Voice Mode',
+      isPro: true,
       description: 'Have AI responses read aloud while you focus on the game.',
       tips: [
         'Perfect for action games where you can\'t look away',
         'Choose from multiple voices and adjust speed',
-        'Toggle on/off anytime from the header (headphones icon)'
+        'Toggle on/off anytime from the header (headphones icon)',
+        'Customize voice settings in Voice Settings modal'
+      ]
+    },
+    {
+      icon: '💬',
+      title: 'Chat Input Controls',
+      description: 'Powerful chat input with upload, voice, and mode controls.',
+      tips: [
+        'Upload button: Manually upload screenshots or images',
+        'Voice mode indicator: Shows when hands-free is active',
+        'Playing/Planning toggle: Switch modes directly from input',
+        'Image preview: See queued screenshots before sending'
       ]
     },
     {
@@ -271,7 +321,12 @@ const FeaturesTab = () => {
           <div className="flex items-start space-x-3 sm:space-x-4">
             <div className="text-2xl sm:text-3xl md:text-4xl flex-shrink-0">{feature.icon}</div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-base sm:text-lg md:text-xl font-bold text-text-primary mb-1 sm:mb-2">{feature.title}</h3>
+              <h3 className="text-base sm:text-lg md:text-xl font-bold text-text-primary mb-1 sm:mb-2 flex items-center flex-wrap gap-2">
+                <span>{feature.title}</span>
+                {feature.isPro && (
+                  <span className="px-1.5 sm:px-2 py-0.5 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] rounded text-[10px] sm:text-xs font-medium">PRO</span>
+                )}
+              </h3>
               <p className="text-xs sm:text-sm md:text-base text-text-muted mb-2 sm:mb-4 leading-relaxed">{feature.description}</p>
               <div className="space-y-1 sm:space-y-2">
                 {feature.tips.map((tip, tipIndex) => (

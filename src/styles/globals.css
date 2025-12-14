@@ -274,27 +274,69 @@ html, body {
   animation: scale-in 0.2s ease-out;
 }
 
-/* Enhanced Design System Variables */
+/* =============================================================================
+   ENHANCED DESIGN SYSTEM VARIABLES
+   Single source of truth for all design tokens
+   ============================================================================= */
 :root {
-  --space-xs: 0.5rem;
-  --space-sm: 0.75rem;
-  --space-md: 1rem;
-  --space-lg: 1.5rem;
-  --space-xl: 2rem;
-  --space-2xl: 3rem;
+  /* Spacing Scale - Consistent rhythm */
+  --space-xs: 0.5rem;    /* 8px */
+  --space-sm: 0.75rem;   /* 12px */
+  --space-md: 1rem;      /* 16px */
+  --space-lg: 1.5rem;    /* 24px */
+  --space-xl: 2rem;      /* 32px */
+  --space-2xl: 3rem;     /* 48px */
   
+  /* Color Palette - Brand Colors */
   --color-primary: #E53A3A;
   --color-primary-light: #FF6B6B;
+  --color-primary-hover: #D42A2A;
   --color-secondary: #D98C1F;
   --color-secondary-light: #FFB366;
+  --color-secondary-hover: #C87A1A;
   --color-accent: #5CBB7B;
   --color-accent-light: #7DD3A3;
+  
+  /* Surface Colors - Dark Theme */
   --color-background: #0A0A0A;
   --color-surface: #1C1C1C;
   --color-surface-light: #2E2E2E;
+  --color-surface-elevated: #3A3A3A;
+  --color-border: #424242;
+  --color-border-light: #5A5A5A;
+  
+  /* Text Colors */
   --color-text-primary: #F5F5F5;
   --color-text-secondary: #CFCFCF;
   --color-text-muted: #A3A3A3;
+  
+  /* Border Radius Scale - Consistent rounding */
+  --radius-sm: 0.5rem;   /* 8px - inputs, small elements */
+  --radius-md: 0.75rem;  /* 12px - buttons, cards */
+  --radius-lg: 1rem;     /* 16px - larger cards */
+  --radius-xl: 1.25rem;  /* 20px - modals, panels */
+  --radius-2xl: 1.5rem;  /* 24px - hero sections */
+  --radius-full: 9999px; /* Pills, avatars */
+  
+  /* Shadow System - 3-tier elevation */
+  --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-medium: 0 8px 24px rgba(0, 0, 0, 0.3);
+  --shadow-elevated: 0 16px 48px rgba(0, 0, 0, 0.4);
+  --shadow-glow-primary: 0 0 30px rgba(229, 58, 58, 0.25);
+  --shadow-glow-strong: 0 0 40px rgba(229, 58, 58, 0.4);
+  
+  /* Transition Timing */
+  --transition-fast: 150ms ease-out;
+  --transition-normal: 200ms ease-out;
+  --transition-slow: 300ms ease-out;
+  --transition-spring: 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  
+  /* Z-Index Scale - Consistent layering */
+  --z-dropdown: 30;
+  --z-sticky: 40;
+  --z-modal: 50;
+  --z-popover: 60;
+  --z-toast: 70;
 }
 
 /* ============================================================================
@@ -378,103 +420,132 @@ html, body {
   @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6;
 }
 
-/* Enhanced Card System */
+/* Enhanced Card System - Unified elevation */
 .card-elevated {
-  @apply bg-gradient-to-br from-[#2E2E2E]/90 to-[#1C1C1C]/90;
-  @apply border border-[#424242]/30;
+  @apply bg-gradient-to-br from-surface-light/90 to-surface/90;
+  @apply border border-[#424242]/40;
   @apply rounded-2xl backdrop-blur-xl;
-  @apply shadow-[0_8px_32px_rgba(0,0,0,0.3)];
+  box-shadow: var(--shadow-medium);
   @apply transition-all duration-300;
 }
 
 .card-elevated:hover {
-  @apply border-[#E53A3A]/40;
-  @apply shadow-[0_12px_40px_rgba(229,58,58,0.15)];
-  @apply transform -translate-y-1;
+  @apply border-primary/40;
+  box-shadow: var(--shadow-elevated), var(--shadow-glow-primary);
+  @apply transform -translate-y-0.5;
+}
+
+/* Card - Interactive variant */
+.card-interactive {
+  @apply bg-gradient-to-br from-surface-light/80 to-surface/80;
+  @apply border border-[#424242]/40;
+  @apply rounded-xl backdrop-blur-sm;
+  box-shadow: var(--shadow-subtle);
+  @apply transition-all duration-200;
+}
+
+.card-interactive:hover {
+  @apply border-[#5A5A5A]/60;
+  box-shadow: var(--shadow-medium);
+  @apply transform -translate-y-px;
 }
 
 .glass-container {
   @apply bg-white/5 backdrop-blur-2xl;
   @apply border border-white/10;
-  @apply rounded-3xl;
-  @apply shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)];
+  @apply rounded-2xl;
+  box-shadow: var(--shadow-elevated);
 }
 
-/* Enhanced Button System */
+/* =============================================================================
+   UNIFIED BUTTON SYSTEM
+   Consolidated button styles with consistent sizing and interaction states
+   ============================================================================= */
+
+/* Base button enhanced - uses CSS variables for consistency */
 .btn-primary-enhanced {
-  @apply bg-gradient-to-r from-[#E53A3A] to-[#D98C1F];
+  @apply bg-gradient-to-r from-primary to-secondary;
   @apply text-white font-semibold;
-  @apply px-6 py-3 rounded-2xl;
+  @apply px-6 py-3 rounded-xl;
   @apply border-2 border-transparent;
-  @apply transition-all duration-300 ease-out;
-  @apply hover:scale-105 hover:shadow-2xl hover:shadow-[#E53A3A]/25;
-  @apply active:scale-95 active:shadow-lg;
-  @apply focus:outline-none focus:ring-4 focus:ring-[#E53A3A]/30;
+  @apply transition-all;
+  transition-duration: var(--transition-slow);
+  @apply md:hover:scale-[1.02] active:scale-[0.98];
+  @apply focus:outline-none focus:ring-4 focus:ring-primary/30;
+}
+
+.btn-primary-enhanced:hover {
+  box-shadow: var(--shadow-medium), var(--shadow-glow-primary);
 }
 
 .btn-secondary-enhanced {
-  @apply bg-gradient-to-r from-[#2E2E2E] to-[#1C1C1C];
-  @apply text-[#CFCFCF] font-medium;
+  @apply bg-gradient-to-r from-surface-light to-surface;
+  @apply text-text-secondary font-medium;
   @apply px-5 py-2.5 rounded-xl;
   @apply border-2 border-[#424242]/60;
-  @apply transition-all duration-300 ease-out;
-  @apply hover:from-[#424242] hover:to-[#2E2E2E];
-  @apply hover:border-[#5A5A5A] hover:scale-105;
+  @apply transition-all;
+  transition-duration: var(--transition-slow);
+  @apply md:hover:from-[#424242] md:hover:to-surface-light;
+  @apply md:hover:border-[#5A5A5A] md:hover:scale-[1.02];
   @apply focus:outline-none focus:ring-4 focus:ring-[#424242]/30;
 }
 
-/* Enhanced Input System */
+/* Enhanced Input System - Consistent with design tokens */
 .input-enhanced {
-  @apply bg-gradient-to-r from-[#1C1C1C] to-[#0A0A0A];
-  @apply border-2 border-[#424242]/40;
+  @apply bg-gradient-to-r from-surface to-background;
+  @apply border-2 border-[#424242]/50;
   @apply rounded-xl px-4 py-3;
-  @apply text-white placeholder-[#A3A3A3];
-  @apply transition-all duration-300;
-  @apply focus:border-[#E53A3A]/60 focus:outline-none;
-  @apply focus:shadow-[0_0_20px_rgba(229,61,61,0.2)];
+  @apply text-white placeholder-text-muted;
+  @apply transition-all;
+  transition-duration: var(--transition-normal);
+  @apply focus:border-primary/60 focus:outline-none;
   @apply hover:border-[#5A5A5A]/60;
 }
 
-/* Enhanced Tab System */
+.input-enhanced:focus {
+  box-shadow: 0 0 0 3px rgba(229, 58, 58, 0.15);
+}
+
+/* Enhanced Tab System - Consistent with design tokens */
 .tab-enhanced {
   @apply px-4 py-2.5 rounded-xl;
-  @apply bg-gradient-to-r from-[#2E2E2E] to-[#1C1C1C];
+  @apply bg-gradient-to-r from-surface-light to-surface;
   @apply border-2 border-[#424242]/40;
-  @apply text-[#CFCFCF] font-medium;
-  @apply transition-all duration-300 ease-out;
-  @apply hover:from-[#424242] hover:to-[#2E2E2E];
-  @apply hover:border-[#5A5A5A] hover:scale-105;
-  @apply shadow-[0_2px_8px_rgba(0,0,0,0.3)];
+  @apply text-text-secondary font-medium;
+  @apply transition-all;
+  transition-duration: var(--transition-normal);
+  @apply md:hover:from-[#424242] md:hover:to-surface-light;
+  @apply md:hover:border-[#5A5A5A];
+  box-shadow: var(--shadow-subtle);
   @apply backdrop-blur-sm;
   @apply cursor-pointer;
 }
 
 .tab-active {
-  @apply bg-gradient-to-r from-[#E53A3A]/20 to-[#D98C1F]/20;
-  @apply border-[#E53A3A]/60;
+  @apply bg-gradient-to-r from-primary/20 to-secondary/20;
+  @apply border-primary/60;
   @apply text-white;
-  @apply shadow-[0_0_20px_rgba(229,58,58,0.2)];
-  @apply scale-105;
+  box-shadow: 0 0 20px rgba(229, 58, 58, 0.2);
 }
 
 .conversation-tab {
   @apply px-4 py-3 rounded-xl;
-  @apply bg-gradient-to-r from-[#2E2E2E]/80 to-[#1C1C1C]/80;
+  @apply bg-gradient-to-r from-surface-light/80 to-surface/80;
   @apply border-2 border-[#424242]/40;
-  @apply text-[#CFCFCF] font-medium;
-  @apply transition-all duration-300;
-  @apply hover:from-[#424242] hover:to-[#2E2E2E];
-  @apply hover:border-[#5A5A5A] hover:scale-105;
-  @apply shadow-[0_2px_8px_rgba(0,0,0,0.3)];
+  @apply text-text-secondary font-medium;
+  @apply transition-all;
+  transition-duration: var(--transition-slow);
+  @apply md:hover:from-[#424242] md:hover:to-surface-light;
+  @apply md:hover:border-[#5A5A5A];
+  box-shadow: var(--shadow-subtle);
   @apply backdrop-blur-sm;
 }
 
 .conversation-tab-active {
-  @apply bg-gradient-to-r from-[#E53A3A]/20 to-[#D98C1F]/20;
-  @apply border-[#E53A3A]/60;
+  @apply bg-gradient-to-r from-primary/20 to-secondary/20;
+  @apply border-primary/60;
   @apply text-white;
-  @apply shadow-[0_0_25px_rgba(229,58,58,0.3)];
-  @apply scale-105;
+  box-shadow: 0 0 25px rgba(229, 58, 58, 0.3);
 }
 
 /* Enhanced Chat Message System */
@@ -496,21 +567,27 @@ html, body {
   @apply mr-auto;
 }
 
-/* Enhanced Modal System */
+/* =============================================================================
+   UNIFIED MODAL SYSTEM
+   Consistent modal styling with proper z-index layering
+   ============================================================================= */
+   
 .modal-overlay-enhanced {
-  @apply fixed inset-0 z-50;
-  @apply bg-black/60 backdrop-blur-md;
+  @apply fixed inset-0;
+  z-index: var(--z-modal);
+  @apply bg-black/70 backdrop-blur-md;
   @apply flex items-center justify-center p-4;
-  @apply transition-all duration-300;
+  @apply transition-all;
+  transition-duration: var(--transition-slow);
 }
 
 .modal-content-enhanced {
-  @apply bg-gradient-to-br from-[#1C1C1C] to-[#0A0A0A];
-  @apply border border-[#424242]/40;
-  @apply rounded-3xl p-6 max-w-2xl w-full;
-  @apply shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)];
+  @apply bg-gradient-to-br from-surface to-background;
+  @apply border border-[#424242]/50;
+  @apply rounded-2xl p-6 max-w-2xl w-full;
+  box-shadow: var(--shadow-elevated);
   @apply backdrop-blur-xl;
-  @apply transform transition-all duration-300;
+  @apply transform;
   @apply animate-modal-enter;
 }
 
@@ -657,36 +734,87 @@ html, body {
   animation: glow-pulse 2s ease-in-out infinite;
 }
 
-/* Enhanced button states */
+/* =============================================================================
+   CONSOLIDATED BUTTON STATES
+   Unified button classes - use these instead of inline gradient styles
+   ============================================================================= */
+
+/* Primary button - standard */
 .btn-primary {
-  @apply bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-semibold px-6 py-3 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#E53A3A]/25 active:scale-95;
+  @apply bg-gradient-to-r from-primary to-secondary text-white font-semibold px-6 py-3 rounded-xl;
+  @apply transition-all;
+  transition-duration: var(--transition-slow);
+  @apply md:hover:scale-[1.02] active:scale-[0.98];
 }
 
+.btn-primary:hover {
+  box-shadow: var(--shadow-medium), var(--shadow-glow-primary);
+}
+
+/* Secondary button - standard */
 .btn-secondary {
-  @apply bg-gradient-to-r from-[#2E2E2E] to-[#1C1C1C] text-white font-semibold px-6 py-3 rounded-xl border-2 border-[#424242]/60 transition-all duration-300 hover:from-[#424242] hover:to-[#2E2E2E] hover:scale-105 hover:shadow-lg active:scale-95;
+  @apply bg-gradient-to-r from-surface-light to-surface text-white font-semibold px-6 py-3 rounded-xl;
+  @apply border-2 border-[#424242]/60;
+  @apply transition-all;
+  transition-duration: var(--transition-slow);
+  @apply md:hover:from-[#424242] md:hover:to-surface-light;
+  @apply md:hover:scale-[1.02] active:scale-[0.98];
+}
+
+.btn-secondary:hover {
+  box-shadow: var(--shadow-medium);
 }
 
 /* Touch-safe button states (no hover persistence on mobile) */
 .btn-primary-touch-safe {
-  @apply bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white font-semibold px-6 py-3 rounded-xl transition-all duration-300 md:hover:scale-105 md:hover:shadow-xl md:hover:shadow-[#E53A3A]/25 active:scale-95;
+  @apply bg-gradient-to-r from-primary to-secondary text-white font-semibold px-6 py-3 rounded-xl;
+  @apply transition-all;
+  transition-duration: var(--transition-slow);
+  @apply md:hover:scale-[1.02] active:scale-[0.98];
+}
+
+.btn-primary-touch-safe:hover {
+  box-shadow: var(--shadow-medium), var(--shadow-glow-primary);
 }
 
 .btn-secondary-touch-safe {
-  @apply bg-gradient-to-r from-[#2E2E2E] to-[#1C1C1C] text-white font-semibold px-6 py-3 rounded-xl border-2 border-[#424242]/60 transition-all duration-300 md:hover:from-[#424242] md:hover:to-[#2E2E2E] md:hover:scale-105 md:hover:shadow-lg active:scale-95;
+  @apply bg-gradient-to-r from-surface-light to-surface text-white font-semibold px-6 py-3 rounded-xl;
+  @apply border-2 border-[#424242]/60;
+  @apply transition-all;
+  transition-duration: var(--transition-slow);
+  @apply md:hover:from-[#424242] md:hover:to-surface-light;
+  @apply md:hover:scale-[1.02] active:scale-[0.98];
 }
 
-/* Enhanced card styles */
+.btn-secondary-touch-safe:hover {
+  box-shadow: var(--shadow-medium);
+}
+
+/* Enhanced card styles - uses design tokens */
 .card {
-  @apply bg-gradient-to-r from-[#2E2E2E]/80 to-[#1C1C1C]/80 border-2 border-[#424242]/40 rounded-2xl backdrop-blur-sm transition-all duration-300 hover:border-[#E53A3A]/40 hover:shadow-xl hover:shadow-[#E53A3A]/10;
+  @apply bg-gradient-to-r from-surface-light/80 to-surface/80;
+  @apply border-2 border-[#424242]/50;
+  @apply rounded-xl backdrop-blur-sm;
+  @apply transition-all;
+  transition-duration: var(--transition-slow);
+  @apply md:hover:border-primary/40;
 }
 
-/* Enhanced modal styles */
+.card:hover {
+  box-shadow: var(--shadow-medium), 0 0 20px rgba(229, 58, 58, 0.1);
+}
+
+/* Enhanced modal styles - uses design tokens */
 .modal-overlay {
-  @apply fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4;
+  @apply fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4;
+  z-index: var(--z-modal);
 }
 
 .modal-content {
-  @apply bg-gradient-to-r from-[#1C1C1C] to-[#0A0A0A] border-2 border-[#424242]/40 rounded-2xl w-full shadow-2xl backdrop-blur-sm;
+  @apply bg-gradient-to-r from-surface to-background;
+  @apply border-2 border-[#424242]/50;
+  @apply rounded-2xl w-full backdrop-blur-sm;
+  box-shadow: var(--shadow-elevated);
   /* Responsive padding */
   padding: 1rem;
 }

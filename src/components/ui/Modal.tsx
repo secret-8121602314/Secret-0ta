@@ -22,8 +22,8 @@ const overlayVariants = {
 const modalVariants = {
   hidden: { 
     opacity: 0, 
-    scale: 0.95,
-    y: -10,
+    scale: 0.97,
+    y: -8,
   },
   visible: { 
     opacity: 1, 
@@ -31,16 +31,18 @@ const modalVariants = {
     y: 0,
     transition: {
       type: 'spring',
-      damping: 25,
-      stiffness: 300,
+      damping: 28,
+      stiffness: 350,
+      mass: 0.8,
     },
   },
   exit: { 
     opacity: 0, 
-    scale: 0.95,
-    y: 10,
+    scale: 0.98,
+    y: 6,
     transition: {
-      duration: 0.15,
+      duration: 0.12,
+      ease: 'easeOut',
     },
   },
 };
@@ -129,7 +131,7 @@ const Modal: React.FC<ModalProps> = ({
             exit="exit"
           >
             {(title || showCloseButton) && (
-              <div className="px-4 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5 border-b border-surface-light/40">
+              <div className="px-5 py-4 sm:px-6 border-b border-surface-light/50">
                 <div className="flex items-center justify-between">
                   {title && (
                     <h2 className="text-xl sm:text-2xl font-bold text-text-primary text-left">
@@ -139,10 +141,10 @@ const Modal: React.FC<ModalProps> = ({
                   {showCloseButton && (
                     <motion.button
                       onClick={onClose}
-                      className="p-1.5 sm:p-2 text-text-muted hover:text-text-primary transition-colors rounded-lg hover:bg-surface-light/10"
+                      className="p-2 text-text-muted hover:text-text-primary transition-colors duration-200 rounded-xl hover:bg-surface-light/20"
                       aria-label="Close modal"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
                     >
                       <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -153,7 +155,7 @@ const Modal: React.FC<ModalProps> = ({
               </div>
             )}
             
-            <div className={clsx("overflow-y-auto max-h-[calc(90vh-120px)]", className || "p-4 sm:p-5 md:p-6")}>
+            <div className={clsx("overflow-y-auto max-h-[calc(90vh-120px)] p-5 sm:p-6", className)}>
               {children}
             </div>
           </motion.div>

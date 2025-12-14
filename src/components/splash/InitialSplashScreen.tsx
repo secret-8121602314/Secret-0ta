@@ -65,8 +65,8 @@ const InitialSplashScreen: React.FC<InitialSplashScreenProps> = ({ onComplete, u
   };
 
   return (
-    <div className="h-screen bg-gradient-to-br from-[#111111] to-[#0A0A0A] text-[#F5F5F5] flex flex-col items-center justify-center font-inter px-5 sm:px-6 md:px-8 py-8 sm:py-10 md:py-12 text-center overflow-hidden">
-      <div className="absolute top-0 left-0 w-full h-full bg-gradient-radial-at-top from-[#1C1C1C]/30 to-transparent pointer-events-none"></div>
+    <div className="h-screen bg-gradient-to-br from-[#111111] to-background text-text-primary flex flex-col items-center justify-center font-inter px-5 sm:px-6 md:px-8 py-8 sm:py-10 md:py-12 text-center overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-full bg-gradient-radial-at-top from-surface/30 to-transparent pointer-events-none"></div>
       
       <div className="flex flex-col items-center justify-center w-full max-w-2xl">
         <div className="flex-shrink-0 mb-1">
@@ -86,13 +86,13 @@ const InitialSplashScreen: React.FC<InitialSplashScreenProps> = ({ onComplete, u
         </div>
 
         <h1 
-          className="text-4xl sm:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] leading-normal"
+          className="text-4xl sm:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-light to-secondary-light leading-normal"
         >
           Otagon
         </h1>
 
         <p 
-          className="text-sm sm:text-base text-[#CFCFCF] leading-relaxed mt-1"
+          className="text-sm sm:text-base text-text-secondary leading-relaxed mt-1"
         >
           Your Spoiler-Free Gaming Companion
         </p>
@@ -104,7 +104,7 @@ const InitialSplashScreen: React.FC<InitialSplashScreenProps> = ({ onComplete, u
           <button
             onClick={handleStartAdventure}
             disabled={isProcessing}
-            className={`w-full bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] md:hover:from-[#D42A2A] md:hover:to-[#C87A1A] text-white font-bold py-2.5 sm:py-3 px-5 sm:px-6 rounded-xl transition-all duration-300 md:hover:scale-105 md:hover:shadow-xl md:hover:shadow-[#E53A3A]/25 active:scale-95 text-sm sm:text-base flex items-center justify-center relative z-10 ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            className={`w-full btn-primary-touch-safe text-sm sm:text-base flex items-center justify-center relative z-10 ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
             style={{ pointerEvents: 'auto' }}
           >
             {isProcessing ? 'Starting...' : 'Start the Adventure'}
@@ -112,7 +112,7 @@ const InitialSplashScreen: React.FC<InitialSplashScreenProps> = ({ onComplete, u
           
           <button
             onClick={handleDownloadPCClient}
-            className="w-full bg-gradient-to-r from-neutral-700 to-neutral-600 md:hover:from-neutral-600 md:hover:to-neutral-500 text-white font-bold py-2.5 sm:py-3 px-5 sm:px-6 rounded-xl transition-all duration-300 md:hover:scale-105 md:hover:shadow-lg active:scale-95 text-sm sm:text-base flex items-center justify-center relative z-10 cursor-pointer"
+            className="w-full btn-secondary-touch-safe text-sm sm:text-base flex items-center justify-center relative z-10 cursor-pointer"
             style={{ pointerEvents: 'auto' }}
           >
             Download PC Client

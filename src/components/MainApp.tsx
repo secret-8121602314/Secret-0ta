@@ -911,6 +911,18 @@ const MainApp: React.FC<MainAppProps> = ({
         if (finalActive) {
           console.log('🔍 [MainApp] Initialization complete with active conversation:', finalActive.id);
           setIsInitializing(false);
+          
+          // ✅ SHOW WELCOME MODAL ON FIRST CHAT VISIT AFTER ONBOARDING
+          // Check if user has completed onboarding and hasn't seen the welcome modal yet
+          const hasSeenWelcome = localStorage.getItem('otakon_welcome_shown') === 'true';
+          if (!hasSeenWelcome) {
+            console.log('🎉 [MainApp] First chat visit after onboarding - showing welcome modal');
+            // Show welcome modal after a short delay to allow UI to settle
+            setTimeout(() => {
+              setWelcomeScreenOpen(true);
+              localStorage.setItem('otakon_welcome_shown', 'true');
+            }, 500);
+          }
         } else {
           console.error('🔍 [MainApp] ERROR: No active conversation after initialization!');
           console.log('🔍 [MainApp] userConversations:', Object.keys(userConversations));
