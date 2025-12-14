@@ -27,6 +27,7 @@
     "dev:test": "vite --mode test",
     "generate-icons": "node scripts/generate-icons.js",
     "generate-manifest": "node scripts/generate-manifest.js",
+    "generate-seo-images": "node scripts/create-seo-images.js",
     "convert-png-to-webp": "node scripts/convert-png-to-webp.mjs",
     "prebuild": "npm run convert-png-to-webp && npm run generate-manifest",
     "build": "vite build && node scripts/fix-base-paths.js && node scripts/copy-public-assets.js",

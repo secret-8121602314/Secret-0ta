@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create SEO Images</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .canvas-container {
+            margin: 20px 0;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            display: block;
+            margin: 10px 0;
+        }
+        button {
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0052a3;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Otagon SEO Images Generator</h1>
+    <div class="info">
+        <p>This tool will create proper images for Google search results:</p>
+        <ul>
+            <li>Favicon (512x512) with black background and zoomed out logo</li>
+            <li>Open Graph Image (1200x630) with black background for search previews</li>
+        </ul>
+        <p><strong>Instructions:</strong> Upload your logo, adjust if needed, then download the generated images.</p>
+    </div>
+
+    <div>
+        <input type="file" id="logoInput" accept="image/*">
+        <label>Logo Padding: <input type="range" id="paddingSlider" min="5" max="40" value="20" step="1"> <span id="paddingValue">20</span>%</label>
+    </div>
+
+    <div class="canvas-container">
+        <h3>Favicon (512x512)</h3>
+        <canvas id="faviconCanvas" width="512" height="512"></canvas>
+        <button onclick="downloadFavicon()">Download Favicon</button>
+    </div>
+
+    <div class="canvas-container">
+        <h3>Open Graph Image (1200x630)</h3>
+        <canvas id="ogCanvas" width="1200" height="630"></canvas>
+        <button onclick="downloadOG()">Download OG Image</button>
+    </div>
+
+    <script>
+        let logoImage = null;
+        let padding = 20;
+
+        document.getElementById('logoInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    logoImage = new Image();
+                    logoImage.onload = function() {
+                        drawImages();
+                    };
+                    logoImage.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('paddingSlider').addEventListener('input', function(e) {
+            padding = parseInt(e.target.value);
+            document.getElementById('paddingValue').textContent = padding;
+            if (logoImage) {
+                drawImages();
+            }
+        });
+
+        function drawImages() {
+            drawFavicon();
+            drawOGImage();
+        }
+
+        function drawFavicon() {
+            const canvas = document.getElementById('faviconCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Black background
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, 512, 512);
+            
+            if (logoImage) {
+                const paddingPx = (512 * padding) / 100;
+                const logoSize = 512 - (paddingPx * 2);
+                const x = paddingPx;
+                const y = paddingPx;
+                
+                // Draw logo centered with padding
+                ctx.drawImage(logoImage, x, y, logoSize, logoSize);
+            }
+        }
+
+        function drawOGImage() {
+            const canvas = document.getElementById('ogCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Black background
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, 1200, 630);
+            
+            if (logoImage) {
+                // Center the logo in the OG image
+                const maxLogoHeight = 630 * 0.6; // 60% of height
+                const paddingPx = (maxLogoHeight * padding) / 100;
+                const logoSize = maxLogoHeight - (paddingPx * 2);
+                
+                const x = (1200 - logoSize) / 2;
+                const y = (630 - logoSize) / 2;
+                
+                ctx.drawImage(logoImage, x, y, logoSize, logoSize);
+            }
+        }
+
+        function downloadFavicon() {
+            const canvas = document.getElementById('faviconCanvas');
+            const link = document.createElement('a');
+            link.download = 'favicon-512x512.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function downloadOG() {
+            const canvas = document.getElementById('ogCanvas');
+            const link = document.createElement('a');
+            link.download = 'og-image-1200x630.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // Show placeholder instruction
+        if (!logoImage) {
+            const ctx1 = document.getElementById('faviconCanvas').getContext('2d');
+            ctx1.fillStyle = '#000000';
+            ctx1.fillRect(0, 0, 512, 512);
+            ctx1.fillStyle = '#666666';
+            ctx1.font = '24px Arial';
+            ctx1.textAlign = 'center';
+            ctx1.fillText('Upload logo to generate', 256, 256);
+
+            const ctx2 = document.getElementById('ogCanvas').getContext('2d');
+            ctx2.fillStyle = '#000000';
+            ctx2.fillRect(0, 0, 1200, 630);
+            ctx2.fillStyle = '#666666';
+            ctx2.font = '32px Arial';
+            ctx2.textAlign = 'center';
+            ctx2.fillText('Upload logo to generate', 600, 315);
+        }
+    </script>
+</body>
+</html>
