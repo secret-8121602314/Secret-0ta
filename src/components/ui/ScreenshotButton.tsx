@@ -169,7 +169,7 @@ const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({
   };
 
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} className="relative z-[100]">
       <button
         ref={btnRef}
         type="button"
@@ -214,10 +214,7 @@ const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({
       )}
 
       {menuOpen && isConnected && (
-        <div className="fixed bottom-auto right-auto mb-3 bg-[#101010]/98 border border-[#424242]/60 rounded-xl shadow-2xl min-w-[200px] overflow-hidden z-[9999] backdrop-blur-md" style={{ 
-          bottom: btnRef.current ? `${window.innerHeight - btnRef.current.getBoundingClientRect().top}px` : 'auto',
-          right: btnRef.current ? `${window.innerWidth - btnRef.current.getBoundingClientRect().right}px` : 'auto'
-        }}>
+        <div className="absolute bottom-full right-0 mb-3 bg-[#101010]/98 border border-[#424242]/60 rounded-xl shadow-2xl min-w-[200px] overflow-hidden z-[10000] backdrop-blur-md">
           <button 
             onClick={() => setModeAndPersist('single')} 
             className={`w-full text-left px-4 py-3 hover:bg-[#2E2E2E]/60 transition-colors ${mode === 'single' ? 'text-emerald-400' : 'text-[#CFCFCF]'}`}

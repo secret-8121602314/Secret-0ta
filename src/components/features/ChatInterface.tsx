@@ -1072,7 +1072,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             ? 'linear-gradient(135deg, #FF4D4D, #FFAB40)'
             : 'transparent'
         }}>
-          <form onSubmit={handleSubmit} className="relative p-3 rounded-2xl bg-gradient-to-r from-[#1A1A1A] to-[#0F0F0F] animate-pulse-glow" style={{
+          <form onSubmit={handleSubmit} className="relative p-3 rounded-2xl bg-gradient-to-r from-[#1A1A1A] to-[#0F0F0F] animate-pulse-glow z-20" style={{
             background: 'linear-gradient(135deg, #1A1A1A 0%, #0F0F0F 100%)',
             boxShadow: '0 0 20px rgba(255, 77, 77, 0.3), 0 0 40px rgba(255, 171, 64, 0.2), 0 0 60px rgba(0, 0, 0, 0.1)'
           }}>
