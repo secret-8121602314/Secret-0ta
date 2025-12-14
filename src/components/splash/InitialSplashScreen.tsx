@@ -55,14 +55,11 @@ const InitialSplashScreen: React.FC<InitialSplashScreenProps> = ({ onComplete, u
         }
       }
       
-      // Add delay to show button feedback before navigation
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
+      // Call onComplete immediately - don't wait, don't reset isProcessing
       onComplete();
       
     } catch (error) {
       console.error('🎯 [InitialSplashScreen] Error in button click:', error);
-    } finally {
       setIsProcessing(false);
     }
   };
