@@ -143,36 +143,36 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
   
   return (
     <>
-      {/* Image Modal with Rotation */}
+      {/* Image Modal with Rotation - Fullscreen on mobile landscape */}
       {expandedImage && (
         <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm p-2 sm:p-4"
           onClick={handleCloseViewer}
         >
-          <div className="relative max-w-[90vw] max-h-[90vh]">
+          <div className="relative w-full h-full flex flex-col items-center justify-center">
             {/* Close button */}
             <button
               onClick={handleCloseViewer}
-              className="absolute -top-3 -right-3 z-10 w-8 h-8 flex items-center justify-center bg-[#1C1C1C] border border-[#424242] rounded-full text-white hover:bg-[#2C2C2C] transition-colors"
+              className="absolute top-2 right-2 sm:top-4 sm:right-4 z-10 w-10 h-10 flex items-center justify-center bg-[#1C1C1C]/80 border border-[#424242] rounded-full text-white hover:bg-[#2C2C2C] transition-colors"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
             {/* Rotate button */}
             <button
               onClick={(e) => { e.stopPropagation(); handleRotateImage(); }}
-              className="absolute -top-3 -left-3 z-10 w-8 h-8 flex items-center justify-center bg-[#1C1C1C] border border-[#424242] rounded-full text-white hover:bg-[#2C2C2C] transition-colors"
+              className="absolute top-2 left-2 sm:top-4 sm:left-4 z-10 w-10 h-10 flex items-center justify-center bg-[#1C1C1C]/80 border border-[#424242] rounded-full text-white hover:bg-[#2C2C2C] transition-colors"
               title="Rotate image (R)"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </button>
             <img
               src={expandedImage}
               alt="Full size"
-              className="max-w-full max-h-[85vh] rounded-lg shadow-2xl transition-transform duration-300"
+              className="max-w-[98vw] max-h-[90vh] sm:max-w-[95vw] sm:max-h-[90vh] object-contain rounded-lg shadow-2xl transition-transform duration-300"
               style={{ transform: `rotate(${imageRotation}deg)` }}
               onClick={(e) => e.stopPropagation()}
             />
@@ -761,11 +761,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       hasMessage: !!message.trim(), 
       hasImageFile: !!imageFile, 
       hasImagePreview: !!imagePreview,
-      shouldSubmit: !(!message.trim() && !imageFile)
+      shouldSubmit: !(!message.trim() && !imageFile && !imagePreview)
     });
     
-    // Allow submission if there's either a message OR an image
-    if (!message.trim() && !imageFile) {
+    // Allow submission if there's either a message OR an image (file or queued preview)
+    if (!message.trim() && !imageFile && !imagePreview) {
             return;
     }
 
@@ -1332,10 +1332,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             ) : (
               <button
                 type="submit"
-                disabled={!message.trim() && !imageFile}
+                disabled={!message.trim() && !imageFile && !imagePreview}
                 aria-label="Send message"
                 className={`flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-xl transition-all duration-300 disabled:cursor-not-allowed ${
-                  !message.trim() && !imageFile
+                  !message.trim() && !imageFile && !imagePreview
                     ? 'bg-[#2E2E2E]/15 text-[#A3A3A3]/25 scale-100'
                     : 'bg-gradient-to-r from-[#FFAB40] to-[#FF8C00] text-[#181818] scale-100 md:hover:scale-105 md:hover:shadow-lg md:hover:shadow-[#FFAB40]/25 active:scale-95 font-semibold'
                 }`}
@@ -1348,36 +1348,36 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         </div>
       </div>
       
-      {/* Queued Image Viewer Modal with Rotation */}
+      {/* Queued Image Viewer Modal with Rotation - Fullscreen on mobile landscape */}
       {expandedQueuedImage && (
         <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm p-2 sm:p-4"
           onClick={handleCloseQueuedViewer}
         >
-          <div className="relative max-w-[90vw] max-h-[90vh]">
+          <div className="relative w-full h-full flex items-center justify-center">
             {/* Close button */}
             <button
               onClick={handleCloseQueuedViewer}
-              className="absolute -top-3 -right-3 z-10 w-8 h-8 flex items-center justify-center bg-[#1C1C1C] border border-[#424242] rounded-full text-white hover:bg-[#2C2C2C] transition-colors"
+              className="absolute top-2 right-2 sm:top-4 sm:right-4 z-10 w-10 h-10 flex items-center justify-center bg-[#1C1C1C]/80 border border-[#424242] rounded-full text-white hover:bg-[#2C2C2C] transition-colors"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
             {/* Rotate button */}
             <button
               onClick={(e) => { e.stopPropagation(); handleRotateQueuedImage(); }}
-              className="absolute -top-3 -left-3 z-10 w-8 h-8 flex items-center justify-center bg-[#1C1C1C] border border-[#424242] rounded-full text-white hover:bg-[#2C2C2C] transition-colors"
+              className="absolute top-2 left-2 sm:top-4 sm:left-4 z-10 w-10 h-10 flex items-center justify-center bg-[#1C1C1C]/80 border border-[#424242] rounded-full text-white hover:bg-[#2C2C2C] transition-colors"
               title="Rotate image"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </button>
             <img
               src={expandedQueuedImage}
               alt="Queued image preview"
-              className="max-w-full max-h-[85vh] rounded-lg shadow-2xl transition-transform duration-300"
+              className="max-w-[98vw] max-h-[98vh] sm:max-w-[95vw] sm:max-h-[95vh] object-contain rounded-lg shadow-2xl transition-transform duration-300"
               style={{ transform: `rotate(${queuedImageRotation}deg)` }}
               onClick={(e) => e.stopPropagation()}
             />

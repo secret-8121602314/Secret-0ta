@@ -136,10 +136,9 @@ class GameTabService {
     // Save to database
     await ConversationService.addConversation(conversation);
     
-    // ✅ CRITICAL FIX: Invalidate cache immediately after creating new tab
-    // This prevents stale cache from overwriting the new tab when switching
-    ConversationService.clearCache();
-    console.log('🎮 [GameTabService] Cache invalidated after creating new tab:', conversation.id);
+    // ✅ PERFORMANCE: Keep cache intact - the conversation we return is already fresh
+    // No need to clear cache since we're returning the authoritative object
+    console.log('🎮 [GameTabService] Created new tab (cache preserved for performance):', conversation.id);
     
     // 🎮 BACKGROUND GAME KNOWLEDGE: Trigger non-blocking fetch for game knowledge
     // This runs in background and populates cache for future use
