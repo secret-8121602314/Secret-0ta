@@ -114,8 +114,12 @@ const MainAppRoute: React.FC = () => {
       // This prevents black screen and ensures clean login experience
       console.log('📱 [PWA] Forcing full hard reload after logout to clear state');
       
-      // Set a flag to indicate we just logged out
-      localStorage.setItem('otakon_just_logged_out', 'true');
+      // ✅ BROWSER CONFLICT FIX: Set timestamp instead of just flag
+      // This helps identify stale logout flags if browser was open during PWA logout
+      localStorage.setItem('otakon_just_logged_out', Date.now().toString());
+      
+      // Clear ALL app-related sessionStorage to prevent state leakage
+      sessionStorage.clear();
       
       // Navigate to login page first (this clears URL state)
       window.history.replaceState(null, '', '/earlyaccess');
@@ -124,7 +128,7 @@ const MainAppRoute: React.FC = () => {
       // Timeout ensures state is written first
       setTimeout(() => {
         window.location.reload();
-      }, 100);
+      }, 150); // Increased slightly for reliability
       
       // ✅ CRITICAL: Return here to prevent any further code execution
       return;

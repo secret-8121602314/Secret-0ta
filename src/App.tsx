@@ -11,6 +11,7 @@ import { ToastContainer } from './components/ui/ToastContainer';
 import { isPWAMode } from './utils/pwaDetection';
 import { logPWAStatus } from './utils/pwaRedirectPrevention';
 import LayoutDebugOverlay from './components/debug/LayoutDebugOverlay';
+import { useWakeLock } from './hooks/useWakeLock';
 
 // PWA lifecycle state tracking
 let appVisibilityTimestamp = Date.now();
@@ -22,6 +23,9 @@ console.log('🚀🚀🚀 APP.TSX LOADED - PWA FIXES VERSION 🚀🚀🚀');
 logPWAStatus();
 
 function App() {
+  // Keep screen awake while app is active (PWA)
+  const { isActive: isWakeLockActive, isSupported: isWakeLockSupported } = useWakeLock(true);
+  
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     isLoading: true,
@@ -74,6 +78,15 @@ function App() {
   // NOTE: Viewport height is now handled by CSS using position:fixed + inset:0
   // This approach is bulletproof and doesn't require JavaScript
 
+  // Log wake lock status
+  useEffect(() => {
+    if (isWakeLockSupported) {
+      console.log(`🔒 [App] Wake Lock: ${isWakeLockActive ? 'ACTIVE - Screen will not sleep' : 'Inactive'}`);
+    } else {
+      console.log('⚠️ [App] Wake Lock API not supported on this device');
+    }
+  }, [isWakeLockActive, isWakeLockSupported]);
+
   useEffect(() => {
     console.log('🎯 [App] App state changed:', {
       view: appState.view,
@@ -114,6 +127,14 @@ function App() {
   }, [appState.view, appState.onboardingStatus, appState.activeSubView, appState.isHandsFreeMode, appState.showUpgradeScreen, appState.showDailyCheckin, appState.isFirstTime, authState.user, authState.isLoading]);
 
   useEffect(() => {
+    // ✅ PWA BLACK SCREEN FIX: Clear logout flag immediately on app load
+    // This prevents the flag from interfering with normal app initialization
+    const justLoggedOut = localStorage.getItem('otakon_just_logged_out');
+    if (justLoggedOut) {
+      console.log('📱 [PWA] Clearing logout flag on app initialization');
+      localStorage.removeItem('otakon_just_logged_out');
+    }
+    
     let isMounted = true;
     const processAuthState = async (newAuthState: AuthState) => {
       if (isProcessingAuthRef.current || newAuthState.isLoading) {
@@ -221,11 +242,20 @@ function App() {
         // ✅ PWA CRITICAL FIX: Check if we just logged out and prevent auth loading
         const justLoggedOut = localStorage.getItem('otakon_just_logged_out');
         if (justLoggedOut) {
-          console.log('📱 [PWA] Just logged out flag in timeout, showing login immediately');
-          localStorage.removeItem('otakon_just_logged_out');
-          setAuthState({ user: null, isLoading: false, error: null });
-          setAppState(prev => ({ ...prev, view: 'app', onboardingStatus: 'login' }));
-          return;
+          // Check if logout flag is stale (older than 10 seconds)
+          const logoutTimestamp = parseInt(justLoggedOut, 10);
+          const isStale = !isNaN(logoutTimestamp) && (Date.now() - logoutTimestamp) > 10000;
+          
+          if (isStale) {
+            console.log('📱 [PWA] Stale logout flag detected (>10s old), clearing it');
+            localStorage.removeItem('otakon_just_logged_out');
+          } else {
+            console.log('📱 [PWA] Just logged out flag in timeout, showing login immediately');
+            localStorage.removeItem('otakon_just_logged_out');
+            setAuthState({ user: null, isLoading: false, error: null });
+            setAppState(prev => ({ ...prev, view: 'app', onboardingStatus: 'login' }));
+            return;
+          }
         }
         
         // If we're still loading auth and it's a PWA, check session one more time
@@ -645,6 +675,13 @@ function App() {
       // This prevents black screen and ensures clean login experience
       console.log('📱 [PWA] Forcing full hard reload after logout to clear state');
       
+      // ✅ BROWSER CONFLICT FIX: Set timestamp instead of just flag
+      // This helps identify stale logout flags if browser was open during PWA logout
+      localStorage.setItem('otakon_just_logged_out', Date.now().toString());
+      
+      // Clear ALL app-related sessionStorage to prevent state leakage
+      sessionStorage.clear();
+      
       // Navigate to login page first (this clears URL state)
       window.history.replaceState(null, '', '/earlyaccess');
       
@@ -652,7 +689,7 @@ function App() {
       // This ensures service worker doesn't serve stale content
       setTimeout(() => {
         window.location.reload();
-      }, 100);
+      }, 150); // Increased slightly for reliability
       
       // ✅ CRITICAL: Return here to prevent any further code execution
       // Processing flag will be reset on reload
