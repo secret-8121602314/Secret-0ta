@@ -90,10 +90,10 @@
       ]
     },
     {
-      "name": "Voice Commands",
-      "short_name": "Voice",
-      "description": "Use hands-free voice commands",
-      "url": "/?shortcut=voice",
+      "name": "Game Library",
+      "short_name": "Library",
+      "description": "Browse your game library",
+      "url": "/?shortcut=game-library",
       "icons": [
         {
           "src": "/images/pwa-icon.png",
@@ -104,10 +104,24 @@
       ]
     },
     {
-      "name": "Settings",
-      "short_name": "Settings",
-      "description": "Manage your preferences",
-      "url": "/?shortcut=settings",
+      "name": "Timeline",
+      "short_name": "Timeline",
+      "description": "View your gaming timeline",
+      "url": "/?shortcut=timeline",
+      "icons": [
+        {
+          "src": "/images/pwa-icon.png",
+          "sizes": "192x192",
+          "type": "image/png",
+          "purpose": "any"
+        }
+      ]
+    },
+    {
+      "name": "Home",
+      "short_name": "Home",
+      "description": "Explore gaming content",
+      "url": "/?shortcut=home",
       "icons": [
         {
           "src": "/images/pwa-icon.png",

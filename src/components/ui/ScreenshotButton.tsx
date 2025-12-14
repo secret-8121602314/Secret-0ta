@@ -169,7 +169,7 @@ const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({
   };
 
   return (
-    <div ref={rootRef} className="relative z-[100]">
+    <div ref={rootRef} className="relative z-[200]">
       <button
         ref={btnRef}
         type="button"

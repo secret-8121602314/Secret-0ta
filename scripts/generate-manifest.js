@@ -171,17 +171,24 @@ function generateManifest() {
         icons: icons.filter(i => i.sizes === '192x192').slice(0, 1)
       },
       {
-        name: 'Voice Commands',
-        short_name: 'Voice',
-        description: 'Use hands-free voice commands',
-        url: '/?shortcut=voice',
+        name: 'Game Library',
+        short_name: 'Library',
+        description: 'Browse your game library',
+        url: '/?shortcut=game-library',
         icons: icons.filter(i => i.sizes === '192x192').slice(0, 1)
       },
       {
-        name: 'Settings',
-        short_name: 'Settings',
-        description: 'Manage your preferences',
-        url: '/?shortcut=settings',
+        name: 'Timeline',
+        short_name: 'Timeline',
+        description: 'View your gaming timeline',
+        url: '/?shortcut=timeline',
+        icons: icons.filter(i => i.sizes === '192x192').slice(0, 1)
+      },
+      {
+        name: 'Home',
+        short_name: 'Home',
+        description: 'Explore gaming content',
+        url: '/?shortcut=home',
         icons: icons.filter(i => i.sizes === '192x192').slice(0, 1)
       }
     ],
