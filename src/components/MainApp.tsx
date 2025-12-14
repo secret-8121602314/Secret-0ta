@@ -920,11 +920,13 @@ const MainApp: React.FC<MainAppProps> = ({
             // Show welcome modal after a short delay to allow UI to settle
             setTimeout(() => {
               setWelcomeScreenOpen(true);
-              // Update user record in database
-              userService.setCurrentUserAsync({
+              // Update user record in database and local state
+              const updatedUser = {
                 ...currentUser,
                 hasSeenWelcomeGuide: true
-              }).catch(err => console.error('Failed to update hasSeenWelcomeGuide:', err));
+              };
+              setUser(updatedUser);
+              userService.setCurrentUserAsync(updatedUser).catch(err => console.error('Failed to update hasSeenWelcomeGuide:', err));
             }, 500);
           }
         } else {
