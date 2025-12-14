@@ -901,7 +901,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
         } else {
           setSubmitMessage('Thanks for joining! We\'ll email you when access is ready.');
         }
-        setEmail('');
       } else {
         setIsSubmissionSuccessful(false);
         setSubmitMessage(result.error || 'Failed to join waitlist. Please try again.');
