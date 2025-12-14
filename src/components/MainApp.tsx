@@ -914,13 +914,17 @@ const MainApp: React.FC<MainAppProps> = ({
           
           // ✅ SHOW WELCOME MODAL ON FIRST CHAT VISIT AFTER ONBOARDING
           // Check if user has completed onboarding and hasn't seen the welcome modal yet
-          const hasSeenWelcome = localStorage.getItem('otakon_welcome_shown') === 'true';
-          if (!hasSeenWelcome) {
+          // Use database field instead of localStorage for persistence across devices
+          if (!currentUser.hasSeenWelcomeGuide) {
             console.log('🎉 [MainApp] First chat visit after onboarding - showing welcome modal');
             // Show welcome modal after a short delay to allow UI to settle
             setTimeout(() => {
               setWelcomeScreenOpen(true);
-              localStorage.setItem('otakon_welcome_shown', 'true');
+              // Update user record in database
+              userService.setCurrentUserAsync({
+                ...currentUser,
+                hasSeenWelcomeGuide: true
+              }).catch(err => console.error('Failed to update hasSeenWelcomeGuide:', err));
             }, 500);
           }
         } else {

@@ -606,8 +606,13 @@ function App() {
     // Keep it TRUE to block the auth subscription from overriding our state
     isProcessingAuthRef.current = true;
     
-    // Preserve welcome screen flag (user has seen it once, don't show again)
-    const welcomeShown = localStorage.getItem('otakon_welcome_shown');
+    // ✅ PWA FIX: Check if running as PWA and set flag BEFORE clearing storage
+    const isPWA = isPWAMode();
+    if (isPWA) {
+      // Set flag BEFORE signing out so it persists through reload
+      localStorage.setItem('otakon_just_logged_out', 'true');
+      console.log('📱 [PWA] Set just logged out flag before clearing storage');
+    }
     
     // ✅ PWA FIX: Clear sessionStorage to prevent state restoration on reopen
     sessionStorage.clear();
@@ -632,23 +637,13 @@ function App() {
     console.log('🎯 [App] Dispatched otakon:user-logout event');
     
     // Sign out (clears Supabase session and localStorage)
+    // Note: Welcome guide flag now tracked in database (hasSeenWelcomeGuide), so no need to preserve localStorage
     await authService.signOut();
-    
-    // Restore welcome screen flag after signOut cleared localStorage
-    if (welcomeShown) {
-      localStorage.setItem('otakon_welcome_shown', welcomeShown);
-    }
-    
-    // ✅ PWA FIX: Check if running as PWA
-    const isPWA = isPWAMode();
     
     if (isPWA) {
       // ✅ PWA CRITICAL FIX: For PWA, force a full hard reload to clear all state
       // This prevents black screen and ensures clean login experience
       console.log('📱 [PWA] Forcing full hard reload after logout to clear state');
-      
-      // Set a flag to indicate we just logged out
-      localStorage.setItem('otakon_just_logged_out', 'true');
       
       // Navigate to login page first (this clears URL state)
       window.history.replaceState(null, '', '/earlyaccess');

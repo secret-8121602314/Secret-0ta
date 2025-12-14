@@ -90,6 +90,7 @@ export interface User {
   hasSeenHowToUse: boolean;
   hasSeenFeaturesConnected: boolean;
   hasSeenProFeatures: boolean;
+  hasSeenWelcomeGuide: boolean; // Tracks if user has seen the welcome guide/screen
   pcConnected: boolean;
   pcConnectionSkipped: boolean;
   onboardingCompleted: boolean;
