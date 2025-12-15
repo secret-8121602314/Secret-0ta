@@ -124,6 +124,13 @@ const InitialSplashScreen: React.FC<InitialSplashScreenProps> = ({ onComplete, u
               <span className="block sm:inline">1. Download and install the Otagon Connector (.exe) • </span>
               <span className="block sm:inline">2. Open the connector app and enter the 6-digit code shown in the Otagon Connector App to connect Otagon app to your PC for instant screenshots.</span>
             </p>
+            
+            {/* Administrator Note */}
+            <div className="mt-4 pt-4 border-t border-neutral-700">
+              <p className="text-xs text-orange-400 leading-relaxed font-medium">
+                ⚠️ Important: Run the app as Administrator once after installation to enable screenshot capture functionality.
+              </p>
+            </div>
           </div>
         </div>
         
