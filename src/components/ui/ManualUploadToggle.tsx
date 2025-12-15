@@ -28,14 +28,14 @@ const ManualUploadToggle: React.FC<ManualUploadToggleProps> = ({ isManualMode, o
       title={title}
     >
       {isManualMode ? (
-        // Pause icon - Manual mode ON (paused/reviewing)
-        <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
-        </svg>
-      ) : (
-        // Play icon - Auto mode ON (playing/sending)
+        // Play icon - Manual mode ON, show play to indicate "resume/start auto"
         <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24">
           <path d="M8 5v14l11-7z"/>
+        </svg>
+      ) : (
+        // Pause icon - Auto mode ON, show pause to indicate "stop/pause auto"
+        <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
         </svg>
       )}
     </button>

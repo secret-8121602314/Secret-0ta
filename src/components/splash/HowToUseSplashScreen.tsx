@@ -89,7 +89,7 @@ const HowToUseSplashScreen: React.FC<HowToUseSplashScreenProps> = ({ onComplete 
                button to switch between auto-sending and manual review.</p>
             <div className="space-y-3 text-sm p-4 bg-gradient-to-r from-black/40 to-neutral-900/40 rounded-xl border border-neutral-700/60 backdrop-blur-sm">
               <p><strong className="text-neutral-200">Single Shot:</strong> <kbd className="px-3 py-1.5 mx-2 font-sans font-semibold text-neutral-200 bg-gradient-to-r from-neutral-900/60 to-neutral-800/60 border-2 border-neutral-700/60 rounded-lg">F1</kbd></p>
-              <p><strong className="text-neutral-200">Multi Shot:</strong> <kbd className="px-3 py-1.5 mx-2 font-sans font-semibold text-neutral-200 bg-gradient-to-r from-neutral-900/60 to-neutral-800/60 border-2 border-neutral-700/60 rounded-lg">F2</kbd></p>
+              <p className="flex items-center"><strong className="text-neutral-200">Multi Shot:</strong> <kbd className="px-3 py-1.5 mx-2 font-sans font-semibold text-neutral-200 bg-gradient-to-r from-neutral-900/60 to-neutral-800/60 border-2 border-neutral-700/60 rounded-lg">F2</kbd><ProBadge /></p>
               <p className="text-xs text-neutral-400 mt-2">
                 💡 <strong>Custom Hotkeys:</strong> You can configure your own hotkeys in the PC client settings
               </p>
