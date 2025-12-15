@@ -1,6 +1,6 @@
 // Service Worker for Otagon PWA - Performance Optimized with Enhanced Background Sync
-// Version: v1.3.10-black-screen-fix - Fix black screen after PWA logout by forcing network fetch
-const CACHE_VERSION = 'v1.3.10-black-screen-fix';
+// Version: v1.3.11-logout-fix - Fix black screen on mobile logout
+const CACHE_VERSION = 'v1.3.11-logout-fix';
 const CACHE_NAME = `otagon-${CACHE_VERSION}`;
 const CHAT_CACHE_NAME = `otagon-chat-${CACHE_VERSION}`;
 const STATIC_CACHE = `otagon-static-${CACHE_VERSION}`;
@@ -12,6 +12,10 @@ let ttsKeepAliveInterval = null;
 // ✅ PWA COLD START FIX: Track last activation time
 let lastActivationTime = Date.now();
 const COLD_START_THRESHOLD = 60000; // 60 seconds
+
+// ✅ PWA LOGOUT FIX: Track logout state in service worker memory
+let isLogoutInProgress = false;
+let lastLogoutCheck = 0;
 
 // Static assets to precache
 const urlsToCache = [
@@ -158,70 +162,55 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       (async () => {
         try {
-          // ✅ PWA BLACK SCREEN FIX: If just logged out, ALWAYS fetch from network (never cache)
-          // Check if logout flag exists in any client's storage
-          const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-          let justLoggedOut = false;
+          // ✅ PWA LOGOUT FIX: CRITICAL - Always fetch login/auth pages from network
+          // This prevents black screen by ensuring fresh content after logout
+          const isAuthPage = url.pathname.includes('/earlyaccess') || 
+                             url.pathname.includes('/login') || 
+                             url.pathname === '/' ||
+                             url.pathname === `${BASE_PATH}/`;
           
-          for (const client of clients) {
-            try {
-              // Ask each client if they have the logout flag
-              const response = await new Promise((resolve) => {
-                const channel = new MessageChannel();
-                channel.port1.onmessage = (e) => resolve(e.data);
-                client.postMessage({ type: 'CHECK_LOGOUT_FLAG' }, [channel.port2]);
-                // Timeout after 100ms
-                setTimeout(() => resolve(false), 100);
-              });
-              if (response) {
-                justLoggedOut = true;
-                break;
-              }
-            } catch (e) {
-              // Ignore errors from closed clients
-            }
+          // ✅ PWA BLACK SCREEN FIX: Check logout state before serving cached content
+          // Use in-memory flag that's faster than messaging
+          const now = Date.now();
+          if (isLogoutInProgress || (now - lastLogoutCheck < 5000)) {
+            console.log('[SW] Logout in progress - forcing network fetch, no cache');
+            const response = await fetch(event.request, { cache: 'no-store' });
+            return response;
           }
           
-          if (justLoggedOut) {
-            console.log('[SW] Just logged out detected - forcing network-only fetch');
-            const response = await fetch(event.request, { cache: 'no-store' });
-            return response; // Don't cache this response
+          // ✅ MOBILE PWA FIX: For auth pages, ALWAYS fetch from network first
+          // This ensures we never serve stale cached login page after logout
+          if (isAuthPage) {
+            console.log('[SW] Auth page - forcing network-first, no cache');
+            try {
+              const response = await fetch(event.request, { cache: 'no-store' });
+              return response; // Never cache auth pages
+            } catch (error) {
+              console.log('[SW] Network failed for auth page:', error);
+              // Don't fall back to cache for auth pages - return error
+              return new Response('Please check your internet connection', {
+                status: 503,
+                statusText: 'Service Unavailable',
+                headers: { 'Content-Type': 'text/html' }
+              });
+            }
           }
           
           // Use navigation preload response if available (faster cold starts)
           const preloadResponse = event.preloadResponse ? await event.preloadResponse : null;
           if (preloadResponse) {
-            console.log('[SW] Using preloaded response for navigation');
-            
-            // ✅ PWA LOGOUT FIX: Don't cache auth/login pages to prevent stale state
-            const isAuthPage = url.pathname.includes('/earlyaccess') || 
-                               url.pathname.includes('/login') || 
-                               url.pathname === '/';
-            if (!isAuthPage) {
-              const responseToCache = preloadResponse.clone();
-              const cache = await caches.open(CACHE_NAME);
-              cache.put(event.request, responseToCache);
-            } else {
-              console.log('[SW] Skipping cache for auth page:', url.pathname);
-            }
-            
+            console.log('[SW] Using preloaded response for navigation (non-auth page)');
+            const responseToCache = preloadResponse.clone();
+            const cache = await caches.open(CACHE_NAME);
+            cache.put(event.request, responseToCache);
             return preloadResponse;
           }
           
+          // Fetch from network and cache (non-auth pages only)
           const response = await fetch(event.request);
-          
-          // ✅ PWA LOGOUT FIX: Don't cache auth/login pages to prevent stale state
-          const isAuthPage = url.pathname.includes('/earlyaccess') || 
-                             url.pathname.includes('/login') || 
-                             url.pathname === '/';
-          if (!isAuthPage) {
-            // Clone and cache the response
-            const responseToCache = response.clone();
-            const cache = await caches.open(CACHE_NAME);
-            cache.put(event.request, responseToCache);
-          } else {
-            console.log('[SW] Skipping cache for auth page:', url.pathname);
-          }
+          const responseToCache = response.clone();
+          const cache = await caches.open(CACHE_NAME);
+          cache.put(event.request, responseToCache);
           
           return response;
         } catch (error) {
@@ -334,6 +323,9 @@ self.addEventListener('message', (event) => {
     case 'CLEAR_AUTH_CACHE':
       // Clear auth cache on logout - CRITICAL for fixing stuck state
       console.log('[SW] Clearing auth cache on logout');
+      // ✅ PWA LOGOUT FIX: Set in-memory logout flag immediately
+      isLogoutInProgress = true;
+      lastLogoutCheck = Date.now();
       (async () => {
         try {
           // Delete auth cache
@@ -360,8 +352,15 @@ self.addEventListener('message', (event) => {
               action: 'reload' // Signal to reload if needed
             });
           });
+          
+          // ✅ PWA LOGOUT FIX: Reset logout flag after 5 seconds
+          setTimeout(() => {
+            isLogoutInProgress = false;
+            console.log('[SW] Logout flag reset');
+          }, 5000);
         } catch (error) {
           console.error('[SW] Error clearing caches:', error);
+          isLogoutInProgress = false;
         }
       })();
       break;

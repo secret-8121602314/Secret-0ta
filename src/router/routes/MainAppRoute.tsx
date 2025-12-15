@@ -108,6 +108,22 @@ const MainAppRoute: React.FC = () => {
     const isPWA = isPWAMode();
     
     if (isPWA) {
+      // ✅ PWA CRITICAL FIX: Notify service worker of logout IMMEDIATELY
+      // This sets in-memory flag to prevent serving cached pages
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        try {
+          navigator.serviceWorker.controller.postMessage({
+            type: 'CLEAR_AUTH_CACHE'
+          });
+          console.log('📱 [PWA] Notified service worker of logout immediately');
+          
+          // Wait a bit for service worker to process the message
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (error) {
+          console.error('📱 [PWA] Failed to notify service worker:', error);
+        }
+      }
+      
       // ✅ PWA CRITICAL FIX: For PWA, immediately set logout flag BEFORE async signOut
       // This prevents black screen race condition with browser tabs
       const logoutTimestamp = Date.now();
@@ -134,7 +150,7 @@ const MainAppRoute: React.FC = () => {
       // Timeout ensures state is written first
       setTimeout(() => {
         window.location.reload();
-      }, 100); // Short timeout since we already set flags above
+      }, 200); // Increased timeout to ensure SW processes message
       
       // ✅ CRITICAL: Return here to prevent any further code execution
       return;
