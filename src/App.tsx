@@ -491,13 +491,30 @@ function App() {
       }
     };
     
+    // ✅ CROSS-INSTANCE FIX: Listen for storage events to detect logout from other instances
+    // This handles the case where browser login page is open and PWA logs out
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'otakon_just_logged_out' && event.newValue) {
+        console.log('📱 [PWA/Browser] Detected logout from another instance via storage event');
+        // Clear the flag to prevent loops
+        localStorage.removeItem('otakon_just_logged_out');
+        localStorage.removeItem('otakon_logout_instance');
+        // Force show login screen
+        setIsInitializing(false);
+        setAuthState({ user: null, isLoading: false, error: null });
+        setAppState(prev => ({ ...prev, view: 'app', onboardingStatus: 'login' }));
+      }
+    };
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('pageshow', handlePageShow);
     window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('storage', handleStorageChange);
     
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('pageshow', handlePageShow);
+      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps

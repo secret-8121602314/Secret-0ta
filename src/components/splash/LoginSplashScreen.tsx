@@ -86,7 +86,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
     }, 4000); // Change every 4 seconds
 
     return () => clearInterval(interval);
-  }, []);
+  }, [mascotImages.length]);
 
   // Load PWA manifest when login screen mounts
   useEffect(() => {

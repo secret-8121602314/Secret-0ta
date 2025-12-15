@@ -369,8 +369,8 @@ const MainApp: React.FC<MainAppProps> = ({
       });
 
     if (lastAIMessage) {
-      // Get suggestions from metadata OR direct property
-      const savedPrompts = lastAIMessage.metadata?.suggestedPrompts || lastAIMessage.suggestedPrompts;
+      // Get suggestions from metadata only
+      const savedPrompts = lastAIMessage.metadata?.suggestedPrompts;
       if (savedPrompts && Array.isArray(savedPrompts) && savedPrompts.length > 0) {
         console.log('📌 [MainApp] Loading saved suggestions from last AI message:', savedPrompts);
         setSuggestedPrompts(savedPrompts);
@@ -379,7 +379,6 @@ const MainApp: React.FC<MainAppProps> = ({
         console.log('⚠️ [MainApp] No AI prompts found. lastAIMessage:', {
           hasMetadata: !!lastAIMessage.metadata,
           metadataPrompts: lastAIMessage.metadata?.suggestedPrompts,
-          directPrompts: lastAIMessage.suggestedPrompts,
           messageKeys: Object.keys(lastAIMessage)
         });
       }
@@ -915,18 +914,18 @@ const MainApp: React.FC<MainAppProps> = ({
           // ✅ SHOW WELCOME MODAL ON FIRST CHAT VISIT AFTER ONBOARDING
           // Check if user has completed onboarding and hasn't seen the welcome modal yet
           // Use database field instead of localStorage for persistence across devices
-          if (!currentUser.hasSeenWelcomeGuide) {
+          if (currentUser && !currentUser.hasSeenWelcomeGuide) {
             console.log('🎉 [MainApp] First chat visit after onboarding - showing welcome modal');
             // Show welcome modal after a short delay to allow UI to settle
             setTimeout(() => {
               setWelcomeScreenOpen(true);
               // Update user record in database and local state
-              const updatedUser = {
+              const updatedUser: User = {
                 ...currentUser,
                 hasSeenWelcomeGuide: true
               };
               setUser(updatedUser);
-              userService.setCurrentUserAsync(updatedUser).catch(err => console.error('Failed to update hasSeenWelcomeGuide:', err));
+              UserService.setCurrentUserAsync(updatedUser).catch((err: unknown) => console.error('Failed to update hasSeenWelcomeGuide:', err));
             }, 500);
           }
         } else {
@@ -3848,14 +3847,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
             
             // ✅ PERFORMANCE: Use optimistic update instead of database refresh (saves 200-500ms)
             // We already have the complete conversation object from createGameTab + message saves
-            const gameTab = newGameTab ? {
-              ...newGameTab,
-              messages: [
-                { ...newMessage, id: userMessageDbId },
-                { ...aiMessage, id: aiMessageDbId }
-              ],
-              updatedAt: Date.now()
-            } : conversations[targetConversationId];
+            const gameTab = conversations[targetConversationId];
             
             // Update state with the constructed gameTab
             if (gameTab) {
@@ -3928,7 +3920,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               }
               
               // Poll for subtab updates if they're still loading
-              const hasLoadingSubtabs = gameTab.subtabs?.some(tab => tab.status === 'loading');
+              const hasLoadingSubtabs = gameTab.subtabs?.some((tab: SubTab) => tab.status === 'loading');
               console.error(`🎮 [MainApp] 🔍 Checking if polling needed for "${gameTab.title}" (ID: ${targetConversationId})`);
               console.error(`🎮 [MainApp] 🔍 Subtabs status: ${gameTab.subtabs?.length || 0} total, ${hasLoadingSubtabs ? 'HAS LOADING' : 'all loaded or none'}`);
               
@@ -4670,7 +4662,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
         onCloseSidebar={() => setSidebarOpen(false)}
         isGroundingEnabled={isGroundingEnabled}
         onToggleGrounding={handleGroundingToggle}
-        aiMessagesQuota={aiMessagesQuota}
+        aiMessagesQuota={{ used: 0, limit: aiMessagesQuota }}
       />
 
 

@@ -154,8 +154,7 @@ const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({
     // Send screenshot request via websocket
     if (typeof send === 'function') {
       send(msg);
-          } else {
-          }
+    }
   };
 
   const handleMultishotClick = () => {
@@ -214,7 +213,7 @@ const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({
       )}
 
       {menuOpen && isConnected && (
-        <div className="fixed bottom-24 right-4 bg-[#101010]/98 border border-[#424242]/60 rounded-xl shadow-2xl min-w-[200px] overflow-hidden z-[120] backdrop-blur-md">
+        <div className="fixed bottom-24 right-4 bg-[#101010]/98 border border-[#424242]/60 rounded-xl shadow-2xl min-w-[200px] overflow-hidden z-[300] backdrop-blur-md">
           <button 
             onClick={() => setModeAndPersist('single')} 
             className={`w-full text-left px-4 py-3 hover:bg-[#2E2E2E]/60 transition-colors ${mode === 'single' ? 'text-emerald-400' : 'text-[#CFCFCF]'}`}

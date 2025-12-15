@@ -4,6 +4,7 @@ import type { Json } from '../types/database';
 import { STORAGE_KEYS, TIER_LIMITS, USER_TIERS } from '../constants';
 import { supabase } from '../lib/supabase';
 import { jsonToRecord, safeParseDate, safeNumber } from '../utils/typeHelpers';
+import { cacheService } from './cacheService';
 
 // Helper to cast our custom types to Json for Supabase
 const asJson = <T>(value: T): Json => value as unknown as Json;
@@ -193,18 +194,18 @@ export class UserService {
         lastReset: safeParseDate(dbUser.last_reset),
         
         // Onboarding flags
-        hasProfileSetup: dbUser.has_profile_setup || false,
-        hasSeenSplashScreens: dbUser.has_seen_splash_screens || false,
-        hasSeenHowToUse: dbUser.has_seen_how_to_use || false,
-        hasSeenFeaturesConnected: dbUser.has_seen_features_connected || false,
-        hasSeenProFeatures: dbUser.has_seen_pro_features || false,
-        hasSeenWelcomeGuide: dbUser.has_seen_welcome_guide || false,
-        pcConnected: dbUser.pc_connected || false,
-        pcConnectionSkipped: dbUser.pc_connection_skipped || false,
-        onboardingCompleted: dbUser.onboarding_completed || false,
-        hasWelcomeMessage: dbUser.has_welcome_message || false,
-        isNewUser: dbUser.is_new_user || false,
-        hasUsedTrial: dbUser.has_used_trial || false,
+        hasProfileSetup: (dbUser as any).has_profile_setup || false,
+        hasSeenSplashScreens: (dbUser as any).has_seen_splash_screens || false,
+        hasSeenHowToUse: (dbUser as any).has_seen_how_to_use || false,
+        hasSeenFeaturesConnected: (dbUser as any).has_seen_features_connected || false,
+        hasSeenProFeatures: (dbUser as any).has_seen_pro_features || false,
+        hasSeenWelcomeGuide: (dbUser as any).has_seen_welcome_guide || false,
+        pcConnected: (dbUser as any).pc_connected || false,
+        pcConnectionSkipped: (dbUser as any).pc_connection_skipped || false,
+        onboardingCompleted: (dbUser as any).onboarding_completed || false,
+        hasWelcomeMessage: (dbUser as any).has_welcome_message || false,
+        isNewUser: (dbUser as any).is_new_user || false,
+        hasUsedTrial: (dbUser as any).has_used_trial || false,
         
         // Other fields
         lastActivity: safeParseDate(dbUser.updated_at),
@@ -253,7 +254,13 @@ export class UserService {
       // 1. Update localStorage immediately (optimistic update)
       StorageService.set(STORAGE_KEYS.USER, user);
       
-      // 2. Sync to Supabase
+      // 2. Update cacheService to keep auth cache in sync
+      // This prevents stale cached user data on next login
+      if (user.authUserId) {
+        await cacheService.setUser(user.authUserId, user as unknown as Record<string, unknown>);
+      }
+      
+      // 3. Sync to Supabase
       const { error } = await supabase
         .from('users')
         .update({
