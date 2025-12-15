@@ -1,6 +1,6 @@
 // Service Worker for Otagon PWA - Performance Optimized with Enhanced Background Sync
-// Version: v1.3.11-logout-fix - Fix black screen on mobile logout
-const CACHE_VERSION = 'v1.3.11-logout-fix';
+// Version: v1.3.12-logout-fix - Fix black screen when browser + PWA are both open during logout
+const CACHE_VERSION = 'v1.3.12-logout-fix';
 const CACHE_NAME = `otagon-${CACHE_VERSION}`;
 const CHAT_CACHE_NAME = `otagon-chat-${CACHE_VERSION}`;
 const STATIC_CACHE = `otagon-static-${CACHE_VERSION}`;
@@ -174,8 +174,18 @@ self.addEventListener('fetch', (event) => {
           const now = Date.now();
           if (isLogoutInProgress || (now - lastLogoutCheck < 5000)) {
             console.log('[SW] Logout in progress - forcing network fetch, no cache');
-            const response = await fetch(event.request, { cache: 'no-store' });
-            return response;
+            try {
+              const response = await fetch(event.request, { cache: 'no-store' });
+              return response;
+            } catch (error) {
+              console.log('[SW] Network failed during logout:', error);
+              // Even during logout, if network fails, return a proper error page
+              return new Response('Please check your internet connection', {
+                status: 503,
+                statusText: 'Service Unavailable',
+                headers: { 'Content-Type': 'text/html' }
+              });
+            }
           }
           
           // ✅ MOBILE PWA FIX: For auth pages, ALWAYS fetch from network first
@@ -322,24 +332,42 @@ self.addEventListener('message', (event) => {
       
     case 'CLEAR_AUTH_CACHE':
       // Clear auth cache on logout - CRITICAL for fixing stuck state
-      console.log('[SW] Clearing auth cache on logout');
-      // ✅ PWA LOGOUT FIX: Set in-memory logout flag immediately
+      console.log('[SW] CLEAR_AUTH_CACHE received - Setting logout flag and clearing caches');
+      // ✅ PWA LOGOUT FIX: Set in-memory logout flag immediately (SYNCHRONOUSLY)
       isLogoutInProgress = true;
       lastLogoutCheck = Date.now();
+      console.log('[SW] Logout in progress flag set to TRUE at', lastLogoutCheck);
+      
+      // Run cache clearing asynchronously but keep flag set
       (async () => {
         try {
           // Delete auth cache
           await caches.delete(AUTH_CACHE);
+          console.log('[SW] Deleted AUTH_CACHE');
+          
           // Also clear any user-specific data from other caches
           const apiCache = await caches.open(API_CACHE);
           const apiKeys = await apiCache.keys();
           await Promise.all(apiKeys.map(key => apiCache.delete(key)));
+          console.log('[SW] Cleared API_CACHE entries:', apiKeys.length);
           
           const chatCache = await caches.open(CHAT_CACHE_NAME);
           const chatKeys = await chatCache.keys();
           await Promise.all(chatKeys.map(key => chatCache.delete(key)));
+          console.log('[SW] Cleared CHAT_CACHE entries:', chatKeys.length);
           
-          console.log('[SW] Auth and user data caches cleared successfully');
+          // ✅ CRITICAL FIX: Also clear the main cache to prevent serving stale HTML
+          const mainCache = await caches.open(CACHE_NAME);
+          const mainKeys = await mainCache.keys();
+          const htmlKeys = mainKeys.filter(request => 
+            request.url.includes('.html') || 
+            request.url.endsWith('/') ||
+            request.mode === 'navigate'
+          );
+          await Promise.all(htmlKeys.map(key => mainCache.delete(key)));
+          console.log('[SW] Cleared HTML entries from main cache:', htmlKeys.length);
+          
+          console.log('[SW] ✅ All auth and user data caches cleared successfully');
           
           // ✅ PWA CRITICAL FIX: Force all clients to reload after cache clear
           // This ensures clean state on next app open
@@ -353,14 +381,19 @@ self.addEventListener('message', (event) => {
             });
           });
           
-          // ✅ PWA LOGOUT FIX: Reset logout flag after 5 seconds
+          // ✅ PWA LOGOUT FIX: Keep logout flag set for 10 seconds (increased from 5)
+          // This ensures PWA reload gets fresh content, not cached
           setTimeout(() => {
             isLogoutInProgress = false;
-            console.log('[SW] Logout flag reset');
-          }, 5000);
+            console.log('[SW] Logout flag reset to FALSE after 10 seconds');
+          }, 10000); // Increased to 10 seconds to cover slow reloads
         } catch (error) {
           console.error('[SW] Error clearing caches:', error);
-          isLogoutInProgress = false;
+          // Keep flag set even on error for safety
+          setTimeout(() => {
+            isLogoutInProgress = false;
+            console.log('[SW] Logout flag reset to FALSE after error');
+          }, 10000);
         }
       })();
       break;

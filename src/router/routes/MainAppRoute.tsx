@@ -117,8 +117,9 @@ const MainAppRoute: React.FC = () => {
           });
           console.log('📱 [PWA] Notified service worker of logout immediately');
           
-          // Wait a bit for service worker to process the message
-          await new Promise(resolve => setTimeout(resolve, 100));
+          // ✅ CRITICAL: Wait longer (300ms) for service worker to set the logout flag
+          // This ensures the flag is set BEFORE reload happens
+          await new Promise(resolve => setTimeout(resolve, 300));
         } catch (error) {
           console.error('📱 [PWA] Failed to notify service worker:', error);
         }
@@ -147,10 +148,10 @@ const MainAppRoute: React.FC = () => {
       console.log('📱 [PWA] Forcing full hard reload after logout to clear state');
       
       // ✅ CRITICAL FIX: Use reload() to force hard reload, bypassing ALL caches
-      // Timeout ensures state is written first
+      // Longer timeout ensures SW has processed the message
       setTimeout(() => {
         window.location.reload();
-      }, 200); // Increased timeout to ensure SW processes message
+      }, 350); // Increased timeout to ensure SW logout flag is set
       
       // ✅ CRITICAL: Return here to prevent any further code execution
       return;

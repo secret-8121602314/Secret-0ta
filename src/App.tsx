@@ -655,10 +655,28 @@ function App() {
     
     // ✅ PWA FIX: Check if running as PWA and set flag BEFORE clearing storage
     const isPWA = isPWAMode();
+    
     if (isPWA) {
-      // Set flag BEFORE signing out so it persists through reload
-      localStorage.setItem('otakon_just_logged_out', 'true');
-      console.log('📱 [PWA] Set just logged out flag before clearing storage');
+      // ✅ PWA CRITICAL FIX: Notify service worker FIRST, before any other operations
+      // This sets the in-memory logout flag immediately
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        try {
+          navigator.serviceWorker.controller.postMessage({
+            type: 'CLEAR_AUTH_CACHE'
+          });
+          console.log('📱 [PWA] Notified service worker of logout at start');
+          
+          // ✅ CRITICAL: Wait 300ms for service worker to set the logout flag
+          // This ensures the flag is set BEFORE reload happens
+          await new Promise(resolve => setTimeout(resolve, 300));
+        } catch (error) {
+          console.error('📱 [PWA] Failed to notify service worker:', error);
+        }
+      }
+      
+      // Set flag AFTER SW notification so it persists through reload
+      localStorage.setItem('otakon_just_logged_out', Date.now().toString());
+      console.log('📱 [PWA] Set just logged out flag after SW notification');
     }
     
     // ✅ PWA FIX: Clear sessionStorage to prevent state restoration on reopen
@@ -692,8 +710,7 @@ function App() {
       // This prevents black screen and ensures clean login experience
       console.log('📱 [PWA] Forcing full hard reload after logout to clear state');
       
-      // ✅ BROWSER CONFLICT FIX: Set timestamp instead of just flag
-      // This helps identify stale logout flags if browser was open during PWA logout
+      // ✅ BROWSER CONFLICT FIX: Update timestamp
       localStorage.setItem('otakon_just_logged_out', Date.now().toString());
       
       // Clear ALL app-related sessionStorage to prevent state leakage
@@ -703,10 +720,10 @@ function App() {
       window.history.replaceState(null, '', '/earlyaccess');
       
       // ✅ CRITICAL FIX: Use reload() to force hard reload, bypassing ALL caches
-      // This ensures service worker doesn't serve stale content
+      // Longer timeout ensures SW logout flag is properly set
       setTimeout(() => {
         window.location.reload();
-      }, 150); // Increased slightly for reliability
+      }, 350); // Increased timeout to ensure SW has processed message
       
       // ✅ CRITICAL: Return here to prevent any further code execution
       // Processing flag will be reset on reload
