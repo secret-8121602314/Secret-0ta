@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { UserTier } from '../../types';
 import { send } from '../../services/websocketService';
 
@@ -27,6 +28,7 @@ const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({
   const btnRef = useRef<HTMLButtonElement>(null);
   const longPressRef = useRef<number | null>(null);
   const [showHint, setShowHint] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
 
   // Check if user can access multishot
   const canUseMultishot = usage?.tier === 'pro' || usage?.tier === 'vanguard_pro';
@@ -74,6 +76,16 @@ const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({
 
   const openMenu = (e?: { preventDefault?: () => void; stopPropagation?: () => void }) => {
     e?.preventDefault?.();
+    
+    // Calculate menu position based on button location
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setMenuPosition({
+        top: rect.top - 10, // Position above the button with small gap
+        right: window.innerWidth - rect.right
+      });
+    }
+    
     e?.stopPropagation?.();
     setMenuOpen(true);
   };
@@ -212,8 +224,16 @@ const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({
         </div>
       )}
 
-      {menuOpen && isConnected && (
-        <div className="fixed bottom-24 right-4 bg-[#101010]/98 border border-[#424242]/60 rounded-xl shadow-2xl min-w-[200px] overflow-hidden z-[300] backdrop-blur-md">
+      {menuOpen && isConnected && createPortal(
+        <div 
+          className="fixed bg-[#101010]/98 border border-[#424242]/60 rounded-xl shadow-2xl min-w-[200px] overflow-hidden backdrop-blur-md animate-fade-in"
+          style={{ 
+            top: `${menuPosition.top}px`,
+            right: `${menuPosition.right}px`,
+            zIndex: 9999,
+            transform: 'translateY(-100%)'
+          }}
+        >
           <button 
             onClick={() => setModeAndPersist('single')} 
             className={`w-full text-left px-4 py-3 hover:bg-[#2E2E2E]/60 transition-colors ${mode === 'single' ? 'text-emerald-400' : 'text-[#CFCFCF]'}`}
@@ -247,7 +267,8 @@ const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({
               Upgrade to Pro for batch screenshots
             </div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

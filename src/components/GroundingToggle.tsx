@@ -27,12 +27,12 @@ export const GroundingToggle: React.FC<GroundingToggleProps> = ({
     <div className="relative">
       <button
         onClick={handleClick}
-        className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 ${
+        className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r from-[#2E2E2E]/90 to-[#1C1C1C]/90 flex items-center justify-center transition-all duration-300 hover:scale-105 ${
           !hasQuota
-            ? 'bg-gray-700/50 hover:bg-gray-700/70'
+            ? 'text-gray-500'
             : isEnabled
-            ? 'bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 hover:from-emerald-500/30 hover:to-emerald-600/30 hover:scale-105'
-            : 'bg-gradient-to-br from-gray-600/20 to-gray-700/20 hover:from-gray-600/30 hover:to-gray-700/30 hover:scale-105'
+            ? 'text-emerald-400'
+            : 'text-text-muted hover:text-text-primary'
         }`}
         title={
           !hasQuota
@@ -43,13 +43,7 @@ export const GroundingToggle: React.FC<GroundingToggleProps> = ({
         }
       >
         <svg
-          className={`w-5 h-5 ${
-            !hasQuota
-              ? 'text-gray-500'
-              : isEnabled
-              ? 'text-emerald-400'
-              : 'text-gray-400'
-          }`}
+          className="w-5 h-5 sm:w-6 sm:h-6"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -60,11 +54,7 @@ export const GroundingToggle: React.FC<GroundingToggleProps> = ({
       
       {/* Android-style notification badge */}
       <div
-        className={`absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-          !hasQuota
-            ? 'bg-red-500 text-white'
-            : 'bg-purple-500 text-white'
-        }`}
+        className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center text-[10px] font-bold bg-[#E53A3A] text-white"
       >
         {aiMessagesQuota}
       </div>
