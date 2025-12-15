@@ -90,6 +90,24 @@ if (typeof window !== 'undefined') {
       void document.body.offsetHeight; // Force layout recalculation
       console.log('🔐 [Supabase] DOM styles cleaned on SIGNED_OUT');
       
+      // ✅ PWA BLACK SCREEN FIX: Check if this is a cross-tab logout from PWA
+      const logoutFlag = localStorage.getItem('otakon_just_logged_out');
+      const logoutInstance = localStorage.getItem('otakon_logout_instance');
+      const isPWA = window.matchMedia('(display-mode: standalone)').matches;
+      
+      console.log('🔐 [Supabase] SIGNED_OUT event - isPWA:', isPWA, 'logoutInstance:', logoutInstance, 'logoutFlag:', logoutFlag);
+      
+      // If logout was initiated by PWA and this is a browser instance, just clear local state
+      // Don't block or interfere with PWA's reload process
+      if (logoutInstance === 'pwa' && !isPWA) {
+        console.log('🔐 [Supabase] Cross-tab logout from PWA detected in browser, clearing local state only');
+        // Clear session data but don't trigger navigation (browser may be on login already)
+        localStorage.removeItem('otakon_session_refreshed');
+        localStorage.removeItem('otakon_last_session_check');
+        // Don't dispatch event to prevent UI conflicts
+        return;
+      }
+      
       // Clear all session data
       localStorage.removeItem('otakon_session_refreshed');
       localStorage.removeItem('otakon_last_session_check');

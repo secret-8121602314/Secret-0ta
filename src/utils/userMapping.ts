@@ -46,6 +46,7 @@ export function mapUserData(userData: Record<string, unknown>, authUserId?: stri
     hasSeenHowToUse: (userData.has_seen_how_to_use as boolean) || false,
     hasSeenFeaturesConnected: (userData.has_seen_features_connected as boolean) || false,
     hasSeenProFeatures: (userData.has_seen_pro_features as boolean) || false,
+    hasSeenWelcomeGuide: (userData.has_seen_welcome_guide as boolean) || false,
     pcConnected: (userData.pc_connected as boolean) || false,
     pcConnectionSkipped: (userData.pc_connection_skipped as boolean) || false,
     onboardingCompleted: (userData.onboarding_completed as boolean) || false,

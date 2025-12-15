@@ -104,31 +104,37 @@ const MainAppRoute: React.FC = () => {
     window.dispatchEvent(new CustomEvent('otakon:user-logout'));
     console.log('🎯 [MainAppRoute] Dispatched otakon:user-logout event');
     
-    await authService.signOut();
-    
     // ✅ PWA FIX: Check if running as PWA
     const isPWA = isPWAMode();
     
     if (isPWA) {
-      // ✅ PWA CRITICAL FIX: For PWA, force a full hard reload to clear all state
-      // This prevents black screen and ensures clean login experience
-      console.log('📱 [PWA] Forcing full hard reload after logout to clear state');
-      
-      // ✅ BROWSER CONFLICT FIX: Set timestamp instead of just flag
-      // This helps identify stale logout flags if browser was open during PWA logout
-      localStorage.setItem('otakon_just_logged_out', Date.now().toString());
+      // ✅ PWA CRITICAL FIX: For PWA, immediately set logout flag BEFORE async signOut
+      // This prevents black screen race condition with browser tabs
+      const logoutTimestamp = Date.now();
+      localStorage.setItem('otakon_just_logged_out', logoutTimestamp.toString());
+      localStorage.setItem('otakon_logout_instance', isPWA ? 'pwa' : 'browser');
+      console.log('📱 [PWA] Set logout flag immediately:', logoutTimestamp);
       
       // Clear ALL app-related sessionStorage to prevent state leakage
       sessionStorage.clear();
       
       // Navigate to login page first (this clears URL state)
       window.history.replaceState(null, '', '/earlyaccess');
+    }
+    
+    // Now sign out (this is async and may trigger cross-tab events)
+    await authService.signOut();
+    
+    if (isPWA) {
+      // ✅ CRITICAL FIX: For PWA, force a full hard reload to clear all state
+      // This prevents black screen and ensures clean login experience
+      console.log('📱 [PWA] Forcing full hard reload after logout to clear state');
       
       // ✅ CRITICAL FIX: Use reload() to force hard reload, bypassing ALL caches
       // Timeout ensures state is written first
       setTimeout(() => {
         window.location.reload();
-      }, 150); // Increased slightly for reliability
+      }, 100); // Short timeout since we already set flags above
       
       // ✅ CRITICAL: Return here to prevent any further code execution
       return;

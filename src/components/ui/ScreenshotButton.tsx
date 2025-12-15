@@ -214,7 +214,7 @@ const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({
       )}
 
       {menuOpen && isConnected && (
-        <div className="absolute bottom-full right-0 mb-3 bg-[#101010]/98 border border-[#424242]/60 rounded-xl shadow-2xl min-w-[200px] overflow-hidden z-[10000] backdrop-blur-md">
+        <div className="fixed bottom-24 right-4 bg-[#101010]/98 border border-[#424242]/60 rounded-xl shadow-2xl min-w-[200px] overflow-hidden z-[120] backdrop-blur-md">
           <button 
             onClick={() => setModeAndPersist('single')} 
             className={`w-full text-left px-4 py-3 hover:bg-[#2E2E2E]/60 transition-colors ${mode === 'single' ? 'text-emerald-400' : 'text-[#CFCFCF]'}`}
