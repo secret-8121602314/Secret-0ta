@@ -109,7 +109,8 @@ export const ProfileSetupBanner: React.FC<ProfileSetupBannerProps> = ({
 
   const currentStepData = steps[currentStep];
   const progressPercent = ((currentStep + 1) / steps.length) * 100;
-  const shouldUseOverlay = isExpanded && isMobile;
+  // Always use overlay modal when expanded (both mobile and desktop)
+  const shouldUseOverlay = isExpanded;
 
   useEffect(() => {
     if (!shouldUseOverlay) {

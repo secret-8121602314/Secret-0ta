@@ -5,7 +5,9 @@ import Logo from '../ui/Logo';
 
 interface SidebarProps {
   isOpen: boolean;
+  isDesktopOpen?: boolean; // Desktop-specific open state (defaults to true on desktop)
   onClose: () => void;
+  onDesktopClose?: () => void; // Desktop-specific close handler
   conversations: Conversations;
   activeConversation: Conversation | null;
   onConversationSelect: (id: string) => void;
@@ -21,7 +23,9 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
+  isDesktopOpen = true,
   onClose,
+  onDesktopClose,
   conversations,
   activeConversation,
   onConversationSelect,
@@ -161,17 +165,20 @@ const Sidebar: React.FC<SidebarProps> = ({
   return (
     <>
       {/* Overlay - z-[55] ensures it's above SubTabs (z-50) but below Sidebar (z-60) */}
+      {/* Mobile/tablet overlay */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black/60 backdrop-blur-md z-[55] lg:hidden"
           onClick={onClose}
         />
       )}
+      {/* Desktop: no overlay needed, sidebar sits beside content */}
 
       {/* Sidebar - z-[60] ensures it's above SubTabs expanded panel (z-50) when open on mobile */}
-      <div className={`fixed inset-y-0 left-0 z-[60] w-72 sm:w-80 bg-gradient-to-b from-surface to-background border-r border-surface-light/20 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
+      {/* Desktop: hidden by default, shown with toggle. Mobile: slide-over behavior */}
+      <div className={`fixed inset-y-0 left-0 z-[60] w-72 sm:w-80 bg-gradient-to-b from-surface to-background border-r border-surface-light/20 transform transition-transform duration-300 ease-in-out ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
-      }`} style={{ zIndex: 60 }}>
+      } ${isDesktopOpen ? 'lg:translate-x-0' : 'lg:-translate-x-full'}`} style={{ zIndex: 60 }}>
         <div className="flex flex-col h-full">
           {/* Header with Explorer Button - matches main header padding */}
           <div className="px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-6 border-b border-surface-light/20 flex-shrink-0 relative" style={{ zIndex: 10 }}>
@@ -197,10 +204,21 @@ const Sidebar: React.FC<SidebarProps> = ({
               ) : (
                 <h2 className="text-xl sm:text-2xl font-bold text-text-primary flex-1">Conversations</h2>
               )}
+              {/* Unified close button - X icon on both mobile and desktop */}
               <button
-                onClick={onClose}
-                className="lg:hidden btn-icon p-2.5 sm:p-3 text-text-muted hover:text-text-primary active:scale-95 min-h-[44px] min-w-[44px] flex items-center justify-center flex-shrink-0"
+                onClick={() => {
+                  // Mobile: close overlay
+                  if (window.innerWidth < 1024) {
+                    onClose();
+                  } else {
+                    // Desktop: toggle sidebar
+                    onDesktopClose?.();
+                  }
+                }}
+                className="btn-icon p-2.5 sm:p-3 text-text-muted hover:text-text-primary active:scale-95 min-h-[44px] min-w-[44px] flex items-center justify-center flex-shrink-0"
+                title="Close sidebar"
               >
+                {/* X icon - same on both mobile and desktop */}
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>

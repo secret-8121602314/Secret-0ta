@@ -165,6 +165,8 @@ const MainApp: React.FC<MainAppProps> = ({
   const [aiModeInfoOpen, setAiModeInfoOpen] = useState(false);
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Desktop sidebar state (starts closed when welcome screen is visible)
+  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [creditModalOpen, setCreditModalOpen] = useState(false);
   const [welcomeScreenOpen, setWelcomeScreenOpen] = useState(false);
@@ -4338,7 +4340,9 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
       }>
         <Sidebar
           isOpen={sidebarOpen}
+          isDesktopOpen={desktopSidebarOpen}
           onClose={() => setSidebarOpen(false)}
+          onDesktopClose={() => setDesktopSidebarOpen(false)}
           conversations={conversations}
           activeConversation={activeConversation}
           onConversationSelect={handleConversationSelect}
@@ -4355,21 +4359,34 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="chat-header-fixed bg-background backdrop-blur-sm border-b border-surface-light/20 px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-6 flex items-center justify-between">
+        {/* Header - relative positioning prevents layout shifts */}
+        <header className="chat-header-fixed bg-background backdrop-blur-sm border-b border-surface-light/20 px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-6 flex items-center justify-between relative">
           <div className="flex items-center space-x-1 sm:space-x-2">
+            {/* Mobile/Tablet sidebar toggle */}
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden btn-icon p-2 sm:p-3 text-text-muted hover:text-text-primary flex items-center justify-center -ml-1"
+              className="lg:hidden btn-icon p-3 sm:p-3.5 text-text-muted hover:text-text-primary flex items-center justify-center -ml-1"
               data-no-touch-feedback="true"
             >
-              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
             
-            {/* Logo only visible on mobile/tablet - hidden on desktop where sidebar is always open */}
-            <div className="lg:hidden" data-no-touch-feedback="true">
+            {/* Desktop sidebar toggle - only visible when sidebar is closed */}
+            <button
+              onClick={() => setDesktopSidebarOpen(true)}
+              className={`hidden btn-icon p-2 sm:p-3 text-text-muted hover:text-text-primary items-center gap-2 -ml-1 transition-opacity duration-200 ${desktopSidebarOpen ? 'lg:hidden' : 'lg:flex'}`}
+              data-no-touch-feedback="true"
+              title="Open sidebar"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            
+            {/* Logo - visible on mobile/tablet, and on desktop when sidebar is closed */}
+            <div className={`${desktopSidebarOpen ? 'lg:hidden' : ''}`} data-no-touch-feedback="true">
               <Logo 
                 size="md" 
                 bounce={false} 
@@ -4378,7 +4395,21 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                 onClick={() => { haptic.modalOpen(); setGamingExplorerOpen(true); }}
               />
             </div>
+            
+            {/* Otagon brand name - only on desktop when sidebar is closed */}
+            <span className={`hidden text-lg font-bold bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent ${desktopSidebarOpen ? 'lg:hidden' : 'lg:block'}`}>
+              Otagon
+            </span>
           </div>
+
+          {/* Thread name - centered, only visible on desktop when sidebar is closed */}
+          {activeConversation && !desktopSidebarOpen && (
+            <div className="hidden lg:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+              <h2 className="text-base font-semibold bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent whitespace-nowrap">
+                {activeConversation.title}
+              </h2>
+            </div>
+          )}
 
           <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4">
             <div className="mr-1 sm:mr-2">
@@ -4436,10 +4467,49 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
 
         {/* Chat Area - key forces remount when profile banner visibility changes */}
         {/* This ensures flex layout properly recalculates on Safari PWA */}
+        {/* Desktop: centered with max-width - consistent size regardless of sidebar state */}
         <div 
           key={`chat-area-${showProfileSetupBanner ? 'with-banner' : 'no-banner'}`}
           className="flex-1 flex flex-col overflow-hidden"
         >
+          {/* Desktop centered container - always applies max-width on desktop for consistent sizing */}
+          <div className="flex-1 flex flex-col overflow-hidden w-full lg:max-w-[900px] lg:mx-auto lg:px-4">
+          
+          {/* Chat Thread Name - Show on mobile when sidebar is collapsed - MOVED ABOVE BANNERS */}
+          {/* z-20 ensures consistent stacking with other fixed elements, below SubTabs expanded panel (z-40) */}
+          {activeConversation && (
+            <div className="lg:hidden px-3 sm:px-4 mb-3 sm:mb-4 pt-3 sm:pt-4 flex-shrink-0 relative z-20">
+              <div className="flex items-center gap-2">
+                {/* Thread name button */}
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  className="flex-1 bg-gradient-to-r from-surface/30 to-background/30 backdrop-blur-sm border border-surface-light/20 rounded-lg px-4 py-3 transition-all duration-200 hover:from-surface/40 hover:to-background/40 hover:border-surface-light/30 active:scale-[0.98]"
+                >
+                  <h2 className="text-sm sm:text-base font-semibold bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent text-center">
+                    {activeConversation.title}
+                  </h2>
+                </button>
+                {/* Game Info Button - Mobile (right of thread name) */}
+                {!activeConversation.isGameHub && activeConversation.gameTitle && currentGameIGDBData && (
+                  <button
+                    onClick={() => { haptic.modalOpen(); setGameInfoModalOpen(true); }}
+                    className="flex-shrink-0 p-3 bg-gradient-to-r from-[#E53A3A]/10 to-[#FF6B6B]/5 backdrop-blur-sm border border-[#E53A3A]/30 rounded-lg hover:border-[#E53A3A]/60 hover:from-[#E53A3A]/15 hover:to-[#FF6B6B]/10 transition-all duration-200 group"
+                    title="View game information"
+                  >
+                    <svg 
+                      className="w-5 h-5 text-[#E53A3A] group-hover:text-[#FF6B6B] transition-colors" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+          
           {/* Profile Setup Banner - Show if user hasn't set up profile */}
           {showProfileSetupBanner && onProfileSetupComplete && onProfileSetupDismiss && (
             <div className="flex-shrink-0 pt-3 sm:pt-4 lg:pt-6">
@@ -4525,41 +4595,6 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
             </div>
           )}
 
-          {/* Chat Thread Name - Show on mobile when sidebar is collapsed */}
-          {/* z-20 ensures consistent stacking with other fixed elements, below SubTabs expanded panel (z-40) */}
-          {activeConversation && (
-            <div className="lg:hidden px-3 sm:px-4 mb-3 sm:mb-4 flex-shrink-0 relative z-20">
-              <div className="flex items-center gap-2">
-                {/* Thread name button */}
-                <button
-                  onClick={() => setSidebarOpen(true)}
-                  className="flex-1 bg-gradient-to-r from-surface/30 to-background/30 backdrop-blur-sm border border-surface-light/20 rounded-lg px-4 py-3 transition-all duration-200 hover:from-surface/40 hover:to-background/40 hover:border-surface-light/30 active:scale-[0.98]"
-                >
-                  <h2 className="text-sm sm:text-base font-semibold bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent text-center">
-                    {activeConversation.title}
-                  </h2>
-                </button>
-                {/* Game Info Button - Mobile (right of thread name) */}
-                {!activeConversation.isGameHub && activeConversation.gameTitle && currentGameIGDBData && (
-                  <button
-                    onClick={() => { haptic.modalOpen(); setGameInfoModalOpen(true); }}
-                    className="flex-shrink-0 p-3 bg-gradient-to-r from-[#E53A3A]/10 to-[#FF6B6B]/5 backdrop-blur-sm border border-[#E53A3A]/30 rounded-lg hover:border-[#E53A3A]/60 hover:from-[#E53A3A]/15 hover:to-[#FF6B6B]/10 transition-all duration-200 group"
-                    title="View game information"
-                  >
-                    <svg 
-                      className="w-5 h-5 text-[#E53A3A] group-hover:text-[#FF6B6B] transition-colors" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
           
             {/* Chat Interface - Takes remaining space */}
             <div className="flex-1 min-h-0">
@@ -4600,6 +4635,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                 />
               </ErrorBoundary>
             </div>
+          </div>
         </div>
       </div>
 
@@ -4718,7 +4754,11 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
       {/* Welcome Screen / Guide */}
       {welcomeScreenOpen && (
         <WelcomeScreen
-          onStartChat={() => setWelcomeScreenOpen(false)}
+          onStartChat={() => {
+            setWelcomeScreenOpen(false);
+            // Open desktop sidebar after welcome screen closes
+            setDesktopSidebarOpen(true);
+          }}
           onAddGame={handleAddGame}
         />
       )}
