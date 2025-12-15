@@ -172,7 +172,7 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
             <img
               src={expandedImage}
               alt="Full size"
-              className="max-w-[98vw] max-h-[90vh] sm:max-w-[95vw] sm:max-h-[90vh] object-contain rounded-lg shadow-2xl transition-transform duration-300"
+              className="w-[98vw] h-[90vh] sm:w-full sm:h-full object-contain transition-transform duration-300"
               style={{ transform: `rotate(${imageRotation}deg)` }}
               onClick={(e) => e.stopPropagation()}
             />

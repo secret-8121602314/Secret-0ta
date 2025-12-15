@@ -430,7 +430,7 @@ const GamingExplorerGallery: React.FC<GamingExplorerGalleryProps> = ({ user }) =
               transition={{ type: 'spring', stiffness: 300, damping: 25 }}
               src={selectedImage.imageUrl}
               alt="Screenshot"
-              className="max-w-[95vw] max-h-[85vh] object-contain rounded-lg"
+              className="w-[98vw] h-[85vh] sm:w-full sm:h-full object-contain"
               onClick={(e) => e.stopPropagation()}
             />
 
