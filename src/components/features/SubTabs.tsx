@@ -88,9 +88,6 @@ const SubTabs: React.FC<SubTabsProps> = ({
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [hasUserInteracted, setHasUserInteracted] = useState<boolean>(false);
   
-  // Ref for the subtabs container to calculate available space
-  const containerRef = useRef<HTMLDivElement>(null);
-  
   // Track previous content to detect actual updates
   const prevContentRef = useRef<string>('');
   
@@ -288,34 +285,6 @@ const SubTabs: React.FC<SubTabsProps> = ({
     }
   }, [subtabs, isExpanded, hasUserInteracted, onExpandedChange]);
 
-  // Calculate the bottom position for the fixed panel
-  const [panelBottom, setPanelBottom] = useState<number>(180);
-  
-  // Calculate panel position when expanded
-  useEffect(() => {
-    if (isExpanded && containerRef.current) {
-      const calculatePanelPosition = () => {
-        const container = containerRef.current;
-        if (!container) {
-          return;
-        }
-        
-        // Get the container's position relative to viewport
-        const rect = container.getBoundingClientRect();
-        
-        // Calculate the bottom position: distance from viewport bottom to top of button + margin
-        const bottomFromViewport = window.innerHeight - rect.top + 8;
-        setPanelBottom(bottomFromViewport);
-      };
-      
-      calculatePanelPosition();
-      
-      // Recalculate on resize
-      window.addEventListener('resize', calculatePanelPosition);
-      return () => window.removeEventListener('resize', calculatePanelPosition);
-    }
-  }, [isExpanded]);
-
   const handleTabClick = (tabId: string) => {
     setLocalActiveTab(tabId);
     onTabClick?.(tabId);
@@ -344,7 +313,7 @@ const SubTabs: React.FC<SubTabsProps> = ({
   const allSubtabsLoading = subtabs.every(tab => tab.status === 'loading' || tab.content === 'Loading...');
 
   return (
-    <div ref={containerRef} className="mb-4 relative">
+    <div className="mb-4 relative">
       {/* Collapsible Header - Matching Latest Gaming News style */}
       {/* z-20 ensures it's below sidebar (z-60) and sidebar overlay (z-55) on mobile */}
       <button
@@ -390,69 +359,24 @@ const SubTabs: React.FC<SubTabsProps> = ({
         </svg>
       </button>
 
-      {/* Collapsible Content - Overlay positioned ABOVE the button on ALL screen sizes
-          Z-INDEX STACKING ORDER (mobile):
-          - z-[70]: SubTabs expanded panel (this) - ABOVE progress bar and all headers
-          - z-[55]: Sidebar backdrop (when open)
-          - z-50: Floating chat input
-          - z-40: SubTabs container (in ChatInterface)
-          - z-30: Chat Thread Name header (in MainApp)
-          
-          POSITIONING: Fixed positioning on mobile to ensure it doesn't overflow.
-          Uses CSS top/bottom constraints to stay within visible area.
-          Top accounts for: header bar + progress bar + chat thread name (~150px total on mobile)
-      */}
+      {/* Collapsible Content - Overlay positioned ABOVE the button, matching Gaming News style */}
       {isExpanded && (
         <>
-          {/* Backdrop overlay - close on click (mobile/tablet only) */}
+          {/* Backdrop overlay - close on click (mobile only) */}
           <div
-            className="lg:hidden fixed inset-0 z-40 bg-black/20"
+            className="lg:hidden fixed inset-0 z-40"
             onClick={() => setIsExpanded(false)}
           />
           {/* 
-            FIXED positioning on ALL screen sizes (like mobile) to ensure consistent z-index behavior
-            This ensures SubTabs always appears ABOVE progress bar and all other elements
-            
-            Mobile: Full width minus padding (left-3 right-3)
-            Desktop (lg+): Account for sidebar width (320px) + padding
-            
-            Top: accounts for header + progress bar + chat thread name
-            Bottom: dynamically calculated from button position
-            
-            Z-INDEX: z-[70] to appear above progress bar and all header elements
+            ABSOLUTE positioning to match Gaming News behavior
+            - Inherits width constraints from parent container (px-3 in ChatInterface)
+            - Positioned above button with bottom-full
+            - Uses z-50 to appear above other content
           */}
           <div
-            className="subtabs-panel animate-fade-in fixed left-3 right-3 z-[70] lg:max-h-[60vh]"
-            style={{
-              // Mobile/tablet positioning
-              '--mobile-top': '150px',
-              '--mobile-bottom': `${panelBottom}px`,
-              // Desktop: Account for sidebar (w-80 = 320px) + padding (24px)
-              '--desktop-left': 'calc(320px + 1.5rem)',
-              '--desktop-top': '180px',
-              '--desktop-bottom': `${panelBottom}px`,
-              '--desktop-max-height': 'calc(100vh - 220px)'
-            } as React.CSSProperties}
+            className="absolute bottom-full left-0 right-0 mb-2 z-50 animate-fade-in"
           >
-            {/* Apply positioning via inline styles for both mobile and desktop - FIXED on all breakpoints */}
-            <style>{`
-              @media (max-width: 1023px) {
-                .subtabs-panel {
-                  top: var(--mobile-top) !important;
-                  bottom: var(--mobile-bottom) !important;
-                }
-              }
-              @media (min-width: 1024px) {
-                .subtabs-panel {
-                  left: var(--desktop-left) !important;
-                  right: 1.5rem !important;
-                  top: var(--desktop-top) !important;
-                  bottom: var(--desktop-bottom) !important;
-                  max-height: var(--desktop-max-height) !important;
-                }
-              }
-            `}</style>
-            <div className="h-full bg-[#1C1C1C] border border-[#424242]/60 rounded-xl shadow-2xl flex flex-col overflow-hidden">
+            <div className="bg-[#1C1C1C]/95 backdrop-blur-md border border-[#424242]/60 rounded-xl shadow-2xl flex flex-col overflow-hidden max-h-[60vh]">
           {/* Tab Headers - Grid layout on all screen sizes */}
           <div className="border-b border-[#424242]/40 flex-shrink-0">
             {/* Mobile: 3-4 cols | Tablet (sm/md): 4 cols | Desktop (lg+): 5 cols */}

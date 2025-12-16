@@ -144,6 +144,12 @@ function App() {
       // Skip auto-navigation if we're manually navigating through onboarding
       if (isManualNavigationRef.current) {
         console.log('🎯 [App] Skipping auto-navigation due to manual navigation flag');
+        console.log('🔍 [DEBUG] Manual navigation - Current state:', {
+          currentView: appState.view,
+          onboardingStatus: appState.onboardingStatus,
+          hasUser: !!newAuthState.user,
+          timestamp: new Date().toISOString()
+        });
         isManualNavigationRef.current = false; // Reset the flag
         return;
       }
@@ -171,6 +177,11 @@ function App() {
             if (isReturningUser) {
               // Returning user - skip all onboarding, go to main app
               console.log('🎯 [App] Returning user detected - skipping onboarding');
+              console.log('🔍 [DEBUG] Setting state for returning user:', {
+                view: 'app',
+                onboardingStatus: 'complete',
+                timestamp: new Date().toISOString()
+              });
               setAppState((prev: AppState) => ({
                 ...prev,
                 ...savedAppState,
@@ -180,6 +191,11 @@ function App() {
             } else {
               // New user or incomplete onboarding - continue onboarding flow
               console.log('🎯 [App] New user or incomplete onboarding - continuing from:', nextStep);
+              console.log('🔍 [DEBUG] Setting state for new/incomplete user:', {
+                view: 'app',
+                onboardingStatus: nextStep,
+                timestamp: new Date().toISOString()
+              });
               setAppState((prev: AppState) => ({
                 ...prev,
                 ...savedAppState,
@@ -213,6 +229,12 @@ function App() {
       }
     };
     const unsubscribe = authService.subscribe((newAuthState) => {
+      console.log('🔍 [DEBUG] Auth subscription triggered:', {
+        hasUser: !!newAuthState.user,
+        isLoading: newAuthState.isLoading,
+        isManualNavigation: isManualNavigationRef.current,
+        timestamp: new Date().toISOString()
+      });
       setAuthState(newAuthState);
       if (isMounted && !newAuthState.isLoading) {
         processAuthState(newAuthState);
@@ -1175,8 +1197,21 @@ function App() {
   };
 
   const handleProfileSetupComplete = async (profileData: PlayerProfile) => {
+    console.log('🔍 [DEBUG] handleProfileSetupComplete called');
+    console.log('🔍 [DEBUG] Profile setup - Current state:', {
+      currentView: appState.view,
+      onboardingStatus: appState.onboardingStatus,
+      hasUser: !!authState.user,
+      timestamp: new Date().toISOString()
+    });
+    
     if (authState.user) {
       try {
+        // Set flag FIRST to prevent auth subscription from overriding navigation
+        console.log('🔍 [DEBUG] Setting isManualNavigationRef.current = true');
+        isManualNavigationRef.current = true;
+        
+        console.log('🔍 [DEBUG] Updating local user state');
         // Immediately update local user state to hide banner
         const updatedUser = {
           ...authState.user,
@@ -1192,16 +1227,22 @@ function App() {
           void document.body.offsetHeight; // Force reflow
         });
         
+        console.log('🔍 [DEBUG] Calling markProfileSetupComplete');
         // Use markProfileSetupComplete to properly set has_profile_setup flag
         await onboardingService.markProfileSetupComplete(authState.user.authUserId, profileData as unknown as Record<string, unknown>);
         
-        // Set flag to prevent auth subscription from overriding navigation
-        isManualNavigationRef.current = true;
-        
+        console.log('🔍 [DEBUG] Calling authService.refreshUser');
         // Refresh user data to update hasProfileSetup flag
         await authService.refreshUser();
+        
+        console.log('🔍 [DEBUG] Profile setup complete - keeping flag true for 500ms');
+        // ✅ CRITICAL: Keep flag true for 500ms to ensure auth subscription processes after flag check
+        setTimeout(() => {
+          console.log('🔍 [DEBUG] Resetting isManualNavigationRef.current = false after 500ms');
+          isManualNavigationRef.current = false;
+        }, 500);
       } catch (error) {
-        console.error('Failed to save profile setup:', error);
+        console.error('❌ [DEBUG] Failed to save profile setup:', error);
         isManualNavigationRef.current = false;
       }
     }

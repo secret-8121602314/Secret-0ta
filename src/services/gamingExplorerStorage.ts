@@ -332,12 +332,12 @@ export const libraryStorage = {
     safeSetItem(STORAGE_KEYS.LIBRARY, all);
     this.updateStats();
     
-    // 🎮 BACKGROUND KNOWLEDGE FETCH: When game is added as "owned", 
-    // trigger non-blocking Gemini call to fetch game knowledge
+    // NOTE: We intentionally do NOT trigger game knowledge fetch here
+    // Users might add many games at once when building their library
+    // Game knowledge will be fetched lazily when they create a game tab
     if (category === 'own') {
       console.log(`🎮 [LibraryStorage] Game added as OWNED: "${gameName}" (IGDB ID: ${igdbGameId})`);
-      console.log(`🎮 [LibraryStorage] Triggering background knowledge fetch...`);
-      triggerGameKnowledgeFetch(igdbGameId, gameName);
+      console.log(`🎮 [LibraryStorage] Knowledge fetch will happen when user creates a game tab`);
     }
     
     // ☁️ SUPABASE SYNC: Dual-write to Supabase for cross-device sync

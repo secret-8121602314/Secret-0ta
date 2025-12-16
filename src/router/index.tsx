@@ -88,11 +88,22 @@ async function authLoader({ request }: LoaderFunctionArgs) {
   const appState = (userData.app_state || {}) as import('../types/enhanced').UserAppState;
   const onboardingStatus: OnboardingStatus = (appState.onboardingStatus as OnboardingStatus) || 'initial';
 
+  console.log('🔍 [DEBUG authLoader] Current state:', {
+    pathname,
+    onboardingStatus,
+    hasProfileSetup: userData.has_profile_setup,
+    onboardingCompleted: userData.onboarding_completed,
+    timestamp: new Date().toISOString()
+  });
+
     // Redirect authenticated users away from landing/login pages
   if (pathname === '/' || pathname === '/earlyaccess') {
+    console.log('🔍 [DEBUG authLoader] On landing/login page, checking redirect logic');
     if (onboardingStatus === 'complete') {
+      console.log('🔍 [DEBUG authLoader] Onboarding complete - redirecting to /app');
             return redirect('/app');
     } else if (onboardingStatus !== 'login') {
+      console.log('🔍 [DEBUG authLoader] Onboarding incomplete - redirecting to /onboarding');
             return redirect('/onboarding');
     }
   }
@@ -318,6 +329,9 @@ const routes: RouteObject[] = [
  */
 export const router = createBrowserRouter(routes, {
   basename: '/',
+  future: {
+    v7_startTransition: true,
+  },
 });
 
 /**

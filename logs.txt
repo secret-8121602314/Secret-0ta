@@ -1,0 +1,2968 @@
+app:341 ✅ [Analytics] Google Analytics 4 initialized
+app:351 ✅ [Analytics] Microsoft Clarity initialized
+app:512 [PWA] Current path: /app
+app:513 [PWA] Has auth token: false
+app:514 [PWA] Should show PWA: null
+app:523 🚫 [PWA] Skipping manifest - landing page without auth
+client:789 [vite] connecting...
+app:350  GET https://www.clarity.ms/tag/u9sbvr97qi net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ app:350
+(anonymous) @ app:355
+client:912 [vite] connected.
+chunk-TH7NCS4R.js?v=a6676f25:21609 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+igdbService.ts:86 [IGDBService] Loaded 2 games from localStorage cache
+igdbService.ts:119 [IGDBService] Loaded 2 cover URLs from localStorage
+App.tsx:20 🚀🚀🚀 APP.TSX LOADED - PWA FIXES VERSION 🚀🚀🚀
+pwaRedirectPrevention.ts:73 📱 [PWA Detection] {isPWAMode: false, isPWAInstalled: false, shouldPreventRedirect: false, displayMode: 'browser', isIOS: false, …}
+app:576 🚫 [SW] Skipping service worker - not on login page or authenticated
+react-router-dom.js?v=a6676f25:4413 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+warnOnce @ react-router-dom.js?v=a6676f25:4413
+logDeprecation @ react-router-dom.js?v=a6676f25:4416
+logV6DeprecationWarnings @ react-router-dom.js?v=a6676f25:4419
+(anonymous) @ react-router-dom.js?v=a6676f25:5235
+commitHookEffectListMount @ chunk-TH7NCS4R.js?v=a6676f25:16963
+commitPassiveMountOnFiber @ chunk-TH7NCS4R.js?v=a6676f25:18206
+commitPassiveMountEffects_complete @ chunk-TH7NCS4R.js?v=a6676f25:18179
+commitPassiveMountEffects_begin @ chunk-TH7NCS4R.js?v=a6676f25:18169
+commitPassiveMountEffects @ chunk-TH7NCS4R.js?v=a6676f25:18159
+flushPassiveEffectsImpl @ chunk-TH7NCS4R.js?v=a6676f25:19543
+flushPassiveEffects @ chunk-TH7NCS4R.js?v=a6676f25:19500
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:19381
+workLoop @ chunk-TH7NCS4R.js?v=a6676f25:197
+flushWork @ chunk-TH7NCS4R.js?v=a6676f25:176
+performWorkUntilDeadline @ chunk-TH7NCS4R.js?v=a6676f25:384
+supabase.ts:47 🔐 [Supabase] DOM styles cleaned on SIGNED_IN
+cacheService.ts:101 [CacheService] Cache MISS (memory), trying Supabase: user:a55df11a-072c-4acf-807b-da93ac1d8fad
+cacheService.ts:113 [CacheService] Cache MISS (Supabase): user:a55df11a-072c-4acf-807b-da93ac1d8fad
+index.tsx:91 🔍 [DEBUG authLoader] Current state: {pathname: '/app', onboardingStatus: 'complete', hasProfileSetup: true, onboardingCompleted: true, timestamp: '2025-12-15T21:15:08.425Z'}
+MainApp.tsx:123 🔥🔥🔥 [MainApp] USER STATE CHANGED: null
+MainApp.tsx:134 🎯 [MainApp] suggestedPrompts STATE CHANGED: {prompts: Array(0), length: 0, isAISettingFlag: false, activeConvId: undefined, trace: '    at http://localhost:5173/src/components/MainAp….vite/deps/chunk-TH7NCS4R.js?v=a6676f25:18179:17)'}
+MainApp.tsx:314 [MainApp] No user authUserId, setting quota to 0
+MainApp.tsx:602 📸 [MainApp] queuedScreenshot state changed: {hasQueuedScreenshot: false, queuedScreenshotLength: undefined, queuedScreenshotPreview: undefined}
+MainApp.tsx:1059 🔄 [TierChange] Initial tier set: free
+MainApp.tsx:1222 🎮 [IGDB] Effect triggered: {hasActiveConv: false, gameTitle: undefined, isGameHub: undefined, convId: undefined, prevFetched: null}
+MainApp.tsx:1232 🎮 [IGDB] Skipping fetch - no gameTitle or is Game Hub
+MainApp.tsx:123 🔥🔥🔥 [MainApp] USER STATE CHANGED: null
+MainApp.tsx:134 🎯 [MainApp] suggestedPrompts STATE CHANGED: {prompts: Array(0), length: 0, isAISettingFlag: false, activeConvId: undefined, trace: '    at http://localhost:5173/src/components/MainAp….vite/deps/chunk-TH7NCS4R.js?v=a6676f25:19754:19)'}
+MainApp.tsx:314 [MainApp] No user authUserId, setting quota to 0
+MainApp.tsx:602 📸 [MainApp] queuedScreenshot state changed: {hasQueuedScreenshot: false, queuedScreenshotLength: undefined, queuedScreenshotPreview: undefined}
+MainApp.tsx:1066 🔄 [TierChange] Skipping tier change during initialization
+MainApp.tsx:1222 🎮 [IGDB] Effect triggered: {hasActiveConv: false, gameTitle: undefined, isGameHub: undefined, convId: undefined, prevFetched: null}
+MainApp.tsx:1232 🎮 [IGDB] Skipping fetch - no gameTitle or is Game Hub
+MainApp.tsx:134 🎯 [MainApp] suggestedPrompts STATE CHANGED: {prompts: Array(0), length: 0, isAISettingFlag: false, activeConvId: undefined, trace: '    at http://localhost:5173/src/components/MainAp….vite/deps/chunk-TH7NCS4R.js?v=a6676f25:18179:17)'}
+ttsService.ts:225 🎵 [TTS] Setting up media session
+ttsService.ts:248 ✅ [TTS] Media session handlers registered
+ttsService.ts:70 🔊 [TTS] Audio context initialized
+ttsService.ts:84 🔇 [TTS] Silent audio initialized for background playback
+imagePreloader.ts:408 [ImagePreloader] Starting preload for authenticated/app context
+imagePreloader.ts:337 [ImagePreloader] Starting full image preload...
+imagePreloader.ts:200 [ImagePreloader] Loaded from IndexedDB: /images/otagon-logo.webp
+imagePreloader.ts:200 [ImagePreloader] Loaded from IndexedDB: /images/mascot/2.webp
+imagePreloader.ts:200 [ImagePreloader] Loaded from IndexedDB: /images/mascot/1.webp
+imagePreloader.ts:200 [ImagePreloader] Loaded from IndexedDB: /images/mascot/9.webp
+imagePreloader.ts:200 [ImagePreloader] Loaded from IndexedDB: /images/mascot/6.webp
+imagePreloader.ts:200 [ImagePreloader] Loaded from IndexedDB: /images/mascot/8.webp
+imagePreloader.ts:200 [ImagePreloader] Loaded from IndexedDB: /images/mascot/5.2.webp
+imagePreloader.ts:200 [ImagePreloader] Loaded from IndexedDB: /images/mascot/5.1.webp
+imagePreloader.ts:200 [ImagePreloader] Loaded from IndexedDB: /images/mascot/11.webp
+imagePreloader.ts:200 [ImagePreloader] Loaded from IndexedDB: /images/mascot/7.webp
+imagePreloader.ts:200 [ImagePreloader] Loaded from IndexedDB: /images/mascot/10.webp
+imagePreloader.ts:200 [ImagePreloader] Loaded from IndexedDB: /images/mascot/vanguard-user.webp
+imagePreloader.ts:200 [ImagePreloader] Loaded from IndexedDB: /images/mascot/4.webp
+imagePreloader.ts:200 [ImagePreloader] Loaded from IndexedDB: /images/mascot/pro-user.webp
+imagePreloader.ts:348 [ImagePreloader] All images preloaded in 165ms (13/13 in-memory cached)
+cacheService.ts:26 [CacheService] Storing in Supabase: user:a55df11a-072c-4acf-807b-da93ac1d8fad (type: user, user: a55df11a-072c-4acf-807b-da93ac1d8fad)
+MainApp.tsx:701 🔍 [MainApp] Auth state change detected: {previousUserId: null, newUserId: 'a55df11a-072c-4acf-807b-da93ac1d8fad', isLoading: false, isLoggingOut: false}
+MainApp.tsx:749 🔍 [MainApp] New user detected, resetting for fresh load: {previousUser: null, newUser: 'a55df11a-072c-4acf-807b-da93ac1d8fad'}
+gamingExplorerStorage.ts:215 [LibraryStorage] Loading from Supabase...
+gamingExplorerStorage.ts:490 [TimelineStorage] Loading from Supabase...
+MainApp.tsx:791 🔍 [MainApp] Loading conversations (attempt 1 )
+conversationService.ts:870 🔍 [ConversationService] ensureGameHubExists called with forceRefresh=true, clearing cache
+conversationService.ts:167 🗑️ [ConversationService] Cache cleared, next read will be fresh
+clearCache @ conversationService.ts:167
+ensureGameHubExists @ conversationService.ts:871
+loadData @ MainApp.tsx:799
+(anonymous) @ MainApp.tsx:1021
+commitHookEffectListMount @ chunk-TH7NCS4R.js?v=a6676f25:16963
+commitPassiveMountOnFiber @ chunk-TH7NCS4R.js?v=a6676f25:18206
+commitPassiveMountEffects_complete @ chunk-TH7NCS4R.js?v=a6676f25:18179
+commitPassiveMountEffects_begin @ chunk-TH7NCS4R.js?v=a6676f25:18169
+commitPassiveMountEffects @ chunk-TH7NCS4R.js?v=a6676f25:18159
+flushPassiveEffectsImpl @ chunk-TH7NCS4R.js?v=a6676f25:19543
+flushPassiveEffects @ chunk-TH7NCS4R.js?v=a6676f25:19500
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:19381
+workLoop @ chunk-TH7NCS4R.js?v=a6676f25:197
+flushWork @ chunk-TH7NCS4R.js?v=a6676f25:176
+performWorkUntilDeadline @ chunk-TH7NCS4R.js?v=a6676f25:384
+MainApp.tsx:123 🔥🔥🔥 [MainApp] USER STATE CHANGED: {id: 'd6b597de-7601-44ea-8554-84118dc8e067', authUserId: 'a55df11a-072c-4acf-807b-da93ac1d8fad', email: 'mdamkhan@gmail.com', tier: 'free', hasProfileSetup: true, …}
+MainApp.tsx:320 [MainApp] Fetching quota for user: a55df11a-072c-4acf-807b-da93ac1d8fad tier: free
+groundingControlService.ts:579 [GroundingControl] getRemainingQuota called with: {authUserId: 'a55df11a-072c-4acf-807b-da93ac1d8fad', tier: 'free'}
+groundingControlService.ts:403 [GroundingControl] getGroundingUsage called for: a55df11a-072c-4acf-807b-da93ac1d8fad
+MainApp.tsx:1066 🔄 [TierChange] Skipping tier change during initialization
+groundingControlService.ts:458 [GroundingControl] Raw data from DB: null
+groundingControlService.ts:462 [GroundingControl] No usage record found for this month - user has full quota
+groundingControlService.ts:582 [GroundingControl] getGroundingUsage returned: {gameKnowledge: 0, aiMessages: 0, total: 0}
+groundingControlService.ts:585 [GroundingControl] Limits for tier: {gameKnowledge: 0, aiMessages: 4}
+MainApp.tsx:326 [MainApp] Quota received: {gameKnowledge: {…}, aiMessages: {…}}
+MainApp.tsx:327 [MainApp] Setting aiMessagesQuota to: 4
+supabaseService.ts:116 ✅ [Supabase] Game Hub exists via .single(): {id: 'game-hub', title: 'Game Hub', auth_user_id: 'a55df11a-072c-4acf-807b-da93ac1d8fad'}
+gamingExplorerStorage.ts:225 [LibraryStorage] Loaded 2 items from Supabase
+supabaseService.ts:215 🔍 [Supabase] mapConversations called with 1 conversations
+mapConversations @ supabaseService.ts:215
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+ensureGameHubExists @ conversationService.ts:874
+loadData @ MainApp.tsx:799
+(anonymous) @ MainApp.tsx:1021
+commitHookEffectListMount @ chunk-TH7NCS4R.js?v=a6676f25:16963
+commitPassiveMountOnFiber @ chunk-TH7NCS4R.js?v=a6676f25:18206
+commitPassiveMountEffects_complete @ chunk-TH7NCS4R.js?v=a6676f25:18179
+commitPassiveMountEffects_begin @ chunk-TH7NCS4R.js?v=a6676f25:18169
+commitPassiveMountEffects @ chunk-TH7NCS4R.js?v=a6676f25:18159
+flushPassiveEffectsImpl @ chunk-TH7NCS4R.js?v=a6676f25:19543
+flushPassiveEffects @ chunk-TH7NCS4R.js?v=a6676f25:19500
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:19381
+workLoop @ chunk-TH7NCS4R.js?v=a6676f25:197
+flushWork @ chunk-TH7NCS4R.js?v=a6676f25:176
+performWorkUntilDeadline @ chunk-TH7NCS4R.js?v=a6676f25:384
+supabaseService.ts:221 🔍 [Supabase] Sample conversation from DB: {id: 'game-hub', title: 'Game Hub', messageCount: 0, hasMessagesField: true, messagesType: 'object', …}
+mapConversations @ supabaseService.ts:221
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+ensureGameHubExists @ conversationService.ts:874
+loadData @ MainApp.tsx:799
+(anonymous) @ MainApp.tsx:1021
+commitHookEffectListMount @ chunk-TH7NCS4R.js?v=a6676f25:16963
+commitPassiveMountOnFiber @ chunk-TH7NCS4R.js?v=a6676f25:18206
+commitPassiveMountEffects_complete @ chunk-TH7NCS4R.js?v=a6676f25:18179
+commitPassiveMountEffects_begin @ chunk-TH7NCS4R.js?v=a6676f25:18169
+commitPassiveMountEffects @ chunk-TH7NCS4R.js?v=a6676f25:18159
+flushPassiveEffectsImpl @ chunk-TH7NCS4R.js?v=a6676f25:19543
+flushPassiveEffects @ chunk-TH7NCS4R.js?v=a6676f25:19500
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:19381
+workLoop @ chunk-TH7NCS4R.js?v=a6676f25:197
+flushWork @ chunk-TH7NCS4R.js?v=a6676f25:176
+performWorkUntilDeadline @ chunk-TH7NCS4R.js?v=a6676f25:384
+supabaseService.ts:239 🔍 [Supabase] Processing conversation: {id: 'game-hub', title: 'Game Hub', rawMessages: Array(0), hasMessages: true, isArray: true, …}
+(anonymous) @ supabaseService.ts:239
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+ensureGameHubExists @ conversationService.ts:874
+loadData @ MainApp.tsx:799
+(anonymous) @ MainApp.tsx:1021
+commitHookEffectListMount @ chunk-TH7NCS4R.js?v=a6676f25:16963
+commitPassiveMountOnFiber @ chunk-TH7NCS4R.js?v=a6676f25:18206
+commitPassiveMountEffects_complete @ chunk-TH7NCS4R.js?v=a6676f25:18179
+commitPassiveMountEffects_begin @ chunk-TH7NCS4R.js?v=a6676f25:18169
+commitPassiveMountEffects @ chunk-TH7NCS4R.js?v=a6676f25:18159
+flushPassiveEffectsImpl @ chunk-TH7NCS4R.js?v=a6676f25:19543
+flushPassiveEffects @ chunk-TH7NCS4R.js?v=a6676f25:19500
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:19381
+workLoop @ chunk-TH7NCS4R.js?v=a6676f25:197
+flushWork @ chunk-TH7NCS4R.js?v=a6676f25:176
+performWorkUntilDeadline @ chunk-TH7NCS4R.js?v=a6676f25:384
+supabaseService.ts:266 🔍 [Supabase] Final processed messages for game-hub : 0
+(anonymous) @ supabaseService.ts:266
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+ensureGameHubExists @ conversationService.ts:874
+loadData @ MainApp.tsx:799
+(anonymous) @ MainApp.tsx:1021
+commitHookEffectListMount @ chunk-TH7NCS4R.js?v=a6676f25:16963
+commitPassiveMountOnFiber @ chunk-TH7NCS4R.js?v=a6676f25:18206
+commitPassiveMountEffects_complete @ chunk-TH7NCS4R.js?v=a6676f25:18179
+commitPassiveMountEffects_begin @ chunk-TH7NCS4R.js?v=a6676f25:18169
+commitPassiveMountEffects @ chunk-TH7NCS4R.js?v=a6676f25:18159
+flushPassiveEffectsImpl @ chunk-TH7NCS4R.js?v=a6676f25:19543
+flushPassiveEffects @ chunk-TH7NCS4R.js?v=a6676f25:19500
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:19381
+workLoop @ chunk-TH7NCS4R.js?v=a6676f25:197
+flushWork @ chunk-TH7NCS4R.js?v=a6676f25:176
+performWorkUntilDeadline @ chunk-TH7NCS4R.js?v=a6676f25:384
+conversationService.ts:309 🔍 [ConversationService] Loaded 1 conversations from Supabase
+conversationService.ts:337 🔍 [ConversationService] Game Hub BEFORE cache: {id: 'game-hub', messageCount: 0, hasMessages: true, messagesType: 'object'}
+getConversations @ conversationService.ts:337
+await in getConversations
+ensureGameHubExists @ conversationService.ts:874
+loadData @ MainApp.tsx:799
+(anonymous) @ MainApp.tsx:1021
+commitHookEffectListMount @ chunk-TH7NCS4R.js?v=a6676f25:16963
+commitPassiveMountOnFiber @ chunk-TH7NCS4R.js?v=a6676f25:18206
+commitPassiveMountEffects_complete @ chunk-TH7NCS4R.js?v=a6676f25:18179
+commitPassiveMountEffects_begin @ chunk-TH7NCS4R.js?v=a6676f25:18169
+commitPassiveMountEffects @ chunk-TH7NCS4R.js?v=a6676f25:18159
+flushPassiveEffectsImpl @ chunk-TH7NCS4R.js?v=a6676f25:19543
+flushPassiveEffects @ chunk-TH7NCS4R.js?v=a6676f25:19500
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:19381
+workLoop @ chunk-TH7NCS4R.js?v=a6676f25:197
+flushWork @ chunk-TH7NCS4R.js?v=a6676f25:176
+performWorkUntilDeadline @ chunk-TH7NCS4R.js?v=a6676f25:384
+conversationService.ts:355 🔍 [ConversationService] Game Hub AFTER cache: {id: 'game-hub', messageCount: 0, hasMessages: true}
+getConversations @ conversationService.ts:355
+await in getConversations
+ensureGameHubExists @ conversationService.ts:874
+loadData @ MainApp.tsx:799
+(anonymous) @ MainApp.tsx:1021
+commitHookEffectListMount @ chunk-TH7NCS4R.js?v=a6676f25:16963
+commitPassiveMountOnFiber @ chunk-TH7NCS4R.js?v=a6676f25:18206
+commitPassiveMountEffects_complete @ chunk-TH7NCS4R.js?v=a6676f25:18179
+commitPassiveMountEffects_begin @ chunk-TH7NCS4R.js?v=a6676f25:18169
+commitPassiveMountEffects @ chunk-TH7NCS4R.js?v=a6676f25:18159
+flushPassiveEffectsImpl @ chunk-TH7NCS4R.js?v=a6676f25:19543
+flushPassiveEffects @ chunk-TH7NCS4R.js?v=a6676f25:19500
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:19381
+workLoop @ chunk-TH7NCS4R.js?v=a6676f25:197
+flushWork @ chunk-TH7NCS4R.js?v=a6676f25:176
+performWorkUntilDeadline @ chunk-TH7NCS4R.js?v=a6676f25:384
+MainApp.tsx:800 🔍 [MainApp] Game Hub from ensureGameHubExists: {id: 'game-hub', title: 'Game Hub', isGameHub: true}
+supabaseService.ts:116 ✅ [Supabase] Game Hub exists via .single(): {id: 'game-hub', title: 'Game Hub', auth_user_id: 'a55df11a-072c-4acf-807b-da93ac1d8fad'}
+supabaseService.ts:215 🔍 [Supabase] mapConversations called with 1 conversations
+mapConversations @ supabaseService.ts:215
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+loadData @ MainApp.tsx:808
+await in loadData
+(anonymous) @ MainApp.tsx:1021
+commitHookEffectListMount @ chunk-TH7NCS4R.js?v=a6676f25:16963
+commitPassiveMountOnFiber @ chunk-TH7NCS4R.js?v=a6676f25:18206
+commitPassiveMountEffects_complete @ chunk-TH7NCS4R.js?v=a6676f25:18179
+commitPassiveMountEffects_begin @ chunk-TH7NCS4R.js?v=a6676f25:18169
+commitPassiveMountEffects @ chunk-TH7NCS4R.js?v=a6676f25:18159
+flushPassiveEffectsImpl @ chunk-TH7NCS4R.js?v=a6676f25:19543
+flushPassiveEffects @ chunk-TH7NCS4R.js?v=a6676f25:19500
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:19381
+workLoop @ chunk-TH7NCS4R.js?v=a6676f25:197
+flushWork @ chunk-TH7NCS4R.js?v=a6676f25:176
+performWorkUntilDeadline @ chunk-TH7NCS4R.js?v=a6676f25:384
+supabaseService.ts:221 🔍 [Supabase] Sample conversation from DB: {id: 'game-hub', title: 'Game Hub', messageCount: 0, hasMessagesField: true, messagesType: 'object', …}
+mapConversations @ supabaseService.ts:221
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+loadData @ MainApp.tsx:808
+await in loadData
+(anonymous) @ MainApp.tsx:1021
+commitHookEffectListMount @ chunk-TH7NCS4R.js?v=a6676f25:16963
+commitPassiveMountOnFiber @ chunk-TH7NCS4R.js?v=a6676f25:18206
+commitPassiveMountEffects_complete @ chunk-TH7NCS4R.js?v=a6676f25:18179
+commitPassiveMountEffects_begin @ chunk-TH7NCS4R.js?v=a6676f25:18169
+commitPassiveMountEffects @ chunk-TH7NCS4R.js?v=a6676f25:18159
+flushPassiveEffectsImpl @ chunk-TH7NCS4R.js?v=a6676f25:19543
+flushPassiveEffects @ chunk-TH7NCS4R.js?v=a6676f25:19500
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:19381
+workLoop @ chunk-TH7NCS4R.js?v=a6676f25:197
+flushWork @ chunk-TH7NCS4R.js?v=a6676f25:176
+performWorkUntilDeadline @ chunk-TH7NCS4R.js?v=a6676f25:384
+supabaseService.ts:239 🔍 [Supabase] Processing conversation: {id: 'game-hub', title: 'Game Hub', rawMessages: Array(0), hasMessages: true, isArray: true, …}
+(anonymous) @ supabaseService.ts:239
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+loadData @ MainApp.tsx:808
+await in loadData
+(anonymous) @ MainApp.tsx:1021
+commitHookEffectListMount @ chunk-TH7NCS4R.js?v=a6676f25:16963
+commitPassiveMountOnFiber @ chunk-TH7NCS4R.js?v=a6676f25:18206
+commitPassiveMountEffects_complete @ chunk-TH7NCS4R.js?v=a6676f25:18179
+commitPassiveMountEffects_begin @ chunk-TH7NCS4R.js?v=a6676f25:18169
+commitPassiveMountEffects @ chunk-TH7NCS4R.js?v=a6676f25:18159
+flushPassiveEffectsImpl @ chunk-TH7NCS4R.js?v=a6676f25:19543
+flushPassiveEffects @ chunk-TH7NCS4R.js?v=a6676f25:19500
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:19381
+workLoop @ chunk-TH7NCS4R.js?v=a6676f25:197
+flushWork @ chunk-TH7NCS4R.js?v=a6676f25:176
+performWorkUntilDeadline @ chunk-TH7NCS4R.js?v=a6676f25:384
+supabaseService.ts:266 🔍 [Supabase] Final processed messages for game-hub : 0
+(anonymous) @ supabaseService.ts:266
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+loadData @ MainApp.tsx:808
+await in loadData
+(anonymous) @ MainApp.tsx:1021
+commitHookEffectListMount @ chunk-TH7NCS4R.js?v=a6676f25:16963
+commitPassiveMountOnFiber @ chunk-TH7NCS4R.js?v=a6676f25:18206
+commitPassiveMountEffects_complete @ chunk-TH7NCS4R.js?v=a6676f25:18179
+commitPassiveMountEffects_begin @ chunk-TH7NCS4R.js?v=a6676f25:18169
+commitPassiveMountEffects @ chunk-TH7NCS4R.js?v=a6676f25:18159
+flushPassiveEffectsImpl @ chunk-TH7NCS4R.js?v=a6676f25:19543
+flushPassiveEffects @ chunk-TH7NCS4R.js?v=a6676f25:19500
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:19381
+workLoop @ chunk-TH7NCS4R.js?v=a6676f25:197
+flushWork @ chunk-TH7NCS4R.js?v=a6676f25:176
+performWorkUntilDeadline @ chunk-TH7NCS4R.js?v=a6676f25:384
+conversationService.ts:309 🔍 [ConversationService] Loaded 1 conversations from Supabase
+conversationService.ts:337 🔍 [ConversationService] Game Hub BEFORE cache: {id: 'game-hub', messageCount: 0, hasMessages: true, messagesType: 'object'}
+getConversations @ conversationService.ts:337
+await in getConversations
+loadData @ MainApp.tsx:808
+await in loadData
+(anonymous) @ MainApp.tsx:1021
+commitHookEffectListMount @ chunk-TH7NCS4R.js?v=a6676f25:16963
+commitPassiveMountOnFiber @ chunk-TH7NCS4R.js?v=a6676f25:18206
+commitPassiveMountEffects_complete @ chunk-TH7NCS4R.js?v=a6676f25:18179
+commitPassiveMountEffects_begin @ chunk-TH7NCS4R.js?v=a6676f25:18169
+commitPassiveMountEffects @ chunk-TH7NCS4R.js?v=a6676f25:18159
+flushPassiveEffectsImpl @ chunk-TH7NCS4R.js?v=a6676f25:19543
+flushPassiveEffects @ chunk-TH7NCS4R.js?v=a6676f25:19500
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:19381
+workLoop @ chunk-TH7NCS4R.js?v=a6676f25:197
+flushWork @ chunk-TH7NCS4R.js?v=a6676f25:176
+performWorkUntilDeadline @ chunk-TH7NCS4R.js?v=a6676f25:384
+conversationService.ts:355 🔍 [ConversationService] Game Hub AFTER cache: {id: 'game-hub', messageCount: 0, hasMessages: true}
+getConversations @ conversationService.ts:355
+await in getConversations
+loadData @ MainApp.tsx:808
+await in loadData
+(anonymous) @ MainApp.tsx:1021
+commitHookEffectListMount @ chunk-TH7NCS4R.js?v=a6676f25:16963
+commitPassiveMountOnFiber @ chunk-TH7NCS4R.js?v=a6676f25:18206
+commitPassiveMountEffects_complete @ chunk-TH7NCS4R.js?v=a6676f25:18179
+commitPassiveMountEffects_begin @ chunk-TH7NCS4R.js?v=a6676f25:18169
+commitPassiveMountEffects @ chunk-TH7NCS4R.js?v=a6676f25:18159
+flushPassiveEffectsImpl @ chunk-TH7NCS4R.js?v=a6676f25:19543
+flushPassiveEffects @ chunk-TH7NCS4R.js?v=a6676f25:19500
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:19381
+workLoop @ chunk-TH7NCS4R.js?v=a6676f25:197
+flushWork @ chunk-TH7NCS4R.js?v=a6676f25:176
+performWorkUntilDeadline @ chunk-TH7NCS4R.js?v=a6676f25:384
+MainApp.tsx:809 🔍 [MainApp] Conversations from getConversations: ['game-hub']
+MainApp.tsx:810 🔍 [MainApp] Conversation count: 1
+MainApp.tsx:1066 🔄 [TierChange] Skipping tier change during initialization
+conversationService.ts:289 🔍 [ConversationService] Cache hit for user a55df11a-072c-4acf-807b-da93ac1d8fad (age: 25 ms)
+MainApp.tsx:914 🔍 [MainApp] Initialization complete with active conversation: game-hub
+MainApp.tsx:921 🎉 [MainApp] First chat visit after onboarding - showing welcome modal
+MainApp.tsx:134 🎯 [MainApp] suggestedPrompts STATE CHANGED: {prompts: Array(4), length: 4, isAISettingFlag: false, activeConvId: 'game-hub', trace: '    at http://localhost:5173/src/components/MainAp….vite/deps/chunk-TH7NCS4R.js?v=a6676f25:18179:17)'}
+MainApp.tsx:395 📌 [MainApp] No saved suggestions - using fallback: (4) ["What's the latest gaming news?", 'Which games are releasing soon?', 'What are the latest game reviews?', 'Show me the hottest new game trailers.']
+MainApp.tsx:1073 🔄 [TierChange] First user load - tier initialized to: free
+MainApp.tsx:1222 🎮 [IGDB] Effect triggered: {hasActiveConv: true, gameTitle: undefined, isGameHub: true, convId: 'game-hub', prevFetched: null}
+MainApp.tsx:1232 🎮 [IGDB] Skipping fetch - no gameTitle or is Game Hub
+cacheService.ts:26 [CacheService] Storing in Supabase: user:a55df11a-072c-4acf-807b-da93ac1d8fad (type: user, user: a55df11a-072c-4acf-807b-da93ac1d8fad)
+MainApp.tsx:123 🔥🔥🔥 [MainApp] USER STATE CHANGED: {id: 'd6b597de-7601-44ea-8554-84118dc8e067', authUserId: 'a55df11a-072c-4acf-807b-da93ac1d8fad', email: 'mdamkhan@gmail.com', tier: 'free', hasProfileSetup: true, …}
+MainApp.tsx:935 ✅ [MainApp] Successfully saved hasSeenWelcomeGuide to database
+cacheService.ts:101 [CacheService] Cache MISS (memory), trying Supabase: user:a55df11a-072c-4acf-807b-da93ac1d8fad
+cacheService.ts:113 [CacheService] Cache MISS (Supabase): user:a55df11a-072c-4acf-807b-da93ac1d8fad
+cacheService.ts:26 [CacheService] Storing in Supabase: user:a55df11a-072c-4acf-807b-da93ac1d8fad (type: user, user: a55df11a-072c-4acf-807b-da93ac1d8fad)
+MainApp.tsx:940 ✅ [MainApp] Refreshed auth service cache with updated user data
+MainApp.tsx:1207 ✅ [MainApp] Real-time subscription active
+ChatInterface.tsx:795 📸 [ChatInterface] Image preview created: {hasResult: true, resultLength: 511751, resultStart: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD...'}
+ChatInterface.tsx:759 📤 [ChatInterface] Submit attempt: {message: '', hasMessage: false, hasImageFile: true, hasImagePreview: true, shouldSubmit: true}
+ChatInterface.tsx:778 📤 [ChatInterface] Submitting: {message: '', hasImage: true, imageUrl: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD...'}
+MainApp.tsx:2859 📸 [MainApp] Sending message with image: {message: '', hasImage: true, imageUrl: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD...'}
+MainApp.tsx:3221 🚀 [MainApp] About to call getChatResponseWithStructure with: {conversationId: 'game-hub', messageLength: 0, hasImage: true, sessionActive: false}
+cacheService.ts:79 [CacheService] Cache MISS (memory-only mode): ai_structured_game-hub_-3vcuum_false_true
+MainApp.tsx:123 🔥🔥🔥 [MainApp] USER STATE CHANGED: {id: 'd6b597de-7601-44ea-8554-84118dc8e067', authUserId: 'a55df11a-072c-4acf-807b-da93ac1d8fad', email: 'mdamkhan@gmail.com', tier: 'free', hasProfileSetup: true, …}
+MainApp.tsx:134 🎯 [MainApp] suggestedPrompts STATE CHANGED: {prompts: Array(0), length: 0, isAISettingFlag: false, activeConvId: 'game-hub', trace: '    at http://localhost:5173/src/components/MainAp….vite/deps/chunk-TH7NCS4R.js?v=a6676f25:18179:17)'}
+groundingControlService.ts:403 [GroundingControl] getGroundingUsage called for: a55df11a-072c-4acf-807b-da93ac1d8fad
+cacheService.ts:101 [CacheService] Cache MISS (memory), trying Supabase: user:a55df11a-072c-4acf-807b-da93ac1d8fad
+groundingControlService.ts:458 [GroundingControl] Raw data from DB: null
+groundingControlService.ts:462 [GroundingControl] No usage record found for this month - user has full quota
+groundingControlService.ts:692 🔍 [GroundingControl] Check result: {tier: 'free', queryType: 'general_knowledge', useGrounding: false, usageType: 'ai_message', reason: 'General gaming knowledge - AI can answer from training', …}
+aiService.ts:997 🔍 [AIService] Grounding eligibility: {tier: 'free', queryType: 'general_knowledge', useGrounding: false, usageType: 'ai_message', manualToggle: false, …}
+aiService.ts:1009 📡 [GEMINI CALL #5] 🏗️ Main Structured Response | Game: Game Hub | Message: ... | HasImage: true | Grounding: false
+cacheService.ts:113 [CacheService] Cache MISS (Supabase): user:a55df11a-072c-4acf-807b-da93ac1d8fad
+cacheService.ts:26 [CacheService] Storing in Supabase: user:a55df11a-072c-4acf-807b-da93ac1d8fad (type: user, user: a55df11a-072c-4acf-807b-da93ac1d8fad)
+MainApp.tsx:123 🔥🔥🔥 [MainApp] USER STATE CHANGED: {id: 'd6b597de-7601-44ea-8554-84118dc8e067', authUserId: 'a55df11a-072c-4acf-807b-da93ac1d8fad', email: 'mdamkhan@gmail.com', tier: 'free', hasProfileSetup: true, …}
+aiService.ts:1055 🤖 [AIService] Raw AI response (last 500 chars): th V's more adaptable, merc-for-hire approach.
+
+**Internal Data Structure**
+```json
+{
+  "followUpPrompts": [
+    "What kind of unique items or services can I find in the Jig-Jig Street market?",
+    "Can you elaborate on Takemura's code of honor and how it influences his actions?",
+    "What are some optimal approaches for stealth in corporate infiltration missions?"
+  ],
+  "stateUpdateTags": [
+    "PROGRESS: 30",
+    "OBJECTIVE: Go to Jig-Jig Street"
+  ],
+  "progressiveInsightUpdates": []
+}
+```
+aiService.ts:1056 🤖 [AIService] Checking for PROGRESS in raw response: ✅ FOUND (OTAKON_PROGRESS format)
+otakonTags.ts:13 🏷️ [otakonTags] Parsing response (3041 chars)...
+otakonTags.ts:101 🏷️ [otakonTags] ✅ Extracted followUpPrompts from embedded JSON: (3) ['What kind of unique items or services can I find in the Jig-Jig Street market?', "Can you elaborate on Takemura's code of honor and how it influences his actions?", 'What are some optimal approaches for stealth in corporate infiltration missions?']
+otakonTags.ts:208 📊 [otakonTags] Found OTAKON_PROGRESS format: [OTAKON_PROGRESS: 30 → 30%
+otakonTags.ts:241 📊 [otakonTags] ✅ Set PROGRESS tag to: 30%
+otakonTags.ts:253 🏷️ [otakonTags] Found tag: GAME_ID = Cyberpunk 2077
+otakonTags.ts:253 🏷️ [otakonTags] Found tag: CONFIDENCE = high
+otakonTags.ts:253 🏷️ [otakonTags] Found tag: GENRE = Action RPG
+otakonTags.ts:253 🏷️ [otakonTags] Found tag: IS_FULLSCREEN = true
+otakonTags.ts:253 🏷️ [otakonTags] Found tag: PROGRESS = 30
+otakonTags.ts:281 📊 [otakonTags] Parsed PROGRESS: "30" → 30
+otakonTags.ts:253 🏷️ [otakonTags] Found tag: OBJECTIVE = "Go to Jig-Jig Street"
+otakonTags.ts:324 🏷️ [otakonTags] Extracted 7 tags: SUGGESTIONS, PROGRESS, GAME_ID, CONFIDENCE, GENRE, IS_FULLSCREEN, OBJECTIVE
+aiService.ts:1064 🏷️ [AIService] Extracted otakonTags: {tagCount: 7, tagKeys: Array(7), progressValue: 30, objectiveValue: '"Go to Jig-Jig Street"', suggestionsValue: Array(3)}
+aiService.ts:1073 🎯 [AIService] Suggestions from parseOtakonTags: (3) ['What kind of unique items or services can I find in the Jig-Jig Street market?', "Can you elaborate on Takemura's code of honor and how it influences his actions?", 'What are some optimal approaches for stealth in corporate infiltration missions?'] Length: 3
+aiService.ts:1080 📊 [AIService] Added PROGRESS to stateUpdateTags: 30
+aiService.ts:1085 🎯 [AIService] Added OBJECTIVE to stateUpdateTags: "Go to Jig-Jig Street"
+aiService.ts:1103 📤 [AIService] Final aiResponse: {hasContent: true, contentLength: 2406, stateUpdateTags: Array(2), otakonTagKeys: Array(7)}
+cacheService.ts:26 [CacheService] Storing in Supabase: ai_structured_game-hub_-3vcuum_false_true (type: general, user: none)
+MainApp.tsx:3240 ✅ [MainApp] getChatResponseWithStructure completed, response: {hasContent: true, contentLength: 2406, hasFollowUpPrompts: true, hasSuggestions: true, followUpPromptsRaw: '["What kind of unique items or services can I find…for stealth in corporate infiltration missions?"]', …}
+MainApp.tsx:3250 🔍 [MainApp] FULL followUpPrompts array: (3) ['What kind of unique items or services can I find in the Jig-Jig Street market?', "Can you elaborate on Takemura's code of honor and how it influences his actions?", 'What are some optimal approaches for stealth in corporate infiltration missions?']
+MainApp.tsx:3251 🔍 [MainApp] FULL suggestions array: (3) ['What kind of unique items or services can I find in the Jig-Jig Street market?', "Can you elaborate on Takemura's code of honor and how it influences his actions?", 'What are some optimal approaches for stealth in corporate infiltration missions?']
+MainApp.tsx:3260 🔍 [MainApp] RAW suggestionsToUse: (3) ['What kind of unique items or services can I find in the Jig-Jig Street market?', "Can you elaborate on Takemura's code of honor and how it influences his actions?", 'What are some optimal approaches for stealth in corporate infiltration missions?']
+MainApp.tsx:3261 🔍 [MainApp] suggestionsToUse type: object
+MainApp.tsx:3262 🔍 [MainApp] suggestionsToUse is Array: true
+MainApp.tsx:3263 🔍 [MainApp] suggestionsToUse length: 3
+MainApp.tsx:3264 🔍 [MainApp] suggestionsToUse content: ["What kind of unique items or services can I find in the Jig-Jig Street market?","Can you elaborate on Takemura's code of honor and how it influences his actions?","What are some optimal approaches for stealth in corporate infiltration missions?"]
+MainApp.tsx:3265 🔍 [MainApp] response.followUpPrompts type: object isArray: true length: 3
+MainApp.tsx:3266 🔍 [MainApp] response.suggestions type: object isArray: true length: 3
+suggestedPromptsService.ts:127 🔧 [SuggestedPromptsService] processAISuggestions INPUT: (3) ['What kind of unique items or services can I find in the Jig-Jig Street market?', "Can you elaborate on Takemura's code of honor and how it influences his actions?", 'What are some optimal approaches for stealth in corporate infiltration missions?']
+suggestedPromptsService.ts:128 🔧 [SuggestedPromptsService] INPUT type: object
+suggestedPromptsService.ts:129 🔧 [SuggestedPromptsService] INPUT is Array: true
+suggestedPromptsService.ts:130 🔧 [SuggestedPromptsService] INPUT JSON: ["What kind of unique items or services can I find in the Jig-Jig Street market?","Can you elaborate on Takemura's code of honor and how it influences his actions?","What are some optimal approaches for stealth in corporate infiltration missions?"]
+suggestedPromptsService.ts:146 🔧 [SuggestedPromptsService] Input is array, checking elements...
+suggestedPromptsService.ts:155 🔧 [SuggestedPromptsService] Array after filtering: (3) ['What kind of unique items or services can I find in the Jig-Jig Street market?', "Can you elaborate on Takemura's code of honor and how it influences his actions?", 'What are some optimal approaches for stealth in corporate infiltration missions?']
+suggestedPromptsService.ts:207 🔧 [SuggestedPromptsService] suggestionsArray before filter: (3) ['What kind of unique items or services can I find in the Jig-Jig Street market?', "Can you elaborate on Takemura's code of honor and how it influences his actions?", 'What are some optimal approaches for stealth in corporate infiltration missions?']
+suggestedPromptsService.ts:208 🔧 [SuggestedPromptsService] RESULT after filter/map/slice: (3) ['What kind of unique items or services can I find in the Jig-Jig Street market?', "Can you elaborate on Takemura's code of honor and how it influences his actions?", 'What are some optimal approaches for stealth in corporate infiltration missions?']
+suggestedPromptsService.ts:209 🔧 [SuggestedPromptsService] RESULT length: 3
+MainApp.tsx:3269 🔍 [MainApp] AFTER processAISuggestions: (3) ['What kind of unique items or services can I find in the Jig-Jig Street market?', "Can you elaborate on Takemura's code of honor and how it influences his actions?", 'What are some optimal approaches for stealth in corporate infiltration missions?']
+MainApp.tsx:3270 🔍 [MainApp] processedSuggestions length: 3
+MainApp.tsx:3271 🔍 [MainApp] processedSuggestions content: ["What kind of unique items or services can I find in the Jig-Jig Street market?","Can you elaborate on Takemura's code of honor and how it influences his actions?","What are some optimal approaches for stealth in corporate infiltration missions?"]
+MainApp.tsx:3419 🚨🚨🚨 [MainApp] AI RESPONSE PROCESSING STARTED 🚨🚨🚨
+handleSendMessage @ MainApp.tsx:3419
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+MainApp.tsx:3420 🚨 Response object: {
+  "hasContent": true,
+  "contentLength": 2406,
+  "stateUpdateTags": [
+    "PROGRESS: 30",
+    "OBJECTIVE: \"Go to Jig-Jig Street\""
+  ],
+  "hasOtakonTags": true,
+  "otakonTagKeys": [
+    "SUGGESTIONS",
+    "PROGRESS",
+    "GAME_ID",
+    "CONFIDENCE",
+    "GENRE",
+    "IS_FULLSCREEN",
+    "OBJECTIVE"
+  ]
+}
+handleSendMessage @ MainApp.tsx:3420
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+MainApp.tsx:3434 📊 [MainApp] AI Response received: {hasStateUpdateTags: true, stateUpdateTags: Array(2), hasOtakonTags: true, otakonTagKeys: Array(7), contentPreview: '**Hint:** Your current objective is to meet Takemu…ura, where he mentions "allowing his temper to fl'}
+MainApp.tsx:3449 🎮 [MainApp] Processing state update tags: (2) ['PROGRESS: 30', 'OBJECTIVE: "Go to Jig-Jig Street"']
+handleSendMessage @ MainApp.tsx:3449
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+MainApp.tsx:3456 🎮 [MainApp] Found progress in stateUpdateTags: 30%
+handleSendMessage @ MainApp.tsx:3456
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+MainApp.tsx:3465 🎮 [MainApp] Found objective in stateUpdateTags: "Go to Jig-Jig Street"
+handleSendMessage @ MainApp.tsx:3465
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+MainApp.tsx:3493 🎮 [MainApp] 📌 Deferring progress/objective updates until after migration decision: {progressUpdate: 30, objectiveUpdate: '"Go to Jig-Jig Street"'}
+handleSendMessage @ MainApp.tsx:3493
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+MainApp.tsx:3738 🎮 [MainApp] DEBUG - All otakon tags from AI response: {hasGameId: true, allTagKeys: Array(7), allTagValues: {…}, imageUrl: '(has image)', activeConversationId: 'game-hub', …}
+MainApp.tsx:3772 🎮 [MainApp] DEBUG - Game tab creation decision: {gameTitle: 'Cyberpunk 2077', confidence: 'high', confidenceIsHigh: true, isFullscreen: true, wasImageQuery: true, …}
+supabaseService.ts:116 ✅ [Supabase] Game Hub exists via .single(): {id: 'game-hub', title: 'Game Hub', auth_user_id: 'a55df11a-072c-4acf-807b-da93ac1d8fad'}
+supabaseService.ts:215 🔍 [Supabase] mapConversations called with 1 conversations
+mapConversations @ supabaseService.ts:215
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+getConversation @ conversationService.ts:848
+handleSendMessage @ MainApp.tsx:3796
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:221 🔍 [Supabase] Sample conversation from DB: {id: 'game-hub', title: 'Game Hub', messageCount: 0, hasMessagesField: true, messagesType: 'object', …}
+mapConversations @ supabaseService.ts:221
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+getConversation @ conversationService.ts:848
+handleSendMessage @ MainApp.tsx:3796
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:239 🔍 [Supabase] Processing conversation: {id: 'game-hub', title: 'Game Hub', rawMessages: Array(0), hasMessages: true, isArray: true, …}
+(anonymous) @ supabaseService.ts:239
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+getConversation @ conversationService.ts:848
+handleSendMessage @ MainApp.tsx:3796
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:266 🔍 [Supabase] Final processed messages for game-hub : 0
+(anonymous) @ supabaseService.ts:266
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+getConversation @ conversationService.ts:848
+handleSendMessage @ MainApp.tsx:3796
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+conversationService.ts:309 🔍 [ConversationService] Loaded 1 conversations from Supabase
+conversationService.ts:337 🔍 [ConversationService] Game Hub BEFORE cache: {id: 'game-hub', messageCount: 0, hasMessages: true, messagesType: 'object'}
+getConversations @ conversationService.ts:337
+await in getConversations
+getConversation @ conversationService.ts:848
+handleSendMessage @ MainApp.tsx:3796
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+conversationService.ts:355 🔍 [ConversationService] Game Hub AFTER cache: {id: 'game-hub', messageCount: 0, hasMessages: true}
+getConversations @ conversationService.ts:355
+await in getConversations
+getConversation @ conversationService.ts:848
+handleSendMessage @ MainApp.tsx:3796
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+MainApp.tsx:3804 🎮 [MainApp] Creating new game tab for: Cyberpunk 2077 (released)
+MainApp.tsx:2267 🎮 [MainApp] handleCreateGameTab called: {gameTitle: 'Cyberpunk 2077', currentUserTier: 'free', hasAiResponse: true, isUnreleased: false}
+MainApp.tsx:2293 🎮 [MainApp] Creating new game tab via gameTabService: {conversationId: 'game-cyberpunk-2077', userTier: 'free'}
+conversationService.ts:289 🔍 [ConversationService] Cache hit for user a55df11a-072c-4acf-807b-da93ac1d8fad (age: 1 ms)
+gameTabService.ts:94 🎮 [GameTabService] Creating new game tab: {gameTitle: 'Cyberpunk 2077', userTier: 'free', isPro: false, isUnreleased: false, hasAiResponse: true}
+gameTabService.ts:114 🔒 [GameTabService] Subtabs disabled for free tier users
+createGameTab @ gameTabService.ts:114
+await in createGameTab
+handleCreateGameTab @ MainApp.tsx:2299
+handleSendMessage @ MainApp.tsx:3806
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+conversationService.ts:289 🔍 [ConversationService] Cache hit for user a55df11a-072c-4acf-807b-da93ac1d8fad (age: 1 ms)
+aiService.ts:1117 📚 [AIService] Stored 2 topics for behavior tracking
+supabaseService.ts:116 ✅ [Supabase] Game Hub exists via .single(): {id: 'game-hub', title: 'Game Hub', auth_user_id: 'a55df11a-072c-4acf-807b-da93ac1d8fad'}
+supabaseService.ts:215 🔍 [Supabase] mapConversations called with 2 conversations
+mapConversations @ supabaseService.ts:215
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+_addConversationInternal @ conversationService.ts:566
+await in _addConversationInternal
+addConversation @ conversationService.ts:505
+createGameTab @ gameTabService.ts:137
+await in createGameTab
+handleCreateGameTab @ MainApp.tsx:2299
+handleSendMessage @ MainApp.tsx:3806
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:221 🔍 [Supabase] Sample conversation from DB: {id: 'game-cyberpunk-2077', title: 'Cyberpunk 2077', messageCount: 0, hasMessagesField: true, messagesType: 'object', …}
+mapConversations @ supabaseService.ts:221
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+_addConversationInternal @ conversationService.ts:566
+await in _addConversationInternal
+addConversation @ conversationService.ts:505
+createGameTab @ gameTabService.ts:137
+await in createGameTab
+handleCreateGameTab @ MainApp.tsx:2299
+handleSendMessage @ MainApp.tsx:3806
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:239 🔍 [Supabase] Processing conversation: {id: 'game-cyberpunk-2077', title: 'Cyberpunk 2077', rawMessages: Array(0), hasMessages: true, isArray: true, …}
+(anonymous) @ supabaseService.ts:239
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+_addConversationInternal @ conversationService.ts:566
+await in _addConversationInternal
+addConversation @ conversationService.ts:505
+createGameTab @ gameTabService.ts:137
+await in createGameTab
+handleCreateGameTab @ MainApp.tsx:2299
+handleSendMessage @ MainApp.tsx:3806
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:266 🔍 [Supabase] Final processed messages for game-cyberpunk-2077 : 0
+(anonymous) @ supabaseService.ts:266
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+_addConversationInternal @ conversationService.ts:566
+await in _addConversationInternal
+addConversation @ conversationService.ts:505
+createGameTab @ gameTabService.ts:137
+await in createGameTab
+handleCreateGameTab @ MainApp.tsx:2299
+handleSendMessage @ MainApp.tsx:3806
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:328 📊 [SupabaseService] Loading gameProgress for Cyberpunk 2077 - DB value: 0 → Mapped: 0
+supabaseService.ts:239 🔍 [Supabase] Processing conversation: {id: 'game-hub', title: 'Game Hub', rawMessages: Array(0), hasMessages: true, isArray: true, …}
+(anonymous) @ supabaseService.ts:239
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+_addConversationInternal @ conversationService.ts:566
+await in _addConversationInternal
+addConversation @ conversationService.ts:505
+createGameTab @ gameTabService.ts:137
+await in createGameTab
+handleCreateGameTab @ MainApp.tsx:2299
+handleSendMessage @ MainApp.tsx:3806
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:266 🔍 [Supabase] Final processed messages for game-hub : 0
+(anonymous) @ supabaseService.ts:266
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+_addConversationInternal @ conversationService.ts:566
+await in _addConversationInternal
+addConversation @ conversationService.ts:505
+createGameTab @ gameTabService.ts:137
+await in createGameTab
+handleCreateGameTab @ MainApp.tsx:2299
+handleSendMessage @ MainApp.tsx:3806
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:437 📊 [SupabaseService] Updating conversation: game-hub with gameProgress: 0
+supabaseService.ts:437 📊 [SupabaseService] Updating conversation: game-cyberpunk-2077 with gameProgress: 0
+supabaseService.ts:467 ✅ [SupabaseService] Successfully updated conversation with gameProgress: 0
+supabaseService.ts:467 ✅ [SupabaseService] Successfully updated conversation with gameProgress: 0
+gameTabService.ts:141 🎮 [GameTabService] Created new tab (cache preserved for performance): game-cyberpunk-2077
+gameTabService.ts:186 🔒 [GameTabService] Skipping subtabs save for free tier user
+createGameTab @ gameTabService.ts:186
+await in createGameTab
+handleCreateGameTab @ MainApp.tsx:2299
+handleSendMessage @ MainApp.tsx:3806
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+gameTabService.ts:215 🔒 [GameTabService] Skipping AI insight generation for free tier user
+createGameTab @ gameTabService.ts:215
+await in createGameTab
+handleCreateGameTab @ MainApp.tsx:2299
+handleSendMessage @ MainApp.tsx:3806
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+igdbService.ts:220 [IGDBService] Fetching game data: Cyberpunk 2077
+MainApp.tsx:3822 🎮 [MainApp] Auto-switching new game tab to Playing mode
+MainApp.tsx:3835 🎮 [MainApp] Migration detected - target: game-cyberpunk-2077 source: game-hub
+MainApp.tsx:3838 💾 [MainApp] Saving user message to TARGET conversation...
+Sidebar.tsx:254 🖼️ [Sidebar] Missing coverUrl for: Cyberpunk 2077 gameTitle: Cyberpunk 2077 isUnreleased: false
+Sidebar.tsx:254 🖼️ [Sidebar] Missing coverUrl for: Cyberpunk 2077 gameTitle: Cyberpunk 2077 isUnreleased: false
+igdbService.ts:232 [IGDBService] Invoking igdb-proxy with gameName: Cyberpunk 2077
+supabaseService.ts:116 ✅ [Supabase] Game Hub exists via .single(): {id: 'game-hub', title: 'Game Hub', auth_user_id: 'a55df11a-072c-4acf-807b-da93ac1d8fad'}
+supabaseService.ts:215 🔍 [Supabase] mapConversations called with 2 conversations
+mapConversations @ supabaseService.ts:215
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+addMessage @ conversationService.ts:627
+handleSendMessage @ MainApp.tsx:3839
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:221 🔍 [Supabase] Sample conversation from DB: {id: 'game-hub', title: 'Game Hub', messageCount: 0, hasMessagesField: true, messagesType: 'object', …}
+mapConversations @ supabaseService.ts:221
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+addMessage @ conversationService.ts:627
+handleSendMessage @ MainApp.tsx:3839
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:239 🔍 [Supabase] Processing conversation: {id: 'game-hub', title: 'Game Hub', rawMessages: Array(0), hasMessages: true, isArray: true, …}
+(anonymous) @ supabaseService.ts:239
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+addMessage @ conversationService.ts:627
+handleSendMessage @ MainApp.tsx:3839
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:266 🔍 [Supabase] Final processed messages for game-hub : 0
+(anonymous) @ supabaseService.ts:266
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+addMessage @ conversationService.ts:627
+handleSendMessage @ MainApp.tsx:3839
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:239 🔍 [Supabase] Processing conversation: {id: 'game-cyberpunk-2077', title: 'Cyberpunk 2077', rawMessages: Array(0), hasMessages: true, isArray: true, …}
+(anonymous) @ supabaseService.ts:239
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+addMessage @ conversationService.ts:627
+handleSendMessage @ MainApp.tsx:3839
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:266 🔍 [Supabase] Final processed messages for game-cyberpunk-2077 : 0
+(anonymous) @ supabaseService.ts:266
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+addMessage @ conversationService.ts:627
+handleSendMessage @ MainApp.tsx:3839
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:328 📊 [SupabaseService] Loading gameProgress for Cyberpunk 2077 - DB value: 0 → Mapped: 0
+conversationService.ts:309 🔍 [ConversationService] Loaded 2 conversations from Supabase
+igdbService.ts:526 [IGDBService] All cover URLs from localStorage cache: 1
+conversationService.ts:330 🔍 [ConversationService] Attached cover URLs to 1 game conversations
+conversationService.ts:337 🔍 [ConversationService] Game Hub BEFORE cache: {id: 'game-hub', messageCount: 0, hasMessages: true, messagesType: 'object'}
+getConversations @ conversationService.ts:337
+await in getConversations
+addMessage @ conversationService.ts:627
+handleSendMessage @ MainApp.tsx:3839
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+conversationService.ts:355 🔍 [ConversationService] Game Hub AFTER cache: {id: 'game-hub', messageCount: 0, hasMessages: true}
+getConversations @ conversationService.ts:355
+await in getConversations
+addMessage @ conversationService.ts:627
+handleSendMessage @ MainApp.tsx:3839
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+igdbService.ts:277 [IGDBService] Saved cover URL to cache: cyberpunk 2077
+igdbService.ts:281 [IGDBService] Successfully fetched: Cyberpunk 2077: Ultimate Edition (cached)
+MainApp.tsx:2328 📚 [MainApp] Auto-added game to Owned library: Cyberpunk 2077: Ultimate Edition
+conversationService.ts:654 ✅ [ConversationService] Message saved to database: 7e8e5f42-7a0f-4ef4-a32b-3fd28ec0e80f
+addMessage @ conversationService.ts:654
+await in addMessage
+handleSendMessage @ MainApp.tsx:3839
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:116 ✅ [Supabase] Game Hub exists via .single(): {id: 'game-hub', title: 'Game Hub', auth_user_id: 'a55df11a-072c-4acf-807b-da93ac1d8fad'}
+supabaseService.ts:215 🔍 [Supabase] mapConversations called with 2 conversations
+mapConversations @ supabaseService.ts:215
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+addMessage @ conversationService.ts:666
+await in addMessage
+handleSendMessage @ MainApp.tsx:3839
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:221 🔍 [Supabase] Sample conversation from DB: {id: 'game-hub', title: 'Game Hub', messageCount: 0, hasMessagesField: true, messagesType: 'object', …}
+mapConversations @ supabaseService.ts:221
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+addMessage @ conversationService.ts:666
+await in addMessage
+handleSendMessage @ MainApp.tsx:3839
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:239 🔍 [Supabase] Processing conversation: {id: 'game-hub', title: 'Game Hub', rawMessages: Array(0), hasMessages: true, isArray: true, …}
+(anonymous) @ supabaseService.ts:239
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+addMessage @ conversationService.ts:666
+await in addMessage
+handleSendMessage @ MainApp.tsx:3839
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:266 🔍 [Supabase] Final processed messages for game-hub : 0
+(anonymous) @ supabaseService.ts:266
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+addMessage @ conversationService.ts:666
+await in addMessage
+handleSendMessage @ MainApp.tsx:3839
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:239 🔍 [Supabase] Processing conversation: {id: 'game-cyberpunk-2077', title: 'Cyberpunk 2077', rawMessages: Array(1), hasMessages: true, isArray: true, …}
+(anonymous) @ supabaseService.ts:239
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+addMessage @ conversationService.ts:666
+await in addMessage
+handleSendMessage @ MainApp.tsx:3839
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:261 🔍 [Supabase] Processed message: {id: '7e8e5f42-7a0f-4ef4-a32b-3fd28ec0e80f', role: 'user', contentLength: 0}
+(anonymous) @ supabaseService.ts:261
+(anonymous) @ supabaseService.ts:252
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+addMessage @ conversationService.ts:666
+await in addMessage
+handleSendMessage @ MainApp.tsx:3839
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:266 🔍 [Supabase] Final processed messages for game-cyberpunk-2077 : 1
+(anonymous) @ supabaseService.ts:266
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+addMessage @ conversationService.ts:666
+await in addMessage
+handleSendMessage @ MainApp.tsx:3839
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:328 📊 [SupabaseService] Loading gameProgress for Cyberpunk 2077 - DB value: 0 → Mapped: 0
+supabaseService.ts:437 📊 [SupabaseService] Updating conversation: game-hub with gameProgress: 0
+supabaseService.ts:437 📊 [SupabaseService] Updating conversation: game-cyberpunk-2077 with gameProgress: 0
+supabaseService.ts:467 ✅ [SupabaseService] Successfully updated conversation with gameProgress: 0
+supabaseService.ts:467 ✅ [SupabaseService] Successfully updated conversation with gameProgress: 0
+cacheService.ts:26 [CacheService] Storing in Supabase: conversation:game-cyberpunk-2077 (type: conversation, user: none)
+MainApp.tsx:3842 💾 [MainApp] Saving AI message to TARGET conversation...
+cacheService.ts:26 [CacheService] Storing in Supabase: chat_context:a55df11a-072c-4acf-807b-da93ac1d8fad (type: context, user: a55df11a-072c-4acf-807b-da93ac1d8fad)
+supabaseService.ts:116 ✅ [Supabase] Game Hub exists via .single(): {id: 'game-hub', title: 'Game Hub', auth_user_id: 'a55df11a-072c-4acf-807b-da93ac1d8fad'}
+supabaseService.ts:215 🔍 [Supabase] mapConversations called with 2 conversations
+mapConversations @ supabaseService.ts:215
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+addMessage @ conversationService.ts:627
+handleSendMessage @ MainApp.tsx:3843
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:221 🔍 [Supabase] Sample conversation from DB: {id: 'game-cyberpunk-2077', title: 'Cyberpunk 2077', messageCount: 1, hasMessagesField: true, messagesType: 'object', …}
+mapConversations @ supabaseService.ts:221
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+addMessage @ conversationService.ts:627
+handleSendMessage @ MainApp.tsx:3843
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:239 🔍 [Supabase] Processing conversation: {id: 'game-cyberpunk-2077', title: 'Cyberpunk 2077', rawMessages: Array(1), hasMessages: true, isArray: true, …}
+(anonymous) @ supabaseService.ts:239
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+addMessage @ conversationService.ts:627
+handleSendMessage @ MainApp.tsx:3843
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:261 🔍 [Supabase] Processed message: {id: '7e8e5f42-7a0f-4ef4-a32b-3fd28ec0e80f', role: 'user', contentLength: 0}
+(anonymous) @ supabaseService.ts:261
+(anonymous) @ supabaseService.ts:252
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+addMessage @ conversationService.ts:627
+handleSendMessage @ MainApp.tsx:3843
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:266 🔍 [Supabase] Final processed messages for game-cyberpunk-2077 : 1
+(anonymous) @ supabaseService.ts:266
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+addMessage @ conversationService.ts:627
+handleSendMessage @ MainApp.tsx:3843
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:328 📊 [SupabaseService] Loading gameProgress for Cyberpunk 2077 - DB value: 0 → Mapped: 0
+supabaseService.ts:239 🔍 [Supabase] Processing conversation: {id: 'game-hub', title: 'Game Hub', rawMessages: Array(0), hasMessages: true, isArray: true, …}
+(anonymous) @ supabaseService.ts:239
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+addMessage @ conversationService.ts:627
+handleSendMessage @ MainApp.tsx:3843
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:266 🔍 [Supabase] Final processed messages for game-hub : 0
+(anonymous) @ supabaseService.ts:266
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+addMessage @ conversationService.ts:627
+handleSendMessage @ MainApp.tsx:3843
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+conversationService.ts:309 🔍 [ConversationService] Loaded 2 conversations from Supabase
+igdbService.ts:526 [IGDBService] All cover URLs from localStorage cache: 1
+conversationService.ts:330 🔍 [ConversationService] Attached cover URLs to 1 game conversations
+conversationService.ts:337 🔍 [ConversationService] Game Hub BEFORE cache: {id: 'game-hub', messageCount: 0, hasMessages: true, messagesType: 'object'}
+getConversations @ conversationService.ts:337
+await in getConversations
+addMessage @ conversationService.ts:627
+handleSendMessage @ MainApp.tsx:3843
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+conversationService.ts:355 🔍 [ConversationService] Game Hub AFTER cache: {id: 'game-hub', messageCount: 0, hasMessages: true}
+getConversations @ conversationService.ts:355
+await in getConversations
+addMessage @ conversationService.ts:627
+handleSendMessage @ MainApp.tsx:3843
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+conversationService.ts:654 ✅ [ConversationService] Message saved to database: 3ed88911-ae7a-46f5-bbb7-b2c9d177a97a
+addMessage @ conversationService.ts:654
+await in addMessage
+handleSendMessage @ MainApp.tsx:3843
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:116 ✅ [Supabase] Game Hub exists via .single(): {id: 'game-hub', title: 'Game Hub', auth_user_id: 'a55df11a-072c-4acf-807b-da93ac1d8fad'}
+supabaseService.ts:215 🔍 [Supabase] mapConversations called with 2 conversations
+mapConversations @ supabaseService.ts:215
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+addMessage @ conversationService.ts:666
+await in addMessage
+handleSendMessage @ MainApp.tsx:3843
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:221 🔍 [Supabase] Sample conversation from DB: {id: 'game-cyberpunk-2077', title: 'Cyberpunk 2077', messageCount: 2, hasMessagesField: true, messagesType: 'object', …}
+mapConversations @ supabaseService.ts:221
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+addMessage @ conversationService.ts:666
+await in addMessage
+handleSendMessage @ MainApp.tsx:3843
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:239 🔍 [Supabase] Processing conversation: {id: 'game-cyberpunk-2077', title: 'Cyberpunk 2077', rawMessages: Array(2), hasMessages: true, isArray: true, …}
+(anonymous) @ supabaseService.ts:239
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+addMessage @ conversationService.ts:666
+await in addMessage
+handleSendMessage @ MainApp.tsx:3843
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:261 🔍 [Supabase] Processed message: {id: '7e8e5f42-7a0f-4ef4-a32b-3fd28ec0e80f', role: 'user', contentLength: 0}
+(anonymous) @ supabaseService.ts:261
+(anonymous) @ supabaseService.ts:252
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+addMessage @ conversationService.ts:666
+await in addMessage
+handleSendMessage @ MainApp.tsx:3843
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:261 🔍 [Supabase] Processed message: {id: '3ed88911-ae7a-46f5-bbb7-b2c9d177a97a', role: 'assistant', contentLength: 2406}
+(anonymous) @ supabaseService.ts:261
+(anonymous) @ supabaseService.ts:252
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+addMessage @ conversationService.ts:666
+await in addMessage
+handleSendMessage @ MainApp.tsx:3843
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:266 🔍 [Supabase] Final processed messages for game-cyberpunk-2077 : 2
+(anonymous) @ supabaseService.ts:266
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+addMessage @ conversationService.ts:666
+await in addMessage
+handleSendMessage @ MainApp.tsx:3843
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:328 📊 [SupabaseService] Loading gameProgress for Cyberpunk 2077 - DB value: 0 → Mapped: 0
+supabaseService.ts:239 🔍 [Supabase] Processing conversation: {id: 'game-hub', title: 'Game Hub', rawMessages: Array(0), hasMessages: true, isArray: true, …}
+(anonymous) @ supabaseService.ts:239
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+addMessage @ conversationService.ts:666
+await in addMessage
+handleSendMessage @ MainApp.tsx:3843
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:266 🔍 [Supabase] Final processed messages for game-hub : 0
+(anonymous) @ supabaseService.ts:266
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+addMessage @ conversationService.ts:666
+await in addMessage
+handleSendMessage @ MainApp.tsx:3843
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:437 📊 [SupabaseService] Updating conversation: game-cyberpunk-2077 with gameProgress: 0
+supabaseService.ts:437 📊 [SupabaseService] Updating conversation: game-hub with gameProgress: 0
+supabaseService.ts:467 ✅ [SupabaseService] Successfully updated conversation with gameProgress: 0
+supabaseService.ts:467 ✅ [SupabaseService] Successfully updated conversation with gameProgress: 0
+cacheService.ts:26 [CacheService] Storing in Supabase: conversation:game-cyberpunk-2077 (type: conversation, user: none)
+MainApp.tsx:3846 ✅ [MainApp] Messages saved to target with IDs: {userMessageDbId: '7e8e5f42-7a0f-4ef4-a32b-3fd28ec0e80f', aiMessageDbId: '3ed88911-ae7a-46f5-bbb7-b2c9d177a97a'}
+MainApp.tsx:3855 🎮 [MainApp] 💾 Saving progress 30% to database for: game-cyberpunk-2077
+MainApp.tsx:3860 🎮 [MainApp] 💾 Saving objective to database for: game-cyberpunk-2077
+cacheService.ts:26 [CacheService] Storing in Supabase: chat_context:a55df11a-072c-4acf-807b-da93ac1d8fad (type: context, user: a55df11a-072c-4acf-807b-da93ac1d8fad)
+supabaseService.ts:116 ✅ [Supabase] Game Hub exists via .single(): {id: 'game-hub', title: 'Game Hub', auth_user_id: 'a55df11a-072c-4acf-807b-da93ac1d8fad'}
+supabaseService.ts:215 🔍 [Supabase] mapConversations called with 2 conversations
+mapConversations @ supabaseService.ts:215
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+updateConversation @ conversationService.ts:573
+await in updateConversation
+handleSendMessage @ MainApp.tsx:3864
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:221 🔍 [Supabase] Sample conversation from DB: {id: 'game-hub', title: 'Game Hub', messageCount: 0, hasMessagesField: true, messagesType: 'object', …}
+mapConversations @ supabaseService.ts:221
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+updateConversation @ conversationService.ts:573
+await in updateConversation
+handleSendMessage @ MainApp.tsx:3864
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:239 🔍 [Supabase] Processing conversation: {id: 'game-hub', title: 'Game Hub', rawMessages: Array(0), hasMessages: true, isArray: true, …}
+(anonymous) @ supabaseService.ts:239
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+updateConversation @ conversationService.ts:573
+await in updateConversation
+handleSendMessage @ MainApp.tsx:3864
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:266 🔍 [Supabase] Final processed messages for game-hub : 0
+(anonymous) @ supabaseService.ts:266
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+updateConversation @ conversationService.ts:573
+await in updateConversation
+handleSendMessage @ MainApp.tsx:3864
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:239 🔍 [Supabase] Processing conversation: {id: 'game-cyberpunk-2077', title: 'Cyberpunk 2077', rawMessages: Array(2), hasMessages: true, isArray: true, …}
+(anonymous) @ supabaseService.ts:239
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+updateConversation @ conversationService.ts:573
+await in updateConversation
+handleSendMessage @ MainApp.tsx:3864
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:261 🔍 [Supabase] Processed message: {id: '7e8e5f42-7a0f-4ef4-a32b-3fd28ec0e80f', role: 'user', contentLength: 0}
+(anonymous) @ supabaseService.ts:261
+(anonymous) @ supabaseService.ts:252
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+updateConversation @ conversationService.ts:573
+await in updateConversation
+handleSendMessage @ MainApp.tsx:3864
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:261 🔍 [Supabase] Processed message: {id: '3ed88911-ae7a-46f5-bbb7-b2c9d177a97a', role: 'assistant', contentLength: 2406}
+(anonymous) @ supabaseService.ts:261
+(anonymous) @ supabaseService.ts:252
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+updateConversation @ conversationService.ts:573
+await in updateConversation
+handleSendMessage @ MainApp.tsx:3864
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:266 🔍 [Supabase] Final processed messages for game-cyberpunk-2077 : 2
+(anonymous) @ supabaseService.ts:266
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+updateConversation @ conversationService.ts:573
+await in updateConversation
+handleSendMessage @ MainApp.tsx:3864
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:328 📊 [SupabaseService] Loading gameProgress for Cyberpunk 2077 - DB value: 0 → Mapped: 0
+conversationService.ts:309 🔍 [ConversationService] Loaded 2 conversations from Supabase
+igdbService.ts:526 [IGDBService] All cover URLs from localStorage cache: 1
+conversationService.ts:330 🔍 [ConversationService] Attached cover URLs to 1 game conversations
+conversationService.ts:337 🔍 [ConversationService] Game Hub BEFORE cache: {id: 'game-hub', messageCount: 0, hasMessages: true, messagesType: 'object'}
+getConversations @ conversationService.ts:337
+await in getConversations
+updateConversation @ conversationService.ts:573
+await in updateConversation
+handleSendMessage @ MainApp.tsx:3864
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+conversationService.ts:355 🔍 [ConversationService] Game Hub AFTER cache: {id: 'game-hub', messageCount: 0, hasMessages: true}
+getConversations @ conversationService.ts:355
+await in getConversations
+updateConversation @ conversationService.ts:573
+await in updateConversation
+handleSendMessage @ MainApp.tsx:3864
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:437 📊 [SupabaseService] Updating conversation: game-cyberpunk-2077 with gameProgress: 30
+supabaseService.ts:467 ✅ [SupabaseService] Successfully updated conversation with gameProgress: 30
+supabaseService.ts:116 ✅ [Supabase] Game Hub exists via .single(): {id: 'game-hub', title: 'Game Hub', auth_user_id: 'a55df11a-072c-4acf-807b-da93ac1d8fad'}
+supabaseService.ts:215 🔍 [Supabase] mapConversations called with 2 conversations
+mapConversations @ supabaseService.ts:215
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+updateConversation @ conversationService.ts:592
+await in updateConversation
+handleSendMessage @ MainApp.tsx:3864
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:221 🔍 [Supabase] Sample conversation from DB: {id: 'game-cyberpunk-2077', title: 'Cyberpunk 2077', messageCount: 2, hasMessagesField: true, messagesType: 'object', …}
+mapConversations @ supabaseService.ts:221
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+updateConversation @ conversationService.ts:592
+await in updateConversation
+handleSendMessage @ MainApp.tsx:3864
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:239 🔍 [Supabase] Processing conversation: {id: 'game-cyberpunk-2077', title: 'Cyberpunk 2077', rawMessages: Array(2), hasMessages: true, isArray: true, …}
+(anonymous) @ supabaseService.ts:239
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+updateConversation @ conversationService.ts:592
+await in updateConversation
+handleSendMessage @ MainApp.tsx:3864
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:261 🔍 [Supabase] Processed message: {id: '7e8e5f42-7a0f-4ef4-a32b-3fd28ec0e80f', role: 'user', contentLength: 0}
+(anonymous) @ supabaseService.ts:261
+(anonymous) @ supabaseService.ts:252
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+updateConversation @ conversationService.ts:592
+await in updateConversation
+handleSendMessage @ MainApp.tsx:3864
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:261 🔍 [Supabase] Processed message: {id: '3ed88911-ae7a-46f5-bbb7-b2c9d177a97a', role: 'assistant', contentLength: 2406}
+(anonymous) @ supabaseService.ts:261
+(anonymous) @ supabaseService.ts:252
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+updateConversation @ conversationService.ts:592
+await in updateConversation
+handleSendMessage @ MainApp.tsx:3864
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:266 🔍 [Supabase] Final processed messages for game-cyberpunk-2077 : 2
+(anonymous) @ supabaseService.ts:266
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+updateConversation @ conversationService.ts:592
+await in updateConversation
+handleSendMessage @ MainApp.tsx:3864
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:328 📊 [SupabaseService] Loading gameProgress for Cyberpunk 2077 - DB value: 30 → Mapped: 30
+supabaseService.ts:239 🔍 [Supabase] Processing conversation: {id: 'game-hub', title: 'Game Hub', rawMessages: Array(0), hasMessages: true, isArray: true, …}
+(anonymous) @ supabaseService.ts:239
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+updateConversation @ conversationService.ts:592
+await in updateConversation
+handleSendMessage @ MainApp.tsx:3864
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:266 🔍 [Supabase] Final processed messages for game-hub : 0
+(anonymous) @ supabaseService.ts:266
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+setConversations @ conversationService.ts:427
+await in setConversations
+updateConversation @ conversationService.ts:592
+await in updateConversation
+handleSendMessage @ MainApp.tsx:3864
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:437 📊 [SupabaseService] Updating conversation: game-hub with gameProgress: 0
+supabaseService.ts:437 📊 [SupabaseService] Updating conversation: game-cyberpunk-2077 with gameProgress: 30
+supabaseService.ts:467 ✅ [SupabaseService] Successfully updated conversation with gameProgress: 30
+supabaseService.ts:467 ✅ [SupabaseService] Successfully updated conversation with gameProgress: 0
+MainApp.tsx:3865 ✅ [MainApp] Progress/objective saved to database
+gameTabService.ts:1250 🔄 [GameTabService] [game-cyberpunk-2077] Updating subtabs after migration...
+updateSubtabsAfterMigration @ gameTabService.ts:1250
+handleSendMessage @ MainApp.tsx:3887
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+Sidebar.tsx:254 🖼️ [Sidebar] Missing coverUrl for: Cyberpunk 2077 gameTitle: Cyberpunk 2077 isUnreleased: false
+Sidebar.tsx:254 🖼️ [Sidebar] Missing coverUrl for: Cyberpunk 2077 gameTitle: Cyberpunk 2077 isUnreleased: false
+supabaseService.ts:116 ✅ [Supabase] Game Hub exists via .single(): {id: 'game-hub', title: 'Game Hub', auth_user_id: 'a55df11a-072c-4acf-807b-da93ac1d8fad'}
+supabaseService.ts:116 ✅ [Supabase] Game Hub exists via .single(): {id: 'game-hub', title: 'Game Hub', auth_user_id: 'a55df11a-072c-4acf-807b-da93ac1d8fad'}
+supabaseService.ts:215 🔍 [Supabase] mapConversations called with 2 conversations
+mapConversations @ supabaseService.ts:215
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+updateSubtabsAfterMigration @ gameTabService.ts:1254
+handleSendMessage @ MainApp.tsx:3887
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:221 🔍 [Supabase] Sample conversation from DB: {id: 'game-hub', title: 'Game Hub', messageCount: 0, hasMessagesField: true, messagesType: 'object', …}
+mapConversations @ supabaseService.ts:221
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+updateSubtabsAfterMigration @ gameTabService.ts:1254
+handleSendMessage @ MainApp.tsx:3887
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:239 🔍 [Supabase] Processing conversation: {id: 'game-hub', title: 'Game Hub', rawMessages: Array(0), hasMessages: true, isArray: true, …}
+(anonymous) @ supabaseService.ts:239
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+updateSubtabsAfterMigration @ gameTabService.ts:1254
+handleSendMessage @ MainApp.tsx:3887
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:266 🔍 [Supabase] Final processed messages for game-hub : 0
+(anonymous) @ supabaseService.ts:266
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+updateSubtabsAfterMigration @ gameTabService.ts:1254
+handleSendMessage @ MainApp.tsx:3887
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:239 🔍 [Supabase] Processing conversation: {id: 'game-cyberpunk-2077', title: 'Cyberpunk 2077', rawMessages: Array(2), hasMessages: true, isArray: true, …}
+(anonymous) @ supabaseService.ts:239
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+updateSubtabsAfterMigration @ gameTabService.ts:1254
+handleSendMessage @ MainApp.tsx:3887
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:261 🔍 [Supabase] Processed message: {id: '7e8e5f42-7a0f-4ef4-a32b-3fd28ec0e80f', role: 'user', contentLength: 0}
+(anonymous) @ supabaseService.ts:261
+(anonymous) @ supabaseService.ts:252
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+updateSubtabsAfterMigration @ gameTabService.ts:1254
+handleSendMessage @ MainApp.tsx:3887
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:261 🔍 [Supabase] Processed message: {id: '3ed88911-ae7a-46f5-bbb7-b2c9d177a97a', role: 'assistant', contentLength: 2406}
+(anonymous) @ supabaseService.ts:261
+(anonymous) @ supabaseService.ts:252
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+updateSubtabsAfterMigration @ gameTabService.ts:1254
+handleSendMessage @ MainApp.tsx:3887
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:266 🔍 [Supabase] Final processed messages for game-cyberpunk-2077 : 2
+(anonymous) @ supabaseService.ts:266
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+updateSubtabsAfterMigration @ gameTabService.ts:1254
+handleSendMessage @ MainApp.tsx:3887
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:328 📊 [SupabaseService] Loading gameProgress for Cyberpunk 2077 - DB value: 30 → Mapped: 30
+conversationService.ts:309 🔍 [ConversationService] Loaded 2 conversations from Supabase
+igdbService.ts:526 [IGDBService] All cover URLs from localStorage cache: 1
+conversationService.ts:330 🔍 [ConversationService] Attached cover URLs to 1 game conversations
+conversationService.ts:337 🔍 [ConversationService] Game Hub BEFORE cache: {id: 'game-hub', messageCount: 0, hasMessages: true, messagesType: 'object'}
+getConversations @ conversationService.ts:337
+await in getConversations
+updateSubtabsAfterMigration @ gameTabService.ts:1254
+handleSendMessage @ MainApp.tsx:3887
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+conversationService.ts:355 🔍 [ConversationService] Game Hub AFTER cache: {id: 'game-hub', messageCount: 0, hasMessages: true}
+getConversations @ conversationService.ts:355
+await in getConversations
+updateSubtabsAfterMigration @ gameTabService.ts:1254
+handleSendMessage @ MainApp.tsx:3887
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+gameTabService.ts:1264 🔄 [GameTabService] [game-cyberpunk-2077] No subtabs to update
+updateSubtabsAfterMigration @ gameTabService.ts:1264
+await in updateSubtabsAfterMigration
+handleSendMessage @ MainApp.tsx:3887
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:215 🔍 [Supabase] mapConversations called with 2 conversations
+mapConversations @ supabaseService.ts:215
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+handleSendMessage @ MainApp.tsx:4148
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:221 🔍 [Supabase] Sample conversation from DB: {id: 'game-hub', title: 'Game Hub', messageCount: 0, hasMessagesField: true, messagesType: 'object', …}
+mapConversations @ supabaseService.ts:221
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+handleSendMessage @ MainApp.tsx:4148
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:239 🔍 [Supabase] Processing conversation: {id: 'game-hub', title: 'Game Hub', rawMessages: Array(0), hasMessages: true, isArray: true, …}
+(anonymous) @ supabaseService.ts:239
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+handleSendMessage @ MainApp.tsx:4148
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:266 🔍 [Supabase] Final processed messages for game-hub : 0
+(anonymous) @ supabaseService.ts:266
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+handleSendMessage @ MainApp.tsx:4148
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:239 🔍 [Supabase] Processing conversation: {id: 'game-cyberpunk-2077', title: 'Cyberpunk 2077', rawMessages: Array(2), hasMessages: true, isArray: true, …}
+(anonymous) @ supabaseService.ts:239
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+handleSendMessage @ MainApp.tsx:4148
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:261 🔍 [Supabase] Processed message: {id: '7e8e5f42-7a0f-4ef4-a32b-3fd28ec0e80f', role: 'user', contentLength: 0}
+(anonymous) @ supabaseService.ts:261
+(anonymous) @ supabaseService.ts:252
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+handleSendMessage @ MainApp.tsx:4148
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:261 🔍 [Supabase] Processed message: {id: '3ed88911-ae7a-46f5-bbb7-b2c9d177a97a', role: 'assistant', contentLength: 2406}
+(anonymous) @ supabaseService.ts:261
+(anonymous) @ supabaseService.ts:252
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+handleSendMessage @ MainApp.tsx:4148
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:266 🔍 [Supabase] Final processed messages for game-cyberpunk-2077 : 2
+(anonymous) @ supabaseService.ts:266
+mapConversations @ supabaseService.ts:235
+getConversations @ supabaseService.ts:155
+await in getConversations
+getConversations @ conversationService.ts:301
+await in getConversations
+handleSendMessage @ MainApp.tsx:4148
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+supabaseService.ts:328 📊 [SupabaseService] Loading gameProgress for Cyberpunk 2077 - DB value: 30 → Mapped: 30
+conversationService.ts:309 🔍 [ConversationService] Loaded 2 conversations from Supabase
+igdbService.ts:526 [IGDBService] All cover URLs from localStorage cache: 1
+conversationService.ts:330 🔍 [ConversationService] Attached cover URLs to 1 game conversations
+conversationService.ts:337 🔍 [ConversationService] Game Hub BEFORE cache: {id: 'game-hub', messageCount: 0, hasMessages: true, messagesType: 'object'}
+getConversations @ conversationService.ts:337
+await in getConversations
+handleSendMessage @ MainApp.tsx:4148
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+conversationService.ts:355 🔍 [ConversationService] Game Hub AFTER cache: {id: 'game-hub', messageCount: 0, hasMessages: true}
+getConversations @ conversationService.ts:355
+await in getConversations
+handleSendMessage @ MainApp.tsx:4148
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:779
+callCallback2 @ chunk-TH7NCS4R.js?v=a6676f25:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=a6676f25:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=a6676f25:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=a6676f25:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=a6676f25:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=a6676f25:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=a6676f25:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=a6676f25:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=a6676f25:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=a6676f25:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=a6676f25:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=a6676f25:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=a6676f25:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=a6676f25:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=a6676f25:5455
+MainApp.tsx:4243 🔓 [MainApp] Processing lock released
+MainApp.tsx:320 [MainApp] Fetching quota for user: a55df11a-072c-4acf-807b-da93ac1d8fad tier: free
+groundingControlService.ts:579 [GroundingControl] getRemainingQuota called with: {authUserId: 'a55df11a-072c-4acf-807b-da93ac1d8fad', tier: 'free'}
+groundingControlService.ts:403 [GroundingControl] getGroundingUsage called for: a55df11a-072c-4acf-807b-da93ac1d8fad
+MainApp.tsx:4593 🎮 [MainApp] activeConversation gameProgress: 30 conv: Cyberpunk 2077
+MainApp.tsx:4593 🎮 [MainApp] activeConversation gameProgress: 30 conv: Cyberpunk 2077
+GameProgressBar.tsx:17 🎮 [GameProgressBar] Received progress: 30 for game: Cyberpunk 2077
+GameProgressBar.tsx:17 🎮 [GameProgressBar] Received progress: 30 for game: Cyberpunk 2077
+MainApp.tsx:134 🎯 [MainApp] suggestedPrompts STATE CHANGED: {prompts: Array(0), length: 0, isAISettingFlag: false, activeConvId: 'game-cyberpunk-2077', trace: '    at http://localhost:5173/src/components/MainAp….vite/deps/chunk-TH7NCS4R.js?v=a6676f25:18179:17)'}
+MainApp.tsx:377 📌 [MainApp] Loading saved suggestions from last AI message: (3) ['What kind of unique items or services can I find in the Jig-Jig Street market?', "Can you elaborate on Takemura's code of honor and how it influences his actions?", 'What are some optimal approaches for stealth in corporate infiltration missions?']
+MainApp.tsx:1222 🎮 [IGDB] Effect triggered: {hasActiveConv: true, gameTitle: 'Cyberpunk 2077', isGameHub: false, convId: 'game-cyberpunk-2077', prevFetched: null}
+MainApp.tsx:1246 🎮 [MainApp] Fetching IGDB data for: Cyberpunk 2077
+igdbService.ts:204 [IGDBService] Session cache hit: Cyberpunk 2077
+MainApp.tsx:4593 🎮 [MainApp] activeConversation gameProgress: 30 conv: Cyberpunk 2077
+MainApp.tsx:4593 🎮 [MainApp] activeConversation gameProgress: 30 conv: Cyberpunk 2077
+GameProgressBar.tsx:17 🎮 [GameProgressBar] Received progress: 30 for game: Cyberpunk 2077
+GameProgressBar.tsx:17 🎮 [GameProgressBar] Received progress: 30 for game: Cyberpunk 2077
+MainApp.tsx:1254 ✅ [MainApp] IGDB data loaded: Cyberpunk 2077: Ultimate Edition
+MainApp.tsx:1258 🖼️ [MainApp] Cover URL for sidebar: https://images.igdb.com/igdb/image/upload/t_cover_small/co7iy1.jpg Original: https://images.igdb.com/igdb/image/upload/t_cover_big/co7iy1.jpg
+MainApp.tsx:1266 🖼️ [MainApp] Updated conversation with coverUrl: game-cyberpunk-2077
+MainApp.tsx:134 🎯 [MainApp] suggestedPrompts STATE CHANGED: {prompts: Array(3), length: 3, isAISettingFlag: false, activeConvId: 'game-cyberpunk-2077', trace: '    at http://localhost:5173/src/components/MainAp….vite/deps/chunk-TH7NCS4R.js?v=a6676f25:18179:17)'}
+MainApp.tsx:4593 🎮 [MainApp] activeConversation gameProgress: 30 conv: Cyberpunk 2077
+MainApp.tsx:4593 🎮 [MainApp] activeConversation gameProgress: 30 conv: Cyberpunk 2077
+GameProgressBar.tsx:17 🎮 [GameProgressBar] Received progress: 30 for game: Cyberpunk 2077
+GameProgressBar.tsx:17 🎮 [GameProgressBar] Received progress: 30 for game: Cyberpunk 2077
+GameInfoModal.tsx:110 [GameInfoModal] Checking categories, version: 0
+GameInfoModal.tsx:110 [GameInfoModal] Checking categories, version: 0
+groundingControlService.ts:458 [GroundingControl] Raw data from DB: null
+groundingControlService.ts:462 [GroundingControl] No usage record found for this month - user has full quota
+groundingControlService.ts:582 [GroundingControl] getGroundingUsage returned: {gameKnowledge: 0, aiMessages: 0, total: 0}
+groundingControlService.ts:585 [GroundingControl] Limits for tier: {gameKnowledge: 0, aiMessages: 4}
+MainApp.tsx:326 [MainApp] Quota received: {gameKnowledge: {…}, aiMessages: {…}}
+MainApp.tsx:327 [MainApp] Setting aiMessagesQuota to: 4
+MainApp.tsx:1207 ✅ [MainApp] Real-time subscription active

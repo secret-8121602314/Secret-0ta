@@ -11,12 +11,14 @@ interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   user: User | null;
+  onTrialStart?: () => void;
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ 
   isOpen, 
   onClose, 
-  user
+  user,
+  onTrialStart
 }) => {
   const [activeTab, setActiveTab] = useState<'account' | 'tier' | 'profile'>('account');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -53,13 +55,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   }
 
   const handleTrialStart = () => {
-    // Refresh user data to reflect trial status
-    const currentUser = authService.getCurrentUser();
-    if (currentUser) {
-      // The parent component should handle updating the user state
-      // For now, we'll just close the modal to refresh the UI
-      onClose();
+    // Call parent's onTrialStart to refresh user data
+    if (onTrialStart) {
+      onTrialStart();
     }
+    // Close the modal after trial starts
+    onClose();
   };
 
   const getTierDisplayName = (tier: UserTier) => {

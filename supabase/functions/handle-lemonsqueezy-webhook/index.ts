@@ -223,8 +223,8 @@ serve(async (req) => {
       const updatePayload = {
         tier: tier,
         trial_expires_at: null,
-        text_limit: 1583,
-        image_limit: 328,
+        text_limit: 350,
+        image_limit: 150,
         updated_at: new Date().toISOString(),
       };
       console.log('📝 Updating user with:', JSON.stringify(updatePayload));
@@ -326,8 +326,8 @@ serve(async (req) => {
       if (foundUser) {
         await supabaseRest('users', 'PATCH', {
           tier: 'free',
-          text_limit: 55,
-          image_limit: 25,
+          text_limit: 20,
+          image_limit: 15,
           updated_at: new Date().toISOString(),
         }, `id=eq.${foundUser.id}`);
         console.log('✅ User downgraded to free');

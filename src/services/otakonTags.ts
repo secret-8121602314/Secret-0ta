@@ -17,10 +17,13 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
   // This handles the new AI response format with embedded JSON
   // ============================================
   
-  // Look for JSON block after "Internal Data Structure" header
+  // Look for JSON block after "Internal Data Structure" header (with optional markdown formatting)
   const internalDataPatterns = [
-    /Internal Data Structure:?\s*\n*\s*```json\s*([\s\S]*?)```/i,
-    /Internal Data Structure:?\s*\n*\s*```\s*([\s\S]*?)```/i,
+    /\*\*Internal Data Structure\*\*:?\s*\n*\s*```json\s*([\s\S]*?)```/i, // **Internal Data Structure** with json
+    /\*\*Internal Data Structure\*\*:?\s*\n*\s*```\s*([\s\S]*?)```/i, // **Internal Data Structure** without json tag
+    /Internal Data Structure:?\s*\n*\s*```json\s*([\s\S]*?)```/i, // Plain text with json
+    /Internal Data Structure:?\s*\n*\s*```\s*([\s\S]*?)```/i, // Plain text without json tag
+    /Internal Data Structure:?\s*\n*(\{[\s\S]*?\})\s*```/i, // Match until closing ```
     /Internal Data Structure:?\s*\n*(\{[\s\S]*?"followUpPrompts"[\s\S]*?\})\s*$/i,
     /"Internal Data Structure":?\s*\n*(\{[\s\S]*?"followUpPrompts"[\s\S]*?\})/i,
   ];
@@ -126,8 +129,23 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
   let suggestionsMatch;
   while ((suggestionsMatch = suggestionsRegex.exec(rawContent)) !== null) {
     try {
-      // Replace single quotes with double quotes for valid JSON
-      const jsonStr = suggestionsMatch[1].replace(/'/g, '"');
+      const arrayContent = suggestionsMatch[1];
+      
+      // Try parsing as-is first (if it's already valid JSON)
+      try {
+        const suggestions = JSON.parse(arrayContent);
+        if (Array.isArray(suggestions)) {
+          tags.set('SUGGESTIONS', suggestions);
+          cleanContent = cleanContent.replace(suggestionsMatch[0], '');
+          console.log(`🏷️ [otakonTags] Extracted SUGGESTIONS:`, suggestions);
+          continue;
+        }
+      } catch (_e) {
+        // Not valid JSON, try fixing it
+      }
+      
+      // Fallback: Replace single quotes with double quotes for valid JSON
+      const jsonStr = arrayContent.replace(/'/g, '"');
       const suggestions = JSON.parse(jsonStr);
       tags.set('SUGGESTIONS', suggestions);
       cleanContent = cleanContent.replace(suggestionsMatch[0], '');
@@ -285,6 +303,7 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
     // Remove any remaining OTAKON tags
     .replace(/\[OTAKON_[A-Z_]+:[^\]]*\]/g, '')
     // ✅ NEW: Remove "Internal Data Structure" section and everything after it
+    .replace(/\*\*Internal Data Structure\*\*[\s\S]*$/gi, '') // **Internal Data Structure** (bold markdown)
     .replace(/\*+\s*#+\s*Internal Data Structure[\s\S]*$/gi, '') // ***## Internal Data Structure
     .replace(/\*+\s*Internal Data Structure[\s\S]*$/gi, '') // *** Internal Data Structure
     .replace(/#+\s*Internal Data Structure[\s\S]*$/gi, '') // ## Internal Data Structure

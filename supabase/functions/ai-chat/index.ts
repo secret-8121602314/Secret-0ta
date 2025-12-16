@@ -125,7 +125,12 @@ serve(async (req) => {
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Missing authorization header" }), {
         status: 401,
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type"
+        },
       });
     }
 
@@ -136,7 +141,12 @@ serve(async (req) => {
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type"
+        },
       });
     }
 
@@ -149,16 +159,20 @@ serve(async (req) => {
     if (userLimit) {
       if (now < userLimit.resetTime) {
         if (userLimit.count >= MAX_REQUESTS_PER_WINDOW) {
+          const retryAfter = Math.ceil((userLimit.resetTime - now) / 1000);
           return new Response(
             JSON.stringify({ 
               error: "Rate limit exceeded for chat messages. Please wait a moment.",
-              retryAfter: Math.ceil((userLimit.resetTime - now) / 1000)
+              retryAfter: retryAfter
             }),
             {
               status: 429,
               headers: { 
                 "Content-Type": "application/json",
-                "Retry-After": Math.ceil((userLimit.resetTime - now) / 1000).toString()
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+                "Retry-After": retryAfter.toString()
               },
             }
           );
@@ -189,7 +203,15 @@ serve(async (req) => {
     if (userError || !userData) {
       return new Response(
         JSON.stringify({ error: 'User not found', success: false }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 404, 
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+          } 
+        }
       );
     }
 
@@ -203,7 +225,15 @@ serve(async (req) => {
           tier: userData.tier,
           limit: userData.text_limit
         }),
-        { status: 403, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 403, 
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+          } 
+        }
       );
     }
 
@@ -216,7 +246,15 @@ serve(async (req) => {
           tier: userData.tier,
           limit: userData.image_limit
         }),
-        { status: 403, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 403, 
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+          } 
+        }
       );
     }
 
@@ -418,7 +456,9 @@ serve(async (req) => {
     }), {
       headers: { 
         "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*"
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type"
       },
     });
 
@@ -426,7 +466,12 @@ serve(async (req) => {
     console.error("Error in ai-chat function:", error);
     return new Response(JSON.stringify({ error: "Internal server error", message: error.message }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type"
+      },
     });
   }
 });

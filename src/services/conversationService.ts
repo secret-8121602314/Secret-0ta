@@ -27,6 +27,10 @@ export class ConversationService {
   // ✅ PERFORMANCE: Deduplicate conversation creation attempts
   private static pendingCreations = new Map<string, Promise<{ success: boolean; reason?: string }>>();
   
+  // ✅ PERFORMANCE: Cache Game Hub to avoid repeated DB calls
+  private static gameHubCache: { userId: string; gameHub: Conversation; timestamp: number } | null = null;
+  private static readonly GAME_HUB_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+  
   // ✅ Get current user ID for Supabase operations
   private static async getCurrentUserId(): Promise<string | null> {
     try {
@@ -122,13 +126,50 @@ export class ConversationService {
   // ✅ SECURITY: Now includes userId to prevent data leakage between accounts
   private static conversationsCache: { userId: string; data: Conversations; timestamp: number } | null = null;
   private static CACHE_TTL = 5000; // 5 second cache (balance between real-time and performance)
+  private static MAX_MESSAGES_IN_LOCALSTORAGE = 50; // Keep only recent messages in localStorage
+
+  /**
+   * Trim conversations for localStorage storage to prevent quota exceeded errors.
+   * Full message history is always preserved in Supabase.
+   */
+  private static trimConversationsForLocalStorage(conversations: Conversations): Conversations {
+    const trimmed: Conversations = {};
+    
+    for (const [id, conv] of Object.entries(conversations)) {
+      trimmed[id] = { ...conv };
+      
+      // Keep only the last N messages in localStorage
+      if (conv.messages && conv.messages.length > this.MAX_MESSAGES_IN_LOCALSTORAGE) {
+        trimmed[id].messages = conv.messages.slice(-this.MAX_MESSAGES_IN_LOCALSTORAGE);
+      }
+    }
+    
+    return trimmed;
+  }
+
+  /**
+   * Monitor localStorage usage and log warnings if approaching quota
+   */
+  private static monitorStorageUsage(): void {
+    try {
+      const stats = StorageService.getStorageStats();
+      const percentage = stats.percentage * 100;
+      
+      // Only log if critically high (>95%)
+      if (percentage > 95) {
+        console.warn(`localStorage usage at ${percentage.toFixed(1)}%`);
+      }
+    } catch {
+      // Silently fail - this is just monitoring
+    }
+  }
 
   /**
    * Clear the conversations cache to force fresh database read
    */
   static clearCache(): void {
-    console.error('🗑️ [ConversationService] Cache cleared, next read will be fresh');
     this.conversationsCache = null;
+    this.gameHubCache = null; // ✅ Also clear Game Hub cache
   }
 
   /**
@@ -249,10 +290,8 @@ export class ConversationService {
         this.conversationsCache && 
         this.conversationsCache.userId === userId &&
         Date.now() - this.conversationsCache.timestamp < this.CACHE_TTL) {
-      console.log('🔍 [ConversationService] Cache hit for user', userId, '(age:', Date.now() - this.conversationsCache.timestamp, 'ms)');
       // Return cache immediately, but also refresh in background if approaching TTL
       if (Date.now() - this.conversationsCache.timestamp > this.CACHE_TTL / 2) {
-        console.log('🔍 [ConversationService] Cache approaching expiry, refreshing in background...');
         this.refreshCacheInBackground(userId);
       }
       return this.conversationsCache.data;
@@ -268,8 +307,6 @@ export class ConversationService {
           acc[conv.id] = conv;
           return acc;
         }, {} as Conversations);
-        
-        console.log('🔍 [ConversationService] Loaded', Object.keys(conversations).length, 'conversations from Supabase');
         
         // ✅ Fetch cover URLs from IGDB cache for game tabs
         const gameConvs = Object.values(conversations).filter(
@@ -290,19 +327,7 @@ export class ConversationService {
                 conversations[conv.id].coverUrl = coverUrls.get(gameName);
               }
             }
-            console.log('🔍 [ConversationService] Attached cover URLs to', coverUrls.size, 'game conversations');
           }
-        }
-        
-        // 🔍 DEBUG: Check messages before caching
-        const gameHubBeforeCache = conversations['game-hub'];
-        if (gameHubBeforeCache) {
-          console.error('🔍 [ConversationService] Game Hub BEFORE cache:', {
-            id: gameHubBeforeCache.id,
-            messageCount: gameHubBeforeCache.messages?.length || 0,
-            hasMessages: !!gameHubBeforeCache.messages,
-            messagesType: typeof gameHubBeforeCache.messages
-          });
         }
         
         // ✅ SECURITY: Update cache with userId validation
@@ -311,16 +336,6 @@ export class ConversationService {
           data: conversations,
           timestamp: Date.now()
         };
-        
-        // 🔍 DEBUG: Check messages after caching
-        const gameHubAfterCache = this.conversationsCache.data['game-hub'];
-        if (gameHubAfterCache) {
-          console.error('🔍 [ConversationService] Game Hub AFTER cache:', {
-            id: gameHubAfterCache.id,
-            messageCount: gameHubAfterCache.messages?.length || 0,
-            hasMessages: !!gameHubAfterCache.messages
-          });
-        }
         
         // Also update localStorage as backup
         if (Object.keys(conversations).length > 0) {
@@ -373,13 +388,16 @@ export class ConversationService {
 
   static async setConversations(conversations: Conversations, retryCount = 0): Promise<void> {
     const userId = await this.getCurrentUserId();
-    console.log('🔍 [ConversationService] Saving', Object.keys(conversations).length, 'conversations');
     
     // ✅ Invalidate cache when writing
     this.conversationsCache = null;
     
-    // Always save to localStorage as backup
-    StorageService.set(STORAGE_KEYS.CONVERSATIONS, conversations);
+    // ✅ Trim conversations for localStorage (keep last 50 messages per conversation)
+    // Full history is always preserved in Supabase
+    const trimmedForLocalStorage = this.trimConversationsForLocalStorage(conversations);
+    
+    // Always save to localStorage as backup (with trimmed messages)
+    StorageService.set(STORAGE_KEYS.CONVERSATIONS, trimmedForLocalStorage);
         // ✅ PRIMARY: Save to Supabase if user is logged in (with retry logic)
     if (userId) {
       try {
@@ -584,37 +602,20 @@ export class ConversationService {
     // ✅ QUERY-BASED LIMITS: Message limits removed - unlimited messages per conversation
     // Query limits (text/image) are checked in aiService before sending to AI
     
-    console.error('📝 [ConversationService] addMessage called:', {
-      conversationId,
-      messageId: message.id,
-      role: message.role,
-      hasImage: !!message.imageUrl,
-      contentLength: message.content?.length
-    });
-    
     const conversations = await this.getConversations();
-    console.error('📝 [ConversationService] Current conversations:', Object.keys(conversations));
     
     if (conversations[conversationId]) {
       const conversation = conversations[conversationId];
       
-      console.error('📝 [ConversationService] Found conversation:', {
-        id: conversation.id,
-        currentMessageCount: conversation.messages?.length || 0,
-        existingMessages: conversation.messages?.map(m => ({ id: m.id, role: m.role }))
-      });
-      
       // ✅ Check for duplicates to prevent race condition issues
       const exists = conversation.messages.some(m => m.id === message.id);
       if (exists) {
-        console.error('⚠️ [ConversationService] Message already exists:', message.id);
         return { success: true, reason: 'Message already exists' };
       }
       
       // ✅ CRITICAL FIX: Save message to database first before adding to memory
       let messageWithDbFields: ChatMessage;
       try {
-        console.error('💾 [ConversationService] Saving message to database...');
         const { MessageService } = await import('./messageService');
         const messageService = MessageService.getInstance();
         const savedMessage = await messageService.addMessage(conversationId, {
@@ -640,12 +641,7 @@ export class ConversationService {
         conversation.messages.push(messageWithDbFields);
         conversation.updatedAt = Date.now();
         
-        console.error('✅ [ConversationService] Message added to conversation, new count:', conversation.messages.length);
-        console.error('✅ [ConversationService] Updated messages:', conversation.messages.map(m => ({ id: m.id, role: m.role })));
-        
         await this.setConversations(conversations);
-        
-        console.error('✅ [ConversationService] Conversations saved to storage');
       } catch (error) {
         console.error('❌ [ConversationService] Failed to save message:', error);
         
@@ -846,10 +842,19 @@ export class ConversationService {
    * @param forceRefresh - If true, skip cache and query database directly
    */
   static async ensureGameHubExists(forceRefresh = false): Promise<Conversation> {
+    // ✅ PERFORMANCE: Check Game Hub cache first (unless forced refresh)
+    const userId = await this.getCurrentUserId();
+    if (!forceRefresh && 
+        userId && 
+        this.gameHubCache && 
+        this.gameHubCache.userId === userId &&
+        Date.now() - this.gameHubCache.timestamp < this.GAME_HUB_CACHE_TTL) {
+      return this.gameHubCache.gameHub;
+    }
+    
     // ✅ FIX: Load from Supabase first to get the real Game Hub with messages
     // ✅ PWA FIX: Force refresh on new user login to ensure we get correct user's data
     if (forceRefresh) {
-      console.log('🔍 [ConversationService] ensureGameHubExists called with forceRefresh=true, clearing cache');
       this.clearCache();
     }
     
@@ -859,15 +864,32 @@ export class ConversationService {
     );
     
     if (existingGameHub) {
-            return existingGameHub;
+      // ✅ Cache the Game Hub for this user
+      if (userId) {
+        this.gameHubCache = {
+          userId,
+          gameHub: existingGameHub,
+          timestamp: Date.now()
+        };
+      }
+      return existingGameHub;
     }
     
     // Not found, create new Game Hub
-        const gameHub = this.createConversation(DEFAULT_CONVERSATION_TITLE, GAME_HUB_ID);
+    const gameHub = this.createConversation(DEFAULT_CONVERSATION_TITLE, GAME_HUB_ID);
     await this.addConversation(gameHub);
     
+    // Cache the newly created Game Hub
+    if (userId) {
+      this.gameHubCache = {
+        userId,
+        gameHub,
+        timestamp: Date.now()
+      };
+    }
+    
     // Return the newly created Game Hub
-        return gameHub;
+    return gameHub;
   }
 
   /**

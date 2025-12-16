@@ -1,75 +1,143 @@
 /**
  * Image Preloader Utility
  * Preloads all mascot images on app startup for instant display
- * Caches images in localStorage as base64 for persistent storage
+ * Caches images in IndexedDB (50MB+) for persistent storage
+ * Uses WebP format with PNG fallback for maximum compatibility and performance
+ * Falls back to localStorage for small images
  */
 
-// All mascot images used in the app
+import { openDB, DBSchema, IDBPDatabase } from 'idb';
+
+// All mascot images used in the app (WebP preferred, PNG fallback)
 const MASCOT_IMAGES = [
-  '/images/mascot/1.png',
-  '/images/mascot/2.png',
-  '/images/mascot/4.png',
-  '/images/mascot/5.1.png',
-  '/images/mascot/5.2.png',
-  '/images/mascot/6.png',
-  '/images/mascot/7.png',
-  '/images/mascot/8.png',
-  '/images/mascot/9.png',
-  '/images/mascot/10.png',
-  '/images/mascot/11.png',
-  '/images/mascot/pro-user.png',
-  '/images/mascot/vanguard-user.png',
+  '/images/mascot/1.webp',
+  '/images/mascot/2.webp',
+  '/images/mascot/4.webp',
+  '/images/mascot/5.1.webp',
+  '/images/mascot/5.2.webp',
+  '/images/mascot/6.webp',
+  '/images/mascot/7.webp',
+  '/images/mascot/8.webp',
+  '/images/mascot/9.webp',
+  '/images/mascot/10.webp',
+  '/images/mascot/11.webp',
+  '/images/mascot/pro-user.webp',
+  '/images/mascot/vanguard-user.webp',
 ];
 
-// Other critical images
+// Other critical images (WebP preferred, PNG fallback)
 const CRITICAL_IMAGES = [
-  '/images/otagon-logo.png',
-  '/icon-192.png',
+  '/images/otagon-logo.webp',
+  // icon-192.png removed from preload - only used as PWA icon, not displayed in UI
 ];
 
 // Cache for preloaded images
 const imageCache = new Map<string, HTMLImageElement>();
 
-// LocalStorage key prefix
+// IndexedDB configuration
+interface ImageCacheDB extends DBSchema {
+  images: {
+    key: string;
+    value: { url: string; data: string; timestamp: number };
+    indexes: { 'by-url': string };
+  };
+}
+
+const DB_NAME = 'otagon_image_cache';
+const DB_VERSION = 2; // Increment to migrate
+let db: IDBPDatabase<ImageCacheDB> | null = null;
+
+// Fallback to localStorage for tiny images
 const STORAGE_PREFIX = 'otagon_img_cache_';
-const CACHE_VERSION = 'v1';
-const VERSION_KEY = `${STORAGE_PREFIX}version`;
+const MAX_LOCALSTORAGE_KB = 200; // Only cache very small images in localStorage
+
+// Track localStorage usage
+let estimatedCacheSize = 0;
 
 /**
- * Check if localStorage cache is valid
+ * Initialize IndexedDB
+ */
+const initDB = async (): Promise<IDBPDatabase<ImageCacheDB>> => {
+  if (db) return db;
+  
+  try {
+    db = await openDB<ImageCacheDB>(DB_NAME, DB_VERSION, {
+      upgrade(db) {
+        if (!db.objectStoreNames.contains('images')) {
+          const store = db.createObjectStore('images', { keyPath: 'url' });
+          store.createIndex('by-url', 'url');
+        }
+      },
+    });
+    return db;
+  } catch (error) {
+    console.error('[ImagePreloader] Failed to initialize IndexedDB:', error);
+    throw error;
+  }
+};
+
+/**
+ * Check if IndexedDB cache is valid
  */
 const isCacheValid = (): boolean => {
   try {
-    const storedVersion = localStorage.getItem(VERSION_KEY);
-    return storedVersion === CACHE_VERSION;
+    // IndexedDB is always fresh, no version check needed
+    return true;
   } catch (error) {
-    console.warn('[ImagePreloader] Error checking cache version:', error);
+    console.error('[ImagePreloader] Cache validation error:', error);
     return false;
   }
 };
 
 /**
- * Clear old cache if version mismatch
+ * Estimate IndexedDB + localStorage usage for image cache
  */
-const clearOldCache = (): void => {
+const estimateCacheSize = async (): Promise<number> => {
+  let totalSize = 0;
+  try {
+    // Check IndexedDB quota
+    if ('storage' in navigator && 'estimate' in navigator.storage) {
+      const estimate = await navigator.storage.estimate();
+      return estimate.usage || 0;
+    }
+  } catch (error) {
+    console.warn('[ImagePreloader] Error estimating IndexedDB quota:', error);
+  }
+  
+  // Fallback: estimate localStorage
   try {
     const keys = Object.keys(localStorage);
     keys.forEach(key => {
       if (key.startsWith(STORAGE_PREFIX)) {
-        localStorage.removeItem(key);
+        const value = localStorage.getItem(key);
+        if (value) {
+          totalSize += value.length;
+        }
       }
     });
-    localStorage.setItem(VERSION_KEY, CACHE_VERSION);
-    console.log('[ImagePreloader] Cache cleared and version updated');
   } catch (error) {
-    console.warn('[ImagePreloader] Error clearing cache:', error);
+    console.warn('[ImagePreloader] Error estimating localStorage size:', error);
+  }
+  return totalSize;
+};
+
+/**
+ * Clear old IndexedDB cache
+ */
+const clearOldCache = async (): Promise<void> => {
+  try {
+    const database = await initDB();
+    await database.clear('images');
+    console.log('[ImagePreloader] IndexedDB cache cleared');
+  } catch (error) {
+    console.warn('[ImagePreloader] Error clearing IndexedDB cache:', error);
   }
 };
 
 /**
- * Save image to localStorage as base64
+ * Save image to IndexedDB as base64
  */
-const saveImageToLocalStorage = async (src: string, img: HTMLImageElement): Promise<void> => {
+const saveImageToIndexedDB = async (src: string, img: HTMLImageElement): Promise<void> => {
   try {
     const canvas = document.createElement('canvas');
     canvas.width = img.naturalWidth;
@@ -80,48 +148,97 @@ const saveImageToLocalStorage = async (src: string, img: HTMLImageElement): Prom
     
     ctx.drawImage(img, 0, 0);
     const base64 = canvas.toDataURL('image/png');
+    const imageSizeKB = base64.length / 1024;
     
-    const storageKey = `${STORAGE_PREFIX}${encodeURIComponent(src)}`;
-    localStorage.setItem(storageKey, base64);
-    console.log(`[ImagePreloader] Cached to localStorage: ${src}`);
+    const database = await initDB();
+    await database.put('images', {
+      url: src,
+      data: base64,
+      timestamp: Date.now(),
+    });
+    
+    console.log(`[ImagePreloader] Cached to IndexedDB: ${src} (${Math.round(imageSizeKB)}KB)`);
   } catch (error) {
-    // localStorage might be full or unavailable - just log and continue
-    console.warn(`[ImagePreloader] Failed to cache to localStorage: ${src}`, error);
+    // IndexedDB might be unavailable or quota exceeded
+    console.warn(`[ImagePreloader] Failed to cache to IndexedDB: ${src}`, error);
+    
+    // Try localStorage fallback for small images
+    if (img.naturalHeight * img.naturalWidth < 200000) { // ~200KB threshold
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        
+        ctx.drawImage(img, 0, 0);
+        const base64 = canvas.toDataURL('image/png');
+        const storageKey = `${STORAGE_PREFIX}${encodeURIComponent(src)}`;
+        localStorage.setItem(storageKey, base64);
+        console.log(`[ImagePreloader] Fallback cached to localStorage: ${src}`);
+      } catch (lsError) {
+        console.warn(`[ImagePreloader] localStorage fallback also failed: ${src}`, lsError);
+      }
+    }
   }
 };
 
 /**
- * Load image from localStorage cache
+ * Load image from IndexedDB cache
  */
-const loadImageFromLocalStorage = (src: string): Promise<HTMLImageElement> | null => {
+const loadImageFromIndexedDB = async (src: string): Promise<HTMLImageElement | null> => {
   try {
-    const storageKey = `${STORAGE_PREFIX}${encodeURIComponent(src)}`;
-    const base64 = localStorage.getItem(storageKey);
+    const database = await initDB();
+    const cached = await database.get('images', src);
     
-    if (!base64) return null;
+    if (!cached || !cached.data) return null;
     
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
         imageCache.set(src, img);
-        console.log(`[ImagePreloader] Loaded from localStorage: ${src}`);
+        console.log(`[ImagePreloader] Loaded from IndexedDB: ${src}`);
         resolve(img);
       };
       img.onerror = () => {
         // Cache is corrupted, remove it
-        localStorage.removeItem(storageKey);
+        database.delete('images', src).catch(() => {});
         reject(new Error(`Failed to load cached image: ${src}`));
       };
-      img.src = base64;
+      img.src = cached.data;
     });
   } catch (error) {
-    console.warn(`[ImagePreloader] Error loading from localStorage: ${src}`, error);
-    return null;
+    console.warn(`[ImagePreloader] Error loading from IndexedDB: ${src}`, error);
+    
+    // Try localStorage fallback
+    try {
+      const storageKey = `${STORAGE_PREFIX}${encodeURIComponent(src)}`;
+      const base64 = localStorage.getItem(storageKey);
+      if (!base64) return null;
+      
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          imageCache.set(src, img);
+          console.log(`[ImagePreloader] Loaded from localStorage fallback: ${src}`);
+          resolve(img);
+        };
+        img.onerror = () => {
+          localStorage.removeItem(storageKey);
+          reject(new Error(`Failed to load cached image: ${src}`));
+        };
+        img.src = base64;
+      });
+    } catch (lsError) {
+      console.warn(`[ImagePreloader] localStorage fallback also failed: ${src}`, lsError);
+      return null;
+    }
   }
 };
 
 /**
- * Preload a single image and cache it in memory and localStorage
+ * Preload a single image and cache it in memory and IndexedDB
+ * Tries WebP first, falls back to PNG if WebP loads fail
  */
 export const preloadImage = async (src: string): Promise<HTMLImageElement> => {
   // Return cached image if already loaded in memory
@@ -130,12 +247,11 @@ export const preloadImage = async (src: string): Promise<HTMLImageElement> => {
     return Promise.resolve(cached);
   }
 
-  // Try to load from localStorage first
+  // Try to load from IndexedDB first
   if (isCacheValid()) {
     try {
-      const cachedPromise = loadImageFromLocalStorage(src);
-      if (cachedPromise) {
-        const cachedImg = await cachedPromise;
+      const cachedImg = await loadImageFromIndexedDB(src);
+      if (cachedImg) {
         return cachedImg;
       }
     } catch (error) {
@@ -150,16 +266,35 @@ export const preloadImage = async (src: string): Promise<HTMLImageElement> => {
     img.onload = async () => {
       imageCache.set(src, img);
       
-      // Save to localStorage in the background
-      saveImageToLocalStorage(src, img).catch(() => {
+      // Save to IndexedDB in the background
+      saveImageToIndexedDB(src, img).catch(() => {
         // Ignore errors, image is still in memory
       });
       
       resolve(img);
     };
     img.onerror = () => {
-      console.warn(`[ImagePreloader] Failed to preload: ${src}`);
-      reject(new Error(`Failed to load image: ${src}`));
+      // If WebP fails, try PNG fallback
+      if (src.endsWith('.webp')) {
+        const pngSrc = src.replace(/\.webp$/i, '.png');
+        console.warn(`[ImagePreloader] WebP failed for ${src}, trying PNG fallback: ${pngSrc}`);
+        
+        const imgPng = new Image();
+        imgPng.crossOrigin = 'anonymous';
+        imgPng.onload = async () => {
+          imageCache.set(src, imgPng); // Cache under original WebP key for consistency
+          saveImageToIndexedDB(src, imgPng).catch(() => {});
+          resolve(imgPng);
+        };
+        imgPng.onerror = () => {
+          console.warn(`[ImagePreloader] PNG fallback also failed: ${pngSrc}`);
+          reject(new Error(`Failed to load image: ${src} or fallback ${pngSrc}`));
+        };
+        imgPng.src = pngSrc;
+      } else {
+        console.warn(`[ImagePreloader] Failed to preload: ${src}`);
+        reject(new Error(`Failed to load image: ${src}`));
+      }
     };
     img.src = src;
   });
@@ -182,17 +317,10 @@ export const preloadAllMascotImages = async (): Promise<void> => {
   console.log('[ImagePreloader] Starting mascot image preload...');
   const startTime = performance.now();
   
-  // Check cache version and clear if needed
-  if (!isCacheValid()) {
-    console.log('[ImagePreloader] Cache version mismatch, clearing old cache...');
-    clearOldCache();
-  }
-  
   await preloadImages(MASCOT_IMAGES);
   
   const duration = Math.round(performance.now() - startTime);
-  const cacheStatus = isCacheValid() ? 'from cache' : 'fresh';
-  console.log(`[ImagePreloader] Mascot images preloaded in ${duration}ms (${cacheStatus})`);
+  console.log(`[ImagePreloader] Mascot images preloaded in ${duration}ms (${MASCOT_IMAGES.length} images)`);
 };
 
 /**
@@ -209,27 +337,15 @@ export const preloadAllAppImages = async (): Promise<void> => {
   console.log('[ImagePreloader] Starting full image preload...');
   const startTime = performance.now();
   
-  // Check cache version and clear if needed
-  if (!isCacheValid()) {
-    console.log('[ImagePreloader] Cache version mismatch, clearing old cache...');
-    clearOldCache();
-  }
-  
   await Promise.all([
     preloadImages(MASCOT_IMAGES),
     preloadImages(CRITICAL_IMAGES),
   ]);
   
   const duration = Math.round(performance.now() - startTime);
-  const cachedCount = MASCOT_IMAGES.filter(src => {
-    try {
-      return localStorage.getItem(`${STORAGE_PREFIX}${encodeURIComponent(src)}`) !== null;
-    } catch {
-      return false;
-    }
-  }).length;
+  const inMemoryCached = MASCOT_IMAGES.filter(src => imageCache.has(src)).length;
   
-  console.log(`[ImagePreloader] All images preloaded in ${duration}ms (${cachedCount}/${MASCOT_IMAGES.length} from cache)`);
+  console.log(`[ImagePreloader] All images preloaded in ${duration}ms (${inMemoryCached}/${MASCOT_IMAGES.length} in-memory cached)`);
 };
 
 /**
@@ -247,48 +363,59 @@ export const getCachedImage = (src: string): HTMLImageElement | undefined => {
 };
 
 /**
- * Clear all cached images from localStorage
+ * Clear all cached images from IndexedDB and localStorage
  */
-export const clearImageCache = (): void => {
-  clearOldCache();
+export const clearImageCache = async (): Promise<void> => {
+  await clearOldCache();
   imageCache.clear();
+  estimatedCacheSize = 0;
   console.log('[ImagePreloader] All caches cleared');
 };
 
 /**
- * Get cache statistics
+ * Get cache statistics (IndexedDB + in-memory)
  */
-export const getCacheStats = (): { total: number; cached: number; size: number } => {
-  let totalSize = 0;
-  let cachedCount = 0;
+export const getCacheStats = async (): Promise<{ total: number; inMemory: number; indexedDB: number }> => {
+  const inMemory = MASCOT_IMAGES.filter(src => imageCache.has(src)).length;
   
+  let indexedDBCount = 0;
   try {
-    MASCOT_IMAGES.forEach(src => {
-      const storageKey = `${STORAGE_PREFIX}${encodeURIComponent(src)}`;
-      const data = localStorage.getItem(storageKey);
-      if (data) {
-        cachedCount++;
-        totalSize += data.length;
-      }
-    });
+    const database = await initDB();
+    const allCached = await database.getAll('images');
+    indexedDBCount = allCached.length;
   } catch (error) {
-    console.warn('[ImagePreloader] Error getting cache stats:', error);
+    console.warn('[ImagePreloader] Error getting IndexedDB stats:', error);
   }
   
   return {
     total: MASCOT_IMAGES.length,
-    cached: cachedCount,
-    size: Math.round(totalSize / 1024), // KB
+    inMemory,
+    indexedDB: indexedDBCount,
   };
 };
 
-// Auto-start preloading when this module is imported
-// Uses requestIdleCallback to not block the main thread
+// Auto-start preloading intelligently based on context
+// Only preload mascot images when user is authenticated or on login page
 if (typeof window !== 'undefined') {
   const startPreload = () => {
-    preloadAllAppImages().catch(err => {
-      console.warn('[ImagePreloader] Preload failed:', err);
-    });
+    // Check if user is authenticated (has auth token)
+    const hasAuth = localStorage.getItem('supabase.auth.token') || 
+                   sessionStorage.getItem('supabase.auth.token') ||
+                   window.location.pathname.includes('/login') ||
+                   window.location.pathname.includes('/app');
+    
+    if (hasAuth) {
+      console.log('[ImagePreloader] Starting preload for authenticated/app context');
+      preloadAllAppImages().catch(err => {
+        console.warn('[ImagePreloader] Preload failed:', err);
+      });
+    } else {
+      console.log('[ImagePreloader] Skipping mascot preload on landing page - will load on demand');
+      // Only preload critical images for landing page
+      preloadCriticalImages().catch(err => {
+        console.warn('[ImagePreloader] Critical image preload failed:', err);
+      });
+    }
   };
 
   if ('requestIdleCallback' in window) {

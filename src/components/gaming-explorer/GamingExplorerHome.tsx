@@ -25,6 +25,7 @@ import {
   searchIGDBGames,
   IGDBGameData,
   getCoverUrl,
+  queryIGDBGamesByCriteria,
 } from '../../services/igdbService';
 import { supabase } from '../../lib/supabase';
 import { toastService } from '../../services/toastService';
@@ -136,6 +137,10 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
   const [newReleases, setNewReleases] = useState<IGDBGameData[]>([]);
   const [loadingNewReleases, setLoadingNewReleases] = useState(false);
   
+  // Coming Soon / Upcoming Games (releasing in next 30 days)
+  const [upcomingGames, setUpcomingGames] = useState<IGDBGameData[]>([]);
+  const [loadingUpcoming, setLoadingUpcoming] = useState(false);
+  
   // Highest Rated Games
   const [highestRatedGames, setHighestRatedGames] = useState<IGDBGameData[]>([]);
   const [loadingHighestRated, setLoadingHighestRated] = useState(false);
@@ -171,7 +176,7 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
         const { data: cachedSections, error } = (await supabase
           .from('igdb_home_cache')
           .select('cache_key, data, expires_at')
-          .in('cache_key', ['featured_games', 'latest_games', 'new_releases', 'highest_rated', 'categories'])
+          .in('cache_key', ['featured_games', 'latest_games', 'new_releases', 'upcoming_games', 'highest_rated', 'categories'])
           .gt('expires_at', now.toISOString())) as SupabaseResponse<IGDBCacheEntry[]>;
 
         if (!error && cachedSections && cachedSections.length > 0) {
@@ -190,6 +195,10 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
           if (newReleasesData) {
             setNewReleases(newReleasesData);
           }
+          const upcomingData = cacheMap.get('upcoming_games');
+          if (upcomingData) {
+            setUpcomingGames(upcomingData);
+          }
           const highestRatedData = cacheMap.get('highest_rated');
           if (highestRatedData) {
             setHighestRatedGames(highestRatedData);
@@ -202,6 +211,7 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
           setLoadingFeatured(false);
           setLoadingLatest(false);
           setLoadingNewReleases(false);
+          setLoadingUpcoming(false);
           setLoadingHighestRated(false);
           setLoadingCategories(false);
           return;
@@ -214,90 +224,55 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
       setLoadingFeatured(true);
       setLoadingLatest(true);
       setLoadingNewReleases(true);
+      setLoadingUpcoming(true);
       setLoadingHighestRated(true);
       setLoadingCategories(true);
       
       try {
-        // Fetch Latest & Popular games (2024-2025 releases)
-        const latestTitles = [
-          'Black Myth Wukong',
-          'Indiana Jones and the Great Circle',
-          'Dragon Age The Veilguard',
-          'Silent Hill 2',
-          'Metaphor ReFantazio',
-          'S.T.A.L.K.E.R. 2',
-        ];
-        const latestPromises = latestTitles.map(title => fetchIGDBGameData(title));
-        const latestResults = await Promise.all(latestPromises);
-        const validLatest = latestResults.filter((g): g is IGDBGameData => g !== null);
-        setLatestGames(validLatest.slice(0, 6));
+        // Fetch Latest & Popular games (games from last 60 days with good ratings)
+        const latestResults = await queryIGDBGamesByCriteria('latest_games', 10);
+        setLatestGames(latestResults.slice(0, 6));
         setLoadingLatest(false);
         
-        // Fetch 5-8 featured/popular games (all-time classics)
-        const popularTitles = [
-          'Elden Ring', 
-          'Baldur\'s Gate 3', 
-          'The Legend of Zelda: Tears of the Kingdom',
-          'God of War Ragnarok',
-          'Cyberpunk 2077',
-          'Hades II',
-          'Final Fantasy VII Rebirth',
-          'Horizon Forbidden West'
-        ];
-        const featuredPromises = popularTitles.map(title => fetchIGDBGameData(title));
-        const featuredResults = await Promise.all(featuredPromises);
-        const validFeatured = featuredResults.filter((g): g is IGDBGameData => g !== null);
-        setFeaturedGames(validFeatured.slice(0, 8));
+        // Fetch featured/popular games (popular games from last 2 years)
+        const featuredResults = await queryIGDBGamesByCriteria('popular', 12);
+        setFeaturedGames(featuredResults.slice(0, 8));
         setLoadingFeatured(false);
         
-        // Fetch New Releases (last 15 days) - Games released recently
-        const newReleaseTitles = [
-          'Indiana Jones and the Great Circle',
-          'Path of Exile 2',
-          'Marvel Rivals',
-          'Fantasian Neo Dimension',
-          'Delta Force',
-          'Infinity Nikki',
-        ];
-        const newReleasePromises = newReleaseTitles.map(title => fetchIGDBGameData(title));
-        const newReleaseResults = await Promise.all(newReleasePromises);
-        const validNewReleases = newReleaseResults.filter((g): g is IGDBGameData => g !== null);
-        setNewReleases(validNewReleases.slice(0, 6));
+        // Fetch New Releases (last 30 days)
+        const newReleaseResults = await queryIGDBGamesByCriteria('recent_releases', 10);
+        setNewReleases(newReleaseResults.slice(0, 6));
         setLoadingNewReleases(false);
         
-        // Fetch Highest Rated Games (all-time best)
-        const highestRatedTitles = [
-          'The Legend of Zelda: Breath of the Wild',
-          'The Witcher 3: Wild Hunt',
-          'Red Dead Redemption 2',
-          'God of War',
-          'The Last of Us',
-          'Hades',
-          'Portal 2',
-          'Half-Life 2',
-        ];
-        const highestRatedPromises = highestRatedTitles.map(title => fetchIGDBGameData(title));
-        const highestRatedResults = await Promise.all(highestRatedPromises);
-        const validHighestRated = highestRatedResults.filter((g): g is IGDBGameData => g !== null);
-        setHighestRatedGames(validHighestRated.slice(0, 8));
+        // Fetch Highest Rated Games (highest rated from past year)
+        const highestRatedResults = await queryIGDBGamesByCriteria('top_rated', 12);
+        setHighestRatedGames(highestRatedResults.slice(0, 8));
         setLoadingHighestRated(false);
         
-        // Preload games for ALL categories (5-8 games each)
+        // Fetch Upcoming/Coming Soon Games (releasing in next 30 days)
+        const upcomingResults = await queryIGDBGamesByCriteria('upcoming', 10);
+        setUpcomingGames(upcomingResults.slice(0, 6));
+        setLoadingUpcoming(false);
+        
+        // For categories, distribute popular/featured games to provide variety (no hardcoded games)
         const categoryQueries: Record<string, string[]> = {
-          action: ['Devil May Cry 5', 'Bayonetta 3', 'Armored Core VI', 'Sekiro', 'Nioh 2', 'Sifu'],
-          rpg: ['Persona 5 Royal', 'Dragon Quest XI', 'Divinity Original Sin 2', 'Pillars of Eternity II', 'Disco Elysium', 'Octopath Traveler II'],
-          adventure: ['The Last of Us Part II', 'Uncharted 4', 'A Plague Tale Requiem', 'Stray', 'It Takes Two', 'Ori and the Will of the Wisps'],
-          shooter: ['Doom Eternal', 'Titanfall 2', 'Halo Infinite', 'Destiny 2', 'Borderlands 3', 'Metro Exodus'],
-          indie: ['Hollow Knight', 'Celeste', 'Dead Cells', 'Cuphead', 'Shovel Knight', 'Undertale'],
-          strategy: ['Civilization VI', 'Total War Warhammer III', 'XCOM 2', 'Age of Empires IV', 'Crusader Kings III', 'Stellaris'],
+          action: [],
+          rpg: [],
+          adventure: [],
+          shooter: [],
+          indie: [],
+          strategy: [],
         };
         
-        // Fetch all categories in parallel
+        // For categories, use a subset of popular games (avoid duplication)
+        // We'll rotate through different popular games to provide variety
         const categoryEntries = Object.entries(categoryQueries);
-        const allCategoryPromises = categoryEntries.map(async ([catId, titles]) => {
-          const promises = titles.map(title => fetchIGDBGameData(title));
-          const results = await Promise.all(promises);
-          return [catId, results.filter((g): g is IGDBGameData => g !== null).slice(0, 8)] as const;
+        const allCategoryPromises = categoryEntries.map(async ([catId, _]) => {
+          // Distribute games across categories using combined pool for variety
+          const offset = categoryEntries.findIndex(([id]) => id === catId) * 2;
+          const combinedGames = [...featuredResults, ...highestRatedResults];
+          const catGames = combinedGames.slice(offset, offset + 8);
+          return [catId, catGames] as const;
         });
         
         const categoryResultsArray = await Promise.all(allCategoryPromises);
@@ -311,15 +286,16 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
         const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days
         
         const cacheEntries = [
-          { cache_key: 'featured_games', data: validFeatured.slice(0, 8), expires_at: sevenDaysLater.toISOString() },
-          { cache_key: 'latest_games', data: validLatest.slice(0, 6), expires_at: sevenDaysLater.toISOString() },
-          { cache_key: 'new_releases', data: validNewReleases.slice(0, 6), expires_at: oneDayLater.toISOString() },
-          { cache_key: 'highest_rated', data: validHighestRated.slice(0, 8), expires_at: sevenDaysLater.toISOString() },
+          { cache_key: 'featured_games', data: featuredResults.slice(0, 8), expires_at: sevenDaysLater.toISOString() },
+          { cache_key: 'latest_games', data: latestResults.slice(0, 6), expires_at: oneDayLater.toISOString() },
+          { cache_key: 'new_releases', data: newReleaseResults.slice(0, 6), expires_at: oneDayLater.toISOString() },
+          { cache_key: 'upcoming_games', data: upcomingResults.slice(0, 6), expires_at: sevenDaysLater.toISOString() },
+          { cache_key: 'highest_rated', data: highestRatedResults.slice(0, 8), expires_at: sevenDaysLater.toISOString() },
           { cache_key: 'categories', data: categoryResults, expires_at: sevenDaysLater.toISOString() },
         ];
         
         await (supabase.from('igdb_home_cache').upsert(cacheEntries, { onConflict: 'cache_key' }) as unknown as Promise<{ error: { message: string } | null }>);
-        console.log('[GamingExplorerHome] Cached to Supabase: new_releases=1d, others=7d');
+        console.log('[GamingExplorerHome] Cached to Supabase: latest_games + new_releases = 1d, all others = 7d');
       } catch (error) {
         console.error('Error fetching games:', error);
       } finally {
@@ -869,6 +845,60 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
         ) : (
           <div className="text-center py-6 text-[#8F8F8F] text-sm">
             Loading new releases...
+          </div>
+        )}
+      </section>
+
+      {/* Coming Soon / Upcoming Games (Next 30 Days) */}
+      <section>
+        <h2 className="text-lg font-bold text-[#F5F5F5] mb-3 flex items-center gap-2">
+          <span className="w-1.5 h-6 bg-gradient-to-b from-[#8B5CF6] to-[#3B82F6] rounded-full" />
+          Coming Soon
+          <span className="text-xs text-[#8F8F8F] font-normal">(Releasing Soon)</span>
+        </h2>
+        {loadingUpcoming ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="w-8 h-8 border-2 border-[#8B5CF6] border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : upcomingGames.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-2 lg:gap-3">
+            {upcomingGames.map((game) => (
+              <motion.button
+                key={game.id}
+                whileHover={{ scale: 1.03, y: -4 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => onOpenGameInfo(game, game.name)}
+                className="bg-[#1C1C1C] rounded-xl overflow-hidden border border-[#424242]/40 hover:border-[#8B5CF6]/50 transition-all text-left"
+              >
+                <div className="aspect-[3/4] relative overflow-hidden">
+                  {game.cover?.url ? (
+                    <img
+                      src={getCoverUrl(game.cover.url, 'cover_big')}
+                      alt={game.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-[#2A2A2A]" />
+                  )}
+                  {/* Coming Soon badge */}
+                  <div className="absolute top-2 left-2 bg-gradient-to-r from-[#8B5CF6] to-[#3B82F6] px-2 py-0.5 rounded text-[10px] font-bold text-white">
+                    SOON
+                  </div>
+                  {game.first_release_date && (
+                    <div className="absolute bottom-2 left-2 bg-black/70 px-1.5 py-0.5 rounded text-[10px] font-medium text-[#8B5CF6]">
+                      {new Date(game.first_release_date * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </div>
+                  )}
+                </div>
+                <div className="p-2">
+                  <h3 className="font-medium text-[#F5F5F5] text-xs line-clamp-1">{game.name}</h3>
+                </div>
+              </motion.button>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-6 text-[#8F8F8F] text-sm">
+            No upcoming releases found
           </div>
         )}
       </section>

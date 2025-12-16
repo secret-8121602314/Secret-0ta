@@ -302,6 +302,58 @@ export async function fetchIGDBGameById(gameId: number): Promise<IGDBGameData | 
 }
 
 /**
+ * Query games by specific criteria (recent releases, top rated, popular, etc.)
+ * Uses IGDB's date-based filtering and sorting
+ */
+export async function queryIGDBGamesByCriteria(
+  queryType: 'recent_releases' | 'latest_games' | 'upcoming' | 'top_rated' | 'popular',
+  limit: number = 10
+): Promise<IGDBGameData[]> {
+  try {
+    console.log('[IGDBService] Querying games by criteria:', queryType, 'limit:', limit);
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`;
+    }
+
+    const response = await supabase.functions.invoke('igdb-proxy', {
+      body: JSON.stringify({ queryType, limit }),
+      headers
+    });
+
+    if (response.error) {
+      console.error('[IGDBService] Query by criteria error:', response.error);
+      return [];
+    }
+
+    const result = response.data;
+    
+    if (!result.success || !result.data) {
+      return [];
+    }
+
+    const games = result.data as IGDBGameData[];
+    console.log('[IGDBService] Query found', games.length, 'games for', queryType);
+    
+    // Cache individual games in session cache
+    for (const game of games) {
+      const cacheKey = game.name.toLowerCase().trim();
+      sessionCache.set(cacheKey, { data: game, timestamp: Date.now() });
+    }
+    
+    return games;
+  } catch (error) {
+    console.error('[IGDBService] Query by criteria error:', error);
+    return [];
+  }
+}
+
+/**
  * Search for multiple games (for autocomplete)
  * Returns up to 8 results for fast autocomplete experience
  */

@@ -269,9 +269,16 @@ export class AuthService {
       // ✅ SCALABILITY: Check cache first
       const cachedUser = await this.getCachedUser(authUserId);
       if (cachedUser) {
-                this.updateAuthState({ user: cachedUser, isLoading: false, error: null });
+        console.log('🔍 [AuthService] Loaded user from cache:', {
+          email: cachedUser.email,
+          hasSeenWelcomeGuide: cachedUser.hasSeenWelcomeGuide,
+          authUserId: cachedUser.authUserId
+        });
+        this.updateAuthState({ user: cachedUser, isLoading: false, error: null });
         return;
       }
+      
+      console.log('🔍 [AuthService] No cached user found, loading from database...');
 
             // Try the RPC function first
       const { data: rpcData, error: rpcError } = await supabase.rpc('get_complete_user_data', {

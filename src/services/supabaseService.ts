@@ -11,6 +11,12 @@ const asJson = <T>(value: T): Json => value as unknown as Json;
 
 export class SupabaseService {
   private static instance: SupabaseService;
+  
+  // ✅ PERFORMANCE: Batch and deduplicate conversation updates
+  private updateQueue = new Map<string, { updates: Partial<Conversation>; timestamp: number }>();
+  private updateTimer: NodeJS.Timeout | null = null;
+  private readonly UPDATE_DEBOUNCE_MS = 300; // Batch updates within 300ms window
+  private lastUpdateCache = new Map<string, { updates: string; timestamp: number }>();
 
   static getInstance(): SupabaseService {
     if (!SupabaseService.instance) {
@@ -105,21 +111,6 @@ export class SupabaseService {
   async getConversations(userId: string): Promise<Conversation[]> {
     try {
       // ✅ FIX: Query by auth_user_id directly (matches RLS policies)
-            // 🔍 DIAGNOSTIC: Test if Game Hub exists with direct .single() query
-      const { data: gameHubTest, error: gameHubError } = await supabase
-        .from('conversations')
-        .select('id, title, auth_user_id')
-        .eq('id', 'game-hub')
-        .maybeSingle();
-      
-      if (gameHubTest) {
-        console.log('✅ [Supabase] Game Hub exists via .single():', gameHubTest);
-      } else if (gameHubError) {
-        console.log('❌ [Supabase] Game Hub .single() error:', gameHubError.message);
-      } else {
-        // No Game Hub found - will be created later
-      }
-      
       // ✅ RLS WORKAROUND: Try query without filter - RLS should auto-filter by auth.uid()
       // This bypasses potential issues with the auth_user_id column
       const { data: dataNoFilter, error: errorNoFilter } = await supabase
@@ -211,59 +202,20 @@ export class SupabaseService {
   }
   
   private mapConversations(data: Array<Record<string, unknown>>): Conversation[] {
-    // 🔍 DEBUG: Log what we're getting from Supabase
-    console.error('🔍 [Supabase] mapConversations called with', data.length, 'conversations');
-    
-    if (data.length > 0) {
-      const sample = data[0];
-      const messages = sample.messages as import('../types').ChatMessage[];
-      const subtabs = sample.subtabs as import('../types').SubTab[];
-      console.error('🔍 [Supabase] Sample conversation from DB:', {
-        id: sample.id,
-        title: sample.title,
-        messageCount: Array.isArray(messages) ? messages.length : 0,
-        hasMessagesField: 'messages' in sample,
-        messagesType: typeof messages,
-        messagesIsNull: messages === null,
-        messagesIsUndefined: messages === undefined,
-        subtabCount: Array.isArray(subtabs) ? subtabs.length : 0,
-        messagesRaw: messages, // 🔍 Let's see the actual data
-        firstMessage: Array.isArray(messages) && messages.length > 0 ? messages[0] : null
-      });
-    }
-
     return data.map(conv => {
       // Handle messages from the join
       const messages = conv.messages;
       
-      console.error('🔍 [Supabase] Processing conversation:', {
-        id: conv.id,
-        title: conv.title,
-        rawMessages: messages,
-        hasMessages: !!messages,
-        isArray: Array.isArray(messages),
-        isNull: messages === null,
-        isUndefined: messages === undefined,
-        messagesType: typeof messages,
-        messagesLength: Array.isArray(messages) ? messages.length : 'N/A'
-      });
-      
       const processedMessages = Array.isArray(messages) 
-        ? messages.map((msg: any) => {
-            const processed = {
-              id: msg.id,
-              role: msg.role as 'user' | 'assistant' | 'system',
-              content: msg.content,
-              timestamp: safeParseDate(msg.created_at),
-              imageUrl: safeString(msg.image_url, undefined),
-              metadata: typeof msg.metadata === 'object' && msg.metadata !== null ? msg.metadata as Record<string, unknown> : undefined,
-            };
-            console.error('🔍 [Supabase] Processed message:', { id: processed.id, role: processed.role, contentLength: processed.content?.length });
-            return processed;
-          })
+        ? messages.map((msg: any) => ({
+            id: msg.id,
+            role: msg.role as 'user' | 'assistant' | 'system',
+            content: msg.content,
+            timestamp: safeParseDate(msg.created_at),
+            imageUrl: safeString(msg.image_url, undefined),
+            metadata: typeof msg.metadata === 'object' && msg.metadata !== null ? msg.metadata as Record<string, unknown> : undefined,
+          }))
         : [];
-      
-      console.error('🔍 [Supabase] Final processed messages for', conv.id, ':', processedMessages.length);
       
       // Handle subtabs from the join
       const rawSubtabs = conv.subtabs;
@@ -320,7 +272,15 @@ export class SupabaseService {
         subtabsOrder: (conv.subtabs_order as string[]) || [],
         isActiveSession: conv.is_active_session as boolean | null,
         activeObjective: (conv.active_objective as string | null) ?? undefined,
-        gameProgress: (conv.game_progress as number | null) ?? undefined,
+        gameProgress: (() => {
+          const dbValue = conv.game_progress;
+          const mappedValue = (dbValue as number | null) ?? undefined;
+          // 🔍 DEBUG: Log game_progress mapping for non-Game Hub conversations
+          if (conv.id !== 'game-hub') {
+            console.log('📊 [SupabaseService] Loading gameProgress for', conv.title, '- DB value:', dbValue, '→ Mapped:', mappedValue);
+          }
+          return mappedValue;
+        })(),
         createdAt: safeParseDate(conv.created_at as string | null),
         updatedAt: safeParseDate(conv.updated_at as string | null),
         isActive: conv.is_active as boolean | null,
@@ -425,38 +385,90 @@ export class SupabaseService {
 
   async updateConversation(conversationId: string, updates: Partial<Conversation>): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('conversations')
-        .update({
-          title: updates.title,
-          // Note: messages, subtabs, subtabs_order are NOT in conversations table
-          game_id: updates.gameId,
-          game_title: updates.gameTitle,
-          genre: updates.genre,
-          is_active_session: updates.isActiveSession,
-          active_objective: updates.activeObjective,
-          game_progress: updates.gameProgress,
-          is_active: updates.isActive,
-          is_pinned: updates.isPinned,
-          pinned_at: updates.pinnedAt ? new Date(updates.pinnedAt).toISOString() : null,
-          is_game_hub: updates.isGameHub,
-          is_unreleased: updates.isUnreleased,
-          context_summary: updates.contextSummary,
-          last_summarized_at: updates.lastSummarizedAt ? updates.lastSummarizedAt : null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', conversationId);
-
-      if (error) {
-        console.error('Error updating conversation:', error);
-        return false;
+      // ✅ PERFORMANCE: Deduplicate identical updates within 1 second
+      const updateKey = JSON.stringify(updates);
+      const lastUpdate = this.lastUpdateCache.get(conversationId);
+      if (lastUpdate && 
+          Date.now() - lastUpdate.timestamp < 1000 &&
+          lastUpdate.updates === updateKey) {
+        return true; // Skip duplicate update
       }
-
+      
+      // Queue the update for batching
+      const existing = this.updateQueue.get(conversationId);
+      this.updateQueue.set(conversationId, {
+        updates: { ...existing?.updates, ...updates }, // Merge updates
+        timestamp: Date.now()
+      });
+      
+      // Debounce batch execution
+      if (this.updateTimer) clearTimeout(this.updateTimer);
+      this.updateTimer = setTimeout(() => this.flushUpdateQueue(), this.UPDATE_DEBOUNCE_MS);
+      
       return true;
     } catch (error) {
-      console.error('Error updating conversation:', error, { conversationId });
-      toastService.error('Failed to update conversation.');
+      console.error('Error queueing conversation update:', error, { conversationId });
       return false;
+    }
+  }
+  
+  /**
+   * Flush queued updates to database (batched)
+   */
+  private async flushUpdateQueue(): Promise<void> {
+    const updates = Array.from(this.updateQueue.entries());
+    this.updateQueue.clear();
+    
+    if (updates.length === 0) return;
+    
+    // Execute all updates in parallel
+    const results = await Promise.allSettled(
+      updates.map(async ([conversationId, { updates: data }]) => {
+        try {
+          const { error } = await supabase
+            .from('conversations')
+            .update({
+              title: data.title,
+              game_id: data.gameId,
+              game_title: data.gameTitle,
+              genre: data.genre,
+              is_active_session: data.isActiveSession,
+              active_objective: data.activeObjective,
+              game_progress: data.gameProgress,
+              is_active: data.isActive,
+              is_pinned: data.isPinned,
+              pinned_at: data.pinnedAt ? new Date(data.pinnedAt).toISOString() : null,
+              is_game_hub: data.isGameHub,
+              is_unreleased: data.isUnreleased,
+              context_summary: data.contextSummary,
+              last_summarized_at: data.lastSummarizedAt ? data.lastSummarizedAt : null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', conversationId);
+          
+          if (error) {
+            console.error('Error updating conversation:', error);
+            return false;
+          }
+          
+          // Cache this update to prevent duplicates
+          this.lastUpdateCache.set(conversationId, {
+            updates: JSON.stringify(data),
+            timestamp: Date.now()
+          });
+          
+          return true;
+        } catch (error) {
+          console.error('Error updating conversation:', error, { conversationId });
+          return false;
+        }
+      })
+    );
+    
+    // Check for failures
+    const failures = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value));
+    if (failures.length > 0) {
+      toastService.error('Some updates failed to save.');
     }
   }
 

@@ -5,21 +5,21 @@ export const USER_TIERS = {
 } as const;
 
 export const TIER_LIMITS = {
-  [USER_TIERS.FREE]: { text: 55, image: 25 },
-  [USER_TIERS.PRO]: { text: 1583, image: 328 },
-  [USER_TIERS.VANGUARD_PRO]: { text: 1583, image: 328 },
+  [USER_TIERS.FREE]: { text: 20, image: 15 },
+  [USER_TIERS.PRO]: { text: 350, image: 150 },
+  [USER_TIERS.VANGUARD_PRO]: { text: 350, image: 150 },
 } as const;
 
 export const TIER_FEATURES = {
   [USER_TIERS.FREE]: [
-    '55 text queries per month',
-    '25 image queries per month',
+    '20 text queries per month',
+    '15 image queries per month',
     'Basic conversation features',
     'Standard response quality'
   ],
   [USER_TIERS.PRO]: [
-    '1,583 text queries per month',
-    '328 image queries per month',
+    '350 text queries per month',
+    '150 image queries per month',
     'Enhanced conversation features',
     'Improved response quality',
     'Priority support',
@@ -27,8 +27,8 @@ export const TIER_FEATURES = {
     'Grounding search enabled'
   ],
   [USER_TIERS.VANGUARD_PRO]: [
-    '1,583 text queries per month',
-    '328 image queries per month',
+    '350 text queries per month',
+    '150 image queries per month',
     'All Pro features',
     'Exclusive Vanguard content',
     'VIP support',

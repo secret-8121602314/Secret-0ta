@@ -105,8 +105,6 @@ class AIService {
     const callType = request.callType || 'chat';
     const edgeFunctionUrl = this.edgeFunctionUrls[callType];
     
-    console.log(`📡 [AIService] Edge Function Call #${AIService.edgeFunctionCallCount} | Type: ${request.requestType} | CallType: ${callType} | Time since last: ${timeSinceLastCall}ms | Model: ${request.model || 'default'}`);
-    
     // Get user's JWT token
     const { data: { session } } = await supabase.auth.getSession();
     
@@ -150,7 +148,6 @@ class AIService {
       throw new Error(errorMessage);
     }
 
-    console.log(`✅ [AIService] Edge Function Call #${AIService.edgeFunctionCallCount} SUCCESS`);
     return await response.json();
   }
 
@@ -399,31 +396,22 @@ class AIService {
       });
     }
     
-    // 🎯 GLOBAL CACHE: Inject game knowledge context (Option C)
-    // If no cache exists: Use training data (non-blocking, fetch runs in background)
-    // If cache exists: Inject comprehensive knowledge for Gemini to search and use
-    let gameKnowledgeContext = '';
-    if (conversation.gameTitle) {
-      const libraryGame = libraryStorage.getByGameTitle(conversation.gameTitle);
-      if (libraryGame?.igdbGameId) {
-        try {
-          const knowledgeResult = await gameKnowledgeCacheService.get(libraryGame.igdbGameId);
-          if (knowledgeResult.cached && knowledgeResult.knowledge) {
-            gameKnowledgeContext = `\n\n=== GAME KNOWLEDGE DATABASE ===\nThe following is comprehensive, up-to-date information about ${conversation.gameTitle}. You can reference any part of this knowledge base to answer the user's questions accurately.\n\n${knowledgeResult.knowledge}\n\n=== END KNOWLEDGE DATABASE ===\n\n`;
-            console.log(`🎮 [AIService] Injecting ${knowledgeResult.knowledge.length} chars of cached knowledge from ${knowledgeResult.source}`);
-          } else {
-            // No cache = first query: use training data
-            // Background fetch will populate for next time (already triggered by MainApp)
-            console.log(`🎮 [AIService] No cached knowledge for ${conversation.gameTitle}, using Gemini training data`);
-          }
-        } catch (error) {
-          console.warn(`🎮 [AIService] Failed to fetch game knowledge:`, error);
-          // Continue without knowledge - graceful degradation
-        }
-      }
-    }
+    // 🎯 SMART KNOWLEDGE INJECTION: Determine which game knowledge to inject
+    // NEW: Uses intelligent detection to prevent wrong knowledge injection
+    // Cases handled:
+    // 1. Text in game tab → Use that game's knowledge
+    // 2. Screenshot in Game Hub → No knowledge (detection mode)
+    // 3. Text in Game Hub → Detect game from text, use that knowledge
+    // 4. Screenshot in game tab → Check for game switches, use correct knowledge
+    const { getGameKnowledgeContext } = await import('./gameKnowledgeInjectionService');
+    const gameKnowledgeContext = await getGameKnowledgeContext(conversation, userMessage, hasImages);
     
     const prompt = basePrompt + sessionContext + gameKnowledgeContext + '\n\n' + immersionContext;
+    
+    // Log final prompt size for monitoring
+    const finalPromptLength = prompt.length;
+    const estimatedInputTokens = Math.ceil(finalPromptLength / 4);
+    console.log(`📊 [AIService] Final prompt: ${finalPromptLength} chars (~${estimatedInputTokens} input tokens) | Output limit: 8192 tokens`);
     
         // Check if request was aborted before starting
     if (abortSignal?.aborted) {
@@ -433,8 +421,6 @@ class AIService {
     try {
       // ? ENABLE GROUNDING FOR ALL QUERIES (text and image)
       const needsWebSearch = true;
-      
-      console.log(`📡 [GEMINI CALL #4] 💬 Main Chat Response | Game: ${conversation.gameTitle || 'Game Hub'} | Message: ${userMessage.substring(0, 50)}... | HasImage: ${hasImages} | Session: ${isActiveSession}`);
       
       // Use grounding model for queries that need current information
       // ? SECURITY: Use Edge Function if enabled
@@ -540,14 +526,7 @@ class AIService {
         throw new DOMException('Request was aborted', 'AbortError');
       }
       
-      console.log('🏷️ [AIService] Raw AI response length:', rawContent.length);
-      console.log('🏷️ [AIService] Has OTAKON_SUGGESTIONS:', rawContent.includes('OTAKON_SUGGESTIONS'));
-      
       const { cleanContent, tags } = parseOtakonTags(rawContent);
-      
-      console.log('🏷️ [AIService] Clean content length:', cleanContent.length);
-      console.log('🏷️ [AIService] Extracted tags:', Array.from(tags.keys()));
-      console.log('🏷️ [AIService] Suggestions extracted:', tags.has('SUGGESTIONS') ? 'YES' : 'NO');
 
       // Build gamePillData from OTAKON tags if game was detected
       const gameId = tags.get('GAME_ID') as string | undefined;
@@ -862,9 +841,13 @@ class AIService {
     const structuredInstructions = `
 
 **ENHANCED RESPONSE FORMAT:**
-In addition to your regular response, provide structured data in the following optional fields:
+In addition to your regular response, provide structured data in the following fields:
 
-1. **followUpPrompts** (array of 3-4 strings): Generate contextual follow-up questions DIRECTLY RELATED to the specific content of your response
+1. **🚨🚨🚨 CRITICAL REQUIREMENT - followUpPrompts** (array of 3-4 strings): 
+   - ⛔ YOUR RESPONSE WILL BE REJECTED WITHOUT THIS FIELD ⛔
+   - You MUST ALWAYS include followUpPrompts in the Internal Data Structure JSON
+   - Generate contextual follow-up questions DIRECTLY RELATED to the specific content of your response
+   - This field is MANDATORY - NEVER omit it, even if you think it's not needed
    ${isGamingNewsQuery ? `
    - NEWS MODE: Generate follow-ups about the SPECIFIC games/news you just mentioned
    - Example: If you mentioned "Elden Ring DLC", ask "When is the Elden Ring DLC releasing?"
@@ -883,6 +866,7 @@ In addition to your regular response, provide structured data in the following o
    - GAME HUB MODE: Generate follow-ups about the SPECIFIC games/topics you just discussed
    - Example: If you explained a game's story, ask about specific characters or plot points from that game
    - DO NOT use generic gaming questions - tie them to what you just said`}
+   - **Format Example**: ["How do I defeat the boss you mentioned?", "Where can I find that item?", "What should I do next in this area?"]
 2. **progressiveInsightUpdates** (array): ${!conversation.isGameHub && conversation.subtabs && conversation.subtabs.length > 0 ? `
    **MANDATORY FOR GAME TABS**: Update subtabs when the conversation reveals new information!
    
@@ -950,7 +934,29 @@ In addition to your regular response, provide structured data in the following o
    - Elden Throne → 90%+` : ''}
 4. **gamePillData** (object): ${conversation.isGameHub ? 'Set shouldCreate: true if user asks about a specific game, and include game details with pre-filled wikiContent' : 'Set shouldCreate: false (already in game tab)'}
 
-**CRITICAL**: Only include the content field in your response. DO NOT add "Internal Data Structure" or any JSON after your main content. The system will extract the structured fields automatically.
+**CRITICAL RESPONSE FORMAT**:
+Your response MUST include TWO parts:
+1. Your main content (formatted as described above)
+2. An "Internal Data Structure" JSON block at the end with ALL required fields
+
+Example format:
+[Your main response here]
+
+**Internal Data Structure**
+\`\`\`json
+{
+  "followUpPrompts": ["Question 1?", "Question 2?", "Question 3?"],
+  "stateUpdateTags": ["PROGRESS: 25", "OBJECTIVE: Your objective"],
+  "progressiveInsightUpdates": []
+}
+\`\`\`
+
+**⛔ CRITICAL VALIDATION CHECK ⛔**: 
+- The followUpPrompts field is REQUIRED in EVERY response
+- Your response is INCOMPLETE without followUpPrompts
+- ALWAYS include the Internal Data Structure JSON block
+- NEVER skip followUpPrompts - it must contain 3-4 contextual questions
+- If you omit followUpPrompts, your response will be considered INVALID
 `;
     
     const prompt = basePrompt + immersionContext + structuredInstructions;
@@ -1564,8 +1570,15 @@ In addition to your regular response, provide structured data in the following o
     genre: string,
     playerProfile?: PlayerProfile,
     conversationContext?: string, // ? Actual conversation messages for context-aware generation
-    gameProgress?: number // ? NEW: Player's game completion percentage for progress-aware subtabs
+    gameProgress?: number, // ? NEW: Player's game completion percentage for progress-aware subtabs
+    userTier?: string // 🔒 TIER-GATING: User tier to prevent API calls for free tier
   ): Promise<Record<string, string>> {
+    // 🔒 TIER-GATING: Block API calls for free tier users
+    if (userTier === 'free') {
+      console.log('🔒 [AIService] Skipping subtab generation for free tier user');
+      return {};
+    }
+
     // ? CRITICAL: Use conversation context AND progress in cache key
     const contextHash = conversationContext 
       ? conversationContext.substring(0, 50).replace(/[^a-z0-9]/gi, '') 

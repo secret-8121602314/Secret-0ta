@@ -79,10 +79,12 @@ export const ProfileSetupBanner: React.FC<ProfileSetupBannerProps> = ({
   ];
 
   const handleNext = () => {
+    console.log('🔍 [DEBUG ProfileSetupBanner] handleNext called, currentStep:', currentStep);
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
       // Complete setup and close banner
+      console.log('🔍 [DEBUG ProfileSetupBanner] Calling onComplete with profile:', profile);
       onComplete(profile as PlayerProfile);
     }
   };
@@ -94,6 +96,7 @@ export const ProfileSetupBanner: React.FC<ProfileSetupBannerProps> = ({
   };
 
   const handleOptionSelect = (field: keyof PlayerProfile, value: string) => {
+    console.log('🔍 [DEBUG ProfileSetupBanner] handleOptionSelect:', { field, value, currentStep });
     const updatedProfile = { ...profile, [field]: value };
     setProfile(updatedProfile);
     // Auto-advance after selection
@@ -102,6 +105,7 @@ export const ProfileSetupBanner: React.FC<ProfileSetupBannerProps> = ({
         setCurrentStep(currentStep + 1);
       } else {
         // Complete setup with the updated profile
+        console.log('🔍 [DEBUG ProfileSetupBanner] Auto-complete - calling onComplete with profile:', updatedProfile);
         onComplete(updatedProfile as PlayerProfile);
       }
     }, 300);
@@ -286,7 +290,7 @@ export const ProfileSetupBanner: React.FC<ProfileSetupBannerProps> = ({
         className="fixed inset-0 z-[70] flex items-center justify-center px-4 py-6 bg-black/80 backdrop-blur-lg"
         onClick={handleOverlayClick}
       >
-        <div className="w-full max-w-md max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <div className="w-full max-w-md sm:max-w-lg md:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto custom-scrollbar">
           {expandedCard}
         </div>
       </div>

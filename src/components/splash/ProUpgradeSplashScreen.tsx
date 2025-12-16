@@ -65,12 +65,12 @@ const EarlyAccessIcon = () => (
 const PRO_FEATURES = [
   {
     icon: <TextIcon />,
-    title: '1,583 Text Queries',
+    title: '350 Text Queries',
     description: 'Get answers to all your gaming questions'
   },
   {
     icon: <ImageIcon />,
-    title: '328 Image Queries',
+    title: '150 Image Queries',
     description: 'Analyze screenshots for instant help'
   },
   {

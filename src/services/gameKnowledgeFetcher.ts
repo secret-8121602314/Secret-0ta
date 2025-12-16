@@ -230,7 +230,7 @@ async function fetchGameKnowledge(igdbGameId: number, gameName: string): Promise
   }
 
   pendingFetches.add(igdbGameId);
-  console.log(`🎮 [GameKnowledge] Starting background fetch WITH GROUNDING for ${gameName}...`);
+  console.log(`🎮 [GameKnowledge] Starting background fetch for ${gameName}...`);
 
   try {
     // Get user session for auth
@@ -242,10 +242,55 @@ async function fetchGameKnowledge(igdbGameId: number, gameName: string): Promise
       return;
     }
     console.log(`🎮 [GameKnowledge] ✅ Auth session found, proceeding with fetch...`);
-
-    console.log(`📡 [GEMINI CALL #1] 🎮 Game Knowledge Fetch | Game: ${gameName} | Type: BACKGROUND | Grounding: YES | Max Tokens: 60000`);
     
-    // Make API call with GROUNDING ENABLED and 32K tokens
+    // 🔒 TIER-GATING: Validate based on game release date and user tier
+    // Pre-Jan 2025 games: All users can fetch (no grounding needed)
+    // Post-Jan 2025 games: Only Pro/Vanguard can fetch (grounding needed)
+    
+    // Get game info to check release date
+    const { data: gameData } = await supabase
+      .from('games_library')
+      .select('igdb_data')
+      .eq('igdb_game_id', igdbGameId)
+      .single();
+    
+    const releaseDate = gameData?.igdb_data?.first_release_date; // Unix timestamp in seconds
+    const isPostCutoff = releaseDate ? (releaseDate * 1000) > new Date('2025-01-31T23:59:59Z').getTime() : false;
+    
+    console.log(`🎮 [GameKnowledge] Game release date check:`, {
+      gameName,
+      releaseDate: releaseDate ? new Date(releaseDate * 1000).toISOString() : 'Unknown',
+      isPostCutoff
+    });
+    
+    // Get user tier
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('tier')
+      .eq('auth_user_id', session.user.id)
+      .single();
+    
+    const tier = profile?.tier || 'free';
+    const isPro = tier === 'pro' || tier === 'vanguard_pro';
+    
+    // Validation logic:
+    // - Pre-Jan 2025 games: All users allowed (no grounding needed, AI has training data)
+    // - Post-Jan 2025 games: Only Pro/Vanguard allowed (grounding needed for current data)
+    if (isPostCutoff && !isPro) {
+      console.log(`🔒 [GameKnowledge] Game released after Jan 2025 - requires Pro/Vanguard for grounding`);
+      console.log(`🔒 [GameKnowledge] User is ${tier} tier - cannot fetch knowledge for post-cutoff games`);
+      return;
+    }
+    
+    if (isPostCutoff) {
+      console.log(`🎮 [GameKnowledge] ✅ User is ${tier}, can fetch post-cutoff game WITH grounding`);
+    } else {
+      console.log(`🎮 [GameKnowledge] ✅ Pre-cutoff game, all users can fetch (no grounding needed)`);
+    }
+
+    console.log(`📡 [GEMINI CALL] 🎮 Game Knowledge Fetch | Game: ${gameName} | Post-Cutoff: ${isPostCutoff} | Grounding: ${isPostCutoff ? 'YES' : 'NO'} | Max Tokens: 60000`);
+    
+    // Make API call - only use grounding for post-cutoff games
     const response = await fetch(getEdgeFunctionUrl(), {
       method: 'POST',
       headers: {
@@ -258,15 +303,17 @@ async function fetchGameKnowledge(igdbGameId: number, gameName: string): Promise
         model: 'gemini-2.5-flash',
         temperature: 0.7,
         maxTokens: 60000, // Increased to 60K for maximum comprehensive knowledge
-        systemPrompt: 'You are a comprehensive gaming knowledge expert. Provide EXTREMELY detailed, exhaustive, accurate, and practical gaming information. Use ALL available tokens to create the most comprehensive knowledge base possible. Use Google Search grounding to ensure all information is up-to-date and accurate.',
-        // Enable Google Search grounding for real-time accuracy
-        useGrounding: true,
-        groundingConfig: {
+        systemPrompt: isPostCutoff 
+          ? 'You are a comprehensive gaming knowledge expert. Provide EXTREMELY detailed, exhaustive, accurate, and practical gaming information. Use ALL available tokens to create the most comprehensive knowledge base possible. Use Google Search grounding to ensure all information is up-to-date and accurate for this recently released game.'
+          : 'You are a comprehensive gaming knowledge expert. Provide EXTREMELY detailed, exhaustive, accurate, and practical gaming information about this classic/established game. Use ALL available tokens to create the most comprehensive knowledge base possible.',
+        // Enable Google Search grounding ONLY for post-cutoff games
+        useGrounding: isPostCutoff,
+        groundingConfig: isPostCutoff ? {
           dynamicRetrievalConfig: {
             mode: 'MODE_DYNAMIC',
             dynamicThreshold: 0.3 // Lower threshold = more likely to use grounding
           }
-        }
+        } : undefined
       })
     });
 
@@ -283,7 +330,7 @@ async function fetchGameKnowledge(igdbGameId: number, gameName: string): Promise
       tokensUsed: result.tokensUsed || 0
     });
     
-    console.log(`✅ [GEMINI CALL] Game Knowledge Fetch SUCCESS | Game: ${gameName} | Response Length: ${result.response?.length || 0} chars`);
+    console.log(`✅ [GEMINI CALL] Game Knowledge Fetch SUCCESS | Game: ${gameName} | Grounding: ${isPostCutoff ? 'YES' : 'NO'} | Response Length: ${result.response?.length || 0} chars`);
     
     if (result.success && result.response) {
       // Store comprehensive knowledge in global Supabase cache
@@ -294,8 +341,8 @@ async function fetchGameKnowledge(igdbGameId: number, gameName: string): Promise
         result.response, // Full response, no parsing/truncation
         {
           tokensUsed: result.tokensUsed || 0,
-          fetchedWithGrounding: true,
-          isPostCutoff: false, // TODO: Check release date
+          fetchedWithGrounding: isPostCutoff,
+          isPostCutoff: isPostCutoff,
           knowledgeSummary: result.response.slice(0, 500) // First 500 chars as summary
         }
       );

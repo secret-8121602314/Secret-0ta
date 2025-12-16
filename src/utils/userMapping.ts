@@ -27,8 +27,8 @@ function jsonToRecord(value: unknown): Record<string, unknown> {
  */
 export function mapUserData(userData: Record<string, unknown>, authUserId?: string): User {
   const tier = (userData.tier as UserTier) || 'free';
-  const textLimit = (userData.text_limit as number) || TIER_LIMITS[tier]?.text || 55;
-  const imageLimit = (userData.image_limit as number) || TIER_LIMITS[tier]?.image || 25;
+  const textLimit = (userData.text_limit as number) || TIER_LIMITS[tier]?.text || 20;
+  const imageLimit = (userData.image_limit as number) || TIER_LIMITS[tier]?.image || 15;
   const textCount = (userData.text_count as number) || 0;
   const imageCount = (userData.image_count as number) || 0;
   const totalRequests = (userData.total_requests as number) || 0;

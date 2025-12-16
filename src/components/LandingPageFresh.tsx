@@ -1666,7 +1666,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                     <span className="text-lg text-neutral-300">/month</span>
                                 </div>
                                 <ul className="space-y-3 mb-8">
-                                    <FeatureListItem>55 Text | 25 Image Queries/month</FeatureListItem>
+                                    <FeatureListItem>20 Text | 15 Image Queries/month</FeatureListItem>
                                     <FeatureListItem>4 Web Searches/month</FeatureListItem>
                                     <FeatureListItem>Knowledge up to January 2025</FeatureListItem>
                                     <FeatureListItem>Cross-platform sync (PC & Mobile)</FeatureListItem>
@@ -1698,7 +1698,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 </div>
                                 <ul className="space-y-3 mb-6">
                                     <FeatureListItem>Everything in Pro, plus:</FeatureListItem>
-                                    <FeatureListItem>1,583 Text | 328 Image Queries/month</FeatureListItem>
+                                    <FeatureListItem>350 Text | 150 Image Queries/month</FeatureListItem>
                                     <FeatureListItem>30 Web Searches/month</FeatureListItem>
                                     <FeatureListItem>Exclusive rare legendary profile icon</FeatureListItem>
                                     <FeatureListItem>Founding member status & recognition</FeatureListItem>
@@ -1727,7 +1727,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 </div>
                                 <ul className="space-y-3 mb-8">
                                     <FeatureListItem>Everything in Free, plus:</FeatureListItem>
-                                    <FeatureListItem>1,583 Text | 328 Image Queries/month</FeatureListItem>
+                                    <FeatureListItem>350 Text | 150 Image Queries/month</FeatureListItem>
                                     <FeatureListItem>30 Web Searches/month</FeatureListItem>
                                     <FeatureListItem>Wiki-like subtabs that update with your progress</FeatureListItem>
                                     <FeatureListItem>Hands-free mode with AI screenshot toggle</FeatureListItem>

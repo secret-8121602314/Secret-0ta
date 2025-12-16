@@ -121,7 +121,10 @@ serve(async (req) => {
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Missing authorization header" }), {
         status: 401,
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*"
+        },
       });
     }
 
@@ -132,7 +135,10 @@ serve(async (req) => {
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*"
+        },
       });
     }
 
@@ -154,6 +160,7 @@ serve(async (req) => {
               status: 429,
               headers: { 
                 "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*",
                 "Retry-After": Math.ceil((userLimit.resetTime - now) / 1000).toString()
               },
             }
@@ -232,7 +239,10 @@ serve(async (req) => {
     if (!contents) {
       return new Response(JSON.stringify({ error: "Missing required field: prompt or contents" }), {
         status: 400,
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*"
+        },
       });
     }
 
@@ -293,7 +303,10 @@ serve(async (req) => {
       console.error("Gemini API error:", geminiData);
       return new Response(JSON.stringify({ error: "AI service error", details: geminiData }), {
         status: geminiResponse.status,
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*"
+        },
       });
     }
 
@@ -341,7 +354,10 @@ serve(async (req) => {
     console.error("Error in ai-subtabs function:", error);
     return new Response(JSON.stringify({ error: "Internal server error", message: error.message }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*"
+      },
     });
   }
 });

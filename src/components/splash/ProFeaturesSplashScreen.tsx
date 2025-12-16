@@ -32,7 +32,7 @@ const FullFeature: React.FC<{ title: string; description: string; children: Reac
 );
 
 const proFeatures = [
-  { title: "Massively Increased Limits", description: "Get 1,583 Text | 328 Image Queries every month.", icon: <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-[#FFAB40]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> },
+  { title: "Massively Increased Limits", description: "Get 350 Text | 150 Image Queries every month.", icon: <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-[#FFAB40]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> },
   { title: "Batch Screenshot Capture", description: "Capture the last 5 minutes of gameplay with a hotkey.", icon: <KeyboardIcon className="w-5 h-5 text-[#FFAB40]" /> },
   { title: "In-Depth Insight Tabs", description: "Detailed breakdowns on lore, builds, and more.", icon: <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-[#FFAB40]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" /></svg> },
   { title: "AI Mode Toggle", description: "Save query limits when you don't need insights.", icon: <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-[#FFAB40]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" /></svg> },
@@ -162,7 +162,11 @@ const ProFeaturesSplashScreen: React.FC<ProFeaturesSplashScreenProps> = ({ onCom
                     transition={{ delay: 0.3 }}
                   >
                     <p className={`text-base sm:text-lg font-bold ${isVanguard ? 'text-amber-300' : 'text-[#FFAB40]'}`}>
-                      {isVanguard ? '$35/year' : '$5/month'}
+                      {isVanguard ? (
+                        <>$35<span className="ml-1">/year</span></>
+                      ) : (
+                        <>$5<span className="ml-1">/month</span></>
+                      )}
                     </p>
                   </motion.div>
                   
@@ -248,7 +252,11 @@ const ProFeaturesSplashScreen: React.FC<ProFeaturesSplashScreenProps> = ({ onCom
                       : 'bg-gradient-to-r from-[#FF4D4D]/30 to-[#FFAB40]/30 border-2 border-[#FFAB40]/60'
                   }`}>
                     <p className={`text-2xl font-bold text-center ${isVanguard ? 'text-amber-300' : 'text-white'}`}>
-                      {isVanguard ? '$35/year' : '$5/month'}
+                      {isVanguard ? (
+                        <>$35<span className="ml-1">/year</span></>
+                      ) : (
+                        <>$5<span className="ml-1">/month</span></>
+                      )}
                     </p>
                     {isVanguard && (
                       <p className="text-xs text-amber-300/70 text-center mt-1">Locked in forever</p>
@@ -299,14 +307,10 @@ const ProFeaturesSplashScreen: React.FC<ProFeaturesSplashScreenProps> = ({ onCom
       {/* Footer - Sticky */}
       <footer className="flex-shrink-0 bg-gradient-to-t from-[#0A0A0A]/95 via-[#0F0F0F]/90 to-transparent px-4 sm:px-6 md:px-8 pt-3 sm:pt-4 pb-5 sm:pb-6 md:pb-7 relative z-10 border-t border-neutral-800/30">
         <div className="w-full max-w-xl mx-auto space-y-2.5 sm:space-y-3">
-          {/* Upgrade Button - Now Functional */}
+          {/* Upgrade Button - Matching Initial Splash Primary Button */}
           <motion.button
             onClick={() => setShowPaymentModal(true)}
-            className={`w-full font-bold py-3 sm:py-4 md:py-4 px-4 sm:px-6 md:px-6 rounded-xl sm:rounded-xl text-sm sm:text-base md:text-base flex items-center justify-center gap-2 sm:gap-2.5 shadow-2xl transition-all duration-300 ${
-              isVanguard 
-                ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 hover:from-amber-400 hover:via-orange-400 hover:to-amber-400' 
-                : 'bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] hover:from-[#FF6B6B] hover:to-[#FFB960]'
-            } text-white hover:shadow-[0_0_40px_rgba(255,77,77,0.4)]`}
+            className="w-full btn-primary-touch-safe text-sm sm:text-base flex items-center justify-center gap-2 sm:gap-2.5"
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
             initial={{ opacity: 0, y: 20 }}
@@ -317,33 +321,25 @@ const ProFeaturesSplashScreen: React.FC<ProFeaturesSplashScreenProps> = ({ onCom
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
             </svg>
             <span className="font-extrabold">
-              {activeTab === 'pro' ? 'Upgrade to Pro - $5/month' : 'Join Vanguard - $35/year'}
+              {activeTab === 'pro' ? 'Upgrade to Pro - $5' : 'Join Vanguard - $35'}
+              <span className="ml-0.5">{activeTab === 'pro' ? '/month' : '/year'}</span>
             </span>
           </motion.button>
           
-          {/* Maybe Later Button */}
+          {/* Maybe Later Button - Matching Initial Splash Secondary Button */}
           <motion.button
             onClick={onComplete}
-            className="w-full font-semibold py-2.5 sm:py-3 md:py-3.5 px-4 sm:px-6 rounded-xl sm:rounded-xl bg-gradient-to-r from-[#FF4D4D]/30 to-[#FFAB40]/30 border-2 border-transparent hover:border-[#FF4D4D]/50 transition-all duration-300 text-xs sm:text-sm md:text-base flex items-center justify-center gap-2 relative overflow-hidden group"
-            whileHover={{ scale: 1.01, y: -1 }}
+            className="w-full btn-secondary-touch-safe text-sm sm:text-base flex items-center justify-center gap-2"
+            whileHover={{ scale: 1.02, y: -1 }}
             whileTap={{ scale: 0.99 }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
           >
-            {/* Gradient border effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#FF4D4D] via-[#FFAB40] to-[#FF4D4D] opacity-30 group-hover:opacity-50 transition-opacity duration-300 rounded-xl -z-10"></div>
-            <div className="absolute inset-[2px] bg-gradient-to-br from-[#111111] to-[#0A0A0A] rounded-xl group-hover:from-[#1A1A1A] group-hover:to-[#0F0F0F] transition-colors duration-300"></div>
-            <svg className="w-4 h-4 sm:w-5 sm:h-5 relative z-10 flex-shrink-0" fill="none" stroke="url(#gradient)" viewBox="0 0 24 24">
-              <defs>
-                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#FF4D4D" />
-                  <stop offset="100%" stopColor="#FFAB40" />
-                </linearGradient>
-              </defs>
+            <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] font-bold">Maybe Later</span>
+            <span className="font-bold">Maybe Later</span>
           </motion.button>
         </div>
       </footer>

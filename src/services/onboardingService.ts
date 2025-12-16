@@ -147,23 +147,34 @@ class OnboardingService {
     // Profile setup is now handled in the chat screen, not as part of onboarding
     // This function is kept for backward compatibility but doesn't affect onboarding flow
     try {
+      console.log('🔍 [DEBUG onboardingService] markProfileSetupComplete called for user:', userId);
+      
       const { error } = await supabase
         .from('users')
         .update({
           has_profile_setup: true,
           profile_data: asJson(profileData),
+          onboarding_completed: true,
+          app_state: asJson({
+            onboardingStatus: 'complete',
+            hasSeenSplashScreens: true,
+            hasSeenHowToUse: true,
+            hasSeenFeaturesConnected: true,
+            completedAt: new Date().toISOString()
+          }),
           updated_at: new Date().toISOString()
         })
         .eq('auth_user_id', userId);
 
       if (error) {
-        console.error('Error marking profile setup complete:', error);
+        console.error('❌ [DEBUG onboardingService] Error marking profile setup complete:', error);
         return false;
       }
 
+      console.log('✅ [DEBUG onboardingService] Profile setup marked complete with onboarding status');
       return true;
     } catch (error) {
-      console.error('Error marking profile setup complete:', error);
+      console.error('❌ [DEBUG onboardingService] Error marking profile setup complete:', error);
       return false;
     }
   }

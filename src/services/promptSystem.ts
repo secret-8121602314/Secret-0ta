@@ -3,6 +3,7 @@ import { profileAwareTabService } from './profileAwareTabService';
 import { behaviorService, type AICorrection } from './ai/behaviorService';
 import { gameKnowledgeCacheService } from './gameKnowledgeCacheService';
 import { libraryStorage } from './gamingExplorerStorage';
+import { ConversationService } from './conversationService';
 
 // ============================================================================
 // QUERY CONTEXT (Interaction-aware responses)
@@ -255,8 +256,17 @@ export async function getBehaviorContext(
 // ============================================================================
 // Prevent context bloat for long gaming sessions (100+ hour RPGs)
 // Strategy: Give AI FULL subtab content (matching what user sees), but limit total context
+// NOTE: Gemini 2.5 Flash supports ~1M INPUT tokens - we can use much more!
 const MAX_SUBTAB_CHARS = 3000;     // Match storage limit - AI sees same content as user
-const MAX_CONTEXT_CHARS = 20000;   // Increased total budget to accommodate fuller subtabs
+const MAX_SUBTABS_CONTEXT = 20000; // Budget for subtabs only (keeps them manageable)
+const MAX_TOTAL_INPUT_TOKENS = 900000; // Total input budget: ~900K tokens (~3.6M chars) - well within 1M limit
+// Game knowledge (60K tokens = ~240K chars) is injected OUTSIDE subtab budget
+
+// Why separate budgets?
+// - Subtabs: User-generated content that can grow unbounded (need limits)
+// - Game Knowledge: Pre-fetched comprehensive data (fixed size, anti-hallucination)
+// - Total: Gemini has 1M token INPUT limit, 8192 token OUTPUT limit
+//   We maximize input context for accuracy while keeping output concise
 
 // Priority order for subtabs when context is limited (most important first)
 const SUBTAB_PRIORITY = [
@@ -645,7 +655,7 @@ This ensures the tags are always captured even if the response is truncated. Do 
 - [OTAKON_SUBTAB_CONSOLIDATE: {"tab": "tab_id", "content": "consolidated content"}]: Use when a subtab needs consolidation (prompted by system). Provide a COMPLETE replacement that includes: 1) A "📜 Previous Updates" summary section consolidating old collapsed content, 2) The current/latest content. This REPLACES all subtab content, so make it comprehensive.
 - [OTAKON_INSIGHT_MODIFY_PENDING: {"id": "sub_tab_id", "title": "New Title", "content": "New content"}]: When user asks to modify a subtab via @command.
 - [OTAKON_INSIGHT_DELETE_REQUEST: {"id": "sub_tab_id"}]: When user asks to delete a subtab via @command.
-- [OTAKON_SUGGESTIONS: ["suggestion1", "suggestion2", "suggestion3"]]: Three contextual follow-up prompts for the user. Make these short, specific questions that help the user learn more about the current situation, get tips, or understand what to do next.
+- [OTAKON_SUGGESTIONS: ["suggestion1", "suggestion2", "suggestion3"]]: 🚨 MANDATORY - ALWAYS INCLUDE THIS TAG! Three contextual follow-up prompts for the user. Make these short, specific questions that help the user learn more about the current situation, get tips, or understand what to do next. This tag is REQUIRED in every response.
 
 **🎯 CONFIDENCE TAG ACCURACY RULES:**
 - Use [OTAKON_CONFIDENCE: high] ONLY when you can CLEARLY identify the game from MULTIPLE visual elements
@@ -721,11 +731,13 @@ ${CROSS_GAME_TERMINOLOGY_GUARD}
    - [OTAKON_GENRE: Genre] - The primary genre (e.g., Action RPG, FPS, Strategy)
    - [OTAKON_GAME_STATUS: unreleased] - ONLY if the game is NOT YET RELEASED
    **Place these tags at the VERY BEGINNING of your response, before any other text.**
-3. At the end, generate three SPECIFIC follow-up prompts using [OTAKON_SUGGESTIONS: ["prompt1", "prompt2", "prompt3"]]
+3. 🚨 MANDATORY: At the end, generate three SPECIFIC follow-up prompts using [OTAKON_SUGGESTIONS: ["prompt1", "prompt2", "prompt3"]]
+   - This is REQUIRED in EVERY response - never skip this!
    - These MUST relate to the specific content of YOUR response
    - Reference specific games, features, or topics you mentioned
    - ❌ BAD: "What games are coming out?" (generic)
    - ✅ GOOD: "Tell me more about [specific game you mentioned]'s multiplayer features"
+   - Format: [OTAKON_SUGGESTIONS: ["Question 1?", "Question 2?", "Question 3?"]]
 
 **SPECIAL INSTRUCTIONS FOR GAMING NEWS:**
 When answering questions about gaming news, releases, reviews, or trailers:
@@ -813,6 +825,56 @@ ${OTAKON_TAG_DEFINITIONS}
 `;
 };
 
+/**
+ * Build user's game library context for AI awareness
+ * This helps AI understand which games the user plays and prevents duplicate tab creation
+ */
+async function buildGameLibraryContext(): Promise<string> {
+  try {
+    const conversations = await ConversationService.getConversations();
+    
+    // Extract game tabs (non-Game Hub conversations with game titles)
+    const gameTabs = Object.values(conversations)
+      .filter(conv => !conv.isGameHub && conv.gameTitle)
+      .map(conv => ({
+        title: conv.gameTitle!,
+        genre: conv.genre || 'Unknown',
+        progress: conv.gameProgress || 0,
+        isUnreleased: conv.isUnreleased || false
+      }))
+      .sort((a, b) => a.title.localeCompare(b.title));
+    
+    if (gameTabs.length === 0) {
+      return `
+**📚 USER'S GAME LIBRARY:**
+No game tabs created yet. User is new or exploring games.
+`;
+    }
+    
+    const gameList = gameTabs
+      .map(game => {
+        const progressStr = game.progress > 0 ? ` (${game.progress}% progress)` : '';
+        const statusStr = game.isUnreleased ? ' [UNRELEASED]' : '';
+        return `  • ${game.title} [${game.genre}]${progressStr}${statusStr}`;
+      })
+      .join('\n');
+    
+    return `
+**📚 USER'S GAME LIBRARY (${gameTabs.length} games):**
+${gameList}
+
+**USAGE INSTRUCTIONS:**
+- User already has tabs for these games - route related queries to existing tabs
+- If user asks about a game NOT in this list, you can suggest creating a new tab
+- Use this context to provide related game suggestions (e.g., "Since you play X, you might like Y")
+- Reference user's gaming preferences based on their library
+`;
+  } catch (error) {
+    console.warn('[PromptSystem] Failed to build game library context:', error);
+    return ''; // Graceful degradation
+  }
+}
+
 const getGameCompanionPrompt = async (
   conversation: Conversation,
   userMessage: string,
@@ -854,8 +916,8 @@ const getGameCompanionPrompt = async (
         : content;
       const entry = `### ${tab.title} (ID: ${tab.id})\n${includedContent}`;
       
-      // Check if adding this subtab would exceed total budget
-      if (totalChars + entry.length > MAX_CONTEXT_CHARS) {
+      // Check if adding this subtab would exceed SUBTABS budget (not total input budget)
+      if (totalChars + entry.length > MAX_SUBTABS_CONTEXT) {
         // For high-priority tabs, include a summary instead of skipping
         const priorityIndex = SUBTAB_PRIORITY.indexOf(tab.id);
         if (priorityIndex !== -1 && priorityIndex < 3) {
@@ -907,7 +969,24 @@ This keeps subtabs useful without losing important context.`
       try {
         const knowledge = await gameKnowledgeCacheService.getForContext(libraryGame.igdbGameId);
         if (knowledge) {
-          gameKnowledgeContext = `\n\n=== GAME KNOWLEDGE DATABASE ===\nThe following is comprehensive, up-to-date information about ${conversation.gameTitle}. You can reference any part of this knowledge base to answer the user's questions accurately.\n\n${knowledge}\n\n=== END KNOWLEDGE DATABASE ===\n\n`;
+          const tokenEstimate = Math.ceil(knowledge.length / 4);
+          gameKnowledgeContext = `
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎮 GAME KNOWLEDGE DATABASE: "${conversation.gameTitle.toUpperCase()}"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ VERIFY FIRST: Is query about "${conversation.gameTitle}"?
+  ✅ YES → Use this knowledge
+  ❌ NO → STOP, ignore below, use training data
+
+${knowledge}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+END OF ${conversation.gameTitle.toUpperCase()} KNOWLEDGE (${tokenEstimate} tokens)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+`;
           console.log(`🎮 [PromptSystem] Injecting ${knowledge.length} chars of FULL game knowledge (no truncation)`);
         }
       } catch (error) {
@@ -916,6 +995,9 @@ This keeps subtabs useful without losing important context.`
       }
     }
   }
+
+  // 📚 Inject user's game library context (helps prevent duplicate tabs and provides better recommendations)
+  const gameLibraryContext = await buildGameLibraryContext();
 
   return `
 **Persona: Game Companion**
@@ -966,6 +1048,7 @@ ${conversation.gameProgress && conversation.gameProgress >= 75 ? `- LATE/END GAM
 
 **Player Profile:**
 ${profileContext}
+${gameLibraryContext}
 ${gameKnowledgeContext}
 **Current Subtabs (Your Knowledge Base):**
 ${subtabContext}
@@ -1016,18 +1099,24 @@ ${recentMessages}
      - Mountaintops of the Giants → 70, Crumbling Farum Azula → 80
      - Elden Throne → 90
 9. ${isActiveSession ? 'Provide concise, actionable advice for immediate use.' : 'Provide more detailed, strategic advice for planning.'}
-10. At the end, generate three SPECIFIC follow-up prompts using [OTAKON_SUGGESTIONS] - these MUST relate to what you just discussed, not generic questions.
+10. 🚨 MANDATORY - NEVER SKIP THIS: At the end of EVERY response, generate three SPECIFIC follow-up prompts using [OTAKON_SUGGESTIONS: ["Question 1?", "Question 2?", "Question 3?"]]
+   - This is REQUIRED - Your response is INCOMPLETE without this tag!
+   - These MUST relate to what you just discussed, not generic questions
 
 **CRITICAL - Context-Aware Follow-ups:**
 - Your suggestions MUST reference specific content from YOUR response (bosses, items, locations, characters you mentioned)
 - ❌ BAD: "What should I do next?" (too generic)
 - ✅ GOOD: "How do I counter [specific enemy you mentioned]'s attack pattern?"
 - ✅ GOOD: "Where can I find the [specific item you referenced]?"
+- ✅ GOOD: "What's the best strategy for [specific situation you explained]?"
 - The user is ${isActiveSession ? 'actively playing - suggest immediate tactical questions' : 'planning - suggest strategic/preparation questions'}
+- **Example format**: [OTAKON_SUGGESTIONS: ["How do I defeat the boss you mentioned?", "Where can I find that item?", "What should I do after this area?"]]
 
 ${COMMAND_CENTRE_INSTRUCTIONS}
 
-**Suggestions Guidelines:**
+**🚨 MANDATORY SUGGESTIONS - NEVER FORGET THIS:**
+You MUST include [OTAKON_SUGGESTIONS: [...]] at the end of EVERY response!
+
 Generate 3 short, specific follow-up questions that help the user:
 - Get immediate help with their current situation
 - Learn more about game mechanics or story elements
@@ -1041,6 +1130,8 @@ Examples of good suggestions:
 - "What should I do next in this area?"
 - "How do I unlock this feature?"
 - "What items should I prioritize here?"
+
+**REQUIRED FORMAT:** [OTAKON_SUGGESTIONS: ["Question 1?", "Question 2?", "Question 3?"]]
 
 **Tag Definitions:**
 ${OTAKON_TAG_DEFINITIONS}
@@ -1094,15 +1185,18 @@ For this query "${userMessage}", use structured sections with bold headers:
 // ============================================================================
 // UNRELEASED GAME PROMPT - Dedicated experience for upcoming games
 // ============================================================================
-const getUnreleasedGamePrompt = (
+const getUnreleasedGamePrompt = async (
   conversation: Conversation,
   userMessage: string,
   _user: User,
   playerProfile?: PlayerProfile
-): string => {
+): Promise<string> => {
   // Get player profile context if available
   const profile = playerProfile || profileAwareTabService.getDefaultProfile();
   const profileContext = profileAwareTabService.buildProfileContext(profile);
+
+  // 📚 Inject user's game library context
+  const gameLibraryContext = await buildGameLibraryContext();
 
   // Gather recent conversation history
   const recentMessages = conversation.messages
@@ -1153,6 +1247,7 @@ This game has NOT been released yet. Your role is to:
 
 **Player Profile:**
 ${profileContext}
+${gameLibraryContext}
 
 **Recent Conversation History:**
 ${recentMessages}
@@ -1188,15 +1283,18 @@ ${OTAKON_TAG_DEFINITIONS}
 `;
 };
 
-const getScreenshotAnalysisPrompt = (
+const getScreenshotAnalysisPrompt = async (
   conversation: Conversation, 
   userMessage: string, 
   _user: User,
   playerProfile?: PlayerProfile
-): string => {
+): Promise<string> => {
   // Get player profile context if available
   const profile = playerProfile || profileAwareTabService.getDefaultProfile();
   const profileContext = profileAwareTabService.buildProfileContext(profile);
+
+  // 📚 Inject user's game library context
+  const gameLibraryContext = await buildGameLibraryContext();
 
   // Build progress context if this is an existing game tab
   const progressContext = conversation.gameTitle ? `
@@ -1222,6 +1320,7 @@ ${CROSS_GAME_TERMINOLOGY_GUARD}
 
 **Player Profile:**
 ${profileContext}
+${gameLibraryContext}
 ${progressContext}
 **🔍 VISUAL VERIFICATION CHECKLIST - Complete BEFORE identifying a game:**
 Before claiming you know what game this is, verify you can see AT LEAST 2 of these:
@@ -1388,7 +1487,9 @@ YOU MUST include [OTAKON_PROGRESS: X] in your response. This is NON-NEGOTIABLE.
 - Example for Elden Ring: [OTAKON_SUBTAB_UPDATE: {"tab": "Sites of Grace Nearby", "content": "**Stormveil Castle**: Main Gate grace found..."}]
 - Example for generic: [OTAKON_SUBTAB_UPDATE: {"tab": "Boss Strategy", "content": "**Boss Name**: Attack patterns include..."}]
 
-**Suggestions Guidelines:**
+**🚨 MANDATORY SUGGESTIONS - NEVER FORGET THIS:**
+You MUST include [OTAKON_SUGGESTIONS: [...]] at the end of EVERY screenshot response!
+
 Generate 3 short, SPECIFIC follow-up questions based on YOUR response:
 - Reference specific elements you identified in the screenshot (boss names, locations, items)
 - ❌ BAD: "What should I do next?" (generic)
@@ -1401,6 +1502,8 @@ Examples of good suggestions:
 - "What should I do next here?"
 - "Tell me about this character's backstory"
 - "What items should I look for in this area?"
+
+**REQUIRED FORMAT:** [OTAKON_SUGGESTIONS: ["Question 1?", "Question 2?", "Question 3?"]]
 
 **Tag Definitions:**
 ${OTAKON_TAG_DEFINITIONS}
@@ -1446,11 +1549,11 @@ export const getPromptForPersona = async (
   
   // Enhanced routing with unreleased game support
   if (hasImages) {
-    basePrompt = getScreenshotAnalysisPrompt(conversation, userMessage, user, playerProfile);
+    basePrompt = await getScreenshotAnalysisPrompt(conversation, userMessage, user, playerProfile);
   } else if (!conversation.isGameHub && conversation.gameTitle) {
     // Route unreleased games to dedicated prompt
     if (conversation.isUnreleased) {
-      basePrompt = getUnreleasedGamePrompt(conversation, userMessage, user, playerProfile);
+      basePrompt = await getUnreleasedGamePrompt(conversation, userMessage, user, playerProfile);
     } else {
       basePrompt = await getGameCompanionPrompt(conversation, userMessage, user, isActiveSession, playerProfile);
     }

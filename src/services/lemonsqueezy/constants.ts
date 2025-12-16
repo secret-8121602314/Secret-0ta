@@ -22,8 +22,8 @@ export const PRICING_PLANS = {
     interval: 'month' as const,
     variantId: LEMONSQUEEZY_CONFIG.variants.pro,
     features: [
-      '1,583 text queries / month',
-      '328 image queries / month',
+      '350 text queries / month',
+      '150 image queries / month',
       'Advanced AI capabilities',
       'Batch screenshot analysis',
       'Hands-free voice mode',
@@ -31,8 +31,8 @@ export const PRICING_PLANS = {
       'No advertisements',
     ],
     limits: {
-      text: 1583,
-      image: 328,
+      text: 350,
+      image: 150,
     },
   },
   vanguard_pro: {
@@ -50,8 +50,8 @@ export const PRICING_PLANS = {
       'VIP Discord role',
     ],
     limits: {
-      text: 1583,
-      image: 328,
+      text: 350,
+      image: 150,
     },
   },
 } as const;

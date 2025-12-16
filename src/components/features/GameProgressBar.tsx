@@ -13,6 +13,9 @@ const GameProgressBar: React.FC<GameProgressBarProps> = ({
   className = '',
   showLabel = true
 }) => {
+  // 🔍 DEBUG: Log received progress value
+  console.log('🎮 [GameProgressBar] Received progress:', progress, 'for game:', gameTitle);
+  
   const clampedProgress = Math.min(Math.max(progress, 0), 100);
   
   // Get progress stage label

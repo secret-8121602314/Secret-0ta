@@ -142,7 +142,10 @@ class GameTabService {
     
     // 🎮 BACKGROUND GAME KNOWLEDGE: Trigger non-blocking fetch for game knowledge
     // This runs in background and populates cache for future use
-    if (!data.isUnreleased && isPro) {
+    // Tier validation happens in gameKnowledgeFetcher based on release date:
+    // - Pre-Jan 2025 games: All users (no grounding needed)
+    // - Post-Jan 2025 games: Pro/Vanguard only (grounding needed)
+    if (!data.isUnreleased) {
       const libraryGame = libraryStorage.getByGameTitle(data.gameTitle);
       if (libraryGame?.igdbGameId) {
         console.log(`🎮 [GameTabService] Triggering background game knowledge fetch for ${data.gameTitle} (IGDB: ${libraryGame.igdbGameId})`);
@@ -196,7 +199,7 @@ class GameTabService {
     if (isPro && isFirstMessage) {
       console.log(`🎯 [GameTabService] First message detected - will generate initial insights for: ${conversation.gameTitle}`);
       if (!data.aiResponse) {
-        this.generateInitialInsights(conversation, data.playerProfile, data.aiResponse).catch(error => 
+        this.generateInitialInsights(conversation, data.playerProfile, data.aiResponse, userTier).catch(error => 
           console.error('Background insight generation failed:', error)
         );
       } else {
@@ -204,7 +207,7 @@ class GameTabService {
         const needsInsights = conversation.subtabs?.some(tab => tab.content === 'Loading...');
         if (needsInsights) {
           // ✅ CRITICAL: Pass aiResponse so the AI has context from the screenshot
-          this.generateInitialInsights(conversation, data.playerProfile, data.aiResponse).catch(error => 
+          this.generateInitialInsights(conversation, data.playerProfile, data.aiResponse, userTier).catch(error => 
             console.error('Background insight generation failed:', error)
           );
         }
@@ -710,7 +713,8 @@ class GameTabService {
   private async generateInitialInsights(
     conversation: Conversation,
     playerProfile?: PlayerProfile,
-    aiResponse?: AIResponse // ✅ NEW: AI response from screenshot analysis
+    aiResponse?: AIResponse, // ✅ NEW: AI response from screenshot analysis
+    userTier?: string // 🔒 TIER-GATING: User tier to prevent API calls for free tier
   ): Promise<void> {
     const conversationId = conversation.id;
     const gameTitle = conversation.gameTitle;
@@ -787,7 +791,8 @@ class GameTabService {
         conversation.genre || 'Action RPG',
         playerProfile,
         conversationContext,
-        freshConv.gameProgress || 0 // ✅ Pass game progress for progress-aware subtabs
+        freshConv.gameProgress || 0, // ✅ Pass game progress for progress-aware subtabs
+        userTier // 🔒 Pass tier to prevent API calls for free users
       );
       console.error(`🤖 [GameTabService] [${conversationId}] 📥 AI returned:`, Object.keys(insights).length, 'insights');
 
@@ -1673,12 +1678,17 @@ class GameTabService {
 
     console.log(`🔄 [GameTabService] Found ${gameTabs.length} game tabs that need subtabs`);
 
-    // Process each game tab one by one
+    // Process each game tab one by one with rate limiting
     for (let i = 0; i < gameTabs.length; i++) {
       const conv = gameTabs[i];
       
       try {
         console.log(`🔄 [GameTabService] Generating subtabs for "${conv.gameTitle}" (${i + 1}/${gameTabs.length})`);
+        
+        // Show toast for current game being processed
+        if (gameTabs.length > 1) {
+          toastService.info(`Generating insights for ${conv.gameTitle}... (${i + 1}/${gameTabs.length})`);
+        }
         
         // Generate initial subtabs
         const subTabs = this.generateInitialSubTabs(conv.genre || 'Default', playerProfile, {});
@@ -1696,21 +1706,32 @@ class GameTabService {
         // Generate insights - this updates subtabs with actual content
         await this.generateInitialInsights(
           { ...conv, subtabs: subTabs },
-          playerProfile
+          playerProfile,
+          undefined, // aiResponse not available for bulk generation
+          'pro' // 🔒 User must be pro/vanguard if we're generating subtabs
         );
 
         console.log(`✅ [GameTabService] Successfully generated subtabs for "${conv.gameTitle}"`);
+        
+        // Show success toast for completed game
+        if (gameTabs.length > 1) {
+          toastService.success(`✨ ${conv.gameTitle} insights ready!`);
+        }
         
         // ✅ CRITICAL FIX: Report progress AFTER insights are generated
         // This ensures the UI refresh picks up the loaded subtab content
         onProgress?.(i, gameTabs.length, conv.gameTitle || conv.title);
 
-        // Small delay between games to avoid rate limiting
+        // ✅ RATE LIMITING: Longer delay between games to avoid API rate limiting
+        // 3-5 second interval gives API time to process requests
         if (i < gameTabs.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          const delayMs = 3000 + Math.random() * 2000; // 3-5 seconds with randomization
+          console.log(`🔄 [GameTabService] Waiting ${Math.round(delayMs)}ms before next game...`);
+          await new Promise(resolve => setTimeout(resolve, delayMs));
         }
       } catch (error) {
         console.error(`❌ [GameTabService] Failed to generate subtabs for "${conv.gameTitle}":`, error);
+        toastService.error(`Failed to generate insights for ${conv.gameTitle}`);
         // Continue with next game even if one fails
       }
     }

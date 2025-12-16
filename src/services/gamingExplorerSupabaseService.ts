@@ -121,7 +121,7 @@ export const supabaseLibraryService = {
 
       // Upsert all items
       const { error } = (await supabase
-        .from('gaming_library')
+        .from('user_library')
         .upsert(supabaseItems, {
           onConflict: 'auth_user_id,igdb_game_id,category',
           ignoreDuplicates: false,
@@ -145,7 +145,7 @@ export const supabaseLibraryService = {
   async fetchAndMerge(authUserId: string): Promise<GameLibraryItem[]> {
     try {
       const { data, error } = (await supabase
-        .from('gaming_library')
+        .from('user_library')
         .select('*')
         .eq('auth_user_id', authUserId)) as SupabaseResponse<SupabaseLibraryItem[]>;
 
@@ -203,7 +203,7 @@ export const supabaseLibraryService = {
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const { error } = (await supabase
-        .from('gaming_library')
+        .from('user_library')
         .upsert({
           auth_user_id: authUserId,
           igdb_game_id: item.igdbGameId,
@@ -243,7 +243,7 @@ export const supabaseLibraryService = {
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const { error } = (await supabase
-        .from('gaming_library')
+        .from('user_library')
         .delete()
         .eq('auth_user_id', authUserId)
         .eq('igdb_game_id', igdbGameId)
@@ -296,7 +296,7 @@ export const supabaseTimelineService = {
       }));
 
       const { error } = (await supabase
-        .from('gaming_timeline')
+        .from('user_timeline')
         .insert(supabaseEvents)) as SupabaseMutationResponse;
 
       if (error) {
@@ -317,7 +317,7 @@ export const supabaseTimelineService = {
   async fetchAll(authUserId: string): Promise<TimelineEvent[]> {
     try {
       const { data, error } = (await supabase
-        .from('gaming_timeline')
+        .from('user_timeline')
         .select('*')
         .eq('auth_user_id', authUserId)
         .order('event_date', { ascending: false })) as SupabaseResponse<SupabaseTimelineEvent[]>;
@@ -362,7 +362,7 @@ export const supabaseTimelineService = {
   ): Promise<{ success: boolean; id?: string; error?: string }> {
     try {
       const { data, error } = (await supabase
-        .from('gaming_timeline')
+        .from('user_timeline')
         .insert({
           auth_user_id: authUserId,
           event_type: event.type,
@@ -431,12 +431,18 @@ export const supabaseProfileService = {
       console.error('[SupabaseProfile] Sync exception:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
+    */
   },
 
   /**
    * Fetch user gaming profile from Supabase
+   * ⚠️ DISABLED - Table does not exist
    */
   async fetch(authUserId: string): Promise<UserGamingProfile | null> {
+    console.warn('[SupabaseProfile] Table gaming_profiles does not exist in production schema');
+    return null;
+    
+    /* COMMENTED OUT - TABLE DOES NOT EXIST
     try {
       const { data, error } = (await supabase
         .from('gaming_profiles')
@@ -527,6 +533,7 @@ export const supabaseSearchHistoryService = {
     } catch (error) {
       console.error('[SupabaseSearchHistory] Add error:', error);
     }
+    */
   },
 };
 
@@ -632,7 +639,7 @@ export const gamingExplorerMigrationService = {
 
     // Check if Supabase has data
     const { data, error } = (await supabase
-      .from('gaming_library')
+      .from('user_library')
       .select('id', { count: 'exact', head: true })
       .eq('auth_user_id', authUserId)) as SupabaseResponse<{ id: string }[]>;
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Modal from '../ui/Modal';
 import { User } from '../../types';
-import { CheckCircleIcon, BoltIcon, ShieldCheckIcon, StarIcon } from '@heroicons/react/24/solid';
+import { CheckCircleIcon, ShieldCheckIcon, StarIcon } from '@heroicons/react/24/solid';
 import CheckoutButton from '../payment/CheckoutButton';
 
 interface PaymentModalProps {
@@ -76,155 +76,155 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       title={modalTitle}
       maxWidth="4xl"
     >
-      <div className="space-y-4 sm:space-y-6">
+      <div className="space-y-3 sm:space-y-4 max-h-[calc(100vh-220px)] sm:max-h-none overflow-y-auto sm:overflow-visible">
         {/* Tier Selection - Mobile First Grid */}
-        <div className={`grid grid-cols-1 gap-3 sm:gap-4 ${availableTiers.length > 1 ? 'md:grid-cols-2' : 'md:grid-cols-1 max-w-2xl mx-auto'}`}>
+        <div className={`grid grid-cols-1 gap-2 sm:gap-4 ${availableTiers.length > 1 ? 'md:grid-cols-2' : 'md:grid-cols-1 max-w-2xl mx-auto'}`}>
           {/* Pro Tier - Only show for free users */}
           {availableTiers.includes('pro') && <div
             onClick={() => setSelectedTier('pro')}
-            className={`relative p-4 sm:p-5 md:p-6 rounded-lg sm:rounded-xl border-2 cursor-pointer transition-all ${
+            className={`relative p-3 sm:p-4 md:p-5 rounded-lg sm:rounded-xl border-2 cursor-pointer transition-all ${
               selectedTier === 'pro'
-                ? 'border-blue-500 bg-blue-500/10'
-                : 'border-surface-light hover:border-blue-500/50'
+                ? 'border-[#FF4D4D] bg-[#FF4D4D]/10'
+                : 'border-surface-light hover:border-[#FF4D4D]/50'
             }`}
           >
             {selectedTier === 'pro' && (
-              <div className="absolute top-2 sm:top-3 right-2 sm:right-3">
-                <CheckCircleIcon className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
+              <div className="absolute top-1.5 sm:top-2.5 right-1.5 sm:right-2.5">
+                <CheckCircleIcon className="w-4 h-4 sm:w-5 sm:h-5 text-[#FF4D4D]" />
               </div>
             )}
             
-            <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-              <BoltIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-blue-500 flex-shrink-0" />
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
+              <img src="/images/icons/pro.webp" alt="Pro" className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0" />
               <div className="min-w-0">
-                <h3 className="text-lg sm:text-xl font-bold text-text-primary truncate">Pro</h3>
-                <p className="text-xl sm:text-2xl font-bold text-blue-500">
-                  $5<span className="text-xs sm:text-sm text-text-muted">/month</span>
+                <h3 className="text-sm sm:text-lg font-bold text-text-primary truncate">Pro</h3>
+                <p className="text-lg sm:text-xl font-bold text-[#FFAB40]">
+                  $5<span className="ml-1 text-xs text-text-muted">/mo</span>
                 </p>
               </div>
             </div>
 
-            <ul className="space-y-1.5 sm:space-y-2 mb-3 sm:mb-4">
-              <li className="flex items-start gap-1.5 sm:gap-2 text-xs sm:text-sm text-text-secondary">
-                <CheckCircleIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 mt-0.5 text-blue-500 flex-shrink-0" />
-                <span>1,583 text queries / month</span>
+            <ul className="space-y-1 sm:space-y-1.5 text-xs sm:text-sm">
+              <li className="flex items-start gap-1 sm:gap-1.5 text-text-secondary">
+                <CheckCircleIcon className="w-3 h-3 mt-0.5 text-[#FFAB40] flex-shrink-0" />
+                <span>1,583 text queries</span>
               </li>
-              <li className="flex items-start gap-1.5 sm:gap-2 text-xs sm:text-sm text-text-secondary">
-                <CheckCircleIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 mt-0.5 text-blue-500 flex-shrink-0" />
-                <span>328 image queries / month</span>
+              <li className="flex items-start gap-1 sm:gap-1.5 text-text-secondary">
+                <CheckCircleIcon className="w-3 h-3 mt-0.5 text-[#FFAB40] flex-shrink-0" />
+                <span>328 image queries</span>
               </li>
-              <li className="flex items-start gap-1.5 sm:gap-2 text-xs sm:text-sm text-text-secondary">
-                <CheckCircleIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 mt-0.5 text-blue-500 flex-shrink-0" />
-                <span>Advanced AI capabilities</span>
+              <li className="flex items-start gap-1 sm:gap-1.5 text-text-secondary">
+                <CheckCircleIcon className="w-3 h-3 mt-0.5 text-[#FFAB40] flex-shrink-0" />
+                <span>Advanced AI mode</span>
               </li>
-              <li className="flex items-start gap-1.5 sm:gap-2 text-xs sm:text-sm text-text-secondary">
-                <CheckCircleIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 mt-0.5 text-blue-500 flex-shrink-0" />
-                <span>Batch screenshot analysis</span>
+              <li className="flex items-start gap-1 sm:gap-1.5 text-text-secondary">
+                <CheckCircleIcon className="w-3 h-3 mt-0.5 text-[#FFAB40] flex-shrink-0" />
+                <span>Batch analysis</span>
               </li>
-              <li className="flex items-start gap-1.5 sm:gap-2 text-xs sm:text-sm text-text-secondary">
-                <CheckCircleIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 mt-0.5 text-blue-500 flex-shrink-0" />
-                <span>Hands-free voice mode</span>
+              <li className="flex items-start gap-1 sm:gap-1.5 text-text-secondary">
+                <CheckCircleIcon className="w-3 h-3 mt-0.5 text-[#FFAB40] flex-shrink-0" />
+                <span>Voice mode</span>
               </li>
-              <li className="flex items-start gap-1.5 sm:gap-2 text-xs sm:text-sm text-text-secondary">
-                <CheckCircleIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 mt-0.5 text-blue-500 flex-shrink-0" />
+              <li className="flex items-start gap-1 sm:gap-1.5 text-text-secondary">
+                <CheckCircleIcon className="w-3 h-3 mt-0.5 text-[#FFAB40] flex-shrink-0" />
                 <span>Priority support</span>
               </li>
-              <li className="flex items-start gap-1.5 sm:gap-2 text-xs sm:text-sm text-text-secondary">
-                <CheckCircleIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 mt-0.5 text-blue-500 flex-shrink-0" />
-                <span>No advertisements</span>
+              <li className="flex items-start gap-1 sm:gap-1.5 text-text-secondary">
+                <CheckCircleIcon className="w-3 h-3 mt-0.5 text-[#FFAB40] flex-shrink-0" />
+                <span>No ads</span>
               </li>
             </ul>
 
-            <p className="text-xs text-text-muted">Cancel anytime</p>
+            <p className="text-xs text-text-muted mt-1 sm:mt-2">Cancel anytime</p>
           </div>}
 
           {/* Vanguard Pro Tier */}
           {availableTiers.includes('vanguard_pro') && <div
             onClick={() => setSelectedTier('vanguard_pro')}
-            className={`relative p-4 sm:p-5 md:p-6 rounded-lg sm:rounded-xl border-2 cursor-pointer transition-all ${
+            className={`relative p-3 sm:p-4 md:p-5 rounded-lg sm:rounded-xl border-2 cursor-pointer transition-all ${
               selectedTier === 'vanguard_pro'
-                ? 'border-purple-500 bg-purple-500/10'
-                : 'border-surface-light hover:border-purple-500/50'
+                ? 'border-amber-400 bg-amber-400/10'
+                : 'border-surface-light hover:border-amber-400/50'
             }`}
           >
             {/* Best Value Badge */}
-            <div className="absolute -top-2 sm:-top-3 left-1/2 -translate-x-1/2">
-              <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] sm:text-xs font-bold rounded-full whitespace-nowrap">
+            <div className="absolute -top-1.5 sm:-top-2 left-1/2 -translate-x-1/2">
+              <span className="px-1.5 sm:px-2 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[9px] sm:text-xs font-bold rounded-full whitespace-nowrap">
                 BEST VALUE
               </span>
             </div>
 
             {selectedTier === 'vanguard_pro' && (
-              <div className="absolute top-2 sm:top-3 right-2 sm:right-3">
-                <CheckCircleIcon className="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" />
+              <div className="absolute top-1.5 sm:top-2.5 right-1.5 sm:right-2.5">
+                <CheckCircleIcon className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" />
               </div>
             )}
             
-            <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-              <StarIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-purple-500 flex-shrink-0" />
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
+              <img src="/images/icons/vanguard.webp" alt="Vanguard Pro" className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0" />
               <div className="min-w-0">
-                <h3 className="text-lg sm:text-xl font-bold text-text-primary truncate">Vanguard Pro</h3>
-                <p className="text-xl sm:text-2xl font-bold text-purple-500">
-                  $35<span className="text-xs sm:text-sm text-text-muted">/year</span>
+                <h3 className="text-sm sm:text-lg font-bold text-text-primary truncate">Vanguard Pro</h3>
+                <p className="text-lg sm:text-xl font-bold text-amber-300">
+                  $35<span className="ml-1 text-xs text-text-muted">/yr</span>
                 </p>
               </div>
             </div>
 
-            <ul className="space-y-1.5 sm:space-y-2 mb-3 sm:mb-4">
-              <li className="flex items-start gap-1.5 sm:gap-2 text-xs sm:text-sm text-text-secondary">
-                <StarIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 mt-0.5 text-purple-500 flex-shrink-0" />
-                <span className="font-semibold">Everything in Pro</span>
+            <ul className="space-y-1 sm:space-y-1.5 text-xs sm:text-sm">
+              <li className="flex items-start gap-1 sm:gap-1.5 text-text-secondary">
+                <StarIcon className="w-3 h-3 mt-0.5 text-amber-400 flex-shrink-0" />
+                <span className="font-semibold">All Pro features</span>
               </li>
-              <li className="flex items-start gap-1.5 sm:gap-2 text-xs sm:text-sm text-text-secondary">
-                <CheckCircleIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 mt-0.5 text-purple-500 flex-shrink-0" />
-                <span><strong>Save 42%</strong> vs monthly</span>
+              <li className="flex items-start gap-1 sm:gap-1.5 text-text-secondary">
+                <CheckCircleIcon className="w-3 h-3 mt-0.5 text-amber-400 flex-shrink-0" />
+                <span><strong>Save 42%</strong> yearly</span>
               </li>
-              <li className="flex items-start gap-1.5 sm:gap-2 text-xs sm:text-sm text-text-secondary">
-                <CheckCircleIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 mt-0.5 text-purple-500 flex-shrink-0" />
-                <span>Lifetime price guarantee</span>
+              <li className="flex items-start gap-1 sm:gap-1.5 text-text-secondary">
+                <CheckCircleIcon className="w-3 h-3 mt-0.5 text-amber-400 flex-shrink-0" />
+                <span>Price lock forever</span>
               </li>
-              <li className="flex items-start gap-1.5 sm:gap-2 text-xs sm:text-sm text-text-secondary">
-                <CheckCircleIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 mt-0.5 text-purple-500 flex-shrink-0" />
-                <span>Exclusive Founder's Badge</span>
+              <li className="flex items-start gap-1 sm:gap-1.5 text-text-secondary">
+                <CheckCircleIcon className="w-3 h-3 mt-0.5 text-amber-400 flex-shrink-0" />
+                <span>Founder's Badge</span>
               </li>
-              <li className="flex items-start gap-1.5 sm:gap-2 text-xs sm:text-sm text-text-secondary">
-                <CheckCircleIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 mt-0.5 text-purple-500 flex-shrink-0" />
-                <span>Early access to new features</span>
+              <li className="flex items-start gap-1 sm:gap-1.5 text-text-secondary">
+                <CheckCircleIcon className="w-3 h-3 mt-0.5 text-amber-400 flex-shrink-0" />
+                <span>Early access</span>
               </li>
-              <li className="flex items-start gap-1.5 sm:gap-2 text-xs sm:text-sm text-text-secondary">
-                <CheckCircleIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 mt-0.5 text-purple-500 flex-shrink-0" />
+              <li className="flex items-start gap-1 sm:gap-1.5 text-text-secondary">
+                <CheckCircleIcon className="w-3 h-3 mt-0.5 text-amber-400 flex-shrink-0" />
                 <span>VIP Discord role</span>
               </li>
             </ul>
 
-            <p className="text-xs text-purple-400 font-medium">Limited founding member pricing</p>
+            <p className="text-xs text-amber-300 font-medium mt-1 sm:mt-2">Limited founding offer</p>
           </div>}
         </div>
 
         {/* Trial Conversion Notice */}
         {isInTrial && (
-          <div className="flex items-start gap-2 sm:gap-3 p-3 sm:p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex items-start gap-1.5 sm:gap-2 p-2 sm:p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div className="text-xs sm:text-sm text-text-secondary min-w-0">
-              <p className="font-medium text-blue-400 mb-1">Converting Your Trial</p>
-              <p>Your trial will automatically convert to a paid subscription. You'll keep all Pro features with no interruption!</p>
+              <p className="font-medium text-blue-400 mb-0.5">Converting Your Trial</p>
+              <p>Your trial becomes a paid plan with no interruption!</p>
             </div>
           </div>
         )}
 
         {/* Security Notice */}
-        <div className="flex items-start gap-2 sm:gap-3 p-3 sm:p-4 bg-surface/50 rounded-lg">
-          <ShieldCheckIcon className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0 mt-0.5" />
+        <div className="flex items-start gap-1.5 sm:gap-2 p-2 sm:p-3 bg-surface/50 rounded-lg">
+          <ShieldCheckIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 flex-shrink-0 mt-0.5" />
           <div className="text-xs sm:text-sm text-text-secondary min-w-0">
-            <p className="font-medium text-text-primary mb-1">Secure Payment via LemonSqueezy</p>
-            <p>Your payment information is processed securely. We never store your card details.</p>
+            <p className="font-medium text-text-primary mb-0.5">Secure Payment</p>
+            <p>Processed via LemonSqueezy. We never store your card.</p>
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-col gap-2 sm:gap-3">
+        <div className="flex flex-col gap-1.5 sm:gap-2">
           <CheckoutButton
             tier={selectedTier}
             user={user}
@@ -238,7 +238,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           </CheckoutButton>
           <button
             onClick={onClose}
-            className="w-full px-4 sm:px-6 py-2.5 sm:py-3 bg-surface-light text-text-secondary rounded-lg hover:bg-surface transition-colors text-sm sm:text-base"
+            className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-surface-light text-text-secondary text-xs sm:text-sm rounded-lg hover:bg-surface transition-colors"
           >
             Cancel
           </button>

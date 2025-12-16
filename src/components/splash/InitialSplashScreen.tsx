@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import PWAInstallBanner from './PWAInstallBanner';
 import { supabase } from '../../lib/supabase';
 import { User } from '../../types';
 
@@ -86,7 +85,7 @@ const InitialSplashScreen: React.FC<InitialSplashScreenProps> = ({ onComplete, u
         </div>
 
         <h1 
-          className="text-4xl sm:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-light to-secondary-light leading-normal"
+          className="text-4xl sm:text-5xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] leading-normal whitespace-nowrap pb-2"
         >
           Otagon
         </h1>
@@ -119,11 +118,11 @@ const InitialSplashScreen: React.FC<InitialSplashScreenProps> = ({ onComplete, u
           </button>
           
           {/* Installation Instructions */}
-          <div className="w-full text-center px-4 relative z-10" style={{ pointerEvents: 'auto' }}>
-            <p className="text-xs sm:text-sm text-neutral-400 leading-relaxed">
-              <span className="block sm:inline">1. Download and install the Otagon Connector (.exe) • </span>
-              <span className="block sm:inline">2. Open the connector app and enter the 6-digit code shown in the Otagon Connector App to connect Otagon app to your PC for instant screenshots.</span>
-            </p>
+          <div className="w-full text-left px-4 relative z-10" style={{ pointerEvents: 'auto' }}>
+            <ul className="text-xs sm:text-sm text-neutral-400 leading-relaxed list-disc list-inside">
+              <li>Download and install the Otagon Connector (.exe)</li>
+              <li>Open the connector app and enter the 6-digit code shown in the Otagon Connector App to connect Otagon app to your PC for instant screenshots.</li>
+            </ul>
             
             {/* Administrator Note */}
             <div className="mt-4 pt-4 border-t border-neutral-700">
@@ -132,11 +131,6 @@ const InitialSplashScreen: React.FC<InitialSplashScreenProps> = ({ onComplete, u
               </p>
             </div>
           </div>
-        </div>
-        
-        {/* PWA Install Banner - In normal document flow */}
-        <div className="w-full max-w-lg px-4 mt-4 sm:mt-6 md:mt-8">
-          <PWAInstallBanner />
         </div>
       </div>
     </div>

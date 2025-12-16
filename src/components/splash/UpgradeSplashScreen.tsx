@@ -29,7 +29,7 @@ const StarFeatureLine: React.FC<{ children: React.ReactNode; comingSoon?: boolea
 );
 
 const proFeatures = [
-  '1,583 Text | 328 Image Queries/month',
+  '350 Text | 150 Image Queries/month',
   'Up-to-date knowledge using web search',
   'Advanced AI Model',
   'Batch Screenshot Capture',

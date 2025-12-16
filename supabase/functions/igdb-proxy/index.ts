@@ -30,8 +30,10 @@ let tokenExpiry: number = 0;
 let tokenRefreshPromise: Promise<string> | null = null; // Mutex to prevent concurrent refreshes
 
 interface IGDBRequest {
-  gameName: string;
+  gameName?: string;
   searchMode?: 'single' | 'multi'; // 'multi' returns up to 8 results for autocomplete
+  queryType?: 'search' | 'recent_releases' | 'upcoming' | 'top_rated' | 'popular'; // Different query types
+  limit?: number; // Number of results to return
   includeScreenshots?: boolean;
   includeArtworks?: boolean;
   includeSimilarGames?: boolean;
@@ -197,6 +199,104 @@ async function searchGame(gameName: string, token: string): Promise<IGDBGameData
       console.error('IGDB search error:', error);
     }
     return null;
+  }
+}
+
+// Query games by specific criteria (recent releases, top rated, etc.)
+async function queryGamesByCriteria(queryType: string, limit: number, token: string): Promise<IGDBGameData[]> {
+  let whereClause = '';
+  let sortClause = '';
+  
+  const now = Math.floor(Date.now() / 1000);
+  const thirtyDaysAgo = now - (30 * 24 * 60 * 60);
+  const sixtyDaysAgo = now - (60 * 24 * 60 * 60);
+  const oneYearAgo = now - (365 * 24 * 60 * 60);
+  const ninetyDaysFromNow = now + (90 * 24 * 60 * 60);
+  
+  // Add randomization for variety on each cache refresh (0-20 offset)
+  const randomOffset = Math.floor(Math.random() * 20);
+  
+  switch (queryType) {
+    case 'recent_releases':
+      // Games released in the last 30 days
+      whereClause = `where first_release_date >= ${thirtyDaysAgo} & first_release_date <= ${now} & category = 0 & rating_count >= 3;`;
+      sortClause = 'sort first_release_date desc;';
+      break;
+    case 'latest_games':
+      // Games released in the last 60 days with good ratings
+      whereClause = `where first_release_date >= ${sixtyDaysAgo} & first_release_date <= ${now} & category = 0 & rating_count >= 5;`;
+      sortClause = 'sort first_release_date desc;';
+      break;
+    case 'upcoming':
+      // Upcoming games in the next 90 days
+      whereClause = `where first_release_date > ${now} & first_release_date <= ${ninetyDaysFromNow} & category = 0 & hypes >= 3;`;
+      sortClause = 'sort first_release_date asc;';
+      break;
+    case 'top_rated':
+      // Highest rated games from the past year
+      whereClause = `where first_release_date >= ${oneYearAgo} & rating >= 80 & rating_count >= 10 & category = 0;`;
+      sortClause = 'sort rating desc;';
+      break;
+    case 'popular':
+      // Popular games from the past 2 years
+      const twoYearsAgo = now - (2 * 365 * 24 * 60 * 60);
+      whereClause = `where first_release_date >= ${twoYearsAgo} & rating >= 75 & rating_count >= 20 & category = 0;`;
+      sortClause = 'sort rating_count desc;';
+      break;
+    default:
+      return [];
+  }
+  
+  const body = `
+    fields id, name, summary, storyline, rating, aggregated_rating, total_rating,
+           first_release_date, genres.*, platforms.*, themes.*, game_modes.*,
+           player_perspectives.*, involved_companies.*, involved_companies.company.*,
+           cover.*, screenshots.*, artworks.*, videos.*, similar_games.*,
+           similar_games.cover.*, websites.*, age_ratings.*, franchises.*,
+           collections.*, dlcs.name, expansions.name, game_engines.name,
+           keywords.*, status, category, hypes, rating_count;
+    ${whereClause}
+    ${sortClause}
+    offset ${randomOffset};
+    limit ${limit};
+  `;
+  
+  console.log(`IGDB query for ${queryType} (offset: ${randomOffset}):`, body.replace(/\\s+/g, ' ').trim());
+  
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20000); // 20s timeout for complex queries
+  
+  try {
+    const response = await fetch('https://api.igdb.com/v4/games', {
+      method: 'POST',
+      headers: {
+        'Client-ID': IGDB_CLIENT_ID!,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'text/plain'
+      },
+      body,
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeout);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`IGDB ${queryType} query failed:`, response.status, errorText);
+      return [];
+    }
+    
+    const games = await response.json();
+    console.log(`IGDB ${queryType} results:`, games?.length || 0);
+    return games || [];
+  } catch (error) {
+    clearTimeout(timeout);
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.error(`IGDB ${queryType} query timed out`);
+    } else {
+      console.error(`IGDB ${queryType} query error:`, error);
+    }
+    return [];
   }
 }
 
@@ -386,7 +486,29 @@ serve(async (req: Request) => {
       );
     }
     
-    const { gameName, searchMode } = body;
+    const { gameName, searchMode, queryType, limit = 10 } = body;
+
+    // Handle query by criteria (recent releases, top rated, etc.)
+    if (queryType && queryType !== 'search') {
+      try {
+        const token = await getTwitchToken();
+        const games = await queryGamesByCriteria(queryType, limit, token);
+        
+        // Process each game for high-quality images
+        const processedGames = games.map(processGameData);
+        
+        return new Response(
+          JSON.stringify({ success: true, data: processedGames, cached: false }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (error) {
+        console.error('Query by criteria error:', error);
+        return new Response(
+          JSON.stringify({ success: true, data: [], message: 'Query failed' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
 
     if (!gameName) {
       return new Response(

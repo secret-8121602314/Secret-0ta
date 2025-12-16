@@ -6,12 +6,20 @@
  * - Layer 2: Supabase global cache (persistent, shared across all users)
  * 
  * Features:
- * - Global cache: Pro/Vanguard users populate cache, ALL users benefit
- * - Request deduplication: Prevents duplicate fetches for same game
- * - Post-cutoff prioritization: Games after Jan 2025 get priority
- * - Access logging: Track cache hits for analytics
+ * - 🌍 GLOBAL SHARING: Pro/Vanguard users populate cache with grounding, ALL users benefit
+ * - 🎯 ANTI-HALLUCINATION: Full 60K token knowledge injected to AI (no truncation)
+ * - 🚀 Request deduplication: Prevents duplicate fetches for same game
+ * - ⭐ Post-cutoff prioritization: Games after Jan 2025 get priority
+ * - 📊 Access logging: Track cache hits for analytics
+ * 
+ * Input Token Model:
+ * - Game knowledge NOT counted against subtab budget
+ * - Full knowledge injected (up to 60K tokens = ~240K chars)
+ * - Gemini 2.5 Flash supports ~1M input tokens (plenty of headroom)
+ * - Output remains limited to 8192 tokens
  * 
  * @created December 8, 2025
+ * @updated December 16, 2025 - Unlimited input token model
  */
 
 import { supabase } from '../lib/supabase';

@@ -64,7 +64,7 @@ const PaymentSuccess: React.FC = () => {
           <div className="grid grid-cols-2 gap-2 text-xs text-text-secondary">
             <div className="flex items-center gap-1">
               <CheckCircleIcon className="w-3 h-3 text-primary" />
-              <span>1,583+ queries</span>
+              <span>500 queries/month</span>
             </div>
             <div className="flex items-center gap-1">
               <CheckCircleIcon className="w-3 h-3 text-primary" />

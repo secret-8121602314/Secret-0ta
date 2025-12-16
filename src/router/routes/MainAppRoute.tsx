@@ -323,18 +323,22 @@ const MainAppRoute: React.FC = () => {
         onClearConnectionError={handleClearError}
         showProfileSetupBanner={!user?.hasProfileSetup}
         onProfileSetupComplete={async (profileData) => {
+          console.log('🔍 [DEBUG MainAppRoute] onProfileSetupComplete called with:', profileData);
           try {
             // Save profile data and mark setup as complete
             const { onboardingService } = await import('../../services/onboardingService');
             
             if (user?.authUserId) {
+              console.log('🔍 [DEBUG MainAppRoute] Calling markProfileSetupComplete for user:', user.authUserId);
               await onboardingService.markProfileSetupComplete(user.authUserId, profileData as unknown as Record<string, unknown>);
               
+              console.log('🔍 [DEBUG MainAppRoute] Calling revalidator.revalidate()');
               // Trigger router to refetch user data from loader
               revalidator.revalidate();
+              console.log('🔍 [DEBUG MainAppRoute] Profile setup complete flow finished');
             }
           } catch (error) {
-            console.error('Error completing profile setup:', error);
+            console.error('❌ [DEBUG MainAppRoute] Error completing profile setup:', error);
           }
         }}
         onProfileSetupDismiss={async () => {

@@ -144,7 +144,7 @@ function createWelcomeEmailHTML(email: string, loginUrl: string): string {
         </div>
         <div class="feature-item">
           <span class="feature-icon">✓</span>
-          <span><strong>Free Tier:</strong> 55 text queries + 25 image queries monthly</span>
+          <span><strong>Free Tier:</strong> 20 text queries + 15 image queries monthly</span>
         </div>
       </div>
 
@@ -196,7 +196,7 @@ What You Get:
 ✓ AI-Powered Game Assistant: Get unstuck without spoilers
 ✓ Screenshot Analysis: Upload and get instant help
 ✓ Multi-Game Support: Switch between games seamlessly
-✓ Free Tier: 55 text queries + 25 image queries monthly
+✓ Free Tier: 20 text queries + 15 image queries monthly
 
 Getting Started:
 1. Visit the login page using the link above

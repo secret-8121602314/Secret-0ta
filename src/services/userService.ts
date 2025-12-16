@@ -236,6 +236,12 @@ export class UserService {
       // 5. Update cache
       StorageService.set(STORAGE_KEYS.USER, user);
       
+      console.log('🔍 [UserService] Loaded user from database:', {
+        email: user.email,
+        hasSeenWelcomeGuide: user.hasSeenWelcomeGuide,
+        authUserId: user.authUserId
+      });
+      
       return user;
     } catch (error) {
       console.error('Error in getCurrentUserAsync:', error);
@@ -251,6 +257,8 @@ export class UserService {
    */
   static async setCurrentUserAsync(user: User): Promise<void> {
     try {
+      console.log('🔍 [UserService] setCurrentUserAsync called with hasSeenWelcomeGuide:', user.hasSeenWelcomeGuide);
+      
       // 1. Update localStorage immediately (optimistic update)
       StorageService.set(STORAGE_KEYS.USER, user);
       
@@ -258,10 +266,11 @@ export class UserService {
       // This prevents stale cached user data on next login
       if (user.authUserId) {
         await cacheService.setUser(user.authUserId, user as unknown as Record<string, unknown>);
+        console.log('✅ [UserService] Updated cache for user:', user.authUserId);
       }
       
       // 3. Sync to Supabase
-      const { error } = await supabase
+      const { data, error, count } = await supabase
         .from('users')
         .update({
           tier: user.tier,
@@ -296,12 +305,30 @@ export class UserService {
           
           updated_at: new Date().toISOString(),
         })
-        .eq('auth_user_id', user.authUserId);
+        .eq('auth_user_id', user.authUserId)
+        .select(); // Request data back to verify update
       
       if (error) {
-        console.error('Failed to sync user to Supabase:', error);
+        console.error('❌ [UserService] Failed to sync user to Supabase:', error);
+        console.error('❌ [UserService] Error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        });
         // Don't throw - optimistic update already done
         // User will sync on next getCurrentUserAsync()
+      } else if (!data || data.length === 0) {
+        console.error('❌ [UserService] Database update succeeded but 0 rows affected!', {
+          authUserId: user.authUserId,
+          hasSeenWelcomeGuide: user.hasSeenWelcomeGuide,
+          returnedData: data,
+          count: count
+        });
+        console.error('❌ [UserService] This indicates RLS policy is blocking the update silently!');
+      } else {
+        console.log('✅ [UserService] Successfully updated database for user:', user.authUserId);
+        console.log('✅ [UserService] Verified has_seen_welcome_guide in DB:', data[0]?.has_seen_welcome_guide);
       }
     } catch (error) {
       console.error('Error in setCurrentUserAsync:', error);

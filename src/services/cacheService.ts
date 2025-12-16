@@ -19,11 +19,11 @@ class CacheService {
   async set(key: string, value: unknown, ttl: number = this.DEFAULT_TTL, cacheType: string = 'general', userId?: string): Promise<void> {
     const expires = Date.now() + ttl;
     
-    // Store in memory cache for fast access
+    // ✅ OPTIMIZED: Update memory cache FIRST (synchronous, immediate availability)
     this.memoryCache.set(key, { value, expires });
-        // Store in Supabase for persistence
+    
+    // Store in Supabase for persistence (async, non-blocking)
     try {
-      console.log(`[CacheService] Storing in Supabase: ${key} (type: ${cacheType}, user: ${userId || 'none'})`);
       const { error } = await supabase
         .from(this.CACHE_TABLE)
         .upsert({

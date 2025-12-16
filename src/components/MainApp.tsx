@@ -117,10 +117,15 @@ const MainApp: React.FC<MainAppProps> = ({
   onProfileSetupDismiss,
 }) => {
   const [user, setUser] = useState<User | null>(null);
+  const prevUserRef = useRef<User | null>(null);
   
-  // DEBUG: Log user changes
+  // Log only actual user changes (deep equality check)
   useEffect(() => {
-    console.log('🔥🔥🔥 [MainApp] USER STATE CHANGED:', user);
+    const userChanged = JSON.stringify(user) !== JSON.stringify(prevUserRef.current);
+    if (userChanged && user) {
+      console.log('🔄 [MainApp] User changed:', user.id, 'tier:', user.tier);
+      prevUserRef.current = user;
+    }
   }, [user]);
   
   const [conversations, setConversations] = useState<Conversations>({});
@@ -129,16 +134,12 @@ const MainApp: React.FC<MainAppProps> = ({
   const [isInitializing, setIsInitializing] = useState(true);
   const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([]);
   
-  // ✅ DEBUG: Track all changes to suggestedPrompts
+  // Log suggestion changes (dev mode only, no expensive stack traces)
   useEffect(() => {
-    console.log('🎯 [MainApp] suggestedPrompts STATE CHANGED:', {
-      prompts: suggestedPrompts,
-      length: suggestedPrompts.length,
-      isAISettingFlag: isSettingSuggestionsFromAI.current,
-      activeConvId: activeConversation?.id,
-      trace: new Error().stack?.split('\n').slice(1, 5).join('\n')
-    });
-  }, [suggestedPrompts, activeConversation?.id]);
+    if (import.meta.env.DEV && suggestedPrompts.length > 0) {
+      console.log(`🎯 [MainApp] Suggestions (${suggestedPrompts.length}):`, suggestedPrompts.slice(0, 3));
+    }
+  }, [suggestedPrompts]);
   
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   
@@ -371,8 +372,8 @@ const MainApp: React.FC<MainAppProps> = ({
       });
 
     if (lastAIMessage) {
-      // Get suggestions from metadata only
-      const savedPrompts = lastAIMessage.metadata?.suggestedPrompts;
+      // Get suggestions from metadata OR direct property (backward compatibility)
+      const savedPrompts = lastAIMessage.metadata?.suggestedPrompts || lastAIMessage.suggestedPrompts;
       if (savedPrompts && Array.isArray(savedPrompts) && savedPrompts.length > 0) {
         console.log('📌 [MainApp] Loading saved suggestions from last AI message:', savedPrompts);
         setSuggestedPrompts(savedPrompts);
@@ -381,6 +382,7 @@ const MainApp: React.FC<MainAppProps> = ({
         console.log('⚠️ [MainApp] No AI prompts found. lastAIMessage:', {
           hasMetadata: !!lastAIMessage.metadata,
           metadataPrompts: lastAIMessage.metadata?.suggestedPrompts,
+          directPrompts: lastAIMessage.suggestedPrompts,
           messageKeys: Object.keys(lastAIMessage)
         });
       }
@@ -689,23 +691,45 @@ const MainApp: React.FC<MainAppProps> = ({
     };
   }, []);
 
-  // ✅ FIX: Subscribe to auth state changes to detect new user login after logout
+  // ✅ FIX: Subscribe to auth state changes to detect new user login after logout AND tier changes
   useEffect(() => {
     const unsubscribe = authService.subscribe((authState) => {
       const newUserId = authState.user?.authUserId || null;
+      const newTier = authState.user?.tier;
+      const currentTier = user?.tier;
       
-      // ✅ FIX: Always update if user ID changed - don't block on logout flag
-      // If a new user arrives, logout is complete by definition
-      if (newUserId !== currentUserId) {
-        console.log('🔍 [MainApp] Auth state change detected:', {
+      console.log('🔍 [MainApp] Auth state change detected:', {
+        previousUserId: currentUserId,
+        newUserId,
+        currentTier,
+        newTier,
+        isLoading: authState.isLoading,
+        isLoggingOut: isLoggingOutRef.current
+      });
+      
+      // ✅ FIX: Update user state when userId changes OR tier changes
+      const userIdChanged = newUserId !== currentUserId;
+      const tierChanged = newTier && currentTier && newTier !== currentTier;
+      
+      if (userIdChanged || tierChanged) {
+        console.log('🔍 [MainApp] User state change:', {
+          userIdChanged,
+          tierChanged,
+          previousTier: currentTier,
+          newTier,
           previousUserId: currentUserId,
-          newUserId,
-          isLoading: authState.isLoading,
-          isLoggingOut: isLoggingOutRef.current
+          newUserId
         });
         
-        // Update current user ID
-        if (newUserId) {
+        // Update user state from authState
+        if (authState.user) {
+          setUser(authState.user);
+          UserService.setCurrentUser(authState.user);
+          console.log('✅ [MainApp] User state updated from authService subscription');
+        }
+        
+        // Update current user ID if it changed
+        if (userIdChanged && newUserId) {
           // ✅ FIX: If we're getting a new user ID, logout is complete
           // Clear the flag to allow loadData to proceed
           if (isLoggingOutRef.current) {
@@ -720,7 +744,7 @@ const MainApp: React.FC<MainAppProps> = ({
     return () => {
       unsubscribe();
     };
-  }, [currentUserId]);
+  }, [currentUserId, user?.tier]);
 
   useEffect(() => {
     const loadData = async (retryCount = 0) => {
@@ -916,19 +940,39 @@ const MainApp: React.FC<MainAppProps> = ({
           // ✅ SHOW WELCOME MODAL ON FIRST CHAT VISIT AFTER ONBOARDING
           // Check if user has completed onboarding and hasn't seen the welcome modal yet
           // Use database field instead of localStorage for persistence across devices
+          console.log('🔍 [MainApp] Welcome guide check:', {
+            hasUser: !!currentUser,
+            hasSeenWelcomeGuide: currentUser?.hasSeenWelcomeGuide,
+            userEmail: currentUser?.email,
+            authUserId: currentUser?.authUserId
+          });
           if (currentUser && !currentUser.hasSeenWelcomeGuide) {
             console.log('🎉 [MainApp] First chat visit after onboarding - showing welcome modal');
-            // Show welcome modal after a short delay to allow UI to settle
-            setTimeout(() => {
-              setWelcomeScreenOpen(true);
-              // Update user record in database and local state
-              const updatedUser: User = {
-                ...currentUser,
-                hasSeenWelcomeGuide: true
-              };
-              setUser(updatedUser);
-              UserService.setCurrentUserAsync(updatedUser).catch((err: unknown) => console.error('Failed to update hasSeenWelcomeGuide:', err));
-            }, 500);
+            
+            // ✅ CRITICAL FIX: Update database IMMEDIATELY (not in background)
+            // This ensures the flag is saved BEFORE the modal shows
+            // If user refreshes during modal, the database will already have the correct value
+            const updatedUser: User = {
+              ...currentUser,
+              hasSeenWelcomeGuide: true
+            };
+            
+            // Update database and cache FIRST (synchronously in the initialization flow)
+            UserService.setCurrentUserAsync(updatedUser)
+              .then(() => {
+                console.log('✅ [MainApp] Successfully saved hasSeenWelcomeGuide to database and cache');
+                // Update local state after DB save
+                setUser(updatedUser);
+                // Show modal after database update succeeds
+                setTimeout(() => {
+                  setWelcomeScreenOpen(true);
+                }, 300);
+              })
+              .catch((err) => {
+                console.error('❌ [MainApp] Failed to update hasSeenWelcomeGuide:', err);
+                // Even if save fails, update local state to prevent infinite loop
+                setUser(updatedUser);
+              });
           }
         } else {
           console.error('🔍 [MainApp] ERROR: No active conversation after initialization!');
@@ -1028,6 +1072,8 @@ const MainApp: React.FC<MainAppProps> = ({
     const currentTier = currentUser?.tier || 'free';
     const previousTier = previousTierRef.current;
     
+    console.log('🔄 [TierChange] Effect triggered - currentTier:', currentTier, 'previousTier:', previousTier, 'isInitializing:', isInitializing, 'hasInitialized:', hasInitializedTierRef.current);
+    
     // Update ref for next comparison
     previousTierRef.current = currentTier;
     
@@ -1053,10 +1099,11 @@ const MainApp: React.FC<MainAppProps> = ({
     
     // Skip if tier hasn't changed
     if (previousTier === currentTier) {
+      console.log('🔄 [TierChange] Tier unchanged - no action needed');
       return;
     }
     
-    console.log('🔄 [TierChange] Tier changed from', previousTier, 'to', currentTier);
+    console.log('🔄 [TierChange] ⭐ TIER CHANGED from', previousTier, 'to', currentTier);
     
     // Check if upgrading from free to paid tier
     const wasFree = previousTier === 'free';
@@ -1133,6 +1180,25 @@ const MainApp: React.FC<MainAppProps> = ({
   useEffect(() => {
     if (!activeConversation?.id) {return;}
     
+    // Skip realtime subscription for system conversations (game-hub, etc.)
+    // These are special conversations that may not have proper user ownership
+    const systemConversations = ['game-hub', 'gaming-hub'];
+    if (systemConversations.includes(activeConversation.id)) {
+      console.log('ℹ️ [MainApp] Skipping realtime subscription for system conversation:', activeConversation.id);
+      return;
+    }
+    
+    // Safety check: Only subscribe if conversation belongs to current user
+    // This prevents CHANNEL_ERROR from RLS policy blocking the subscription
+    if (activeConversation.authUserId && activeConversation.authUserId !== user?.id) {
+      console.warn('⚠️ [MainApp] Skipping realtime subscription - conversation does not belong to current user:', {
+        conversationId: activeConversation.id,
+        conversationUserId: activeConversation.authUserId,
+        currentUserId: user?.id
+      });
+      return;
+    }
+    
         // Subscribe to conversation updates
     const subscription = supabase
       .channel(`conversation:${activeConversation.id}`)
@@ -1178,12 +1244,21 @@ const MainApp: React.FC<MainAppProps> = ({
           }
         }
       )
-      .subscribe((status) => {
+      .subscribe((status, err) => {
         if (status === 'SUBSCRIBED') {
           // Successfully subscribed to real-time updates
-          console.log('✅ [MainApp] Real-time subscription active');
+          console.log('✅ [MainApp] Real-time subscription active for conversation:', activeConversation.id);
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ [MainApp] Real-time subscription error');
+          console.error('❌ [MainApp] Real-time subscription error:', {
+            conversationId: activeConversation.id,
+            status,
+            error: err,
+            message: 'Real-time updates may not work. Check if conversations table is enabled for realtime.'
+          });
+        } else if (status === 'TIMED_OUT') {
+          console.warn('⚠️ [MainApp] Real-time subscription timed out:', activeConversation.id);
+        } else if (status === 'CLOSED') {
+          console.log('🔒 [MainApp] Real-time subscription closed:', activeConversation.id);
         }
       });
     
@@ -2740,7 +2815,6 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
     
     // ✅ PROCESSING LOCK: Prevent concurrent operations during AI response handling
     if (isProcessingResponse) {
-      console.warn('🔒 [MainApp] Processing lock active, blocking concurrent message');
       return;
     }
     
@@ -2749,7 +2823,6 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
     const timeSinceLastRequest = now - lastRequestTimeRef.current;
     
     if (timeSinceLastRequest < RATE_LIMIT_DELAY_MS) {
-      console.warn(`⏱️ [MainApp] Rate limit: ${timeSinceLastRequest}ms since last request (min ${RATE_LIMIT_DELAY_MS}ms)`);
       return; // Silently ignore - no user-visible delay
     }
     
@@ -2821,14 +2894,6 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
     
     // Prevent duplicate/concurrent sends
     if (!activeConversation || isLoading) {
-      if (isLoading) {
-        // Already processing a message, skip this request
-      }
-      console.warn('📸 [MainApp] handleSendMessage blocked:', { 
-        hasActiveConversation: !!activeConversation, 
-        isLoading,
-        message: message?.substring(0, 50)
-      });
       return;
     }
 
@@ -2851,8 +2916,6 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
         message.toLowerCase().includes('help') ||
         message.toLowerCase().includes('how to') ||
         message.toLowerCase().includes('what should') ||
-        message.toLowerCase().includes('stuck') ||
-        message.toLowerCase().includes('tutorial') ||
         message.toLowerCase().includes('guide')
       ));
 
@@ -3253,6 +3316,14 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
       console.log('🔍 [MainApp] suggestionsToUse content:', JSON.stringify(suggestionsToUse));
       console.log('🔍 [MainApp] response.followUpPrompts type:', typeof response.followUpPrompts, 'isArray:', Array.isArray(response.followUpPrompts), 'length:', response.followUpPrompts?.length);
       console.log('🔍 [MainApp] response.suggestions type:', typeof response.suggestions, 'isArray:', Array.isArray(response.suggestions), 'length:', response.suggestions?.length);
+      
+      // ⚠️ Warn if AI failed to provide suggestions
+      if (!suggestionsToUse || suggestionsToUse.length === 0) {
+        console.error('❌ [MainApp] AI RESPONSE MISSING SUGGESTIONS!');
+        console.error('  response.followUpPrompts:', response.followUpPrompts);
+        console.error('  response.suggestions:', response.suggestions);
+        console.error('  Current conversation:', activeConversation?.gameTitle || 'Game Hub');
+      }
       
       const processedSuggestions = suggestedPromptsService.processAISuggestions(suggestionsToUse);
       console.log('🔍 [MainApp] AFTER processAISuggestions:', processedSuggestions);
@@ -3795,6 +3866,9 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
             const newGameTab = await handleCreateGameTab(gameInfo);
             targetConversationId = newGameTab?.id || '';
             
+            // ✅ Mark that this is a newly created tab (not existing)
+            const isNewlyCreatedTab = true;
+            
             // ✅ FIX: Use returned object directly instead of database refresh (50-200ms faster)
             // createGameTab() already calls clearCache(), so we can trust the returned object
             if (newGameTab) {
@@ -3802,6 +3876,12 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                 ...prev,
                 [newGameTab.id]: newGameTab
               }));
+              
+              // ✅ Auto-switch NEW game tabs to Playing mode (not existing tabs during migration)
+              if (isNewlyCreatedTab) {
+                console.log('🎮 [MainApp] Auto-switching new game tab to Playing mode');
+                setActiveSession(newGameTab.id, true);
+              }
             }
           }
 
@@ -3824,6 +3904,26 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
             aiMessageDbId = aiMessageResult.message?.id || aiMessage.id;
             
             console.log('✅ [MainApp] Messages saved to target with IDs:', { userMessageDbId, aiMessageDbId });
+            
+            // ✅ APPLY DEFERRED PROGRESS/OBJECTIVE UPDATES TO DATABASE IMMEDIATELY
+            // Must happen BEFORE updateSubtabsAfterMigration to prevent being overwritten by DB refresh
+            if (progressUpdate !== null || objectiveUpdate !== null) {
+              const progressUpdates: Partial<Conversation> = { updatedAt: Date.now() };
+              
+              if (progressUpdate !== null) {
+                progressUpdates.gameProgress = progressUpdate;
+                console.log(`🎮 [MainApp] 💾 Saving progress ${progressUpdate}% to database for: ${targetConversationId}`);
+              }
+              
+              if (objectiveUpdate !== null) {
+                progressUpdates.activeObjective = objectiveUpdate;
+                console.log(`🎮 [MainApp] 💾 Saving objective to database for: ${targetConversationId}`);
+              }
+              
+              // Save to database immediately
+              await ConversationService.updateConversation(targetConversationId, progressUpdates);
+              console.log('✅ [MainApp] Progress/objective saved to database');
+            }
             
             // ✅ CRITICAL FIX: No migration needed - messages already saved to correct conversation!
             // Just remove the temporary UI messages from source conversation
@@ -3853,45 +3953,27 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
             
             // Update state with the constructed gameTab
             if (gameTab) {
+              // If progress was updated, merge it into gameTab for UI display
+              if (progressUpdate !== null || objectiveUpdate !== null) {
+                const progressUpdates: Partial<Conversation> = {};
+                if (progressUpdate !== null) progressUpdates.gameProgress = progressUpdate;
+                if (objectiveUpdate !== null) progressUpdates.activeObjective = objectiveUpdate;
+                
+                // Merge progress into gameTab object
+                Object.assign(gameTab, progressUpdates);
+                console.log('🎮 [MainApp] Merged progress/objective into gameTab for UI:', progressUpdates);
+              }
+              
               setConversations(prev => ({
                 ...prev,
                 [targetConversationId]: gameTab
               }));
-            }
-            if (gameTab) {
-              // ✅ APPLY DEFERRED PROGRESS UPDATES to the TARGET game tab (not Game Hub!)
-              if (progressUpdate !== null || objectiveUpdate !== null) {
-                const progressUpdates: Partial<Conversation> = { updatedAt: Date.now() };
-                
-                if (progressUpdate !== null) {
-                  progressUpdates.gameProgress = progressUpdate;
-                  console.error(`🎮 [MainApp] ✅ Applying progress ${progressUpdate}% to TARGET: ${gameTab.title} (${targetConversationIdRef.current})`);
-                }
-                
-                if (objectiveUpdate !== null) {
-                  progressUpdates.activeObjective = objectiveUpdate;
-                  console.error(`🎮 [MainApp] ✅ Applying objective to TARGET: ${gameTab.title}`);
-                }
-                
-                // Update in database first (use ref to ensure correct conversation)
-                if (targetConversationIdRef.current) {
-                  await ConversationService.updateConversation(targetConversationIdRef.current, progressUpdates);
-                }
-                
-                // Merge into gameTab for immediate UI update
-                Object.assign(gameTab, progressUpdates);
-                
-                // Update state with progress included
-                setConversations(prev => ({
-                  ...prev,
-                  [targetConversationId]: { ...prev[targetConversationId], ...progressUpdates }
-                }));
-              }
               
               await ConversationService.setActiveConversation(targetConversationId);
               setActiveConversation(gameTab);
-              // Auto-switch to Playing mode for new/existing game tabs
-              setActiveSession(targetConversationId, true);
+              
+              // ✅ FIX: Don't auto-switch session mode - let user control the toggle
+              // (Removed: setActiveSession(targetConversationId, true))
               // Close sidebar on mobile
               setSidebarOpen(false);
               
@@ -3946,20 +4028,17 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                 gameTabService.updateSubTabsFromAIResponse(
                   targetConversationIdRef.current,  // ✅ Use ref to ensure correct conversation
                   pendingSubtabUpdates
-                ).then(() => {
+                ).then(async () => {
                   console.error('🎮 [MainApp] ✅ Successfully applied deferred subtab updates to target');
-                  // Refresh to show updated subtabs
-                  ConversationService.getConversations().then(refreshedConvs => {
-                    const freshConversations = deepCloneConversations(refreshedConvs);
-                    setConversations(freshConversations);
-                    const refreshedTarget = freshConversations[targetConversationId];
-                    if (refreshedTarget) {
-                      setActiveConversation(refreshedTarget);
-                    }
-                  });
-                }).catch(error => {
-                  console.error('🎮 [MainApp] ❌ Failed to apply deferred subtab updates:', error);
-                });
+                  // Refresh to show updated subtabs immediately
+                  const refreshedConvs = await ConversationService.getConversations();
+                  const freshConversations = deepCloneConversations(refreshedConvs);
+                  setConversations(freshConversations);
+                  const refreshedTarget = freshConversations[targetConversationIdRef.current!];
+                  if (refreshedTarget && activeConversation?.id === targetConversationIdRef.current) {
+                    setActiveConversation(refreshedTarget);
+                  }
+                }).catch(error => console.error('🎮 [MainApp] ❌ Failed to apply deferred subtab updates:', error));
               }
             }
           } else {
@@ -3992,15 +4071,21 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               // Update conversation with progress
               const updatedConv = { ...activeConversation, ...progressUpdates };
               
+              // Update both conversations map and active conversation for immediate UI refresh
               setConversations(prev => ({
                 ...prev,
                 [activeConversation.id]: updatedConv
               }));
               setActiveConversation(updatedConv);
               
+              console.log('🎮 [MainApp] Updated activeConversation with progress:', updatedConv.gameProgress);
+              
               // Persist to database (use ref to ensure correct conversation)
               if (targetConversationIdRef.current) {
                 ConversationService.updateConversation(targetConversationIdRef.current, progressUpdates)
+                  .then(() => {
+                    console.log('🎮 [MainApp] Progress persisted to database successfully');
+                  })
                   .catch(error => console.error('Failed to update progress:', error));
               }
             }
@@ -4011,16 +4096,21 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               gameTabService.updateSubTabsFromAIResponse(
                 targetConversationIdRef.current,
                 pendingSubtabUpdates
-              ).then(() => {
-                console.error('🎮 [MainApp] ✅ Successfully applied subtab updates');
-                ConversationService.getConversations().then(refreshedConvs => {
-                  const freshConversations = deepCloneConversations(refreshedConvs);
-                  setConversations(freshConversations);
-                  const refreshedConv = freshConversations[activeConversation.id];
-                  if (refreshedConv) {
-                    setActiveConversation(refreshedConv);
+              ).then(async () => {
+                console.error('🎮 [MainApp] ✅ Successfully applied subtab updates to current conversation');
+                const refreshedConvs = await ConversationService.getConversations();
+                const freshConversations = deepCloneConversations(refreshedConvs);
+                setConversations(freshConversations);
+                const refreshedConv = freshConversations[activeConversation.id];
+                if (refreshedConv) {
+                  // ✅ Preserve any in-memory progress updates that might not be in DB yet
+                  const currentConv = conversations[activeConversation.id];
+                  if (currentConv?.gameProgress !== undefined && refreshedConv.gameProgress !== currentConv.gameProgress) {
+                    console.log('🎮 [MainApp] Preserving in-memory progress:', currentConv.gameProgress, 'over DB:', refreshedConv.gameProgress);
+                    refreshedConv.gameProgress = currentConv.gameProgress;
                   }
-                });
+                  setActiveConversation(refreshedConv);
+                }
               }).catch(error => {
                 console.error('🎮 [MainApp] ❌ Failed to apply subtab updates:', error);
               });
@@ -4361,11 +4451,11 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header - relative positioning prevents layout shifts */}
         <header className="chat-header-fixed bg-background backdrop-blur-sm border-b border-surface-light/20 px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-6 flex items-center justify-between relative">
-          <div className="flex items-center space-x-1 sm:space-x-2">
+          <div className="flex items-center space-x-1 sm:space-x-2 min-w-0">
             {/* Mobile/Tablet sidebar toggle */}
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden btn-icon p-3 sm:p-3.5 text-text-muted hover:text-text-primary flex items-center justify-center -ml-1"
+              className="lg:hidden btn-icon p-3 sm:p-3.5 text-text-muted hover:text-text-primary flex items-center justify-center -ml-1 flex-shrink-0"
               data-no-touch-feedback="true"
             >
               <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -4373,20 +4463,21 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               </svg>
             </button>
             
-            {/* Desktop sidebar toggle - only visible when sidebar is closed */}
+            {/* Desktop sidebar toggle - always takes up space to prevent layout shift */}
             <button
               onClick={() => setDesktopSidebarOpen(true)}
-              className={`hidden btn-icon p-2 sm:p-3 text-text-muted hover:text-text-primary items-center gap-2 -ml-1 transition-opacity duration-200 ${desktopSidebarOpen ? 'lg:hidden' : 'lg:flex'}`}
+              className={`hidden lg:flex btn-icon p-2 sm:p-3 text-text-muted hover:text-text-primary items-center gap-2 -ml-1 transition-opacity duration-200 flex-shrink-0 ${desktopSidebarOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
               data-no-touch-feedback="true"
               title="Open sidebar"
+              tabIndex={desktopSidebarOpen ? -1 : 0}
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
             
-            {/* Logo - visible on mobile/tablet, and on desktop when sidebar is closed */}
-            <div className={`${desktopSidebarOpen ? 'lg:hidden' : ''}`} data-no-touch-feedback="true">
+            {/* Logo - always takes up space on desktop to prevent layout shift */}
+            <div className={`lg:opacity-100 transition-opacity duration-200 flex-shrink-0 ${desktopSidebarOpen ? 'lg:opacity-0 lg:pointer-events-none' : ''}`} data-no-touch-feedback="true">
               <Logo 
                 size="md" 
                 bounce={false} 
@@ -4396,14 +4487,14 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               />
             </div>
             
-            {/* Otagon brand name - only on desktop when sidebar is closed */}
-            <span className={`hidden text-lg font-bold bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent ${desktopSidebarOpen ? 'lg:hidden' : 'lg:block'}`}>
+            {/* Otagon brand name - always takes up space on desktop to prevent layout shift */}
+            <span className={`hidden lg:inline-block text-lg font-bold bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent transition-opacity duration-200 flex-shrink-0 ${desktopSidebarOpen ? 'opacity-0' : 'opacity-100'}`}>
               Otagon
             </span>
           </div>
 
-          {/* Thread name - centered, only visible on desktop when sidebar is closed */}
-          {activeConversation && !desktopSidebarOpen && (
+          {/* Thread name - centered, visible on desktop regardless of sidebar state */}
+          {activeConversation && (
             <div className="hidden lg:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
               <h2 className="text-base font-semibold bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent whitespace-nowrap">
                 {activeConversation.title}
@@ -4559,6 +4650,8 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
             <div className="px-3 sm:px-4 lg:px-6 pt-3 pb-3 sm:pb-4 flex-shrink-0">
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="flex-1">
+                  {/* 🔍 DEBUG: Log progress before passing to component */}
+                  {console.log('🎮 [MainApp] activeConversation gameProgress:', activeConversation.gameProgress, 'conv:', activeConversation.title)}
                   <GameProgressBar 
                     progress={activeConversation.gameProgress || 0}
                     gameTitle={activeConversation.gameTitle}
@@ -4644,6 +4737,16 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
         isOpen={settingsOpen}
         onClose={() => { haptic.modalClose(); setSettingsOpen(false); }}
         user={currentUser}
+        onTrialStart={async () => {
+          console.log('🔄 [MainApp] Trial started from Settings - refreshing user data');
+          await authService.refreshUser();
+          const refreshedUser = authService.getCurrentUser();
+          if (refreshedUser) {
+            console.log('🔄 [MainApp] User refreshed after trial start - tier:', refreshedUser.tier);
+            setUser(refreshedUser);
+            UserService.setCurrentUser(refreshedUser);
+          }
+        }}
       />
 
       {/* Credit Modal */}
@@ -4739,10 +4842,13 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
         buttonRef={settingsButtonRef}
         onTrialStart={async () => {
           // Refresh user data after trial starts
+          console.log('🔄 [MainApp] Trial started - refreshing user data');
           await authService.refreshUser();
           const refreshedUser = authService.getCurrentUser();
           if (refreshedUser) {
+            console.log('🔄 [MainApp] User refreshed after trial start - tier:', refreshedUser.tier);
             setUser(refreshedUser);
+            UserService.setCurrentUser(refreshedUser); // ✅ Update UserService cache too
           }
         }}
         onUpgradeClick={() => {
@@ -4756,8 +4862,6 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
         <WelcomeScreen
           onStartChat={() => {
             setWelcomeScreenOpen(false);
-            // Open desktop sidebar after welcome screen closes
-            setDesktopSidebarOpen(true);
           }}
           onAddGame={handleAddGame}
         />
