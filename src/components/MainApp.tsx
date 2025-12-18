@@ -49,6 +49,7 @@ import WelcomeScreen from './welcome/WelcomeScreen';
 import ConnectionSplashScreen from './splash/ConnectionSplashScreen';
 import ProUpgradeSplashScreen from './splash/ProUpgradeSplashScreen';
 import GamingExplorerModal from './gaming-explorer/GamingExplorerModal';
+import { ScreenshotFlash } from './ScreenshotFlash';
 import { connect, disconnect, setHandlers } from '../services/websocketService';
 import { validateScreenshotDataUrl, getDataUrlSizeMB } from '../utils/imageValidation';
 
@@ -249,6 +250,9 @@ const MainApp: React.FC<MainAppProps> = ({
   // Gaming Explorer modal state
   const [gamingExplorerOpen, setGamingExplorerOpen] = useState(false);
   
+  // Screenshot flash state
+  const [flashScreenshot, setFlashScreenshot] = useState<{ show: boolean; isMulti: boolean }>({ show: false, isMulti: false });
+  
   // Helper function to deep clone conversations to force React re-renders
   const deepCloneConversations = (conversations: Conversations): Conversations => {
     const cloned: Conversations = {};
@@ -434,6 +438,9 @@ const MainApp: React.FC<MainAppProps> = ({
         const sizeMB = getDataUrlSizeMB(dataUrl);
         console.log('📸 [MainApp] Screenshot validated:', { sizeMB, length: dataUrl.length });
         
+        // Show flash feedback
+        setFlashScreenshot({ show: true, isMulti: false });
+        
         // Process screenshot same way as legacy 'screenshot' type
         if (isManualUploadMode) {
           setQueuedScreenshot(dataUrl);
@@ -475,6 +482,9 @@ const MainApp: React.FC<MainAppProps> = ({
       
       if (images && Array.isArray(images) && images.length > 0) {
         console.log('📸 [MainApp] Processing', images.length, 'buffered screenshots from F2');
+        
+        // Show flash feedback for multi-shot
+        setFlashScreenshot({ show: true, isMulti: true });
         
         // Process each screenshot
         if (isManualUploadMode) {
@@ -4875,6 +4885,13 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
         onSendNewsQuery={handleGamingExplorerNewsQuery}
         isGroundingEnabled={isGroundingEnabled}
         onRequestGroundingConfirmation={handleRequestGroundingConfirmation}
+      />
+
+      {/* Screenshot Flash Feedback */}
+      <ScreenshotFlash
+        show={flashScreenshot.show}
+        isMulti={flashScreenshot.isMulti}
+        onHide={() => setFlashScreenshot({ show: false, isMulti: false })}
       />
 
       {/* Grounding Confirmation Modal */}

@@ -129,17 +129,9 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
   const [featuredGames, setFeaturedGames] = useState<IGDBGameData[]>([]);
   const [loadingFeatured, setLoadingFeatured] = useState(false);
   
-  // Latest & Popular games (new releases and trending)
-  const [latestGames, setLatestGames] = useState<IGDBGameData[]>([]);
-  const [loadingLatest, setLoadingLatest] = useState(false);
-  
-  // New Releases (last 15 days)
+  // New Releases (last 30 days)
   const [newReleases, setNewReleases] = useState<IGDBGameData[]>([]);
   const [loadingNewReleases, setLoadingNewReleases] = useState(false);
-  
-  // Coming Soon / Upcoming Games (releasing in next 30 days)
-  const [upcomingGames, setUpcomingGames] = useState<IGDBGameData[]>([]);
-  const [loadingUpcoming, setLoadingUpcoming] = useState(false);
   
   // Highest Rated Games
   const [highestRatedGames, setHighestRatedGames] = useState<IGDBGameData[]>([]);
@@ -176,7 +168,7 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
         const { data: cachedSections, error } = (await supabase
           .from('igdb_home_cache')
           .select('cache_key, data, expires_at')
-          .in('cache_key', ['featured_games', 'latest_games', 'new_releases', 'upcoming_games', 'highest_rated', 'categories'])
+          .in('cache_key', ['featured_games', 'new_releases', 'highest_rated', 'categories'])
           .gt('expires_at', now.toISOString())) as SupabaseResponse<IGDBCacheEntry[]>;
 
         if (!error && cachedSections && cachedSections.length > 0) {
@@ -187,17 +179,9 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
           if (featuredData) {
             setFeaturedGames(featuredData);
           }
-          const latestData = cacheMap.get('latest_games');
-          if (latestData) {
-            setLatestGames(latestData);
-          }
           const newReleasesData = cacheMap.get('new_releases');
           if (newReleasesData) {
             setNewReleases(newReleasesData);
-          }
-          const upcomingData = cacheMap.get('upcoming_games');
-          if (upcomingData) {
-            setUpcomingGames(upcomingData);
           }
           const highestRatedData = cacheMap.get('highest_rated');
           if (highestRatedData) {
@@ -209,9 +193,7 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
           }
           
           setLoadingFeatured(false);
-          setLoadingLatest(false);
           setLoadingNewReleases(false);
-          setLoadingUpcoming(false);
           setLoadingHighestRated(false);
           setLoadingCategories(false);
           return;
@@ -222,19 +204,12 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
 
       console.log('[GamingExplorerHome] Fetching fresh IGDB data');
       setLoadingFeatured(true);
-      setLoadingLatest(true);
       setLoadingNewReleases(true);
-      setLoadingUpcoming(true);
       setLoadingHighestRated(true);
       setLoadingCategories(true);
       
       try {
-        // Fetch Latest & Popular games (games from last 60 days with good ratings)
-        const latestResults = await queryIGDBGamesByCriteria('latest_games', 10);
-        setLatestGames(latestResults.slice(0, 6));
-        setLoadingLatest(false);
-        
-        // Fetch featured/popular games (popular games from last 2 years)
+        // Fetch featured/popular games (most popular games overall)
         const featuredResults = await queryIGDBGamesByCriteria('popular', 12);
         setFeaturedGames(featuredResults.slice(0, 8));
         setLoadingFeatured(false);
@@ -249,30 +224,20 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
         setHighestRatedGames(highestRatedResults.slice(0, 8));
         setLoadingHighestRated(false);
         
-        // Fetch Upcoming/Coming Soon Games (releasing in next 30 days)
-        const upcomingResults = await queryIGDBGamesByCriteria('upcoming', 10);
-        setUpcomingGames(upcomingResults.slice(0, 6));
-        setLoadingUpcoming(false);
+        // Fetch category-specific games using genre filters
+        console.log('[GamingExplorerHome] Fetching genre-specific games');
+        const categoryQueries = [
+          { key: 'action', queryType: 'genre_action' as const },
+          { key: 'rpg', queryType: 'genre_rpg' as const },
+          { key: 'adventure', queryType: 'genre_adventure' as const },
+          { key: 'shooter', queryType: 'genre_shooter' as const },
+          { key: 'indie', queryType: 'genre_indie' as const },
+          { key: 'strategy', queryType: 'genre_strategy' as const },
+        ];
         
-        // For categories, distribute popular/featured games to provide variety (no hardcoded games)
-        const categoryQueries: Record<string, string[]> = {
-          action: [],
-          rpg: [],
-          adventure: [],
-          shooter: [],
-          indie: [],
-          strategy: [],
-        };
-        
-        // For categories, use a subset of popular games (avoid duplication)
-        // We'll rotate through different popular games to provide variety
-        const categoryEntries = Object.entries(categoryQueries);
-        const allCategoryPromises = categoryEntries.map(async ([catId, _]) => {
-          // Distribute games across categories using combined pool for variety
-          const offset = categoryEntries.findIndex(([id]) => id === catId) * 2;
-          const combinedGames = [...featuredResults, ...highestRatedResults];
-          const catGames = combinedGames.slice(offset, offset + 8);
-          return [catId, catGames] as const;
+        const allCategoryPromises = categoryQueries.map(async ({ key, queryType }) => {
+          const catGames = await queryIGDBGamesByCriteria(queryType, 12);
+          return [key, catGames.slice(0, 8)] as const;
         });
         
         const categoryResultsArray = await Promise.all(allCategoryPromises);
@@ -287,15 +252,13 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
         
         const cacheEntries = [
           { cache_key: 'featured_games', data: featuredResults.slice(0, 8), expires_at: sevenDaysLater.toISOString() },
-          { cache_key: 'latest_games', data: latestResults.slice(0, 6), expires_at: oneDayLater.toISOString() },
           { cache_key: 'new_releases', data: newReleaseResults.slice(0, 6), expires_at: oneDayLater.toISOString() },
-          { cache_key: 'upcoming_games', data: upcomingResults.slice(0, 6), expires_at: sevenDaysLater.toISOString() },
           { cache_key: 'highest_rated', data: highestRatedResults.slice(0, 8), expires_at: sevenDaysLater.toISOString() },
           { cache_key: 'categories', data: categoryResults, expires_at: sevenDaysLater.toISOString() },
         ];
         
         await (supabase.from('igdb_home_cache').upsert(cacheEntries, { onConflict: 'cache_key' }) as unknown as Promise<{ error: { message: string } | null }>);
-        console.log('[GamingExplorerHome] Cached to Supabase: latest_games + new_releases = 1d, all others = 7d');
+        console.log('[GamingExplorerHome] Cached to Supabase: new_releases = 1d, featured/highest_rated/categories = 7d');
       } catch (error) {
         console.error('Error fetching games:', error);
       } finally {
@@ -742,65 +705,12 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
         </section>
       )}
 
-      {/* Latest & Popular Games - New releases and trending */}
-      <section>
-        <h2 className="text-lg font-bold text-[#F5F5F5] mb-3 flex items-center gap-2">
-          <span className="w-1.5 h-6 bg-gradient-to-b from-[#FF4D4D] to-[#FFAB40] rounded-full" />
-          Latest & Popular
-        </h2>
-        {loadingLatest ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="w-8 h-8 border-2 border-[#E53A3A] border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : latestGames.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-2 lg:gap-3">
-            {latestGames.map((game) => (
-              <motion.button
-                key={game.id}
-                whileHover={{ scale: 1.03, y: -4 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => onOpenGameInfo(game, game.name)}
-                className="bg-[#1C1C1C] rounded-xl overflow-hidden border border-[#424242]/40 hover:border-[#FF4D4D]/50 transition-all text-left"
-              >
-                <div className="aspect-[3/4] relative overflow-hidden">
-                  {game.cover?.url ? (
-                    <img
-                      src={getCoverUrl(game.cover.url, 'cover_big')}
-                      alt={game.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-[#2A2A2A]" />
-                  )}
-                  {/* NEW badge for recent releases */}
-                  <div className="absolute top-2 left-2 bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] px-2 py-0.5 rounded text-[10px] font-bold text-white">
-                    NEW
-                  </div>
-                  {game.aggregated_rating && (
-                    <div className="absolute top-2 right-2 bg-black/70 px-1.5 py-0.5 rounded text-[10px] font-bold text-[#10B981]">
-                      {Math.round(game.aggregated_rating)}%
-                    </div>
-                  )}
-                </div>
-                <div className="p-2">
-                  <h3 className="font-medium text-[#F5F5F5] text-xs line-clamp-1">{game.name}</h3>
-                </div>
-              </motion.button>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-6 text-[#8F8F8F] text-sm">
-            Loading latest games...
-          </div>
-        )}
-      </section>
-
-      {/* New Releases (Last 15 Days) */}
+      {/* New Releases (Last 30 Days) */}
       <section>
         <h2 className="text-lg font-bold text-[#F5F5F5] mb-3 flex items-center gap-2">
           <span className="w-1.5 h-6 bg-gradient-to-b from-[#10B981] to-[#06B6D4] rounded-full" />
           New Releases
-          <span className="text-xs text-[#8F8F8F] font-normal">(Last 15 Days)</span>
+          <span className="text-xs text-[#8F8F8F] font-normal">(Last 30 Days)</span>
         </h2>
         {loadingNewReleases ? (
           <div className="flex items-center justify-center py-8">
@@ -845,60 +755,6 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
         ) : (
           <div className="text-center py-6 text-[#8F8F8F] text-sm">
             Loading new releases...
-          </div>
-        )}
-      </section>
-
-      {/* Coming Soon / Upcoming Games (Next 30 Days) */}
-      <section>
-        <h2 className="text-lg font-bold text-[#F5F5F5] mb-3 flex items-center gap-2">
-          <span className="w-1.5 h-6 bg-gradient-to-b from-[#8B5CF6] to-[#3B82F6] rounded-full" />
-          Coming Soon
-          <span className="text-xs text-[#8F8F8F] font-normal">(Releasing Soon)</span>
-        </h2>
-        {loadingUpcoming ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="w-8 h-8 border-2 border-[#8B5CF6] border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : upcomingGames.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-2 lg:gap-3">
-            {upcomingGames.map((game) => (
-              <motion.button
-                key={game.id}
-                whileHover={{ scale: 1.03, y: -4 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => onOpenGameInfo(game, game.name)}
-                className="bg-[#1C1C1C] rounded-xl overflow-hidden border border-[#424242]/40 hover:border-[#8B5CF6]/50 transition-all text-left"
-              >
-                <div className="aspect-[3/4] relative overflow-hidden">
-                  {game.cover?.url ? (
-                    <img
-                      src={getCoverUrl(game.cover.url, 'cover_big')}
-                      alt={game.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-[#2A2A2A]" />
-                  )}
-                  {/* Coming Soon badge */}
-                  <div className="absolute top-2 left-2 bg-gradient-to-r from-[#8B5CF6] to-[#3B82F6] px-2 py-0.5 rounded text-[10px] font-bold text-white">
-                    SOON
-                  </div>
-                  {game.first_release_date && (
-                    <div className="absolute bottom-2 left-2 bg-black/70 px-1.5 py-0.5 rounded text-[10px] font-medium text-[#8B5CF6]">
-                      {new Date(game.first_release_date * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </div>
-                  )}
-                </div>
-                <div className="p-2">
-                  <h3 className="font-medium text-[#F5F5F5] text-xs line-clamp-1">{game.name}</h3>
-                </div>
-              </motion.button>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-6 text-[#8F8F8F] text-sm">
-            No upcoming releases found
           </div>
         )}
       </section>

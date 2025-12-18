@@ -1,5 +1,4 @@
 // ✅ IGDB API PROXY - Secure game data fetching
-// Date: January 2025
 // Purpose: Proxy IGDB API requests with caching to prevent credential exposure
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
@@ -32,7 +31,8 @@ let tokenRefreshPromise: Promise<string> | null = null; // Mutex to prevent conc
 interface IGDBRequest {
   gameName?: string;
   searchMode?: 'single' | 'multi'; // 'multi' returns up to 8 results for autocomplete
-  queryType?: 'search' | 'recent_releases' | 'upcoming' | 'top_rated' | 'popular'; // Different query types
+  queryType?: 'search' | 'recent_releases' | 'latest_games' | 'upcoming' | 'top_rated' | 'popular' | 
+              'genre_action' | 'genre_rpg' | 'genre_adventure' | 'genre_shooter' | 'genre_indie' | 'genre_strategy'; // Query types
   limit?: number; // Number of results to return
   includeScreenshots?: boolean;
   includeArtworks?: boolean;
@@ -211,37 +211,72 @@ async function queryGamesByCriteria(queryType: string, limit: number, token: str
   const thirtyDaysAgo = now - (30 * 24 * 60 * 60);
   const sixtyDaysAgo = now - (60 * 24 * 60 * 60);
   const oneYearAgo = now - (365 * 24 * 60 * 60);
+  const twoYearsAgo = now - (2 * 365 * 24 * 60 * 60);
   const ninetyDaysFromNow = now + (90 * 24 * 60 * 60);
   
-  // Add randomization for variety on each cache refresh (0-20 offset)
-  const randomOffset = Math.floor(Math.random() * 20);
+  // IGDB Genre IDs (from IGDB API documentation)
+  const GENRE_IDS = {
+    action: 4,        // Fighting, Shooter, Platform, etc.
+    rpg: 12,          // Role-playing games
+    adventure: 31,    // Adventure games
+    shooter: 5,       // Shooter games
+    indie: 32,        // Indie games
+    strategy: 15,     // Strategy games
+  };
+  
+  // Add randomization for variety on each cache refresh (0-10 offset)
+  const randomOffset = Math.floor(Math.random() * 10);
   
   switch (queryType) {
     case 'recent_releases':
       // Games released in the last 30 days
-      whereClause = `where first_release_date >= ${thirtyDaysAgo} & first_release_date <= ${now} & category = 0 & rating_count >= 3;`;
+      whereClause = `where first_release_date >= ${thirtyDaysAgo} & first_release_date <= ${now};`;
       sortClause = 'sort first_release_date desc;';
       break;
     case 'latest_games':
-      // Games released in the last 60 days with good ratings
-      whereClause = `where first_release_date >= ${sixtyDaysAgo} & first_release_date <= ${now} & category = 0 & rating_count >= 5;`;
+      // Games released in the last 60 days
+      whereClause = `where first_release_date >= ${sixtyDaysAgo} & first_release_date <= ${now};`;
       sortClause = 'sort first_release_date desc;';
       break;
     case 'upcoming':
       // Upcoming games in the next 90 days
-      whereClause = `where first_release_date > ${now} & first_release_date <= ${ninetyDaysFromNow} & category = 0 & hypes >= 3;`;
-      sortClause = 'sort first_release_date asc;';
+      whereClause = `where first_release_date > ${now} & first_release_date <= ${ninetyDaysFromNow};`;
+      sortClause = 'sort hypes desc, first_release_date asc;';
       break;
     case 'top_rated':
       // Highest rated games from the past year
-      whereClause = `where first_release_date >= ${oneYearAgo} & rating >= 80 & rating_count >= 10 & category = 0;`;
+      whereClause = `where first_release_date >= ${oneYearAgo} & rating > 80;`;
       sortClause = 'sort rating desc;';
       break;
     case 'popular':
-      // Popular games from the past 2 years
-      const twoYearsAgo = now - (2 * 365 * 24 * 60 * 60);
-      whereClause = `where first_release_date >= ${twoYearsAgo} & rating >= 75 & rating_count >= 20 & category = 0;`;
+      // Popular games - simplified query
+      whereClause = `where rating_count > 500;`;
       sortClause = 'sort rating_count desc;';
+      break;
+    // Genre-specific queries
+    case 'genre_action':
+      whereClause = `where genres = (${GENRE_IDS.action}) & rating_count > 50;`;
+      sortClause = 'sort rating desc;';
+      break;
+    case 'genre_rpg':
+      whereClause = `where genres = (${GENRE_IDS.rpg}) & rating_count > 50;`;
+      sortClause = 'sort rating desc;';
+      break;
+    case 'genre_adventure':
+      whereClause = `where genres = (${GENRE_IDS.adventure}) & rating_count > 50;`;
+      sortClause = 'sort rating desc;';
+      break;
+    case 'genre_shooter':
+      whereClause = `where genres = (${GENRE_IDS.shooter}) & rating_count > 50;`;
+      sortClause = 'sort rating desc;';
+      break;
+    case 'genre_indie':
+      whereClause = `where genres = (${GENRE_IDS.indie}) & rating_count > 50;`;
+      sortClause = 'sort rating desc;';
+      break;
+    case 'genre_strategy':
+      whereClause = `where genres = (${GENRE_IDS.strategy}) & rating_count > 50;`;
+      sortClause = 'sort rating desc;';
       break;
     default:
       return [];
@@ -492,7 +527,9 @@ serve(async (req: Request) => {
     if (queryType && queryType !== 'search') {
       try {
         const token = await getTwitchToken();
+        console.log('Got Twitch token for query:', queryType);
         const games = await queryGamesByCriteria(queryType, limit, token);
+        console.log('Query result count:', games.length);
         
         // Process each game for high-quality images
         const processedGames = games.map(processGameData);
@@ -504,7 +541,7 @@ serve(async (req: Request) => {
       } catch (error) {
         console.error('Query by criteria error:', error);
         return new Response(
-          JSON.stringify({ success: true, data: [], message: 'Query failed' }),
+          JSON.stringify({ success: false, data: [], error: error instanceof Error ? error.message : 'Query failed' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }

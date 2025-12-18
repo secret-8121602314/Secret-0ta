@@ -12,7 +12,7 @@
 // - Free: 0 grounding calls (but 3 unreleased game tabs)
 // - Pro/Vanguard: 20 grounding calls per month
 // - Separate from ai_message pool (30/month)
-// - Used for fetching info about unreleased games (post Jan 2025)
+// - Used for fetching info about games released after AI knowledge cutoff
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -282,7 +282,7 @@ serve(async (req) => {
     }
 
     // Call Gemini API
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`;
     
     const geminiPayload: any = {
       contents,

@@ -164,7 +164,7 @@ export async function validateCorrection(
           { role: 'system', content: VALIDATION_SYSTEM_PROMPT },
           { role: 'user', content: buildValidationUserPrompt(originalResponse, correctionText, gameTitle) },
         ],
-        model: 'gemini-2.0-flash',
+        model: 'gemini-3-flash-preview',
         temperature: 0.1,
         maxTokens: 200,
       },
