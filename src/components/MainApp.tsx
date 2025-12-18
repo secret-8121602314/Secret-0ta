@@ -133,6 +133,7 @@ const MainApp: React.FC<MainAppProps> = ({
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false); // Show loading during logout
   const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([]);
   
   // Log suggestion changes (dev mode only, no expensive stack traces)
@@ -664,6 +665,9 @@ const MainApp: React.FC<MainAppProps> = ({
       // ✅ CRITICAL: Set logout flag to prevent loadData from running during logout
       isLoggingOutRef.current = true;
       
+      // ✅ UI FIX: Show loading screen immediately to prevent flash of chat screen
+      setIsLoggingOut(true);
+      
       // Reset loading guard refs so next login can initialize properly
       isLoadingConversationsRef.current = false;
       hasLoadedConversationsRef.current = false;
@@ -689,6 +693,7 @@ const MainApp: React.FC<MainAppProps> = ({
       // The 100ms delay was causing a race condition where User B's auth state
       // would arrive during the delay window and be blocked from setting currentUserId
       isLoggingOutRef.current = false;
+      setIsLoggingOut(false);
       console.log('🔍 [MainApp] Logout flag cleared - new user can now load');
     };
 
@@ -4405,6 +4410,11 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
       window.removeEventListener('otakon:network-restored', handleNetworkRestored);
     };
   }, [activeConversation]);
+
+  // Show loading screen during logout to prevent flash of chat screen
+  if (isLoggingOut) {
+    return <AppLoadingScreen size="md" fullScreen={false} />;
+  }
 
   if (isInitializing && (!user || Object.keys(conversations).length === 0)) {
     return <AppLoadingScreen size="md" fullScreen={false} />;
