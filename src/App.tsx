@@ -557,9 +557,14 @@ function App() {
     if ('serviceWorker' in navigator) {
       const handleServiceWorkerMessage = (event: MessageEvent) => {
         if (event.data && event.data.type === 'AUTH_CACHE_CLEARED') {
-          console.log('📱 [PWA] Service worker cleared auth cache');
-          // Service worker has cleared caches, we're ready for next login
-          // No action needed here as PWA already reloaded via confirmLogout
+          console.log('📱 [PWA/Browser] Service worker cleared auth cache - ensuring clean state');
+          // ✅ CROSS-INSTANCE FIX: Clear state even if this is a browser tab
+          // This prevents stale state when browser login screen is open and PWA logs out
+          setIsInitializing(false);
+          setAuthState({ user: null, isLoading: false, error: null });
+          // Dispatch event to MainApp to clear its state too
+          window.dispatchEvent(new CustomEvent('otakon:caches-cleared'));
+          console.log('📱 [PWA/Browser] State cleared after SW cache clear');
         } else if (event.data && event.data.type === 'CHECK_LOGOUT_FLAG') {
           // ✅ PWA BLACK SCREEN FIX: Service worker asking if we just logged out
           // Respond through the port provided
