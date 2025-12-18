@@ -1669,7 +1669,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 <ul className="space-y-3 mb-8">
                                     <FeatureListItem>20 Text | 15 Image Queries/month</FeatureListItem>
                                     <FeatureListItem>4 Web Searches/month</FeatureListItem>
-                                    <FeatureListItem>Knowledge up to {FEATURE_FLAGS.KNOWLEDGE_CUTOFF.displayLong}</FeatureListItem>
+                                    <FeatureListItem>Knowledge up to January 2025</FeatureListItem>
                                     <FeatureListItem>Cross-platform sync (PC & Mobile)</FeatureListItem>
                                     <FeatureListItem>Real-time progress tracking</FeatureListItem>
                                     <FeatureListItem>7-day Pro trial included</FeatureListItem>
