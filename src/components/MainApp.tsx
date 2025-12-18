@@ -4623,8 +4623,8 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
             </div>
           )}
 
-          {/* Google AdSense Banner - Always show for free users */}
-          {currentUser.tier === 'free' && (
+          {/* Google AdSense Banner - Hidden for now, will be updated later */}
+          {false && currentUser.tier === 'free' && (
             <AdBanner />
           )}
 

@@ -768,8 +768,8 @@ export class SupabaseService {
       return {
         textCount: data.text_count || 0,
         imageCount: data.image_count || 0,
-        textLimit: data.text_limit || 55,
-        imageLimit: data.image_limit || 25,
+        textLimit: data.text_limit || 20,
+        imageLimit: data.image_limit || 15,
         lastReset: new Date(data.last_reset || Date.now())
       };
     } catch (error) {

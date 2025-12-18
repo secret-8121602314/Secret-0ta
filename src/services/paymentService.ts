@@ -198,8 +198,8 @@ class PaymentService implements IPaymentService {
         currency: 'USD',
         interval: 'month' as const,
         features: [
-          '55 text queries/month',
-          '25 image queries/month',
+          '20 text queries/month',
+          '15 image queries/month',
           'Basic conversation features',
           'Standard response quality'
         ]

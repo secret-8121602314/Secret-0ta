@@ -186,7 +186,7 @@ export const PRICING_COPY = {
       price: '$0',
       period: '/month',
       features: [
-        '55 Text | 25 Image Queries/month',
+        '20 Text | 15 Image Queries/month',
         'Knowledge till January 2025',
         'Standard AI Model',
         'PC-to-Mobile Sync',

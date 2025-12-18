@@ -18,9 +18,9 @@ const getSupabaseService = () => {
 
 // ✅ QUERY-BASED LIMITS: Conversations are unlimited for all tiers.
 // Limits are based on queries (text vs image) per month, tracked in database:
-// - Free: 55 text + 25 image queries/month
-// - Pro: 1,583 text + 328 image queries/month
-// - Vanguard Pro: 1,583 text + 328 image queries/month
+// - Free: 20 text + 15 image queries/month
+// - Pro: 350 text + 150 image queries/month
+// - Vanguard Pro: 350 text + 150 image queries/month
 // See: users table (text_count, image_count, text_limit, image_limit, last_reset)
 
 export class ConversationService {
@@ -71,13 +71,13 @@ export class ConversationService {
       }
 
       const textCount = user.textCount || 0;
-      const textLimit = user.textLimit || 55; // Default to free tier
+      const textLimit = user.textLimit || 20; // Default to free tier
       
       if (textCount >= textLimit) {
         const tier = user.tier || 'free';
         return {
           allowed: false,
-          reason: `You've used all ${textLimit} text queries this month. ${tier === 'free' ? 'Upgrade to Pro for 1,583 queries!' : 'Your queries will reset next month.'}`,
+          reason: `You've used all ${textLimit} text queries this month. ${tier === 'free' ? 'Upgrade to Pro for 350 queries!' : 'Your queries will reset next month.'}`,
           used: textCount,
           limit: textLimit
         };
@@ -102,7 +102,7 @@ export class ConversationService {
       }
 
       const imageCount = user.imageCount || 0;
-      const imageLimit = user.imageLimit || 25; // Default to free tier
+      const imageLimit = user.imageLimit || 15; // Default to free tier
       
       if (imageCount >= imageLimit) {
         const tier = user.tier || 'free';
@@ -704,8 +704,8 @@ export class ConversationService {
     if (!user) {
       // Return defaults if no user
       return {
-        textQueries: { current: 0, limit: 55, tier },
-        imageQueries: { current: 0, limit: 25, tier },
+        textQueries: { current: 0, limit: 20, tier },
+        imageQueries: { current: 0, limit: 15, tier },
         conversations: { current: 0, tier }
       };
     }
@@ -713,12 +713,12 @@ export class ConversationService {
     return {
       textQueries: {
         current: user.textCount || 0,
-        limit: user.textLimit || 55,
+        limit: user.textLimit || 20,
         tier
       },
       imageQueries: {
         current: user.imageCount || 0,
-        limit: user.imageLimit || 25,
+        limit: user.imageLimit || 15,
         tier
       },
       conversations: {
