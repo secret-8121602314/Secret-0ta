@@ -286,7 +286,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 Usage resets on the 1st of each month
                 {user.tier === 'free' && (
                   <div className="mt-2 text-primary font-medium text-xs sm:text-sm">
-                    ⭐ Upgrade to Pro for 1,583 text + 328 image queries!
+                    ⭐ Upgrade to Pro for 350 text + 150 image queries!
                   </div>
                 )}
               </div>

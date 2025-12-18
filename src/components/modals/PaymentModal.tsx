@@ -107,11 +107,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             <ul className="space-y-1 sm:space-y-1.5 text-xs sm:text-sm">
               <li className="flex items-start gap-1 sm:gap-1.5 text-text-secondary">
                 <CheckCircleIcon className="w-3 h-3 mt-0.5 text-[#FFAB40] flex-shrink-0" />
-                <span>1,583 text queries</span>
+                <span>350 text queries</span>
               </li>
               <li className="flex items-start gap-1 sm:gap-1.5 text-text-secondary">
                 <CheckCircleIcon className="w-3 h-3 mt-0.5 text-[#FFAB40] flex-shrink-0" />
-                <span>328 image queries</span>
+                <span>150 image queries</span>
               </li>
               <li className="flex items-start gap-1 sm:gap-1.5 text-text-secondary">
                 <CheckCircleIcon className="w-3 h-3 mt-0.5 text-[#FFAB40] flex-shrink-0" />
