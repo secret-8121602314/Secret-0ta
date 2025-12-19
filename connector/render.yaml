@@ -1,0 +1,15 @@
+services:
+  - name: otakon-relay
+    type: web
+    env: node
+    repo: https://github.com/readmet3xt/otakon-v2
+    branch: master
+    buildCommand: "npm install"
+    startCommand: "node index.js"
+    healthCheckPath: /
+    healthCheckGracePeriodSeconds: 120
+    envVars:
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: otakon-redis

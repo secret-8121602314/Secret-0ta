@@ -1,0 +1,188 @@
+app:341 ✅ [Analytics] Google Analytics 4 initialized
+app:351 ✅ [Analytics] Microsoft Clarity initialized
+app:512 [PWA] Current path: /app
+app:513 [PWA] Has auth token: false
+app:514 [PWA] Should show PWA: null
+app:523 🚫 [PWA] Skipping manifest - landing page without auth
+client:789 [vite] connecting...
+app:350  GET https://www.clarity.ms/tag/u9sbvr97qi net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ app:350
+(anonymous) @ app:355
+client:912 [vite] connected.
+chunk-TH7NCS4R.js?v=a71d192a:21609 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+App.tsx:20 🚀🚀🚀 APP.TSX LOADED - PWA FIXES VERSION 🚀🚀🚀
+pwaRedirectPrevention.ts:73 📱 [PWA Detection] {isPWAMode: false, isPWAInstalled: false, shouldPreventRedirect: false, displayMode: 'browser', isIOS: false, …}
+app:576 🚫 [SW] Skipping service worker - not on login page or authenticated
+react-router-dom.js?v=a71d192a:4413 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+warnOnce @ react-router-dom.js?v=a71d192a:4413
+logDeprecation @ react-router-dom.js?v=a71d192a:4416
+logV6DeprecationWarnings @ react-router-dom.js?v=a71d192a:4419
+(anonymous) @ react-router-dom.js?v=a71d192a:5235
+commitHookEffectListMount @ chunk-TH7NCS4R.js?v=a71d192a:16963
+commitPassiveMountOnFiber @ chunk-TH7NCS4R.js?v=a71d192a:18206
+commitPassiveMountEffects_complete @ chunk-TH7NCS4R.js?v=a71d192a:18179
+commitPassiveMountEffects_begin @ chunk-TH7NCS4R.js?v=a71d192a:18169
+commitPassiveMountEffects @ chunk-TH7NCS4R.js?v=a71d192a:18159
+flushPassiveEffectsImpl @ chunk-TH7NCS4R.js?v=a71d192a:19543
+flushPassiveEffects @ chunk-TH7NCS4R.js?v=a71d192a:19500
+(anonymous) @ chunk-TH7NCS4R.js?v=a71d192a:19381
+workLoop @ chunk-TH7NCS4R.js?v=a71d192a:197
+flushWork @ chunk-TH7NCS4R.js?v=a71d192a:176
+performWorkUntilDeadline @ chunk-TH7NCS4R.js?v=a71d192a:384
+supabase.ts:47 🔐 [Supabase] DOM styles cleaned on SIGNED_IN
+cacheService.ts:101 [CacheService] Cache MISS (memory), trying Supabase: user:3fcc2cde-58da-42c2-8899-12e6a5332764
+imagePreloader.ts:408 [ImagePreloader] Starting preload for authenticated/app context
+imagePreloader.ts:337 [ImagePreloader] Starting full image preload...
+imagePreloader.ts:200 [ImagePreloader] Loaded from IndexedDB: /images/otagon-logo.webp
+imagePreloader.ts:200 [ImagePreloader] Loaded from IndexedDB: /images/mascot/2.webp
+imagePreloader.ts:200 [ImagePreloader] Loaded from IndexedDB: /images/mascot/1.webp
+imagePreloader.ts:200 [ImagePreloader] Loaded from IndexedDB: /images/mascot/9.webp
+imagePreloader.ts:200 [ImagePreloader] Loaded from IndexedDB: /images/mascot/6.webp
+imagePreloader.ts:200 [ImagePreloader] Loaded from IndexedDB: /images/mascot/8.webp
+imagePreloader.ts:200 [ImagePreloader] Loaded from IndexedDB: /images/mascot/5.2.webp
+imagePreloader.ts:200 [ImagePreloader] Loaded from IndexedDB: /images/mascot/5.1.webp
+imagePreloader.ts:200 [ImagePreloader] Loaded from IndexedDB: /images/mascot/11.webp
+imagePreloader.ts:200 [ImagePreloader] Loaded from IndexedDB: /images/mascot/7.webp
+imagePreloader.ts:200 [ImagePreloader] Loaded from IndexedDB: /images/mascot/10.webp
+imagePreloader.ts:200 [ImagePreloader] Loaded from IndexedDB: /images/mascot/vanguard-user.webp
+imagePreloader.ts:200 [ImagePreloader] Loaded from IndexedDB: /images/mascot/4.webp
+imagePreloader.ts:200 [ImagePreloader] Loaded from IndexedDB: /images/mascot/pro-user.webp
+imagePreloader.ts:348 [ImagePreloader] All images preloaded in 149ms (13/13 in-memory cached)
+cacheService.ts:124 [CacheService] Cache HIT (Supabase): user:3fcc2cde-58da-42c2-8899-12e6a5332764
+authService.ts:272 🔍 [AuthService] Loaded user from cache: {email: 'mdamkhan@gmail.com', hasSeenWelcomeGuide: true, authUserId: '3fcc2cde-58da-42c2-8899-12e6a5332764'}
+index.tsx:91 🔍 [DEBUG authLoader] Current state: {pathname: '/app', onboardingStatus: 'complete', hasProfileSetup: true, onboardingCompleted: true, timestamp: '2025-12-19T18:27:27.854Z'}
+MainApp.tsx:320 [MainApp] No user authUserId, setting quota to 0
+MainApp.tsx:614 📸 [MainApp] queuedScreenshot state changed: {hasQueuedScreenshot: false, queuedScreenshotLength: undefined, queuedScreenshotPreview: undefined}
+MainApp.tsx:716 🔍 [MainApp] Auth state change detected: {previousUserId: null, newUserId: '3fcc2cde-58da-42c2-8899-12e6a5332764', currentTier: undefined, newTier: 'pro', isLoading: false, …}
+MainApp.tsx:730 🔍 [MainApp] User state change: {userIdChanged: true, tierChanged: undefined, previousTier: undefined, newTier: 'pro', previousUserId: null, …}
+MainApp.tsx:743 ✅ [MainApp] User state updated from authService subscription
+gamingExplorerStorage.ts:215 [LibraryStorage] Loading from Supabase...
+gamingExplorerStorage.ts:490 [TimelineStorage] Loading from Supabase...
+MainApp.tsx:829 🔍 [MainApp] Loading conversations (attempt 1 )
+MainApp.tsx:1090 🔄 [TierChange] Effect triggered - currentTier: free previousTier: null isInitializing: true hasInitialized: false
+MainApp.tsx:1097 🔄 [TierChange] Initial tier set: free
+MainApp.tsx:1289 🎮 [IGDB] Effect triggered: {hasActiveConv: false, gameTitle: undefined, isGameHub: undefined, convId: undefined, prevFetched: null}
+MainApp.tsx:1299 🎮 [IGDB] Skipping fetch - no gameTitle or is Game Hub
+MainApp.tsx:1371 🔗 [MainApp] Found stored code, triggering reconnection via parent...
+MainApp.tsx:1377 🔗 [MainApp] Using propOnConnect for reconnection
+MainAppRoute.tsx:188 [MainAppRoute] handleConnect called with code: 841861
+MainAppRoute.tsx:82 [MainAppRoute] Found saved connection code, attempting to reconnect...
+MainApp.tsx:320 [MainApp] No user authUserId, setting quota to 0
+MainApp.tsx:614 📸 [MainApp] queuedScreenshot state changed: {hasQueuedScreenshot: false, queuedScreenshotLength: undefined, queuedScreenshotPreview: undefined}
+MainApp.tsx:716 🔍 [MainApp] Auth state change detected: {previousUserId: null, newUserId: '3fcc2cde-58da-42c2-8899-12e6a5332764', currentTier: undefined, newTier: 'pro', isLoading: false, …}
+MainApp.tsx:730 🔍 [MainApp] User state change: {userIdChanged: true, tierChanged: undefined, previousTier: undefined, newTier: 'pro', previousUserId: null, …}
+MainApp.tsx:743 ✅ [MainApp] User state updated from authService subscription
+MainApp.tsx:1090 🔄 [TierChange] Effect triggered - currentTier: free previousTier: free isInitializing: true hasInitialized: false
+MainApp.tsx:1104 🔄 [TierChange] Skipping tier change during initialization
+MainApp.tsx:1289 🎮 [IGDB] Effect triggered: {hasActiveConv: false, gameTitle: undefined, isGameHub: undefined, convId: undefined, prevFetched: null}
+MainApp.tsx:1299 🎮 [IGDB] Skipping fetch - no gameTitle or is Game Hub
+MainApp.tsx:1371 🔗 [MainApp] Found stored code, triggering reconnection via parent...
+MainApp.tsx:1377 🔗 [MainApp] Using propOnConnect for reconnection
+MainAppRoute.tsx:188 [MainAppRoute] handleConnect called with code: 841861
+MainAppRoute.tsx:82 [MainAppRoute] Found saved connection code, attempting to reconnect...
+ttsService.ts:225 🎵 [TTS] Setting up media session
+ttsService.ts:248 ✅ [TTS] Media session handlers registered
+ttsService.ts:70 🔊 [TTS] Audio context initialized
+ttsService.ts:84 🔇 [TTS] Silent audio initialized for background playback
+MainApp.tsx:127 🔄 [MainApp] User changed: f2bb868f-6e0e-41fc-941a-ed903bdb06f6 tier: pro
+MainApp.tsx:326 [MainApp] Fetching quota for user: 3fcc2cde-58da-42c2-8899-12e6a5332764 tier: pro
+groundingControlService.ts:579 [GroundingControl] getRemainingQuota called with: {authUserId: '3fcc2cde-58da-42c2-8899-12e6a5332764', tier: 'pro'}
+groundingControlService.ts:403 [GroundingControl] getGroundingUsage called for: 3fcc2cde-58da-42c2-8899-12e6a5332764
+MainApp.tsx:716 🔍 [MainApp] Auth state change detected: {previousUserId: '3fcc2cde-58da-42c2-8899-12e6a5332764', newUserId: '3fcc2cde-58da-42c2-8899-12e6a5332764', currentTier: 'pro', newTier: 'pro', isLoading: false, …}
+MainApp.tsx:1090 🔄 [TierChange] Effect triggered - currentTier: pro previousTier: free isInitializing: true hasInitialized: false
+MainApp.tsx:1104 🔄 [TierChange] Skipping tier change during initialization
+websocketService.ts:54 🔗 [WebSocket] Connection opened successfully to wss://otakon-relay.onrender.com/841861
+MainAppRoute.tsx:229 [MainAppRoute] ✅ WebSocket connection opened to relay server, waiting for partner_connected...
+websocketService.ts:65 🔗 [WebSocket] Sent connection_request with code: 841861
+websocketService.ts:100 🔗 [WebSocket] Message received: {type: 'partner_connected', hasDataUrl: false, dataUrlLength: undefined, keys: Array(1)}
+websocketService.ts:151 🔗 [WebSocket] Invoking onMessage handler with data: partner_connected
+MainAppRoute.tsx:33 [MainAppRoute] WebSocket message received: partner_connected {type: 'partner_connected'}
+MainAppRoute.tsx:37 [MainAppRoute] ✅ Partner connected! Setting status to CONNECTED
+websocketService.ts:154 🔗 [WebSocket] Handler completed successfully
+MainApp.tsx:632 📸 [MainApp] Connection is CONNECTED - updating WebSocket handlers to receive screenshots
+websocketService.ts:264 🔗 [WebSocket] Handlers updated
+groundingControlService.ts:458 [GroundingControl] Raw data from DB: null
+groundingControlService.ts:462 [GroundingControl] No usage record found for this month - user has full quota
+groundingControlService.ts:582 [GroundingControl] getGroundingUsage returned: {gameKnowledge: 0, aiMessages: 0, total: 0}
+groundingControlService.ts:585 [GroundingControl] Limits for tier: {gameKnowledge: 20, aiMessages: 30}
+MainApp.tsx:332 [MainApp] Quota received: {gameKnowledge: {…}, aiMessages: {…}}
+MainApp.tsx:333 [MainApp] Setting aiMessagesQuota to: 30
+MainApp.tsx:838 🔍 [MainApp] Game Hub from ensureGameHubExists: {id: 'game-hub', title: 'Game Hub', isGameHub: true}
+MainApp.tsx:847 🔍 [MainApp] Conversations from getConversations: ['game-hub']
+MainApp.tsx:848 🔍 [MainApp] Conversation count: 1
+ChatInterface.tsx:731 📸 [ChatInterface] queuedImages prop changed: {count: 0, isManualUploadMode: true, firstImagePreview: undefined}
+MainApp.tsx:1090 🔄 [TierChange] Effect triggered - currentTier: pro previousTier: pro isInitializing: true hasInitialized: false
+MainApp.tsx:1104 🔄 [TierChange] Skipping tier change during initialization
+ChatInterface.tsx:731 📸 [ChatInterface] queuedImages prop changed: {count: 0, isManualUploadMode: true, firstImagePreview: undefined}
+MainApp.tsx:952 🔍 [MainApp] Initialization complete with active conversation: game-hub
+MainApp.tsx:958 🔍 [MainApp] Welcome guide check: {hasUser: true, hasSeenWelcomeGuide: true, userEmail: 'mdamkhan@gmail.com', authUserId: '3fcc2cde-58da-42c2-8899-12e6a5332764'}
+ChatInterface.tsx:731 📸 [ChatInterface] queuedImages prop changed: {count: 0, isManualUploadMode: true, firstImagePreview: undefined}
+MainApp.tsx:142 🎯 [MainApp] Suggestions (4): (3) ["What's the latest gaming news?", 'Which games are releasing soon?', 'What are the latest game reviews?']
+MainApp.tsx:401 📌 [MainApp] No saved suggestions - using fallback: (4) ["What's the latest gaming news?", 'Which games are releasing soon?', 'What are the latest game reviews?', 'Show me the hottest new game trailers.']
+MainApp.tsx:632 📸 [MainApp] Connection is CONNECTED - updating WebSocket handlers to receive screenshots
+websocketService.ts:264 🔗 [WebSocket] Handlers updated
+MainApp.tsx:1090 🔄 [TierChange] Effect triggered - currentTier: pro previousTier: pro isInitializing: false hasInitialized: false
+MainApp.tsx:1111 🔄 [TierChange] First user load - tier initialized to: pro
+MainApp.tsx:1202 ℹ️ [MainApp] Skipping realtime subscription for system conversation: game-hub
+MainApp.tsx:1289 🎮 [IGDB] Effect triggered: {hasActiveConv: true, gameTitle: undefined, isGameHub: true, convId: 'game-hub', prevFetched: null}
+MainApp.tsx:1299 🎮 [IGDB] Skipping fetch - no gameTitle or is Game Hub
+websocketService.ts:100 🔗 [WebSocket] Message received: {type: 'screenshot-multi', hasDataUrl: false, dataUrlLength: undefined, keys: Array(2)}
+websocketService.ts:151 🔗 [WebSocket] Invoking onMessage handler with data: screenshot-multi
+MainApp.tsx:410 📸 [MainApp] handleWebSocketMessage called with type: screenshot-multi
+MainApp.tsx:467 📸 [MainApp] screenshot-multi received from PC client
+MainApp.tsx:472 📸 [MainApp] Checking tier access - userTier: pro user: mdamkhan@gmail.com
+MainApp.tsx:485 📸 [MainApp] Processing 5 buffered screenshots from F2
+websocketService.ts:154 🔗 [WebSocket] Handler completed successfully
+websocketService.ts:100 🔗 [WebSocket] Message received: {type: 'connection_alive', hasDataUrl: false, dataUrlLength: undefined, keys: Array(2)}
+websocketService.ts:151 🔗 [WebSocket] Invoking onMessage handler with data: connection_alive
+MainApp.tsx:410 📸 [MainApp] handleWebSocketMessage called with type: connection_alive
+MainApp.tsx:415 📸 [MainApp] Connection confirmation received (handled by MainAppRoute)
+websocketService.ts:154 🔗 [WebSocket] Handler completed successfully
+websocketService.ts:100 🔗 [WebSocket] Message received: {type: 'keepalive', hasDataUrl: false, dataUrlLength: undefined, keys: Array(2)}
+websocketService.ts:151 🔗 [WebSocket] Invoking onMessage handler with data: keepalive
+MainApp.tsx:410 📸 [MainApp] handleWebSocketMessage called with type: keepalive
+websocketService.ts:154 🔗 [WebSocket] Handler completed successfully
+ChatInterface.tsx:731 📸 [ChatInterface] queuedImages prop changed: {count: 0, isManualUploadMode: true, firstImagePreview: undefined}
+MainApp.tsx:614 📸 [MainApp] queuedScreenshot state changed: {hasQueuedScreenshot: true, queuedScreenshotLength: 996282, queuedScreenshotPreview: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AA'}
+ChatInterface.tsx:731 📸 [ChatInterface] queuedImages prop changed: {count: 0, isManualUploadMode: true, firstImagePreview: undefined}
+websocketService.ts:100 🔗 [WebSocket] Message received: {type: 'ping', hasDataUrl: false, dataUrlLength: undefined, keys: Array(2)}
+websocketService.ts:151 🔗 [WebSocket] Invoking onMessage handler with data: ping
+MainApp.tsx:410 📸 [MainApp] handleWebSocketMessage called with type: ping
+websocketService.ts:154 🔗 [WebSocket] Handler completed successfully
+websocketService.ts:100 🔗 [WebSocket] Message received: {type: 'health_check', hasDataUrl: false, dataUrlLength: undefined, keys: Array(2)}
+websocketService.ts:151 🔗 [WebSocket] Invoking onMessage handler with data: health_check
+MainApp.tsx:410 📸 [MainApp] handleWebSocketMessage called with type: health_check
+websocketService.ts:154 🔗 [WebSocket] Handler completed successfully
+websocketService.ts:100 🔗 [WebSocket] Message received: {type: 'keepalive', hasDataUrl: false, dataUrlLength: undefined, keys: Array(2)}
+websocketService.ts:151 🔗 [WebSocket] Invoking onMessage handler with data: keepalive
+MainApp.tsx:410 📸 [MainApp] handleWebSocketMessage called with type: keepalive
+websocketService.ts:154 🔗 [WebSocket] Handler completed successfully
+websocketService.ts:100 🔗 [WebSocket] Message received: {type: 'connection_alive', hasDataUrl: false, dataUrlLength: undefined, keys: Array(2)}
+websocketService.ts:151 🔗 [WebSocket] Invoking onMessage handler with data: connection_alive
+MainApp.tsx:410 📸 [MainApp] handleWebSocketMessage called with type: connection_alive
+MainApp.tsx:415 📸 [MainApp] Connection confirmation received (handled by MainAppRoute)
+websocketService.ts:154 🔗 [WebSocket] Handler completed successfully
+ChatInterface.tsx:731 📸 [ChatInterface] queuedImages prop changed: {count: 0, isManualUploadMode: true, firstImagePreview: undefined}
+websocketService.ts:100 🔗 [WebSocket] Message received: {type: 'keepalive', hasDataUrl: false, dataUrlLength: undefined, keys: Array(2)}
+websocketService.ts:151 🔗 [WebSocket] Invoking onMessage handler with data: keepalive
+MainApp.tsx:410 📸 [MainApp] handleWebSocketMessage called with type: keepalive
+websocketService.ts:154 🔗 [WebSocket] Handler completed successfully
+websocketService.ts:100 🔗 [WebSocket] Message received: {type: 'screenshot_success', hasDataUrl: false, dataUrlLength: undefined, keys: Array(2)}
+websocketService.ts:146 🔗 [WebSocket] Full screenshot message: {"type":"screenshot_success","success":{"mode":"single","count":1,"timestamp":1766168865589,"details":{"quality":"high","addedToBuffer":true,"displayIndex":0}}}
+websocketService.ts:151 🔗 [WebSocket] Invoking onMessage handler with data: screenshot_success
+MainApp.tsx:410 📸 [MainApp] handleWebSocketMessage called with type: screenshot_success
+websocketService.ts:154 🔗 [WebSocket] Handler completed successfully
+websocketService.ts:100 🔗 [WebSocket] Message received: {type: 'screenshot-single', hasDataUrl: false, dataUrlLength: undefined, keys: Array(2)}
+websocketService.ts:151 🔗 [WebSocket] Invoking onMessage handler with data: screenshot-single
+MainApp.tsx:410 📸 [MainApp] handleWebSocketMessage called with type: screenshot-single
+MainApp.tsx:423 📸 [MainApp] screenshot-single received from PC client
+MainApp.tsx:428 📸 [MainApp] Processing single screenshot from F1
+MainApp.tsx:440 📸 [MainApp] Screenshot validated: {sizeMB: 0.48, length: 499910}
+websocketService.ts:154 🔗 [WebSocket] Handler completed successfully
+ChatInterface.tsx:731 📸 [ChatInterface] queuedImages prop changed: {count: 0, isManualUploadMode: true, firstImagePreview: undefined}
+MainApp.tsx:614 📸 [MainApp] queuedScreenshot state changed: {hasQueuedScreenshot: true, queuedScreenshotLength: 499910, queuedScreenshotPreview: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB4AA'}
+ChatInterface.tsx:731 📸 [ChatInterface] queuedImages prop changed: {count: 0, isManualUploadMode: true, firstImagePreview: undefined}
+websocketService.ts:100 🔗 [WebSocket] Message received: {type: 'keepalive', hasDataUrl: false, dataUrlLength: undefined, keys: Array(2)}
+websocketService.ts:151 🔗 [WebSocket] Invoking onMessage handler with data: keepalive
+MainApp.tsx:410 📸 [MainApp] handleWebSocketMessage called with type: keepalive
+websocketService.ts:154 🔗 [WebSocket] Handler completed successfully

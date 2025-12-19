@@ -1,3 +1,5 @@
+// FORCE_RELOAD_DEC20
+console.log('MAINAPP VERSION DEC20-002');
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { User, Conversation, Conversations, newsPrompts, ConnectionStatus, SubTab, PlayerProfile, AIResponse } from '../types';
 import { GAME_HUB_ID } from '../constants';
@@ -207,7 +209,7 @@ const MainApp: React.FC<MainAppProps> = ({
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   
   // ✅ NEW: Queued screenshot from WebSocket (manual mode)
-  const [queuedScreenshot, setQueuedScreenshot] = useState<string | null>(null);
+  const [queuedScreenshots, setQueuedScreenshots] = useState<string[]>([]);
   
   // ✅ NEW: Track image source for conditional migration
   // ✅ PERFORMANCE: Loading guards to prevent concurrent conversation loading
@@ -444,7 +446,7 @@ const MainApp: React.FC<MainAppProps> = ({
         
         // Process screenshot same way as legacy 'screenshot' type
         if (isManualUploadMode) {
-          setQueuedScreenshot(dataUrl);
+          setQueuedScreenshots(prev => [...prev, dataUrl]);
           toastService.info('Screenshot queued. Review and send when ready.');
           return;
         }
@@ -452,7 +454,7 @@ const MainApp: React.FC<MainAppProps> = ({
         // Auto mode: Send immediately
         if (activeConversation && handleSendMessageRef.current) {
           handleSendMessageRef.current("", dataUrl);
-          setQueuedScreenshot(null);
+          setQueuedScreenshots([]);
         } else {
           toastService.warning('No active conversation. Please select or create a conversation first.');
         }
@@ -492,7 +494,7 @@ const MainApp: React.FC<MainAppProps> = ({
           // ✅ FIX: In manual mode, queue all screenshots (user can send one by one)
           // Store all screenshots and let user send them sequentially
           if (images.length > 0) {
-            setQueuedScreenshot(images[0]); // Queue first one for immediate review
+            setQueuedScreenshots(images); // Queue first one for immediate review
             // Store remaining screenshots in a ref for sequential processing
             if (images.length > 1) {
               toastService.info(`${images.length} screenshots received. First one queued - send it to queue the next!`);
@@ -572,7 +574,7 @@ const MainApp: React.FC<MainAppProps> = ({
       
       if (isManualUploadMode) {
         // ✅ FIXED: In manual mode, queue the image for ChatInterface (not text input!)
-                setQueuedScreenshot(dataUrl);
+                setQueuedScreenshots(prev => [...prev, dataUrl]);
                 toastService.info('Screenshot queued. Review and send when ready.');
         return; // Don't send automatically in manual mode
       }
@@ -581,7 +583,7 @@ const MainApp: React.FC<MainAppProps> = ({
       if (activeConversation && handleSendMessageRef.current) {
         handleSendMessageRef.current("", dataUrl);
         // Clear the queued screenshot immediately after sending in auto mode
-        setQueuedScreenshot(null);
+        setQueuedScreenshots([]);
       } else {
                 toastService.warning('No active conversation. Please select or create a conversation first.');
       }
@@ -590,7 +592,7 @@ const MainApp: React.FC<MainAppProps> = ({
 
   // Clear queued screenshot when it's been used and queue next pending one
   const handleScreenshotQueued = () => {
-    setQueuedScreenshot(null);
+    setQueuedScreenshots([]);
     
     // ✅ FIX: If there are pending screenshots from F2 batch, queue the next one
     if (pendingScreenshotsRef.current.length > 0) {
@@ -598,7 +600,7 @@ const MainApp: React.FC<MainAppProps> = ({
       if (nextScreenshot) {
         // Small delay to let UI update before showing next screenshot
         setTimeout(() => {
-          setQueuedScreenshot(nextScreenshot);
+          setQueuedScreenshots(prev => prev.slice(1));
           if (pendingScreenshotsRef.current.length > 0) {
             toastService.info(`${pendingScreenshotsRef.current.length + 1} screenshots remaining.`);
           } else {
@@ -609,14 +611,14 @@ const MainApp: React.FC<MainAppProps> = ({
     }
   };
 
-  // Debug: Log when queuedScreenshot changes
+  // Debug: Log when queuedScreenshots changes
   useEffect(() => {
-    console.log('📸 [MainApp] queuedScreenshot state changed:', {
-      hasQueuedScreenshot: !!queuedScreenshot,
-      queuedScreenshotLength: queuedScreenshot?.length,
-      queuedScreenshotPreview: queuedScreenshot?.substring(0, 50)
+    console.log('📸 [MainApp] queuedScreenshots state changed:', {
+      queuedScreenshotsCount: queuedScreenshots.length,
+      firstImageLength: queuedScreenshots[0]?.length,
+      firstImagePreview: queuedScreenshots[0]?.substring(0, 50)
     });
-  }, [queuedScreenshot]);
+  }, [queuedScreenshots]);
 
   // Expose the message handler to parent
   useEffect(() => {
@@ -678,7 +680,7 @@ const MainApp: React.FC<MainAppProps> = ({
       setActiveConversation(null);
       setIsInitializing(true);
       setSuggestedPrompts([]);
-      setQueuedScreenshot(null);
+      setQueuedScreenshots([]);
       
       // ✅ FIX: Reset current user ID to allow new user detection
       setCurrentUserId(null);
@@ -2495,7 +2497,7 @@ const MainApp: React.FC<MainAppProps> = ({
     
     // Queue the image if present
     if (imageUrl) {
-      setQueuedScreenshot(imageUrl);
+      setQueuedScreenshots([imageUrl]);
       console.log('✅ [MainApp] Queued image for re-send:', imageUrl.substring(0, 50) + '...');
     }
     
@@ -4734,7 +4736,8 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                   onToggleActiveSession={handleToggleActiveSession}
                   initialMessage={currentInputMessage}
                   onMessageChange={handleInputMessageChange}
-                  queuedImage={queuedScreenshot}
+                  queuedImages={queuedScreenshots}
+                  onRemoveQueuedImage={(index) => setQueuedScreenshots(prev => prev.filter((_, i) => i !== index))}
                   onImageQueued={handleScreenshotQueued}
                   isSidebarOpen={sidebarOpen}
                   onDeleteQueuedMessage={handleDeleteQueuedMessage}
@@ -5003,3 +5006,4 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
 };
 
 export default MainApp;
+

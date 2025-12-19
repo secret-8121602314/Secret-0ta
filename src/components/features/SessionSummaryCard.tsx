@@ -170,23 +170,23 @@ export const parseSessionSummaryMessage = (content: string): SessionSummaryCardP
   const objectiveMatch = content.match(/\*\*Current Focus:\*\*\s*([^\n]+)/);
   const currentObjective = objectiveMatch ? objectiveMatch[1].trim() : undefined;
 
-  // Extract key points/achievements
+  // Extract key points/achievements - updated to match new section names
   const keyPoints: string[] = [];
-  const keyPointsSection = content.match(/\*\*(Key Achievements|Strategies Discussed)[^:]*:\*\*\n([\s\S]*?)(?=\n\n\*\*|\n\*Switching|\*\*Goals|\*\*Current Objectives)/);
+  const keyPointsSection = content.match(/\*\*(Session Activity|Key Achievements|Strategies Discussed)[^:]*:\*\*\n([\s\S]*?)(?=\n\n\*\*|\n\*Switching|\*\*Planning Objectives|\*\*Current Objectives)/);
   if (keyPointsSection) {
-    const points = keyPointsSection[2].match(/[•-]\s*([^\n]+)/g);
+    const points = keyPointsSection[2].match(/[•\-*]\s*([^\n]+)/g);
     if (points) {
-      keyPoints.push(...points.map(p => p.replace(/^[•-]\s*/, '').trim()));
+      keyPoints.push(...points.map(p => p.replace(/^[•\-*]\s*/, '').trim()));
     }
   }
 
-  // Extract objectives
+  // Extract objectives - updated to match new section names
   const objectives: string[] = [];
-  const objectivesSection = content.match(/\*\*(Current Objectives|Goals for Next Session)[^:]*:\*\*\n([\s\S]*?)(?=\n\n\*\*|\n\*Switching|$)/);
+  const objectivesSection = content.match(/\*\*(Current Objectives|Planning Objectives|Goals for Next Session)[^:]*:\*\*\n([\s\S]*?)(?=\n\n\*\*|\n\*Switching|$)/);
   if (objectivesSection) {
-    const objs = objectivesSection[2].match(/[•-]\s*([^\n]+)/g);
+    const objs = objectivesSection[2].match(/[•\-*]\s*([^\n]+)/g);
     if (objs) {
-      objectives.push(...objs.map(o => o.replace(/^[•-]\s*/, '').trim()));
+      objectives.push(...objs.map(o => o.replace(/^[•\-*]\s*/, '').trim()));
     }
   }
 
@@ -333,7 +333,7 @@ const SessionSummaryCard: React.FC<SessionSummaryCardProps> = ({
                     backgroundImage: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`
                   }}
                 >
-                  {isPlaying ? 'GAME ON' : 'STRATEGY MODE'}
+                  {isPlaying ? 'Active Session' : 'Planning Session'}
                 </h3>
                 <span 
                   className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full flex items-center gap-1.5"
@@ -344,11 +344,10 @@ const SessionSummaryCard: React.FC<SessionSummaryCardProps> = ({
                     boxShadow: `0 2px 8px ${colors.glow}`
                   }}
                 >
-                  {isPlaying ? '🎮' : '📋'}
                   <span>{isPlaying ? 'Playing' : 'Planning'}</span>
                 </span>
               </div>
-              <p className="text-sm text-white/90 font-medium truncate mt-1">{gameTitle}</p>
+              <p className="text-sm text-white/90 font-medium mt-1 break-words">{gameTitle}</p>
               <p className="text-[11px] text-white/40 mt-0.5 flex items-center gap-1.5">
                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
@@ -441,7 +440,7 @@ const SessionSummaryCard: React.FC<SessionSummaryCardProps> = ({
           {/* Achievements / Key Strategies */}
           {keyPoints.length > 0 && (
             <CollapsibleSection
-              title={isPlaying ? 'Session Highlights' : 'Key Strategies'}
+              title={isPlaying ? 'Activity Summary' : 'Key Strategies'}
               accentColor={colors.primary}
               defaultOpen={true}
               icon={
@@ -476,7 +475,7 @@ const SessionSummaryCard: React.FC<SessionSummaryCardProps> = ({
           {/* Objectives / Goals */}
           {objectives.length > 0 && (
             <CollapsibleSection
-              title={isPlaying ? 'Next Up' : 'Session Goals'}
+              title={isPlaying ? 'Current Objectives' : 'Session Goals'}
               accentColor={colors.secondary}
               defaultOpen={false}
               icon={
@@ -554,7 +553,7 @@ const SessionSummaryCard: React.FC<SessionSummaryCardProps> = ({
               backgroundClip: 'text'
             }}
           >
-            {isPlaying ? '⚡ Let\'s go!' : '🎯 Plan to win!'}
+            {isPlaying ? 'Session in progress' : 'Planning session active'}
           </span>
         </div>
       </div>

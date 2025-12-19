@@ -191,7 +191,11 @@ const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({
         onTouchEnd={clearLongPress}
         onTouchCancel={clearLongPress}
         aria-disabled={!isConnected || isProcessing}
-        className={`${isConnected ? 'text-emerald-400' : 'text-[#8A8A8A]'} w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r from-[#2E2E2E]/90 to-[#1C1C1C]/90 flex items-center justify-center transition-all duration-300 ${isConnected ? 'hover:scale-105' : 'opacity-70 cursor-pointer hover:opacity-90'} ${isProcessing ? 'animate-pulse' : ''}`}
+        className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-[#1A1A1A]/60 backdrop-blur-sm flex items-center justify-center transition-all duration-300 ${
+          isConnected 
+            ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 hover:bg-[#2A2A2A]/80 hover:border-emerald-500/40 hover:scale-105' 
+            : 'border border-[#333]/50 text-[#8A8A8A] opacity-70 cursor-pointer hover:opacity-90 hover:border-[#444]/60'
+        } ${isProcessing ? 'animate-pulse' : ''} active:scale-95`}
         title={isConnected ? 'Screenshot (right-click/long-press to change mode)' : 'Connect your PC to enable screenshots'}
       >
         {mode === 'single' ? (

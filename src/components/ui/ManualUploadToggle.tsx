@@ -20,8 +20,10 @@ const ManualUploadToggle: React.FC<ManualUploadToggleProps> = ({ isManualMode, o
     <button
       type="button"
       onClick={onToggle}
-      className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r from-[#2E2E2E]/90 to-[#1C1C1C]/90 flex items-center justify-center transition-all duration-300 hover:scale-105 ${
-        isManualMode ? 'text-yellow-400' : 'text-emerald-400'
+      className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-[#1A1A1A]/60 border backdrop-blur-sm flex items-center justify-center transition-all duration-300 hover:bg-[#2A2A2A]/80 hover:scale-105 active:scale-95 ${
+        isManualMode 
+          ? 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30 hover:border-yellow-500/40' 
+          : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30 hover:border-emerald-500/40'
       }`}
       aria-pressed={isManualMode}
       aria-label={isManualMode ? 'Resume auto-sending screenshots' : 'Pause and review screenshots'}

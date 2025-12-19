@@ -593,18 +593,12 @@ function App() {
   useEffect(() => {
     const storedCode = localStorage.getItem('otakon_connection_code');
     if (storedCode && connectionStatus === ConnectionStatus.CONNECTING) {
-      // Set up a timeout to verify the connection
-      const timeout = setTimeout(() => {
-        if (connectionStatus === ConnectionStatus.CONNECTING) {
-          // If still connecting after 3 seconds, consider it connected
-          // The websocket service will handle the actual connection state
-          setConnectionStatus(ConnectionStatus.CONNECTED);
-        }
-      }, 3000);
-      
-      return () => clearTimeout(timeout);
+      console.log('🔗 [App] Page loaded with stored connection code, reconnecting...', storedCode);
+      // Actually reconnect the WebSocket instead of just changing status
+      handleConnect(storedCode);
     }
-  }, [connectionStatus]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   const handleGetStarted = () => {
     setAppState((prev: AppState) => ({ ...prev, view: 'app', onboardingStatus: 'login' }));

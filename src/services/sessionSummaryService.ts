@@ -27,16 +27,16 @@ class SessionSummaryService {
 
 ${progressContext}
 
-**Key Achievements This Session:**
+**Session Activity:**
 ${keyPoints.length > 0 ? keyPoints.map(point => `• ${point}`).join('\n') : '• Session progress recorded'}
 
 **Current Objectives:**
-${objectives.length > 0 ? objectives.map(obj => `• ${obj}`).join('\n') : '• Continue game progression'}
+${objectives.length > 0 ? objectives.map(obj => `• ${obj}`).join('\n') : '• Continue progression'}
 
 **Recent Activity:**
 ${this.extractRecentActivity(recentMessages, 3)}
 
-*Switching to Planning Mode - Your progress has been saved.*`;
+*Switching to Planning Mode - Progress saved.*`;
 
     return {
       mode: 'playing',
@@ -63,13 +63,13 @@ ${this.extractRecentActivity(recentMessages, 3)}
     const summary = `**Planning Session Summary for ${conversation.gameTitle}**
 
 **Strategies Discussed:**
-${keyPoints.length > 0 ? keyPoints.map(point => `• ${point}`).join('\n') : '• No specific strategies noted'}
+${keyPoints.length > 0 ? keyPoints.map(point => `• ${point}`).join('\n') : '• No strategies noted this session'}
 
-**Goals for Next Session:**
-${objectives.length > 0 ? objectives.map(obj => `• ${obj}`).join('\n') : '• Continue exploration and progression'}
+**Planning Objectives:**
+${objectives.length > 0 ? objectives.map(obj => `• ${obj}`).join('\n') : '• Continue exploration'}
 
 ${strategicNotes ? `**Strategic Notes:**\n${strategicNotes}\n` : ''}
-*Switching to Playing Mode - Good luck with your session!*`;
+*Switching to Playing Mode - Session ready to begin.*`;
 
     return {
       mode: 'planning',
@@ -107,13 +107,13 @@ ${strategicNotes ? `**Strategic Notes:**\n${strategicNotes}\n` : ''}
     const keyPoints: string[] = [];
     const seenTopics = new Set<string>();
     
-    // Patterns for playing mode (achievements, discoveries)
+    // Patterns for playing mode (more generic activity tracking)
     const playingPatterns = [
-      { pattern: /defeated|killed|beat|vanquished/i, template: (msg: string) => this.extractContext(msg, 'boss/enemy') },
-      { pattern: /found|discovered|obtained|acquired|picked up/i, template: (msg: string) => this.extractContext(msg, 'item/discovery') },
-      { pattern: /unlocked|gained|learned|mastered/i, template: (msg: string) => this.extractContext(msg, 'ability/unlock') },
-      { pattern: /completed|finished|cleared/i, template: (msg: string) => this.extractContext(msg, 'completion') },
-      { pattern: /reached|arrived|entered/i, template: (msg: string) => this.extractContext(msg, 'location') }
+      { pattern: /completed|finished|cleared|resolved/i, template: (msg: string) => this.extractContext(msg, 'task-completion') },
+      { pattern: /found|discovered|obtained|acquired|received/i, template: (msg: string) => this.extractContext(msg, 'discovery') },
+      { pattern: /unlocked|gained|learned|achieved/i, template: (msg: string) => this.extractContext(msg, 'progress') },
+      { pattern: /defeated|overcame|resolved|handled/i, template: (msg: string) => this.extractContext(msg, 'challenge') },
+      { pattern: /reached|arrived|accessed|entered/i, template: (msg: string) => this.extractContext(msg, 'milestone') }
     ];
     
     // Patterns for planning mode (strategies, builds)
@@ -161,20 +161,20 @@ ${strategicNotes ? `**Strategic Notes:**\n${strategicNotes}\n` : ''}
       // Skip very long sentences
       if (trimmed.length > 150) { continue; }
       
-      // Check if it's relevant based on type
-      if (type === 'boss/enemy' && /defeat|kill|beat|boss|enemy/i.test(trimmed)) {
+      // Check if it's relevant based on type (more generic matching)
+      if (type === 'task-completion' && /complet|finish|clear|resolv/i.test(trimmed)) {
         return trimmed.substring(0, 100) + (trimmed.length > 100 ? '...' : '');
       }
-      if (type === 'item/discovery' && /found|discover|obtain|item|weapon|armor/i.test(trimmed)) {
+      if (type === 'discovery' && /found|discover|obtain|receiv|acquir/i.test(trimmed)) {
         return trimmed.substring(0, 100) + (trimmed.length > 100 ? '...' : '');
       }
-      if (type === 'ability/unlock' && /unlock|gain|learn|ability|skill/i.test(trimmed)) {
+      if (type === 'progress' && /unlock|gain|learn|achiev|progress/i.test(trimmed)) {
         return trimmed.substring(0, 100) + (trimmed.length > 100 ? '...' : '');
       }
-      if (type === 'completion' && /complete|finish|clear/i.test(trimmed)) {
+      if (type === 'challenge' && /defeat|overc|resolv|handl|complet/i.test(trimmed)) {
         return trimmed.substring(0, 100) + (trimmed.length > 100 ? '...' : '');
       }
-      if (type === 'location' && /reach|arrive|enter|area|region|zone/i.test(trimmed)) {
+      if (type === 'milestone' && /reach|arriv|access|enter|milestone/i.test(trimmed)) {
         return trimmed.substring(0, 100) + (trimmed.length > 100 ? '...' : '');
       }
       if (type === 'build' && /build|spec|loadout|equipment/i.test(trimmed)) {

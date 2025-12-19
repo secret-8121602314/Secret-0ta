@@ -406,8 +406,9 @@ interface ChatInterfaceProps {
   onToggleActiveSession?: () => void;
   initialMessage?: string;
   onMessageChange?: (message: string) => void;
-  queuedImage?: string | null;
-  onImageQueued?: () => void;
+  queuedImages?: string[];
+  onImagesQueued?: () => void;
+  onRemoveQueuedImage?: (index: number) => void;
   isSidebarOpen?: boolean;
   onDeleteQueuedMessage?: (messageId: string) => void;
   onEditMessage?: (messageId: string, content: string) => void;
@@ -441,8 +442,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onToggleActiveSession,
   initialMessage = '',
   onMessageChange,
-  queuedImage = null,
-  onImageQueued,
+  queuedImages = [],
+  onImagesQueued,
+  onRemoveQueuedImage,
   isSidebarOpen = false,
   onDeleteQueuedMessage,
   onEditMessage,
@@ -724,22 +726,23 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   }, [initialMessage]);
 
-  // ✅ NEW: Handle queued image from WebSocket (manual mode)
+  // ✅ NEW: Handle queued images from WebSocket (manual mode)
   useEffect(() => {
-    if (queuedImage && isManualUploadMode) {
-      console.log('📸 [ChatInterface] Queued image received from WebSocket:', {
-        queuedImageLength: queuedImage.length,
-        queuedImagePreview: queuedImage.substring(0, 50),
-        currentImagePreview: imagePreview?.substring(0, 50),
-        isManualUploadMode
-      });
-      setImagePreview(queuedImage);
-      // Notify parent that image was accepted
-      onImageQueued?.();
+    console.log('📸 [ChatInterface] queuedImages prop changed:', {
+      count: queuedImages.length,
+      isManualUploadMode,
+      firstImagePreview: queuedImages[0]?.substring(0, 50)
+    });
+    if (queuedImages.length > 0 && isManualUploadMode) {
+      console.log('👉 [ChatInterface] Should be displaying', queuedImages.length, 'screenshots in the UI now!');
+      console.log('👉 [ChatInterface] First image URL:', queuedImages[0].substring(0, 100));
+    } else if (queuedImages.length === 0) {
+      console.log('⚠️ [ChatInterface] queuedImages array is EMPTY');
+    } else if (!isManualUploadMode) {
+      console.log('⚠️ [ChatInterface] NOT in manual upload mode (PLAY mode active)');
     }
-    // ✅ FIX: Removed imagePreview from dependencies to prevent infinite loop
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queuedImage, isManualUploadMode, onImageQueued]);
+  }, [queuedImages, isManualUploadMode]);
 
   // ✅ NEW: Close quick actions when sidebar opens to prevent overlap
   useEffect(() => {
@@ -753,20 +756,23 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     setIsQuickActionsExpanded(false);
   }, [conversation?.id]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const hasQueuedImages = queuedImages.length > 0;
     
     console.log('📤 [ChatInterface] Submit attempt:', { 
       message: message.trim(), 
       hasMessage: !!message.trim(), 
       hasImageFile: !!imageFile, 
       hasImagePreview: !!imagePreview,
-      shouldSubmit: !(!message.trim() && !imageFile && !imagePreview)
+      queuedImagesCount: queuedImages.length,
+      shouldSubmit: !(!message.trim() && !imageFile && !imagePreview && !hasQueuedImages)
     });
     
-    // Allow submission if there's either a message OR an image (file or queued preview)
-    if (!message.trim() && !imageFile && !imagePreview) {
-            return;
+    // Allow submission if there's either a message OR an image (file, preview, or queued)
+    if (!message.trim() && !imageFile && !imagePreview && !hasQueuedImages) {
+      return;
     }
 
     // Collapse quick actions when sending a message
@@ -774,14 +780,30 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       setIsQuickActionsExpanded(false);
     }
 
-    const imageUrl = imagePreview || undefined;
-    console.log('📤 [ChatInterface] Submitting:', { message, hasImage: !!imageUrl, imageUrl: imageUrl?.substring(0, 50) + '...' });
-    onSendMessage(message, imageUrl);
-    setMessage('');
-    setImageFile(null);
-    setImagePreview(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    // ✅ Handle queued screenshots (multishot) - send all at once
+    if (hasQueuedImages) {
+      console.log('📤 [ChatInterface] Sending', queuedImages.length, 'queued screenshots');
+      toastService.info(`Sending ${queuedImages.length} screenshot${queuedImages.length > 1 ? 's' : ''}...`);
+      
+      // Send all screenshots at once (no delay needed)
+      for (const imageUrl of queuedImages) {
+        await onSendMessage(message || '', imageUrl); // eslint-disable-line no-await-in-loop
+      }
+      
+      // Clear queued images after sending all
+      onImagesQueued?.();
+      setMessage('');
+    } else {
+      // Regular single image submission
+      const imageUrl = imagePreview || undefined;
+      console.log('📤 [ChatInterface] Submitting:', { message, hasImage: !!imageUrl, imageUrl: imageUrl?.substring(0, 50) + '...' });
+      await onSendMessage(message, imageUrl);
+      setMessage('');
+      setImageFile(null);
+      setImagePreview(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -1023,6 +1045,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
         )}
 
+        {/* Active Session Toggle - Floating on left edge */}
+        {conversation && gameTabService.isGameTab(conversation) && activeSession && !conversation.isUnreleased && onToggleActiveSession && (
+          <div className="absolute bottom-0 left-3 pb-4 z-10 pointer-events-none" style={{ bottom: conversation.isGameHub ? '60px' : '0' }}>
+            <div className="pointer-events-auto">
+              <ActiveSessionToggle
+                isActive={activeSession.isActive && activeSession.currentGameId === conversation.id}
+                onClick={onToggleActiveSession}
+              />
+            </div>
+          </div>
+        )}
+
         {/* HQ Button - Floating icon button matching chat explore design */}
         {conversation && onOpenExplorer && (
           <div className="absolute bottom-0 right-3 pb-4 z-10 pointer-events-none" style={{ bottom: conversation.isGameHub ? '60px' : '0' }}>
@@ -1199,7 +1233,63 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
           {/* Textarea Container - Grows upward */}
           <div className="relative mb-2">
-            {/* Image Preview - Inside the form so it doesn't push input off screen */}
+            {/* DEBUG: Check queuedImages state */}
+            {console.log('🖼️ [ChatInterface RENDER] queuedImages:', { length: queuedImages.length, hasImages: queuedImages.length > 0, firstUrl: queuedImages[0]?.substring(0, 50) })}
+            
+            {/* Queued Screenshots - Show horizontally next to each other */}
+            {queuedImages.length > 0 && (
+              <div className="mb-2">
+                <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                  {queuedImages.map((imageUrl, index) => (
+                    <div key={index} className="relative group cursor-pointer flex-shrink-0" onClick={() => setExpandedQueuedImage(imageUrl)}>
+                      <img
+                        src={imageUrl}
+                        alt={`Screenshot ${index + 1}`}
+                        className="w-24 h-24 object-cover rounded-lg border border-[#424242]/40 group-hover:border-[#FF4D4D]/50 transition-colors"
+                      />
+                      {/* Screenshot number badge */}
+                      <div className="absolute top-1 left-1 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded">
+                        {index + 1}
+                      </div>
+                      {/* Expand icon overlay */}
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 rounded-lg transition-colors">
+                        <svg className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                        </svg>
+                      </div>
+                      {/* Delete button */}
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onRemoveQueuedImage?.(index); }}
+                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 transition-colors flex-shrink-0 z-10"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-[#A3A3A3]">
+                    {queuedImages.length} screenshot{queuedImages.length > 1 ? 's' : ''} queued • Tap to preview
+                  </p>
+                  {queuedImages.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        for (let i = queuedImages.length - 1; i >= 0; i--) {
+                          onRemoveQueuedImage?.(i);
+                        }
+                      }}
+                      className="text-xs text-[#FF4D4D] hover:text-[#FF6B6B] transition-colors"
+                    >
+                      Clear All
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Single Image Preview - For manually uploaded images */}
             {imagePreview && (
               <div className="mb-2 flex items-center gap-2">
                 <div className="relative group cursor-pointer" onClick={() => setExpandedQueuedImage(imagePreview)}>
@@ -1264,7 +1354,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r from-[#2E2E2E]/90 to-[#1C1C1C]/90 flex items-center justify-center transition-all duration-300 hover:scale-105 text-text-muted hover:text-text-primary"
+                className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-[#1A1A1A]/60 border border-[#333]/50 backdrop-blur-sm flex items-center justify-center transition-all duration-300 hover:bg-[#2A2A2A]/80 hover:border-[#444]/60 hover:scale-105 text-[#888] hover:text-[#F5F5F5] active:scale-95"
               >
                 <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -1302,30 +1392,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
             </div>
             
-            {/* Active Session Toggle - Show only for released game tabs */}
-            {/* For unreleased games, show "Discuss" mode label with disabled toggle */}
-            {conversation && gameTabService.isGameTab(conversation) && activeSession && (
-              conversation.isUnreleased ? (
-                <div className="flex items-center gap-2 px-4 py-2 bg-surface/50 rounded-lg border border-surface-light/20">
-                  <span className="text-sm font-medium text-text-muted">Discuss Mode</span>
-                  <div className="text-xs text-text-muted/60">(No Playing mode until release)</div>
-                </div>
-              ) : onToggleActiveSession && (
-                <div className="flex-shrink-0">
-                  <ActiveSessionToggle
-                    isActive={activeSession.isActive && activeSession.currentGameId === conversation.id}
-                    onClick={onToggleActiveSession}
-                  />
-                </div>
-              )
-            )}
-            
             {isLoading && onStop ? (
               <button
                 type="button"
                 onClick={onStop}
                 aria-label="Stop generating"
-                className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-xl transition-all duration-300 bg-[#EF4444] text-white scale-100 md:hover:scale-105 md:hover:bg-[#DC2626] active:scale-95"
+                className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-xl transition-all duration-300 bg-[#EF4444] border border-[#DC2626]/50 text-white scale-100 hover:bg-[#DC2626] hover:scale-105 hover:shadow-lg hover:shadow-[#EF4444]/30 active:scale-95"
               >
                 <StopIcon className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
@@ -1336,8 +1408,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 aria-label="Send message"
                 className={`flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-xl transition-all duration-300 disabled:cursor-not-allowed ${
                   !message.trim() && !imageFile && !imagePreview
-                    ? 'bg-[#2E2E2E]/15 text-[#A3A3A3]/25 scale-100'
-                    : 'bg-gradient-to-r from-[#FFAB40] to-[#FF8C00] text-[#181818] scale-100 md:hover:scale-105 md:hover:shadow-lg md:hover:shadow-[#FFAB40]/25 active:scale-95 font-semibold'
+                    ? 'bg-[#1A1A1A]/40 border border-[#333]/30 text-[#555] scale-100'
+                    : 'bg-gradient-to-r from-[#FFAB40] to-[#FF8C00] border border-[#FF8C00]/50 text-[#181818] scale-100 hover:scale-105 hover:shadow-lg hover:shadow-[#FFAB40]/30 active:scale-95 font-semibold'
                 }`}
               >
                 <SendIcon className="w-5 h-5 sm:w-6 sm:h-6" />
