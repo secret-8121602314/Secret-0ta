@@ -5,3 +5,8 @@ node_modules
 # LemonSqueezy secrets - NEVER COMMIT
 *.secrets
 *secret*
+
+# Connector build artifacts - too large for GitHub
+connector/dist/
+connector/out/
+connector/release/
