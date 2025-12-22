@@ -954,14 +954,16 @@ html, body {
   overflow-y: auto !important;
   /* Ensure content is scrollable */
   max-height: 100%;
-  /* Mobile: thin scrollbar (3px) */
+  /* Reserve space for scrollbar to prevent layout shift */
+  scrollbar-gutter: stable !important;
+  /* Hide scrollbar by default */
   scrollbar-width: thin !important;
-  scrollbar-color: rgba(229, 58, 58, 0.5) transparent !important;
+  scrollbar-color: transparent transparent !important;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
   display: block !important;
-  /* Mobile: thin scrollbar (3px) */
+  /* Mobile: thin scrollbar (3px) - always reserve space */
   width: 3px !important;
   height: 3px !important;
   background: transparent !important;
@@ -977,23 +979,31 @@ html, body {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, rgba(229, 58, 58, 0.5), rgba(217, 140, 31, 0.5)) !important;
+  background: transparent !important;
   border-radius: 3px !important;
   border: none !important;
   box-shadow: none !important;
   /* Ensure thumb is properly sized */
   min-height: 20px !important;
   max-height: 50% !important;
+  transition: background 0.2s ease !important;
+}
+
+/* Show scrollbar on hover (desktop) and active scroll (mobile/tablet) */
+.custom-scrollbar:hover,
+.custom-scrollbar:active {
+  scrollbar-color: rgba(229, 58, 58, 0.6) transparent !important;
+}
+
+.custom-scrollbar:hover::-webkit-scrollbar-thumb,
+.custom-scrollbar:active::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, rgba(229, 58, 58, 0.6), rgba(217, 140, 31, 0.6)) !important;
 }
 
 /* Desktop: wider scrollbar positioned at edge */
 @media (min-width: 1024px) {
-  .custom-scrollbar {
-    /* Desktop: wider scrollbar (6px) at edge */
-    scrollbar-width: 6px !important;
-  }
-
   .custom-scrollbar::-webkit-scrollbar {
+    /* Desktop: wider scrollbar (6px) - always reserve space */
     width: 6px !important;
   }
 
@@ -1002,7 +1012,8 @@ html, body {
     margin: 0 !important;
   }
 
-  .custom-scrollbar::-webkit-scrollbar-thumb {
+  .custom-scrollbar:hover::-webkit-scrollbar-thumb,
+  .custom-scrollbar:active::-webkit-scrollbar-thumb {
     /* Ensure thumb is visible on desktop */
     min-height: 30px !important;
   }

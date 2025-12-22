@@ -12,7 +12,8 @@ export const ActiveSessionToggle: React.FC<ActiveSessionToggleProps> = ({
   disabled = false 
 }) => {
   // isActive = true means Playing mode, false means Planning mode
-  const isPlaying = isActive;
+  // Inverted: show Plan button when Playing, show Play button when Planning
+  const isPlaying = !isActive;
   
   return (
     <button
@@ -21,13 +22,12 @@ export const ActiveSessionToggle: React.FC<ActiveSessionToggleProps> = ({
       className={`
         w-14 h-14 rounded-full flex items-center justify-center
         transition-all duration-300 hover:scale-110 active:scale-95
-        ${isPlaying 
-          ? 'bg-gradient-to-r from-[#FF4D4D] to-[#EF4444]' 
-          : 'bg-gradient-to-r from-[#3B82F6] to-[#2563EB]'
-        }
         ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
       `}
       style={{ 
+        background: isPlaying 
+          ? 'linear-gradient(135deg, #FF4D4D 0%, #8B0000 100%)' 
+          : 'linear-gradient(135deg, #3B82F6 0%, #1E3A8A 100%)',
         boxShadow: isPlaying 
           ? '0 4px 20px rgba(0, 0, 0, 0.5), 0 8px 32px rgba(239, 68, 68, 0.4)' 
           : '0 4px 20px rgba(0, 0, 0, 0.5), 0 8px 32px rgba(59, 130, 246, 0.4)' 

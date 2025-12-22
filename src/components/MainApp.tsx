@@ -4605,7 +4605,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                   onClick={() => setSidebarOpen(true)}
                   className="flex-1 bg-gradient-to-r from-surface/30 to-background/30 backdrop-blur-sm border border-surface-light/20 rounded-lg px-4 py-3 transition-all duration-200 hover:from-surface/40 hover:to-background/40 hover:border-surface-light/30 active:scale-[0.98]"
                 >
-                  <h2 className="text-sm sm:text-base font-semibold bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent text-left">
+                  <h2 className={`text-sm sm:text-base font-semibold bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent ${activeConversation.isGameHub ? 'text-center' : 'text-left'}`}>
                     {activeConversation.title}
                   </h2>
                   {/* Mobile: Compact inline progress bar below title */}
