@@ -806,25 +806,29 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       console.log('📤 [ChatInterface] Sending', queuedImages.length, 'queued screenshots');
       toastService.info(`Sending ${queuedImages.length} screenshot${queuedImages.length > 1 ? 's' : ''}...`);
       
-      // Send all screenshots at once (no delay needed)
-      for (const imageUrl of queuedImages) {
-        await onSendMessage(message || '', imageUrl); // eslint-disable-line no-await-in-loop
-      }
-      
-      // Clear queued images after sending all
+      // Clear queued images immediately before sending
+      const imagesToSend = [...queuedImages];
       onImagesQueued?.();
       setMessage('');
+      
+      // Send all screenshots at once (no delay needed)
+      for (const imageUrl of imagesToSend) {
+        await onSendMessage(message || '', imageUrl); // eslint-disable-line no-await-in-loop
+      }
     } else {
       // Regular single image submission
       const imageUrl = imagePreview || undefined;
       console.log('📤 [ChatInterface] Submitting:', { message, hasImage: !!imageUrl, imageUrl: imageUrl?.substring(0, 50) + '...' });
-      await onSendMessage(message, imageUrl);
+      
+      // Clear input and preview immediately before sending
       setMessage('');
       setImageFile(null);
       setImagePreview(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+      
+      await onSendMessage(message, imageUrl);
     }
   };
 

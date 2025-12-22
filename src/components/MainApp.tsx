@@ -1556,8 +1556,8 @@ const MainApp: React.FC<MainAppProps> = ({
       // If we're deleting the current active conversation, switch to "Game Hub" tab
       const gameHubTab = conversations[GAME_HUB_ID] || conversations['game-hub'];
       if (gameHubTab) {
-        // Persist the active conversation change (background, non-blocking)
-        ConversationService.setActiveConversation(gameHubTab.id).catch(console.error);
+        // ✅ TAB PERSISTENCE FIX: Await to ensure active state is saved before potential refresh
+        await ConversationService.setActiveConversation(gameHubTab.id).catch(console.error);
         setActiveConversation(gameHubTab);
         // Also clear any active session since we're switching away from a game tab
         setActiveSession('', false);
@@ -1565,7 +1565,7 @@ const MainApp: React.FC<MainAppProps> = ({
         // Fallback to first available conversation
         const firstConversation = Object.values(conversations)[0] || null;
         if (firstConversation) {
-          ConversationService.setActiveConversation(firstConversation.id).catch(console.error);
+          await ConversationService.setActiveConversation(firstConversation.id).catch(console.error);
           setActiveConversation(firstConversation);
         } else {
           setActiveConversation(null);
@@ -1791,7 +1791,7 @@ const MainApp: React.FC<MainAppProps> = ({
       return;
     }
 
-    // Switch to Game Hub and close modal
+    // ✅ TAB PERSISTENCE FIX: Already awaited - this is correct
     await ConversationService.setActiveConversation(gameHub.id);
     setActiveConversation(gameHub);
     setAddGameModalOpen(false);
@@ -4605,7 +4605,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                   onClick={() => setSidebarOpen(true)}
                   className="flex-1 bg-gradient-to-r from-surface/30 to-background/30 backdrop-blur-sm border border-surface-light/20 rounded-lg px-4 py-3 transition-all duration-200 hover:from-surface/40 hover:to-background/40 hover:border-surface-light/30 active:scale-[0.98]"
                 >
-                  <h2 className="text-sm sm:text-base font-semibold bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent text-center">
+                  <h2 className={`text-sm sm:text-base font-semibold bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent ${activeConversation.isGameHub ? 'text-center' : 'text-left'}`}>
                     {activeConversation.title}
                   </h2>
                   {/* Mobile: Compact inline progress bar below title */}
@@ -4691,7 +4691,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
           {/* Game Progress Bar with Game Info Button - Desktop only (>= 1024px) */}
           {/* Mobile shows compact progress bar integrated into thread header above */}
           {activeConversation && !activeConversation.isGameHub && activeConversation.gameTitle && (
-            <div className="desktop-progress-bar px-3 sm:px-4 lg:px-6 pt-3 pb-3 sm:pb-4 flex-shrink-0">
+            <div className="desktop-progress-bar hidden lg:flex px-3 sm:px-4 lg:px-6 pt-3 pb-3 sm:pb-4 flex-shrink-0">
               <div className="flex items-center gap-2 sm:gap-3 w-full">
                 <div className="flex-1">
                   <GameProgressBar 
