@@ -806,29 +806,25 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       console.log('📤 [ChatInterface] Sending', queuedImages.length, 'queued screenshots');
       toastService.info(`Sending ${queuedImages.length} screenshot${queuedImages.length > 1 ? 's' : ''}...`);
       
-      // Clear queued images immediately before sending
-      const imagesToSend = [...queuedImages];
-      onImagesQueued?.();
-      setMessage('');
-      
       // Send all screenshots at once (no delay needed)
-      for (const imageUrl of imagesToSend) {
+      for (const imageUrl of queuedImages) {
         await onSendMessage(message || '', imageUrl); // eslint-disable-line no-await-in-loop
       }
+      
+      // Clear queued images after sending all
+      onImagesQueued?.();
+      setMessage('');
     } else {
       // Regular single image submission
       const imageUrl = imagePreview || undefined;
       console.log('📤 [ChatInterface] Submitting:', { message, hasImage: !!imageUrl, imageUrl: imageUrl?.substring(0, 50) + '...' });
-      
-      // Clear input and preview immediately before sending
+      await onSendMessage(message, imageUrl);
       setMessage('');
       setImageFile(null);
       setImagePreview(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-      
-      await onSendMessage(message, imageUrl);
     }
   };
 
@@ -1070,9 +1066,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
         )}
 
-        {/* Active Session Toggle - Floating on right edge above HQ button */}
+        {/* Active Session Toggle - Floating on left edge */}
         {conversation && gameTabService.isGameTab(conversation) && activeSession && !conversation.isUnreleased && onToggleActiveSession && (
-          <div className="absolute bottom-0 right-3 z-10 pointer-events-none" style={{ bottom: conversation.isGameHub ? '152px' : '92px' }}>
+          <div className="absolute bottom-0 left-3 pb-4 z-10 pointer-events-none" style={{ bottom: conversation.isGameHub ? '60px' : '0' }}>
             <div className="pointer-events-auto">
               <ActiveSessionToggle
                 isActive={activeSession.isActive && activeSession.currentGameId === conversation.id}

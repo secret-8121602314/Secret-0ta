@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 
 interface ScreenshotFlashProps {
   show: boolean;
@@ -8,25 +8,43 @@ interface ScreenshotFlashProps {
 
 export const ScreenshotFlash: React.FC<ScreenshotFlashProps> = ({ show, isMulti, onHide }) => {
   const [isVisible, setIsVisible] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  // Memoize onHide to prevent unnecessary effect re-runs
+  const stableOnHide = useCallback(() => {
+    onHide();
+  }, [onHide]);
 
   useEffect(() => {
     if (show) {
+      // Start showing and animating
       setIsVisible(true);
-      const timer = setTimeout(() => {
-        setIsVisible(false);
-        setTimeout(onHide, 300); // Wait for fade-out animation
-      }, 1200); // Show for 1200ms (longer duration for better visibility)
+      setIsAnimating(true);
       
-      return () => clearTimeout(timer);
+      // Animation duration is 800ms - start fade out slightly before it ends
+      const fadeTimer = setTimeout(() => {
+        setIsAnimating(false);
+      }, 700);
+      
+      // Wait for fade-out transition to complete, then call onHide
+      const hideTimer = setTimeout(() => {
+        setIsVisible(false);
+        stableOnHide();
+      }, 1000); // 700ms animation + 300ms fade transition
+      
+      return () => {
+        clearTimeout(fadeTimer);
+        clearTimeout(hideTimer);
+      };
     }
-  }, [show, onHide]);
+  }, [show, stableOnHide]);
 
   if (!show && !isVisible) return null;
 
   return (
     <div
       className={`fixed inset-0 z-[100] flex items-center justify-center pointer-events-none transition-opacity duration-300 ${
-        isVisible ? 'opacity-100' : 'opacity-0'
+        isAnimating ? 'opacity-100' : 'opacity-0'
       }`}
     >
       {/* Backdrop blur */}
@@ -34,8 +52,8 @@ export const ScreenshotFlash: React.FC<ScreenshotFlashProps> = ({ show, isMulti,
       
       {/* Flash content */}
       <div
-        className={`relative flex flex-col items-center justify-center gap-4 transition-all duration-200 ${
-          isVisible ? 'animate-screenshot-flash' : ''
+        className={`relative flex flex-col items-center justify-center gap-4 transition-transform duration-300 ${
+          isAnimating ? 'scale-100' : 'scale-95'
         }`}
       >
         {/* Screenshot icon */}

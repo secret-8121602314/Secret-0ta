@@ -38,7 +38,7 @@ export default {
         'glow-pulse': 'glow-pulse 2s ease-in-out infinite',
         'slide-in': 'slide-in 0.3s ease-out',
         'slide-out': 'slide-out 0.2s ease-in',
-        'screenshot-flash': 'screenshot-flash 0.6s ease-out',
+        'screenshot-flash': 'screenshot-flash 0.8s ease-out forwards',
       },
       keyframes: {
         shimmer: {
@@ -71,10 +71,10 @@ export default {
           '50%': { boxShadow: '0 0 30px rgba(229, 61, 61, 0.6)' },
         },
         'screenshot-flash': {
-          '0%': { opacity: '0', transform: 'scale(0.85)' },
-          '30%': { opacity: '1', transform: 'scale(1)' },
-          '70%': { opacity: '1', transform: 'scale(1)' },
-          '100%': { opacity: '0', transform: 'scale(1)' },
+          '0%': { transform: 'scale(0.9)' },
+          '15%': { transform: 'scale(1.02)' },
+          '30%': { transform: 'scale(1)' },
+          '100%': { transform: 'scale(1)' },
         },
       },
     },

@@ -4605,7 +4605,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                   onClick={() => setSidebarOpen(true)}
                   className="flex-1 bg-gradient-to-r from-surface/30 to-background/30 backdrop-blur-sm border border-surface-light/20 rounded-lg px-4 py-3 transition-all duration-200 hover:from-surface/40 hover:to-background/40 hover:border-surface-light/30 active:scale-[0.98]"
                 >
-                  <h2 className={`text-sm sm:text-base font-semibold bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent ${activeConversation.isGameHub ? 'text-center' : 'text-left'}`}>
+                  <h2 className="text-sm sm:text-base font-semibold bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent text-center">
                     {activeConversation.title}
                   </h2>
                   {/* Mobile: Compact inline progress bar below title */}
@@ -4691,7 +4691,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
           {/* Game Progress Bar with Game Info Button - Desktop only (>= 1024px) */}
           {/* Mobile shows compact progress bar integrated into thread header above */}
           {activeConversation && !activeConversation.isGameHub && activeConversation.gameTitle && (
-            <div className="desktop-progress-bar hidden lg:flex px-3 sm:px-4 lg:px-6 pt-3 pb-3 sm:pb-4 flex-shrink-0">
+            <div className="desktop-progress-bar px-3 sm:px-4 lg:px-6 pt-3 pb-3 sm:pb-4 flex-shrink-0">
               <div className="flex items-center gap-2 sm:gap-3 w-full">
                 <div className="flex-1">
                   <GameProgressBar 
