@@ -1070,9 +1070,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
         )}
 
-        {/* Active Session Toggle - Floating on left edge */}
+        {/* Active Session Toggle - Floating on right edge above HQ button */}
         {conversation && gameTabService.isGameTab(conversation) && activeSession && !conversation.isUnreleased && onToggleActiveSession && (
-          <div className="absolute bottom-0 left-3 pb-4 z-10 pointer-events-none" style={{ bottom: conversation.isGameHub ? '60px' : '0' }}>
+          <div className="absolute bottom-0 right-3 z-10 pointer-events-none" style={{ bottom: conversation.isGameHub ? '152px' : '92px' }}>
             <div className="pointer-events-auto">
               <ActiveSessionToggle
                 isActive={activeSession.isActive && activeSession.currentGameId === conversation.id}
