@@ -1107,9 +1107,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       {/* Sub-tabs Section - Positioned BETWEEN messages and floating input */}
       {/* Show for released game conversations only (not Game Hub, not unreleased) */}
       {/* Hide when Command Centre is active to prevent overlap */}
-      {/* z-30 ensures header is visible above other elements, but below sidebar (z-60) */}
+      {/* z-50 ensures it appears above thread name and other elements, but below sidebar (z-60) */}
       {!showAutocomplete && conversation && !conversation.isGameHub && !conversation.isUnreleased && conversation.subtabs && conversation.subtabs.length > 0 && (
-        <div className="flex-shrink-0 px-3 pb-2 z-30 relative">
+        <div className="flex-shrink-0 px-3 pb-2 z-50 relative">
           <ErrorBoundary fallback={<SubTabsErrorFallback />}>
             <SubTabs
               key={`subtabs-${conversation.id}`}

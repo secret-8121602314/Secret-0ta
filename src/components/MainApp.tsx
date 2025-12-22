@@ -4596,9 +4596,9 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
           <div className="flex-1 flex flex-col overflow-hidden w-full lg:max-w-[900px] lg:mx-auto lg:px-4">
           
           {/* Chat Thread Name - Show on mobile when sidebar is collapsed - MOVED ABOVE BANNERS */}
-          {/* z-20 ensures consistent stacking with other fixed elements, below SubTabs expanded panel (z-40) */}
+          {/* z-10 places it below SubTabs (z-50) but above normal flow */}
           {activeConversation && (
-            <div className="lg:hidden px-3 sm:px-4 mb-3 sm:mb-4 pt-3 sm:pt-4 flex-shrink-0 relative z-20">
+            <div className="lg:hidden px-3 sm:px-4 pt-2 flex-shrink-0 relative z-10">
               <div className="flex items-center gap-2">
                 {/* Thread name button */}
                 <button
@@ -4646,7 +4646,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
           
           {/* Profile Setup Banner - Show if user hasn't set up profile */}
           {showProfileSetupBanner && onProfileSetupComplete && onProfileSetupDismiss && (
-            <div className="flex-shrink-0 pt-3 sm:pt-4 lg:pt-6">
+            <div className="flex-shrink-0 pt-2 lg:pt-6">
               <ErrorBoundary fallback={<div className="px-6 py-2"><p className="text-xs text-[#CFCFCF]">Profile banner unavailable</p></div>}>
                 <ProfileSetupBanner
                   onComplete={onProfileSetupComplete}
@@ -4691,7 +4691,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
           {/* Game Progress Bar with Game Info Button - Desktop only (>= 1024px) */}
           {/* Mobile shows compact progress bar integrated into thread header above */}
           {activeConversation && !activeConversation.isGameHub && activeConversation.gameTitle && (
-            <div className="desktop-progress-bar hidden lg:flex px-3 sm:px-4 lg:px-6 pt-3 pb-3 sm:pb-4 flex-shrink-0">
+            <div className="desktop-progress-bar hidden lg:flex px-3 sm:px-4 lg:px-6 pt-2 pb-2 flex-shrink-0">
               <div className="flex items-center gap-2 sm:gap-3 w-full">
                 <div className="flex-1">
                   <GameProgressBar 

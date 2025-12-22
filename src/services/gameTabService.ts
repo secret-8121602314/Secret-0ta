@@ -1673,10 +1673,14 @@ class GameTabService {
 
     if (gameTabs.length === 0) {
       console.log('🔄 [GameTabService] No game tabs need subtabs generation');
+      console.log('🔄 [GameTabService] Existing game tabs:', Object.values(conversations)
+        .filter(c => !c.isGameHub && c.gameTitle)
+        .map(c => ({ title: c.gameTitle, hasSubtabs: !!c.subtabs?.length, isUnreleased: c.isUnreleased })));
       return;
     }
 
-    console.log(`🔄 [GameTabService] Found ${gameTabs.length} game tabs that need subtabs`);
+    console.log(`🔄 [GameTabService] Found ${gameTabs.length} game tabs that need subtabs:`, 
+      gameTabs.map(g => g.gameTitle));
 
     // Process each game tab one by one with rate limiting
     for (let i = 0; i < gameTabs.length; i++) {

@@ -368,13 +368,12 @@ const SubTabs: React.FC<SubTabsProps> = ({
             onClick={() => setIsExpanded(false)}
           />
           {/* 
-            ABSOLUTE positioning to match Gaming News behavior
-            - Inherits width constraints from parent container (px-3 in ChatInterface)
-            - Positioned above button with bottom-full
-            - Uses z-50 to appear above other content
+            Mobile: FIXED positioning to break out of all stacking contexts and appear above thread name
+            Desktop: ABSOLUTE positioning relative to parent
+            Panel positioned above Lore & Insights button on mobile (~250px from bottom for button + input)
           */}
           <div
-            className="absolute bottom-full left-0 right-0 mb-2 z-50 animate-fade-in"
+            className="lg:absolute fixed lg:bottom-full bottom-[250px] left-3 right-3 lg:left-0 lg:right-0 mb-2 z-50 animate-fade-in"
           >
             <div className="bg-[#1C1C1C]/95 backdrop-blur-md border border-[#424242]/60 rounded-xl shadow-2xl flex flex-col overflow-hidden max-h-[60vh]">
           {/* Tab Headers - Grid layout on all screen sizes */}
