@@ -489,12 +489,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const autocompleteRef = useRef<HTMLDivElement>(null);
   const lastMessageCountRef = useRef(0);
   const lastMessageIdRef = useRef<string | null>(null);
+  // Track conversation ID to detect tab switches vs new messages
+  const lastConversationIdRef = useRef<string | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   // ✅ NEW: Scroll to show the START of new AI messages instead of the end
+  // When user sends a message, scroll to position where both query and AI thinking are visible
   const scrollToLatestMessage = useCallback(() => {
     if (!conversation || !messagesContainerRef.current) {
       return;
@@ -509,15 +512,25 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     
     const lastMessage = messages[messageCount - 1];
     
-    // Always scroll for new messages (compare message count OR id changed)
+    // ✅ FIX: Detect if this is a tab switch (conversation changed) - don't auto-scroll
+    const isTabSwitch = conversation.id !== lastConversationIdRef.current;
+    if (isTabSwitch) {
+      // Update refs but don't scroll - preserve user's scroll position
+      lastConversationIdRef.current = conversation.id;
+      lastMessageCountRef.current = messageCount;
+      lastMessageIdRef.current = lastMessage.id;
+      return;
+    }
+    
+    // Only scroll for genuinely new messages (not tab switches)
     const shouldScroll = messageCount > lastMessageCountRef.current || 
       (messageCount > 0 && lastMessage.id !== lastMessageIdRef.current);
     
     if (shouldScroll) {
+      const messageElements = messagesContainerRef.current.querySelectorAll('[data-message-id]');
+      
       // If it's an AI message (assistant), scroll to show the START of the message
       if (lastMessage.role === 'assistant') {
-        // Find the last message element in the DOM
-        const messageElements = messagesContainerRef.current.querySelectorAll('[data-message-id]');
         const lastMessageElement = messageElements[messageElements.length - 1];
         
         if (lastMessageElement) {
@@ -525,8 +538,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           lastMessageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       } else {
-        // For user messages, scroll to bottom as usual
-        scrollToBottom();
+        // For user messages, scroll to position where user can see their query + AI response area
+        // Get the user message element and scroll it to near top of viewport
+        // This ensures user sees their query and the space below for AI thinking/response
+        const userMessageElement = messageElements[messageElements.length - 1];
+        
+        if (userMessageElement) {
+          // Scroll so user message is near the top (with some margin), 
+          // leaving room below for AI thinking indicator to be visible
+          userMessageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
       }
       
       lastMessageCountRef.current = messageCount;
@@ -1082,8 +1103,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       {/* Sub-tabs Section - Positioned BETWEEN messages and floating input */}
       {/* Show for released game conversations only (not Game Hub, not unreleased) */}
       {/* Hide when Command Centre is active to prevent overlap */}
+      {/* z-30 ensures header is visible above other elements, but below sidebar (z-60) */}
       {!showAutocomplete && conversation && !conversation.isGameHub && !conversation.isUnreleased && conversation.subtabs && conversation.subtabs.length > 0 && (
-        <div className="flex-shrink-0 px-3 pb-2 z-20 relative">
+        <div className="flex-shrink-0 px-3 pb-2 z-30 relative">
           <ErrorBoundary fallback={<SubTabsErrorFallback />}>
             <SubTabs
               key={`subtabs-${conversation.id}`}

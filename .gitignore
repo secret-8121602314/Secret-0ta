@@ -6,7 +6,3 @@ node_modules
 *.secrets
 *secret*
 
-# Connector build artifacts - too large for GitHub
-connector/dist/
-connector/out/
-connector/release/

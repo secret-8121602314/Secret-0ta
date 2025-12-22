@@ -14,8 +14,8 @@ export const ScreenshotFlash: React.FC<ScreenshotFlashProps> = ({ show, isMulti,
       setIsVisible(true);
       const timer = setTimeout(() => {
         setIsVisible(false);
-        setTimeout(onHide, 200); // Wait for fade-out animation
-      }, 400); // Show for 400ms (200ms fade-in + 200ms hold)
+        setTimeout(onHide, 300); // Wait for fade-out animation
+      }, 1200); // Show for 1200ms (longer duration for better visibility)
       
       return () => clearTimeout(timer);
     }
@@ -25,7 +25,7 @@ export const ScreenshotFlash: React.FC<ScreenshotFlashProps> = ({ show, isMulti,
 
   return (
     <div
-      className={`fixed inset-0 z-[100] flex items-center justify-center pointer-events-none transition-opacity duration-200 ${
+      className={`fixed inset-0 z-[100] flex items-center justify-center pointer-events-none transition-opacity duration-300 ${
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
     >

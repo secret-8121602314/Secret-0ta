@@ -315,10 +315,10 @@ const SubTabs: React.FC<SubTabsProps> = ({
   return (
     <div className="mb-4 relative">
       {/* Collapsible Header - Matching Latest Gaming News style */}
-      {/* z-20 ensures it's below sidebar (z-60) and sidebar overlay (z-55) on mobile */}
+      {/* z-30 ensures it's visible above other content but below sidebar (z-60) on mobile */}
       <button
         onClick={toggleExpanded}
-        className="w-full flex items-center justify-between py-2 px-3 rounded-lg bg-[#1C1C1C] hover:bg-[#252525] border border-[#424242]/30 hover:border-[#424242]/60 transition-all duration-200 relative z-20"
+        className="w-full flex items-center justify-between py-2 px-3 rounded-lg bg-[#1C1C1C] hover:bg-[#252525] border border-[#424242]/30 hover:border-[#424242]/60 transition-all duration-200 relative z-30"
       >
         <div className="flex items-center gap-2">
           <div className={`text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${

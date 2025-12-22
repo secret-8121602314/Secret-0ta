@@ -195,7 +195,7 @@ const ScreenshotButton: React.FC<ScreenshotButtonProps> = ({
           isConnected 
             ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 hover:bg-[#2A2A2A]/80 hover:border-emerald-500/40 hover:scale-105' 
             : 'border border-[#333]/50 text-[#8A8A8A] opacity-70 cursor-pointer hover:opacity-90 hover:border-[#444]/60'
-        } ${isProcessing ? 'animate-pulse' : ''} active:scale-95`}
+        } ${isProcessing ? 'opacity-60 cursor-wait' : ''} active:scale-95`}
         title={isConnected ? 'Screenshot (right-click/long-press to change mode)' : 'Connect your PC to enable screenshots'}
       >
         {mode === 'single' ? (

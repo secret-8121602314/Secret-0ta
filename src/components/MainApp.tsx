@@ -1,5 +1,6 @@
-// FORCE_RELOAD_DEC20
-console.log('MAINAPP VERSION DEC20-002');
+// 🔥 FORCE RELOAD DEC 20 2024 - TIMESTAMP 1234567890 🔥
+console.log('🔥🔥🔥 MAINAPP.TSX LOADED - VERSION DEC20-001 🔥🔥🔥');
+
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { User, Conversation, Conversations, newsPrompts, ConnectionStatus, SubTab, PlayerProfile, AIResponse } from '../types';
 import { GAME_HUB_ID } from '../constants';
@@ -46,7 +47,7 @@ import SettingsContextMenu from './ui/SettingsContextMenu';
 import ProfileSetupBanner from './ui/ProfileSetupBanner';
 import GameProgressBar from './features/GameProgressBar';
 import ErrorBoundary from './ErrorBoundary';
-import AdBanner from './ads/AdBanner';
+// import AdBanner from './ads/AdBanner'; // Hidden for now
 import WelcomeScreen from './welcome/WelcomeScreen';
 import ConnectionSplashScreen from './splash/ConnectionSplashScreen';
 import ProUpgradeSplashScreen from './splash/ProUpgradeSplashScreen';
@@ -208,7 +209,7 @@ const MainApp: React.FC<MainAppProps> = ({
   // ✅ Track message being edited (ID of the user message to replace on resubmit)
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   
-  // ✅ NEW: Queued screenshot from WebSocket (manual mode)
+  // ✅ NEW: Queued screenshots from WebSocket (manual mode) - supports multi-screenshot queue
   const [queuedScreenshots, setQueuedScreenshots] = useState<string[]>([]);
   
   // ✅ NEW: Track image source for conditional migration
@@ -229,9 +230,6 @@ const MainApp: React.FC<MainAppProps> = ({
   // ✅ RATE LIMITING: Track last request time to prevent rapid-fire duplicate requests
   const lastRequestTimeRef = useRef<number>(0);
   const RATE_LIMIT_DELAY_MS = 500; // Minimum 500ms between requests (prevents duplicate clicks)
-  
-  // ✅ F2 MULTI-SCREENSHOT: Store pending screenshots for sequential processing in manual mode
-  const pendingScreenshotsRef = useRef<string[]>([]);
   
   // ✅ TIER UPGRADE: Track previous tier to detect upgrades
   const previousTierRef = useRef<string | null>(null);
@@ -379,8 +377,8 @@ const MainApp: React.FC<MainAppProps> = ({
       });
 
     if (lastAIMessage) {
-      // Get suggestions from metadata OR direct property (backward compatibility)
-      const savedPrompts = lastAIMessage.metadata?.suggestedPrompts || lastAIMessage.suggestedPrompts;
+      // Get suggestions from metadata only
+      const savedPrompts = lastAIMessage.metadata?.suggestedPrompts;
       if (savedPrompts && Array.isArray(savedPrompts) && savedPrompts.length > 0) {
         console.log('📌 [MainApp] Loading saved suggestions from last AI message:', savedPrompts);
         setSuggestedPrompts(savedPrompts);
@@ -389,7 +387,6 @@ const MainApp: React.FC<MainAppProps> = ({
         console.log('⚠️ [MainApp] No AI prompts found. lastAIMessage:', {
           hasMetadata: !!lastAIMessage.metadata,
           metadataPrompts: lastAIMessage.metadata?.suggestedPrompts,
-          directPrompts: lastAIMessage.suggestedPrompts,
           messageKeys: Object.keys(lastAIMessage)
         });
       }
@@ -410,6 +407,7 @@ const MainApp: React.FC<MainAppProps> = ({
   // This handler processes screenshots and other data messages
   const handleWebSocketMessage = useCallback((data: Record<string, unknown>) => {
     console.log('📸 [MainApp] handleWebSocketMessage called with type:', data.type);
+    console.log('🔥🔥🔥 NEW CODE VERSION DEC 20 - 2024 🔥🔥🔥');
     
     // Connection confirmation is handled by MainAppRoute's WebSocket handlers
     // We just log it here for debugging
@@ -446,7 +444,11 @@ const MainApp: React.FC<MainAppProps> = ({
         
         // Process screenshot same way as legacy 'screenshot' type
         if (isManualUploadMode) {
-          setQueuedScreenshots(prev => [...prev, dataUrl]);
+          setQueuedScreenshots(prev => {
+            console.log('📸 [MainApp] MANUAL MODE - Queueing screenshot. Current queue length:', prev.length);
+            return [dataUrl];
+          });
+          console.log('📸 [MainApp] Screenshot queued! State should update now.');
           toastService.info('Screenshot queued. Review and send when ready.');
           return;
         }
@@ -454,7 +456,7 @@ const MainApp: React.FC<MainAppProps> = ({
         // Auto mode: Send immediately
         if (activeConversation && handleSendMessageRef.current) {
           handleSendMessageRef.current("", dataUrl);
-          setQueuedScreenshots([]);
+          setQueuedScreenshots([]); // Clear queue after sending
         } else {
           toastService.warning('No active conversation. Please select or create a conversation first.');
         }
@@ -491,58 +493,45 @@ const MainApp: React.FC<MainAppProps> = ({
         
         // Process each screenshot
         if (isManualUploadMode) {
-          // ✅ FIX: In manual mode, queue all screenshots (user can send one by one)
-          // Store all screenshots and let user send them sequentially
+          // ✅ FIX: In manual mode, queue ALL screenshots at once for batch review
           if (images.length > 0) {
-            setQueuedScreenshots(images); // Queue first one for immediate review
-            // Store remaining screenshots in a ref for sequential processing
-            if (images.length > 1) {
-              toastService.info(`${images.length} screenshots received. First one queued - send it to queue the next!`);
-              // Store remaining screenshots for later
-              pendingScreenshotsRef.current = images.slice(1);
-            } else {
-              toastService.info('Screenshot queued. Review and send when ready.');
-            }
+            setQueuedScreenshots(prev => {
+              console.log('📸 [MainApp] MANUAL MODE - Queueing', images.length, 'screenshots. Current queue length:', prev.length);
+              return images;
+            });
+            console.log('📸 [MainApp]', images.length, 'screenshots queued! State should update now.');
+            toastService.info(`📷 ${images.length} screenshot${images.length > 1 ? 's' : ''} queued. Review and send when ready.`);
           }
         } else {
-          // ✅ FIX: Auto mode - Process screenshots SEQUENTIALLY, waiting for each response
-          // This ensures cumulative context is built as each screenshot is analyzed
-          console.log('📸 [MainApp] Starting sequential screenshot processing...');
+          // ✅ FIX: Auto mode - Send ALL screenshots at once (no sequential delays)
+          console.log('📸 [MainApp] PLAY MODE - Sending', images.length, 'screenshots all at once...');
           
-          // Sequential processing is intentional here - each screenshot needs AI response before next
-          const processScreenshotsSequentially = async () => {
-            for (let i = 0; i < images.length; i++) {
-              const dataUrl = images[i];
-              console.log('📸 [MainApp] Processing screenshot', i + 1, 'of', images.length);
+          const sendAllScreenshots = async () => {
+            // Send all screenshots in parallel without waiting between them
+            const sendPromises = images.map((dataUrl, i) => {
+              console.log('📸 [MainApp] Sending screenshot', i + 1, 'of', images.length);
               
               const validation = validateScreenshotDataUrl(dataUrl);
               if (!validation.valid) {
                 console.error('📸 [MainApp] Screenshot', i + 1, 'validation failed:', validation.error);
-                continue;
+                return Promise.resolve();
               }
               
               if (activeConversation && handleSendMessageRef.current) {
-                const handler = handleSendMessageRef.current;
-                
-                // Wait for the message to be sent and processed
-                // The handler returns a promise, so we await it
-                try {
-                  await handler(`[Screenshot ${i + 1} of ${images.length}]`, dataUrl); // eslint-disable-line no-await-in-loop
-                  
-                  // Add a small delay between screenshots to let state settle
-                  if (i < images.length - 1) {
-                    await new Promise(resolve => setTimeout(resolve, 300)); // eslint-disable-line no-await-in-loop
-                  }
-                } catch (err) {
+                return handleSendMessageRef.current(`[Screenshot ${i + 1} of ${images.length}]`, dataUrl).catch(err => {
                   console.error('📸 [MainApp] Error processing screenshot', i + 1, ':', err);
-                }
+                });
               }
-            }
-            console.log('📸 [MainApp] Finished processing all screenshots');
+              return Promise.resolve();
+            });
+            
+            // Wait for all to complete
+            await Promise.all(sendPromises);
+            console.log('📸 [MainApp] Finished sending all screenshots');
           };
           
-          // Start processing (async, non-blocking)
-          processScreenshotsSequentially();
+          // Start sending (async, non-blocking)
+          sendAllScreenshots();
         }
       } else {
         console.warn('📸 [MainApp] screenshot-multi received but no images in payload');
@@ -574,8 +563,12 @@ const MainApp: React.FC<MainAppProps> = ({
       
       if (isManualUploadMode) {
         // ✅ FIXED: In manual mode, queue the image for ChatInterface (not text input!)
-                setQueuedScreenshots(prev => [...prev, dataUrl]);
-                toastService.info('Screenshot queued. Review and send when ready.');
+        setQueuedScreenshots(prev => {
+          console.log('📸 [MainApp] LEGACY SCREENSHOT - MANUAL MODE - Queueing screenshot. Current queue length:', prev.length);
+          return [dataUrl];
+        });
+        console.log('📸 [MainApp] Legacy screenshot queued! State should update now.');
+        toastService.info('Screenshot queued. Review and send when ready.');
         return; // Don't send automatically in manual mode
       }
       
@@ -583,40 +576,28 @@ const MainApp: React.FC<MainAppProps> = ({
       if (activeConversation && handleSendMessageRef.current) {
         handleSendMessageRef.current("", dataUrl);
         // Clear the queued screenshot immediately after sending in auto mode
-        setQueuedScreenshots([]);
+        setQueuedScreenshots([]); // Clear queue
       } else {
                 toastService.warning('No active conversation. Please select or create a conversation first.');
       }
     }
   }, [isManualUploadMode, activeConversation]);
 
-  // Clear queued screenshot when it's been used and queue next pending one
+  // Clear queued screenshots after sending all of them
   const handleScreenshotQueued = () => {
     setQueuedScreenshots([]);
-    
-    // ✅ FIX: If there are pending screenshots from F2 batch, queue the next one
-    if (pendingScreenshotsRef.current.length > 0) {
-      const nextScreenshot = pendingScreenshotsRef.current.shift(); // Remove and get first
-      if (nextScreenshot) {
-        // Small delay to let UI update before showing next screenshot
-        setTimeout(() => {
-          setQueuedScreenshots(prev => prev.slice(1));
-          if (pendingScreenshotsRef.current.length > 0) {
-            toastService.info(`${pendingScreenshotsRef.current.length + 1} screenshots remaining.`);
-          } else {
-            toastService.info('Last screenshot in batch queued.');
-          }
-        }, 100);
-      }
-    }
+  };
+
+  // Remove individual screenshot from queue
+  const handleRemoveQueuedScreenshot = (index: number) => {
+    setQueuedScreenshots(prev => prev.filter((_, i) => i !== index));
   };
 
   // Debug: Log when queuedScreenshots changes
   useEffect(() => {
     console.log('📸 [MainApp] queuedScreenshots state changed:', {
-      queuedScreenshotsCount: queuedScreenshots.length,
-      firstImageLength: queuedScreenshots[0]?.length,
-      firstImagePreview: queuedScreenshots[0]?.substring(0, 50)
+      count: queuedScreenshots.length,
+      firstPreview: queuedScreenshots[0]?.substring(0, 50)
     });
   }, [queuedScreenshots]);
 
@@ -629,9 +610,11 @@ const MainApp: React.FC<MainAppProps> = ({
 
   // ✅ FIX: Update WebSocket handlers when connected so MainApp receives screenshot messages
   // MainAppRoute handles the initial connection, but we need to update handlers to process screenshots
+  // ⚠️ CRITICAL: Update handlers whenever handleWebSocketMessage changes (when dependencies change)
   useEffect(() => {
     if (connectionStatus === ConnectionStatus.CONNECTED) {
       console.log('📸 [MainApp] Connection is CONNECTED - updating WebSocket handlers to receive screenshots');
+      console.log('📸 [MainApp] Current state:', { isManualUploadMode, hasActiveConversation: !!activeConversation });
       setHandlers(
         // onOpen - no-op, connection already open
         () => {
@@ -649,7 +632,7 @@ const MainApp: React.FC<MainAppProps> = ({
         }
       );
     }
-  }, [connectionStatus, handleWebSocketMessage]);
+  }, [connectionStatus, handleWebSocketMessage, isManualUploadMode, activeConversation]);
 
   // ✅ PWA FIX: Track if we're in the middle of logout to prevent race conditions
   const isLoggingOutRef = useRef(false);
@@ -680,7 +663,7 @@ const MainApp: React.FC<MainAppProps> = ({
       setActiveConversation(null);
       setIsInitializing(true);
       setSuggestedPrompts([]);
-      setQueuedScreenshots([]);
+      setQueuedScreenshots([]); // Clear queued screenshots
       
       // ✅ FIX: Reset current user ID to allow new user detection
       setCurrentUserId(null);
@@ -1283,6 +1266,7 @@ const MainApp: React.FC<MainAppProps> = ({
     return () => {
             subscription.unsubscribe();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeConversation?.id]);
 
   // ✅ IGDB Integration: Fetch game data when switching to a game tab (parallel loading)
@@ -1475,6 +1459,11 @@ const MainApp: React.FC<MainAppProps> = ({
       setConversations(mergedConversations);
       setActiveConversation(mergedConversations[id]);
       
+      // ✅ TAB PERSISTENCE FIX: Persist the active conversation to ensure it survives refresh
+      await ConversationService.setActiveConversation(id).catch(error => {
+        console.error('🔄 [MainApp] Failed to sync active conversation:', error);
+      });
+      
       // Auto-enable Playing mode ONLY when switching to a DIFFERENT game tab
       const targetConv = mergedConversations[id];
       const isCurrentTab = session.currentGameId === id;
@@ -1499,12 +1488,13 @@ const MainApp: React.FC<MainAppProps> = ({
       
       // ✅ CRITICAL FIX: Save current conversations state to DB BEFORE switching
       // This ensures the new tab is persisted even if user switches quickly
-      ConversationService.setConversations(conversations).catch(error => {
+      await ConversationService.setConversations(conversations).catch(error => {
         console.error('🔄 [MainApp] Failed to persist conversations:', error);
       });
       
-      // Update active conversation in service in background (don't await)
-      ConversationService.setActiveConversation(id).catch(error => {
+      // ✅ TAB PERSISTENCE FIX: AWAIT active conversation update to ensure it's saved before refresh
+      // Without await, refreshing immediately after switching tabs will lose the active state
+      await ConversationService.setActiveConversation(id).catch(error => {
         console.error('🔄 [MainApp] Failed to sync active conversation:', error);
       });
     }
@@ -1895,7 +1885,9 @@ const MainApp: React.FC<MainAppProps> = ({
     const currentUser = authService.getCurrentUser();
     const isPro = currentUser?.tier === 'pro' || currentUser?.tier === 'vanguard_pro';
     
-    if (!isPro) return;
+    if (!isPro) {
+      return;
+    }
     
     const newMode = !aiModeEnabled;
     setAiModeEnabled(newMode);
@@ -2087,6 +2079,9 @@ const MainApp: React.FC<MainAppProps> = ({
     if (wasPlaying) {
       // Switching from Playing to Planning - create playing session summary
       toastService.info('Generating session summary...');
+      // Toggle the session state immediately for instant visual feedback
+      toggleSession(activeConversation.id);
+      
       try {
         const playingSummary = await sessionSummaryService.generatePlayingSessionSummary(activeConversation);
         await sessionSummaryService.storeSessionSummary(activeConversation.id, playingSummary);
@@ -2133,6 +2128,10 @@ const MainApp: React.FC<MainAppProps> = ({
     } else if (willBePlaying) {
       // Switching from Planning to Playing - create planning session summary
       toastService.info('Generating session summary...');
+      
+      // Toggle the session state immediately for instant visual feedback
+      toggleSession(activeConversation.id);
+      
       try {
         const planningSummary = await sessionSummaryService.generatePlanningSessionSummary(activeConversation);
         await sessionSummaryService.storeSessionSummary(activeConversation.id, planningSummary);
@@ -2177,9 +2176,6 @@ const MainApp: React.FC<MainAppProps> = ({
         toastService.error('Failed to create session summary.');
       }
     }
-
-    // Toggle the session
-    toggleSession(activeConversation.id);
   };
 
   // Handle stop AI request
@@ -2497,7 +2493,7 @@ const MainApp: React.FC<MainAppProps> = ({
     
     // Queue the image if present
     if (imageUrl) {
-      setQueuedScreenshots([imageUrl]);
+      setQueuedScreenshots([imageUrl]); // Queue single image in array
       console.log('✅ [MainApp] Queued image for re-send:', imageUrl.substring(0, 50) + '...');
     }
     
@@ -3973,8 +3969,12 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               // If progress was updated, merge it into gameTab for UI display
               if (progressUpdate !== null || objectiveUpdate !== null) {
                 const progressUpdates: Partial<Conversation> = {};
-                if (progressUpdate !== null) progressUpdates.gameProgress = progressUpdate;
-                if (objectiveUpdate !== null) progressUpdates.activeObjective = objectiveUpdate;
+                if (progressUpdate !== null) {
+                  progressUpdates.gameProgress = progressUpdate;
+                }
+                if (objectiveUpdate !== null) {
+                  progressUpdates.activeObjective = objectiveUpdate;
+                }
                 
                 // Merge progress into gameTab object
                 Object.assign(gameTab, progressUpdates);
@@ -4051,9 +4051,12 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                   const refreshedConvs = await ConversationService.getConversations();
                   const freshConversations = deepCloneConversations(refreshedConvs);
                   setConversations(freshConversations);
-                  const refreshedTarget = freshConversations[targetConversationIdRef.current!];
-                  if (refreshedTarget && activeConversation?.id === targetConversationIdRef.current) {
-                    setActiveConversation(refreshedTarget);
+                  const targetId = targetConversationIdRef.current;
+                  if (targetId) {
+                    const refreshedTarget = freshConversations[targetId];
+                    if (refreshedTarget && activeConversation?.id === targetId) {
+                      setActiveConversation(refreshedTarget);
+                    }
                   }
                 }).catch(error => console.error('🎮 [MainApp] ❌ Failed to apply deferred subtab updates:', error));
               }
@@ -4220,14 +4223,18 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
         }
       }
       
-      // ✅ FINAL REFRESH: Ensure UI is up to date with all changes
-      // This forces a re-render with the latest conversation state
-      const finalConversations = await ConversationService.getConversations();
-      setConversations(finalConversations);
-      const finalActiveConv = finalConversations[targetConversationIdRef.current || activeConversation.id];
-      if (finalActiveConv) {
-        setActiveConversation(finalActiveConv);
-      }
+      // ✅ BACKGROUND REFRESH: Update conversations in background (non-blocking)
+      // This doesn't block the UI - user can continue immediately after AI response
+      const targetId = targetConversationIdRef.current || activeConversation.id;
+      ConversationService.getConversations()
+        .then(finalConversations => {
+          setConversations(finalConversations);
+          const finalActiveConv = finalConversations[targetId];
+          if (finalActiveConv) {
+            setActiveConversation(finalActiveConv);
+          }
+        })
+        .catch(error => console.warn('Background refresh failed:', error));
 
     } catch (error) {
       console.error("🚨 [MainApp] Failed to get AI response:", error);
@@ -4598,9 +4605,23 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                   onClick={() => setSidebarOpen(true)}
                   className="flex-1 bg-gradient-to-r from-surface/30 to-background/30 backdrop-blur-sm border border-surface-light/20 rounded-lg px-4 py-3 transition-all duration-200 hover:from-surface/40 hover:to-background/40 hover:border-surface-light/30 active:scale-[0.98]"
                 >
-                  <h2 className="text-sm sm:text-base font-semibold bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent text-center">
+                  <h2 className="text-sm sm:text-base font-semibold bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent text-left">
                     {activeConversation.title}
                   </h2>
+                  {/* Mobile: Compact inline progress bar below title */}
+                  {!activeConversation.isGameHub && activeConversation.gameTitle && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <div className="flex-1 h-1.5 bg-[#1A1A1A] rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-[#D98C1F] to-[#FFB366] rounded-full transition-all duration-500"
+                          style={{ width: `${activeConversation.gameProgress || 0}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] font-bold text-[#D98C1F]">
+                        {activeConversation.gameProgress || 0}%
+                      </span>
+                    </div>
+                  )}
                 </button>
                 {/* Game Info Button - Mobile (right of thread name) */}
                 {!activeConversation.isGameHub && activeConversation.gameTitle && currentGameIGDBData && (
@@ -4636,9 +4657,9 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
           )}
 
           {/* Google AdSense Banner - Hidden for now, will be updated later */}
-          {false && currentUser.tier === 'free' && (
+          {/* {currentUser.tier === 'free' && (
             <AdBanner />
-          )}
+          )} */}
 
           {/* Subtabs Generation Progress Banner - Show during tier upgrade */}
           {isGeneratingSubtabs && generatingSubtabsProgress && (
@@ -4665,15 +4686,14 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                 </div>
               </div>
             </div>
-          )}
+          )}hidden lg:flex
 
-          {/* Game Progress Bar with Game Info Button - Show for game conversations (not Game Hub) */}
+          {/* Game Progress Bar with Game Info Button - Desktop only (>= 1024px) */}
+          {/* Mobile shows compact progress bar integrated into thread header above */}
           {activeConversation && !activeConversation.isGameHub && activeConversation.gameTitle && (
-            <div className="px-3 sm:px-4 lg:px-6 pt-3 pb-3 sm:pb-4 flex-shrink-0">
-              <div className="flex items-center gap-2 sm:gap-3">
+            <div className="desktop-progress-bar hidden lg:flex px-3 sm:px-4 lg:px-6 pt-3 pb-3 sm:pb-4 flex-shrink-0">
+              <div className="flex items-center gap-2 sm:gap-3 w-full">
                 <div className="flex-1">
-                  {/* 🔍 DEBUG: Log progress before passing to component */}
-                  {console.log('🎮 [MainApp] activeConversation gameProgress:', activeConversation.gameProgress, 'conv:', activeConversation.title)}
                   <GameProgressBar 
                     progress={activeConversation.gameProgress || 0}
                     gameTitle={activeConversation.gameTitle}
@@ -4737,8 +4757,8 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                   initialMessage={currentInputMessage}
                   onMessageChange={handleInputMessageChange}
                   queuedImages={queuedScreenshots}
-                  onRemoveQueuedImage={(index) => setQueuedScreenshots(prev => prev.filter((_, i) => i !== index))}
-                  onImageQueued={handleScreenshotQueued}
+                  onImagesQueued={handleScreenshotQueued}
+                  onRemoveQueuedImage={handleRemoveQueuedScreenshot}
                   isSidebarOpen={sidebarOpen}
                   onDeleteQueuedMessage={handleDeleteQueuedMessage}
                   onEditMessage={handleEditMessage}
@@ -5006,4 +5026,3 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
 };
 
 export default MainApp;
-
