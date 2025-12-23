@@ -418,6 +418,9 @@ interface ChatInterfaceProps {
   onDeleteSubtab?: (tabId: string) => void;
   onRetrySubtab?: (tabId: string) => void;
   onOpenExplorer?: () => void;
+  aiModeEnabled?: boolean;
+  onAiModeToggle?: () => void;
+  isPro?: boolean;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -454,6 +457,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onDeleteSubtab,
   onRetrySubtab,
   onOpenExplorer,
+  aiModeEnabled,
+  onAiModeToggle,
+  isPro = false
 }) => {
   const [message, setMessage] = useState(initialMessage);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -1070,9 +1076,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
         )}
 
-        {/* Active Session Toggle - Floating on right edge above HQ button */}
+        {/* Active Session Toggle - Floating on right edge above AI Mode button */}
         {conversation && gameTabService.isGameTab(conversation) && activeSession && !conversation.isUnreleased && onToggleActiveSession && (
-          <div className="absolute bottom-0 right-3 z-10 pointer-events-none" style={{ bottom: conversation.isGameHub ? '152px' : '92px' }}>
+          <div className="absolute bottom-0 right-4 z-30 pointer-events-none" style={{ bottom: conversation.isGameHub ? '220px' : '160px' }}>
             <div className="pointer-events-auto">
               <ActiveSessionToggle
                 isActive={activeSession.isActive && activeSession.currentGameId === conversation.id}
@@ -1082,19 +1088,66 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
         )}
 
+        {/* AI Mode Toggle - Floating button above HQ button (Pro/Vanguard only) */}
+        {aiModeEnabled !== undefined && isPro && onAiModeToggle && (
+          <div className="absolute bottom-0 right-4 z-20 pointer-events-none" style={{ bottom: conversation && conversation.isGameHub ? '148px' : '88px' }}>
+            <div className="pointer-events-auto">
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={onAiModeToggle}
+                className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300"
+                style={{ 
+                  background: aiModeEnabled
+                    ? 'linear-gradient(135deg, #A855F7 0%, #7C3AED 100%)'
+                    : 'linear-gradient(135deg, #6B7280 0%, #374151 100%)',
+                  boxShadow: aiModeEnabled 
+                    ? '0 4px 20px rgba(0, 0, 0, 0.5), 0 8px 32px rgba(168, 85, 247, 0.4)' 
+                    : '0 4px 20px rgba(0, 0, 0, 0.5), 0 8px 32px rgba(107, 114, 128, 0.4)' 
+                }}
+                title={aiModeEnabled ? 'AI Mode ON - Click to toggle' : 'AI Mode OFF - Click to toggle'}
+              >
+                <svg 
+                  className="w-6 h-6 text-white"
+                  viewBox="0 0 24 24" 
+                  fill="none"
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                >
+                  <rect x="4" y="4" width="16" height="16" rx="2" ry="2" />
+                  <rect x="9" y="9" width="6" height="6" fill={aiModeEnabled ? 'currentColor' : 'none'} />
+                  <line x1="9" y1="1" x2="9" y2="4" />
+                  <line x1="15" y1="1" x2="15" y2="4" />
+                  <line x1="9" y1="20" x2="9" y2="23" />
+                  <line x1="15" y1="20" x2="15" y2="23" />
+                  <line x1="20" y1="9" x2="23" y2="9" />
+                  <line x1="20" y1="14" x2="23" y2="14" />
+                  <line x1="1" y1="9" x2="4" y2="9" />
+                  <line x1="1" y1="14" x2="4" y2="14" />
+                </svg>
+              </motion.button>
+            </div>
+          </div>
+        )}
+
         {/* HQ Button - Floating icon button matching chat explore design */}
         {conversation && onOpenExplorer && (
-          <div className="absolute bottom-0 right-3 pb-4 z-10 pointer-events-none" style={{ bottom: conversation.isGameHub ? '60px' : '0' }}>
+          <div className="absolute bottom-0 right-4 pb-4 z-10 pointer-events-none" style={{ bottom: conversation.isGameHub ? '60px' : '0' }}>
             <div className="pointer-events-auto">
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={onOpenExplorer}
-                className="w-14 h-14 bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] text-white rounded-full flex items-center justify-center z-30"
-                style={{ boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5), 0 8px 32px rgba(229, 58, 58, 0.4)' }}
+                className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300"
+                style={{ 
+                  background: 'linear-gradient(135deg, #E53A3A 0%, #D98C1F 100%)',
+                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5), 0 8px 32px rgba(229, 58, 58, 0.4)'
+                }}
                 title="Open Gaming HQ"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                 </svg>
               </motion.button>

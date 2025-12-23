@@ -434,7 +434,7 @@ class AIService {
         }
 
         // Determine which model and tools to use
-        const modelName = 'gemini-2.5-flash';
+        const modelName = 'gemini-3-flash-preview';
         
         // ? ENHANCEMENT: Enable Google Search grounding for both text AND images
         // This allows game detection from screenshots to access current information
@@ -603,7 +603,7 @@ class AIService {
           cacheType,
           gameTitle: conversation.gameTitle,
           conversationId: conversation.id,
-          modelUsed: 'gemini-2.5-flash',
+          modelUsed: 'gemini-3-flash-preview',
           tokensUsed: aiResponse.metadata.tokens || 0,
           ttlHours: ttl
         }).catch(error => console.warn('Failed to cache AI response in database:', error));
@@ -625,7 +625,7 @@ class AIService {
         authUserId: user.authUserId,
         requestType: conversation.isGameHub ? 'game_hub' : hasImages ? 'image_analysis' : 'chat',
         tokensUsed: aiResponse.metadata.tokens || 0,
-        aiModel: 'gemini-2.5-flash',
+        aiModel: 'gemini-3-flash-preview',
         endpoint: '/generateContent'
       }).catch(error => console.warn('Failed to log API usage:', error));
       
@@ -1015,7 +1015,7 @@ Example format:
           imageBase64 = imageData.split(',')[1];
         }
 
-        const modelName = 'gemini-2.5-flash';
+        const modelName = 'gemini-3-flash-preview';
         
         // 🎯 Enable Google Search grounding ONLY when tier-approved
         const tools = useGrounding
@@ -1161,7 +1161,7 @@ Example format:
           otakonTags: tags,
           rawContent: rawContent,
           metadata: {
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash-preview',
             timestamp: Date.now(),
             cost: 0,
             tokens: 0,
@@ -1444,7 +1444,7 @@ Example format:
           otakonTags: new Map(), // Empty for JSON mode
           rawContent: rawResponse,
           metadata: {
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash-preview',
             timestamp: Date.now(),
             cost: 0,
             tokens: 0,
@@ -1501,7 +1501,7 @@ Example format:
           otakonTags: tags,
           rawContent: fallbackRawContent,
           metadata: {
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash-preview',
             timestamp: Date.now(),
             cost: 0,
             tokens: 0,
@@ -1694,9 +1694,9 @@ NOW generate COMPREHENSIVE valid JSON for ALL these tab IDs (MUST include every 
         const edgeResponse = await this.callEdgeFunction({
           prompt,
           temperature: 0.7,
-          maxTokens: 5000, // Output tokens for subtab content (input supports 1M tokens)
+          maxTokens: 8192, // Increased to fit all 9+ subtabs in one response (800 tokens × 9 = 7200)
           requestType: 'text',
-          model: 'gemini-2.5-flash', // Back to Flash model
+          model: 'gemini-3-flash-preview',
           callType: 'subtabs' // Subtab content generation
         });
 
@@ -1790,15 +1790,18 @@ NOW generate COMPREHENSIVE valid JSON for ALL these tab IDs (MUST include every 
         }
       }
 
-      // ? CRITICAL: Ensure ALL subtabs have content
+      // 🚨 CRITICAL: Ensure ALL subtabs have content - THROW ERROR if batch generation failed
       const configForValidation = insightTabsConfig[genre] || insightTabsConfig['Default'];
       const missingAfterParse = configForValidation.filter(tab => !insights[tab.id] || insights[tab.id].trim().length < 20);
       if (missingAfterParse.length > 0) {
-        console.error(`🔧 [generateInitialInsights] Filling ${missingAfterParse.length} missing/empty subtabs with fallback`);
-        missingAfterParse.forEach(tab => {
-          const progressHint = progress < 20 ? 'early-game' : progress < 50 ? 'mid-game' : progress >= 75 ? 'late-game' : 'mid-to-late-game';
-          insights[tab.id] = `**${tab.title}** for ${gameTitle}\n\nBased on your ${progressHint} progress (${progress}%), here's what you should know:\n\n${tab.instruction}\n\nChat with Otakon to populate this section with specific insights!`;
-        });
+        const errorMsg = `🚨 [generateInitialInsights] BATCH GENERATION FAILED! Missing ${missingAfterParse.length}/${configForValidation.length} subtabs: ${missingAfterParse.map(t => t.id).join(', ')}`;
+        console.error(errorMsg);
+        console.error('📋 Raw AI response (first 1000 chars):', responseText.substring(0, 1000));
+        console.error('📋 Expected subtabs:', configForValidation.map(t => t.id));
+        console.error('📋 Received subtabs:', Object.keys(insights));
+        
+        // DON'T silently fallback - throw error so we know batch generation is broken
+        throw new Error(errorMsg);
       }
 
       // Cache for 24 hours
@@ -1864,7 +1867,7 @@ NOW generate COMPREHENSIVE valid JSON for ALL these tab IDs (MUST include every 
           detection_confidence: confidence.toLowerCase() as 'high' | 'low',
           detected_genre: detectedGenre,
           game_status: gameStatus as 'released' | 'unreleased' | null,
-          ai_model: 'gemini-2.5-flash',
+          ai_model: 'gemini-3-flash-preview',
           tokens_used: aiResponse.metadata.tokens || 0,
           query_type: queryType
         });

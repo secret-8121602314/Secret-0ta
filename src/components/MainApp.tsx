@@ -1760,7 +1760,7 @@ const MainApp: React.FC<MainAppProps> = ({
   };
   
   const handleAiModeInfoConfirm = () => {
-    localStorage.setItem('otakon_ai_mode_info_seen', 'true');
+    localStorage.setItem('otakon_ai_mode_info_shown', 'true');
     setAiModeInfoOpen(false);
     // Toggle AI mode after user confirms
     toggleAiMode();
@@ -1868,17 +1868,16 @@ const MainApp: React.FC<MainAppProps> = ({
       return;
     }
     
-    // Check if user has seen the AI mode info before
-    const hasSeenInfo = localStorage.getItem('otakon_ai_mode_info_seen') === 'true';
+    // Check if user has seen the AI mode info modal before
+    const hasSeenAiModeInfo = localStorage.getItem('otakon_ai_mode_info_shown') === 'true';
     
-    if (!hasSeenInfo) {
-      // Show info modal on first toggle attempt
+    if (!hasSeenAiModeInfo) {
+      // First time - show info modal
       setAiModeInfoOpen(true);
-      return;
+    } else {
+      // Already seen modal - toggle directly
+      toggleAiMode();
     }
-    
-    // Toggle AI mode
-    toggleAiMode();
   };
   
   const toggleAiMode = () => {
@@ -2196,8 +2195,10 @@ const MainApp: React.FC<MainAppProps> = ({
       return;
     }
 
-    // Wait 1 second before checking
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // ✅ OPTIMIZATION: Progressive backoff - start with 2s, increase to 3s after 10 attempts
+    // Reduces unnecessary database queries while subtabs are generating
+    const pollInterval = attempts < 10 ? 2000 : 3000;
+    await new Promise(resolve => setTimeout(resolve, pollInterval));
 
     try {
       // ✅ FIX: Aggressively clear cache before every poll to prevent stale reads
@@ -2290,6 +2291,11 @@ const MainApp: React.FC<MainAppProps> = ({
   const pollingConversationRef = useRef<string | null>(null);
   
   useEffect(() => {
+    // ✅ OPTIMIZATION: Don't poll for Free tier users (they don't have subtabs)
+    if (currentUser.tier === 'free') {
+      return;
+    }
+    
     // Only check if we have an active conversation with subtabs
     if (!activeConversation?.subtabs || activeConversation.subtabs.length === 0) {
       return;
@@ -3918,24 +3924,24 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
             
             console.log('✅ [MainApp] Messages saved to target with IDs:', { userMessageDbId, aiMessageDbId });
             
-            // ✅ APPLY DEFERRED PROGRESS/OBJECTIVE UPDATES TO DATABASE IMMEDIATELY
-            // Must happen BEFORE updateSubtabsAfterMigration to prevent being overwritten by DB refresh
+            // ✅ APPLY DEFERRED PROGRESS/OBJECTIVE UPDATES TO DATABASE
+            // Batch progress and objective updates into a single database write
             if (progressUpdate !== null || objectiveUpdate !== null) {
               const progressUpdates: Partial<Conversation> = { updatedAt: Date.now() };
               
               if (progressUpdate !== null) {
                 progressUpdates.gameProgress = progressUpdate;
-                console.log(`🎮 [MainApp] 💾 Saving progress ${progressUpdate}% to database for: ${targetConversationId}`);
+                console.log(`🎮 [MainApp] 💾 Batching progress ${progressUpdate}% to database for: ${targetConversationId}`);
               }
               
               if (objectiveUpdate !== null) {
                 progressUpdates.activeObjective = objectiveUpdate;
-                console.log(`🎮 [MainApp] 💾 Saving objective to database for: ${targetConversationId}`);
+                console.log(`🎮 [MainApp] 💾 Batching objective to database for: ${targetConversationId}`);
               }
               
-              // Save to database immediately
+              // ✅ OPTIMIZATION: Single database write instead of separate updates
               await ConversationService.updateConversation(targetConversationId, progressUpdates);
-              console.log('✅ [MainApp] Progress/objective saved to database');
+              console.log('✅ [MainApp] Progress/objective saved to database (batched)');
             }
             
             // ✅ CRITICAL FIX: No migration needed - messages already saved to correct conversation!
@@ -3955,10 +3961,11 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               return updated;
             });
             
-            // ✅ After migration, update subtabs with new context from the AI response
-            // This updates existing subtabs progressively, not regenerating them
-            gameTabService.updateSubtabsAfterMigration(targetConversationId, response as unknown as AIResponse)
-              .catch(error => console.error('🔄 [MainApp] Background subtab update failed:', error));
+            // ✅ OPTIMIZATION: Skip updateSubtabsAfterMigration - subtabs already generated in createGameTab
+            // The initial generation includes the screenshot context, so no need to update again
+            // This saves 7-12 redundant Gemini API calls per tab creation
+            // gameTabService.updateSubtabsAfterMigration(targetConversationId, response as unknown as AIResponse)
+            //   .catch(error => console.error('🔄 [MainApp] Background subtab update failed:', error));
             
             // ✅ PERFORMANCE: Use optimistic update instead of database refresh (saves 200-500ms)
             // We already have the complete conversation object from createGameTab + message saves
@@ -4027,13 +4034,12 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               
               if (hasLoadingSubtabs) {
                 console.error('🎮 [MainApp] 🔄 Starting background refresh for loading subtabs');
-                // ✅ FIX: Increase delay to 8 seconds to give background AI task time to complete
-                // Background insight generation takes ~5-7 seconds, so we wait 8 to be safe.
-                // This prevents excessive polling when subtabs haven't been generated yet.
+                // ✅ OPTIMIZATION: Reduced delay from 8s to 4s
+                // Subtab generation happens in parallel, first results appear around 3-4s
                 setTimeout(() => {
                   console.error(`🎮 [MainApp] ⏰ Delay complete, starting poll for conversation: ${targetConversationId}`);
                   pollForSubtabUpdates(targetConversationId);
-                }, 8000); // Wait 8 seconds before first poll (was 2 seconds)
+                }, 4000); // Wait 4 seconds before first poll (was 8 seconds)
               } else {
                 console.error(`🎮 [MainApp] ✅ No loading subtabs for "${gameTab.title}", skipping poll`);
               }
@@ -4539,15 +4545,6 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               />
             </div>
 
-            {/* AI Mode Toggle - Pro/Vanguard only */}
-            {(currentUser.tier === 'pro' || currentUser.tier === 'vanguard_pro') && (
-              <AIToggleButton
-                isEnabled={aiModeEnabled}
-                onToggle={handleAiModeToggle}
-                isPro={true}
-              />
-            )}
-
             {/* Hands-Free Toggle - Pro/Vanguard only */}
             {(currentUser.tier === 'pro' || currentUser.tier === 'vanguard_pro') && (
               <HandsFreeToggle
@@ -4768,6 +4765,9 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                   onDeleteSubtab={handleDeleteSubtab}
                   onRetrySubtab={handleRetrySubtab}
                   onOpenExplorer={() => { haptic.modalOpen(); setGamingExplorerOpen(true); }}
+                  aiModeEnabled={aiModeEnabled}
+                  onAiModeToggle={handleAiModeToggle}
+                  isPro={currentUser.tier === 'pro' || currentUser.tier === 'vanguard_pro'}
                 />
               </ErrorBoundary>
             </div>
