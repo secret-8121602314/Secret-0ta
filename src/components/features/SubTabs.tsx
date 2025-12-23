@@ -71,6 +71,7 @@ interface SubTabsProps {
   onDeleteTab?: (tabId: string) => void;
   onExpandedChange?: (isExpanded: boolean) => void;
   onRetrySubtab?: (tabId: string) => void;
+  forceExpand?: boolean; // Force expand the panel (used during generation)
 }
 
 const SubTabs: React.FC<SubTabsProps> = ({ 
@@ -82,7 +83,8 @@ const SubTabs: React.FC<SubTabsProps> = ({
   onModifyTab,
   onDeleteTab,
   onExpandedChange,
-  onRetrySubtab
+  onRetrySubtab,
+  forceExpand = false
 }) => {
   const [localActiveTab, setLocalActiveTab] = useState<string>(activeTabId || subtabs[0]?.id || '');
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
@@ -113,6 +115,23 @@ const SubTabs: React.FC<SubTabsProps> = ({
 
   const currentActiveTab = activeTabId || localActiveTab;
   const activeTab = subtabs.find(tab => tab.id === currentActiveTab);
+  
+  // Track if we've already responded to forceExpand to prevent re-expansion after user closes
+  const hasForceExpandedRef = useRef(false);
+  
+  // Force expand when forceExpand prop becomes true (only once)
+  useEffect(() => {
+    if (forceExpand && !isExpanded && !hasForceExpandedRef.current) {
+      console.log('📂 [SubTabs] Force expanding due to forceExpand prop');
+      setIsExpanded(true);
+      onExpandedChange?.(true);
+      hasForceExpandedRef.current = true;
+    }
+    // Reset the flag when forceExpand becomes false
+    if (!forceExpand) {
+      hasForceExpandedRef.current = false;
+    }
+  }, [forceExpand, isExpanded, onExpandedChange]);
   
   // Close context menu on click outside
   useEffect(() => {
@@ -300,7 +319,8 @@ const SubTabs: React.FC<SubTabsProps> = ({
       setHasUnreadUpdates(false);
     }
     
-    onExpandedChange?.(newExpanded); // Notify parent of expanded state change
+    // Always notify parent of expanded state change (so parent can reset forceExpand if user closed)
+    onExpandedChange?.(newExpanded);
   };
 
   // Return null if no subtabs (after hooks)
@@ -362,10 +382,22 @@ const SubTabs: React.FC<SubTabsProps> = ({
       {/* Collapsible Content - Overlay positioned ABOVE the button, matching Gaming News style */}
       {isExpanded && (
         <>
-          {/* Backdrop overlay - close on click (mobile only) */}
+          {/* Backdrop overlay - close on click (both mobile and desktop) */}
           <div
-            className="lg:hidden fixed inset-0 z-40"
-            onClick={() => setIsExpanded(false)}
+            className="fixed inset-0 z-40"
+            onClick={() => {
+              setIsExpanded(false);
+              setHasUserInteracted(true);
+              onExpandedChange?.(false); // Notify parent that user closed the panel
+            }}
+          />
+          {/* Chat area backdrop blur - only visible when subtabs expanded */}
+          <div
+            className="fixed inset-0 z-35 backdrop-blur-sm pointer-events-none"
+            style={{
+              WebkitBackdropFilter: 'blur(4px)',
+              backdropFilter: 'blur(4px)'
+            }}
           />
           {/* 
             Mobile: FIXED positioning to break out of all stacking contexts and appear above thread name

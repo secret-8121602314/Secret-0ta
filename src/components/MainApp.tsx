@@ -47,6 +47,7 @@ import AIToggleButton from './ui/AIToggleButton';
 import { AppLoadingScreen } from './ui/AppLoadingScreen';
 import SettingsContextMenu from './ui/SettingsContextMenu';
 import ProfileSetupBanner from './ui/ProfileSetupBanner';
+import SubtabsGenerationBanner from './ui/SubtabsGenerationBanner';
 import GameProgressBar from './features/GameProgressBar';
 import ErrorBoundary from './ErrorBoundary';
 // import AdBanner from './ads/AdBanner'; // Hidden for now
@@ -237,6 +238,13 @@ const MainApp: React.FC<MainAppProps> = ({
   const previousTierRef = useRef<string | null>(null);
   const [isGeneratingSubtabs, setIsGeneratingSubtabs] = useState(false);
   const [generatingSubtabsProgress, setGeneratingSubtabsProgress] = useState<{current: number; total: number; gameName: string} | null>(null);
+  const [showSubtabsGenerationBanner, setShowSubtabsGenerationBanner] = useState(() => {
+    // Persist banner state in localStorage so it survives app refresh
+    const stored = localStorage.getItem('showSubtabsGenerationBanner');
+    return stored === 'true';
+  });
+  const [forceExpandSubtabs, setForceExpandSubtabs] = useState(false);
+  const hasInitializedTierRef = useRef(false);
   
   // ✅ PERFORMANCE: Memoize currentUser to prevent re-creating object on every render
   const currentUser = useMemo(() => user || { tier: 'free' } as User, [user]);
@@ -316,6 +324,28 @@ const MainApp: React.FC<MainAppProps> = ({
     localStorage.setItem('otakon_grounding_enabled', String(isGroundingEnabled));
   }, [isGroundingEnabled]);
 
+  // ✅ FIX: Sync activeConversation when conversations state changes
+  // This ensures the UI reflects updated progress values and subtabs immediately
+  useEffect(() => {
+    if (activeConversation && conversations[activeConversation.id]) {
+      const updatedConversation = conversations[activeConversation.id];
+      // Only update if there are actual changes (prevent infinite loop)
+      const hasProgressChange = updatedConversation.gameProgress !== activeConversation.gameProgress;
+      const hasObjectiveChange = updatedConversation.activeObjective !== activeConversation.activeObjective;
+      const hasSubtabsChange = (updatedConversation.subtabs?.length || 0) !== (activeConversation.subtabs?.length || 0);
+      
+      if (hasProgressChange || hasObjectiveChange || hasSubtabsChange) {
+        console.log('🔄 [MainApp] Syncing activeConversation with updated conversations state', {
+          oldProgress: activeConversation.gameProgress,
+          newProgress: updatedConversation.gameProgress,
+          oldSubtabsCount: activeConversation.subtabs?.length || 0,
+          newSubtabsCount: updatedConversation.subtabs?.length || 0
+        });
+        setActiveConversation(updatedConversation);
+      }
+    }
+  }, [conversations, activeConversation?.id, activeConversation?.gameProgress, activeConversation?.activeObjective, activeConversation?.subtabs?.length]);
+
   // Helper function to refresh quota from server
   const refreshQuota = useCallback(async () => {
     if (!user?.authUserId) {
@@ -357,16 +387,25 @@ const MainApp: React.FC<MainAppProps> = ({
 
   // ✅ CRITICAL: Load suggested prompts from last AI message when conversation changes
   useEffect(() => {
+    console.log('🎯 [PROMPTS] useEffect triggered, activeConversation:', activeConversation?.id, activeConversation?.gameTitle);
+    
     // Skip if we're currently setting suggestions from an AI response
     if (isSettingSuggestionsFromAI.current) {
       console.log('📌 [MainApp] Skipping useEffect - AI is setting suggestions');
       return;
     }
     
-    if (!activeConversation) {
+    // ✅ FIX: Use activeConversation directly since it's the source of truth for the current tab
+    // Don't use conversations map lookup as it can be stale
+    if (!activeConversation?.id || !activeConversation?.messages) {
+      console.log('🎯 [PROMPTS] No active conversation or messages, clearing prompts');
       setSuggestedPrompts([]);
       return;
     }
+
+    // ✅ SIMPLIFIED: Always load prompts when conversation changes - no ref caching
+    // The ref caching was causing stale data issues when switching tabs
+    console.log('🎯 [PROMPTS] Loading prompts for:', activeConversation.id, 'messages:', activeConversation.messages.length);
 
     // Find the last assistant message with suggestions (check both field and metadata)
     const lastAIMessage = [...activeConversation.messages]
@@ -382,15 +421,9 @@ const MainApp: React.FC<MainAppProps> = ({
       // Get suggestions from metadata only
       const savedPrompts = lastAIMessage.metadata?.suggestedPrompts;
       if (savedPrompts && Array.isArray(savedPrompts) && savedPrompts.length > 0) {
-        console.log('📌 [MainApp] Loading saved suggestions from last AI message:', savedPrompts);
+        console.log('🎯 [PROMPTS] ✅ Setting AI prompts for', activeConversation.gameTitle || activeConversation.title, ':', savedPrompts.slice(0, 2));
         setSuggestedPrompts(savedPrompts);
         return;
-      } else {
-        console.log('⚠️ [MainApp] No AI prompts found. lastAIMessage:', {
-          hasMetadata: !!lastAIMessage.metadata,
-          metadataPrompts: lastAIMessage.metadata?.suggestedPrompts,
-          messageKeys: Object.keys(lastAIMessage)
-        });
       }
     }
     
@@ -399,10 +432,9 @@ const MainApp: React.FC<MainAppProps> = ({
       activeConversation.id,
       activeConversation.isGameHub ?? false
     );
-    console.log('📌 [MainApp] No saved suggestions - using fallback:', fallbackSuggestions);
+    console.log('🎯 [PROMPTS] No AI prompts - using fallback for', activeConversation.gameTitle || activeConversation.title);
     setSuggestedPrompts(fallbackSuggestions);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeConversation?.id]); // Only re-run when conversation ID changes (intentional)
+  }, [activeConversation?.id, activeConversation?.messages?.length]); // ✅ FIX: Use messages length to avoid array reference issues
 
   // Handle WebSocket messages for screenshot processing
   // Note: Connection confirmation (partner_connected) is handled by MainAppRoute
@@ -1078,22 +1110,43 @@ const MainApp: React.FC<MainAppProps> = ({
     return () => clearTimeout(timeout);
   }, [isInitializing, conversations, activeConversation]);
 
+  // ✅ CHECK FOR UPGRADE SPLASH FLAG: Show splash if user just completed payment
+  useEffect(() => {
+    // Only check if we have a user and they're not initializing
+    if (!currentUser?.id || isInitializing) {
+      return;
+    }
+
+    // Check if we should show the upgrade splash (set by PaymentSuccess page)
+    const shouldShowUpgradeSplash = localStorage.getItem('otakon_show_upgrade_splash') === 'true';
+    
+    if (shouldShowUpgradeSplash) {
+      console.log('🎉 [MainApp] Upgrade splash flag detected - showing welcome splash for', currentUser.tier);
+      
+      // Clear the flag
+      localStorage.removeItem('otakon_show_upgrade_splash');
+      
+      // Set the tier and show the splash
+      const tier = currentUser.tier as 'pro' | 'vanguard_pro';
+      if (tier === 'pro' || tier === 'vanguard_pro') {
+        setUpgradedTier(tier);
+        setProUpgradeSplashOpen(true);
+      }
+    }
+  }, [currentUser?.id, currentUser?.tier, isInitializing]);
+
   // ✅ TIER UPGRADE: Detect tier changes and generate subtabs for existing game tabs
   // ✅ FIX: Track if we've finished initial user load to avoid false upgrade detection
-  const hasInitializedTierRef = useRef(false);
-  
   useEffect(() => {
     const currentTier = currentUser?.tier || 'free';
     const previousTier = previousTierRef.current;
     
     console.log('🔄 [TierChange] Effect triggered - currentTier:', currentTier, 'previousTier:', previousTier, 'isInitializing:', isInitializing, 'hasInitialized:', hasInitializedTierRef.current);
     
-    // Update ref for next comparison
-    previousTierRef.current = currentTier;
-    
     // Skip on initial mount (no previous tier set yet)
     if (previousTier === null) {
       console.log('🔄 [TierChange] Initial tier set:', currentTier);
+      previousTierRef.current = currentTier;
       return;
     }
     
@@ -1108,6 +1161,7 @@ const MainApp: React.FC<MainAppProps> = ({
     if (!hasInitializedTierRef.current && user?.id) {
       hasInitializedTierRef.current = true;
       console.log('🔄 [TierChange] First user load - tier initialized to:', currentTier);
+      previousTierRef.current = currentTier;
       return;
     }
     
@@ -1119,74 +1173,79 @@ const MainApp: React.FC<MainAppProps> = ({
     
     console.log('🔄 [TierChange] ⭐ TIER CHANGED from', previousTier, 'to', currentTier);
     
+    // ✅ FIX: Update ref AFTER detecting change but BEFORE early returns
+    previousTierRef.current = currentTier;
+    
     // Check if upgrading from free to paid tier
     const wasFree = previousTier === 'free';
     const isPaidNow = currentTier === 'pro' || currentTier === 'vanguard_pro';
     
     if (wasFree && isPaidNow) {
-      console.log('🔄 [TierChange] User upgraded from free to', currentTier, '- generating subtabs for existing game tabs');
+      console.log('🔄 [TierChange] User upgraded from free to', currentTier, '- showing subtabs generation banner');
       
-      // Check if we've shown the upgrade splash for this tier before
-      const shownUpgradeSplashKey = `otakon_upgrade_splash_shown_${currentTier}`;
-      const hasShownUpgradeSplash = localStorage.getItem(shownUpgradeSplashKey) === 'true';
+      // Check if this is a trial activation (not a regular paid upgrade)
+      const isTrial = currentUser?.trialExpiresAt && new Date(currentUser.trialExpiresAt).getTime() > Date.now();
       
-      if (!hasShownUpgradeSplash) {
-        // First time upgrading to this tier - show splash screen
-        console.log('🔄 [TierChange] Showing upgrade splash for first-time', currentTier, 'user');
+      // ✅ ALWAYS show splash for trial activations (don't save to localStorage for trials)
+      // For regular paid upgrades, check localStorage to avoid showing multiple times
+      if (isTrial) {
+        // Trial activation - ALWAYS show splash, don't check localStorage
+        console.log('🔄 [TierChange] Trial activated - showing upgrade splash');
         setUpgradedTier(currentTier as 'pro' | 'vanguard_pro');
         setProUpgradeSplashOpen(true);
-        localStorage.setItem(shownUpgradeSplashKey, 'true');
       } else {
-        // Already shown before - just show toast
-        toastService.success('Upgrade Complete! 🎉 Generating game insights...');
+        // Regular paid upgrade - check if we've shown this before
+        const shownUpgradeSplashKey = `otakon_upgrade_splash_shown_${currentTier}`;
+        const hasShownUpgradeSplash = localStorage.getItem(shownUpgradeSplashKey) === 'true';
+        
+        if (!hasShownUpgradeSplash) {
+          // First time upgrading to this tier - show splash screen
+          console.log('🔄 [TierChange] First paid upgrade to', currentTier, '- showing splash');
+          setUpgradedTier(currentTier as 'pro' | 'vanguard_pro');
+          setProUpgradeSplashOpen(true);
+          localStorage.setItem(shownUpgradeSplashKey, 'true');
+        } else {
+          // Already shown before - just show toast
+          console.log('🔄 [TierChange] Upgrade splash already shown for', currentTier, '- showing toast instead');
+          toastService.success('Upgrade Complete! 🎉');
+        }
       }
       
-      setIsGeneratingSubtabs(true);
-      
-      // Generate subtabs in background
-      gameTabService.generateSubtabsForExistingGameTabs(
-        conversations,
-        undefined, // playerProfile - could get from profileService if needed
-        async (completed, total, currentGame) => {
-          console.log(`🔄 [TierChange] Progress: ${completed}/${total} - ${currentGame}`);
-          
-          // Update progress state for UI banner
-          setGeneratingSubtabsProgress({ current: completed + 1, total, gameName: currentGame });
-          
-          // Show progress toast for each game
-          if (completed < total) {
-            // Removed toast - now showing in banner instead
-            
-            // ✅ INCREMENTAL REFRESH: Update UI after each game to show progress immediately
-            try {
-              const updatedConvs = await ConversationService.getConversations(true);
-              setConversations(updatedConvs);
-            } catch (err) {
-              console.warn('Failed to incrementally refresh conversations:', err);
-            }
-          } else {
-            toastService.success(`All insights generated! ✨ Created insights for ${total} games`);
-            setIsGeneratingSubtabs(false);
-            setGeneratingSubtabsProgress(null);
-            
-            // Final refresh to get all updated subtabs
-            ConversationService.getConversations(true).then(updatedConvs => {
-              setConversations(updatedConvs);
-            }).catch(err => {
-              console.error('Failed to refresh conversations:', err);
-            });
-          }
-        }
-      ).catch(error => {
-        console.error('🔄 [TierChange] Failed to generate subtabs:', error);
-        setIsGeneratingSubtabs(false);
-        setGeneratingSubtabsProgress(null);
-        toastService.error('Error generating insights. Some game insights may not have been created.');
-      });
+      // Show the banner to let user manually trigger generation
+      setShowSubtabsGenerationBanner(true);
+      localStorage.setItem('showSubtabsGenerationBanner', 'true');
     } else if (!wasFree && currentTier === 'free') {
       // Downgrading to free - just log, subtabs are preserved but won't update
       console.log('🔄 [TierChange] User downgraded to free tier - subtabs preserved but will not update');
       toastService.info('Subscription ended. Your game insights are preserved but won\'t update until you resubscribe.');
+    }
+  }, [currentUser?.tier, conversations, isInitializing, user?.id]);
+
+  // ✅ CHECK FOR GAMES WITHOUT SUBTABS: Show banner for pro/vanguard users who have game tabs without lore & insights
+  useEffect(() => {
+    const currentTier = currentUser?.tier || 'free';
+    const isPaid = currentTier === 'pro' || currentTier === 'vanguard_pro';
+    
+    // Only check for paid users who are done initializing
+    if (!isPaid || isInitializing || !user?.id) {
+      return;
+    }
+    
+    // Check if there are any game tabs without subtabs (excluding Game Hub and unreleased games)
+    const gameTabs = Object.values(conversations).filter(c => 
+      !c.isGameHub && c.gameTitle && !c.isUnreleased
+    );
+    
+    const gamesWithoutSubtabs = gameTabs.filter(c => !c.subtabs || c.subtabs.length === 0);
+    
+    // If there are games without subtabs and banner is not already showing, show it
+    if (gamesWithoutSubtabs.length > 0) {
+      const shouldShowBanner = localStorage.getItem('showSubtabsGenerationBanner');
+      if (shouldShowBanner !== 'false') {
+        console.log('🔄 [SubtabsCheck] Found', gamesWithoutSubtabs.length, 'games without subtabs - showing banner');
+        setShowSubtabsGenerationBanner(true);
+        localStorage.setItem('showSubtabsGenerationBanner', 'true');
+      }
     }
   }, [currentUser?.tier, conversations, isInitializing, user?.id]);
 
@@ -1517,25 +1576,6 @@ const MainApp: React.FC<MainAppProps> = ({
     if (!targetConversation) {
       setSidebarOpen(false);
     }
-
-    // Set initial suggested prompts for Game Hub tab
-    const conversation = conversations[id];
-    if (conversation?.isGameHub || id === GAME_HUB_ID) {
-      // If no messages yet, show news prompts (they will be displayed by SuggestedPrompts component)
-      if (!conversation || !conversation.messages || conversation.messages.length === 0) {
-        // SuggestedPrompts component will handle showing newsPrompts for Game Hub
-        // We just need to ensure prompts array is not empty
-        setSuggestedPrompts(newsPrompts);
-      } else {
-        // If there are messages, show contextual fallback prompts
-        const fallbackPrompts = suggestedPromptsService.getFallbackSuggestions(id, conversation.isGameHub);
-        setSuggestedPrompts(fallbackPrompts);
-      }
-    } else {
-      // For game tabs, set appropriate fallback prompts
-      const fallbackPrompts = suggestedPromptsService.getFallbackSuggestions(id, conversation?.isGameHub);
-      setSuggestedPrompts(fallbackPrompts);
-    }
   };
 
   const handleDeleteConversation = async (id: string) => {
@@ -1688,6 +1728,72 @@ const MainApp: React.FC<MainAppProps> = ({
   const handleCreditModalClose = () => {
     haptic.modalClose();
     setCreditModalOpen(false);
+  };
+
+  const handleGenerateSubtabs = async () => {
+    console.log('✨ [SubtabsGeneration] User triggered subtabs generation');
+    
+    // ✅ FIX: Only generate for the current active game tab, not all games
+    if (!activeConversation || activeConversation.isGameHub || !activeConversation.gameTitle) {
+      console.warn('✨ [SubtabsGeneration] Cannot generate - not on a game tab');
+      toastService.error('Please open a game tab to generate insights');
+      return;
+    }
+    
+    // Hide banner immediately
+    setShowSubtabsGenerationBanner(false);
+    localStorage.setItem('showSubtabsGenerationBanner', 'false');
+    
+    // Expand SubTabs panel immediately
+    setForceExpandSubtabs(true);
+    
+    setIsGeneratingSubtabs(true);
+    
+    try {
+      // Fetch fresh conversation data
+      const freshConversations = await ConversationService.getConversations(true);
+      setConversations(freshConversations);
+      
+      // ✅ FIX: Generate subtabs for ONLY the current game tab
+      const currentGameConv = freshConversations[activeConversation.id];
+      if (!currentGameConv) {
+        throw new Error('Current conversation not found');
+      }
+      
+      console.log(`✨ [SubtabsGeneration] Generating insights for: ${currentGameConv.gameTitle}`);
+      setGeneratingSubtabsProgress({ current: 1, total: 1, gameName: currentGameConv.gameTitle || currentGameConv.title });
+      
+      // Generate subtabs for just this one game
+      await gameTabService.generateSubtabsForExistingGameTabs(
+        { [currentGameConv.id]: currentGameConv }, // Only pass the current conversation
+        undefined,
+        async (completed, total, currentGame) => {
+          console.log(`✨ [SubtabsGeneration] Progress: ${completed}/${total} - ${currentGame}`);
+          setGeneratingSubtabsProgress({ current: completed + 1, total, gameName: currentGame });
+          
+          if (completed >= total) {
+            toastService.success(`Insights generated! ✨ Created insights for ${currentGame}`);
+            setIsGeneratingSubtabs(false);
+            setGeneratingSubtabsProgress(null);
+            
+            // Refresh to get the new subtabs
+            const updatedConvs = await ConversationService.getConversations(true);
+            setConversations(updatedConvs);
+            
+            // Update active conversation with new subtabs
+            const updatedActiveConv = updatedConvs[activeConversation.id];
+            if (updatedActiveConv) {
+              setActiveConversation(updatedActiveConv);
+            }
+          }
+        }
+      );
+    } catch (error) {
+      console.error('✨ [SubtabsGeneration] Failed:', error);
+      setIsGeneratingSubtabs(false);
+      setGeneratingSubtabsProgress(null);
+      toastService.error('Error generating insights. Please try again.');
+    }
   };
 
   const handleGroundingToggle = () => {
@@ -2348,7 +2454,7 @@ const MainApp: React.FC<MainAppProps> = ({
   }, [activeConversation?.id, activeConversation?.subtabs]);
 
   // Placeholder for game tab creation - will be implemented in Week 3
-  const handleCreateGameTab = async (gameInfo: { gameTitle: string; genre?: string; aiResponse?: Record<string, unknown>; isUnreleased?: boolean }): Promise<Conversation | null> => {
+  const handleCreateGameTab = async (gameInfo: { gameTitle: string; genre?: string; aiResponse?: Record<string, unknown>; isUnreleased?: boolean; gameProgress?: number; activeObjective?: string }): Promise<Conversation | null> => {
     console.log('🎮 [MainApp] handleCreateGameTab called:', {
       gameTitle: gameInfo.gameTitle,
       currentUserTier: currentUser.tier,
@@ -2388,7 +2494,9 @@ const MainApp: React.FC<MainAppProps> = ({
         userId: user.id,
         userTier: currentUser.tier, // Pass user tier for subtabs gating
         aiResponse: gameInfo.aiResponse as AIResponse | undefined, // Pass AI response for subtab population
-        isUnreleased: gameInfo.isUnreleased || false // Pass unreleased status
+        isUnreleased: gameInfo.isUnreleased || false, // Pass unreleased status
+        gameProgress: gameInfo.gameProgress, // Pass initial progress from AI response
+        activeObjective: gameInfo.activeObjective // Pass initial objective from AI response
       });
 
       // Add to conversations state
@@ -2845,6 +2953,12 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
   const handleSendMessage = async (message: string, imageUrl?: string) => {
     // Haptic feedback for message send
     haptic.messageSend();
+    
+    // Hide subtabs generation banner when user sends a message
+    if (showSubtabsGenerationBanner) {
+      setShowSubtabsGenerationBanner(false);
+      localStorage.setItem('showSubtabsGenerationBanner', 'false');
+    }
     
     // ✅ PROCESSING LOCK: Prevent concurrent operations during AI response handling
     if (isProcessingResponse) {
@@ -3611,7 +3725,9 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
       }
 
       // ✅ NEW: Handle OTAKON_SUBTAB_UPDATE for automatic subtab content updates
-      if (response.otakonTags.has('SUBTAB_UPDATE')) {
+      // 🔒 TIER-GATING: Only process subtab updates for Pro/Vanguard users
+      const isPaidUser = currentUser?.tier === 'pro' || currentUser?.tier === 'vanguard_pro';
+      if (response.otakonTags.has('SUBTAB_UPDATE') && isPaidUser) {
         const subtabUpdates = response.otakonTags.get('SUBTAB_UPDATE') as Array<{tab: string; content: string}>;
         if (Array.isArray(subtabUpdates) && subtabUpdates.length > 0) {
           console.log(`📝 [MainApp] OTAKON_SUBTAB_UPDATE detected:`, subtabUpdates.length, 'updates');
@@ -3687,7 +3803,8 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
       }
 
       // ✅ Handle OTAKON_SUBTAB_CONSOLIDATE for full subtab content replacement (AI-powered summarization)
-      if (response.otakonTags.has('SUBTAB_CONSOLIDATE')) {
+      // 🔒 TIER-GATING: Only process subtab consolidations for Pro/Vanguard users
+      if (response.otakonTags.has('SUBTAB_CONSOLIDATE') && isPaidUser) {
         const consolidateUpdates = response.otakonTags.get('SUBTAB_CONSOLIDATE') as Array<{tab: string; content: string}>;
         if (Array.isArray(consolidateUpdates) && consolidateUpdates.length > 0) {
           console.log(`📦 [MainApp] OTAKON_SUBTAB_CONSOLIDATE detected:`, consolidateUpdates.length, 'consolidations');
@@ -3909,7 +4026,14 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
             console.log('🎮 [MainApp] Using existing game tab:', targetConversationId);
           } else {
             console.log('🎮 [MainApp] Creating new game tab for:', gameTitle, isUnreleased ? '(unreleased)' : '(released)');
-            const gameInfo = { gameTitle: gameTitle as string, genre: genre as string | undefined, aiResponse: response as unknown as Record<string, unknown>, isUnreleased };
+            const gameInfo = { 
+              gameTitle: gameTitle as string, 
+              genre: genre as string | undefined, 
+              aiResponse: response as unknown as Record<string, unknown>, 
+              isUnreleased,
+              gameProgress: progressUpdate ?? undefined,
+              activeObjective: objectiveUpdate ?? undefined
+            };
             const newGameTab = await handleCreateGameTab(gameInfo);
             targetConversationId = newGameTab?.id || '';
             
@@ -3970,6 +4094,8 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               // ✅ OPTIMIZATION: Single database write instead of separate updates
               await ConversationService.updateConversation(targetConversationId, progressUpdates);
               console.log('✅ [MainApp] Progress/objective saved to database (batched)');
+              // ✅ FIX: Clear cache to ensure fresh data on next load
+              ConversationService.clearCache();
             }
             
             // ✅ CRITICAL FIX: No migration needed - messages already saved to correct conversation!
@@ -4002,6 +4128,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
             // Update state with the constructed gameTab
             if (gameTab) {
               // If progress was updated, merge it into gameTab for UI display
+              let updatedGameTab = gameTab;
               if (progressUpdate !== null || objectiveUpdate !== null) {
                 const progressUpdates: Partial<Conversation> = {};
                 if (progressUpdate !== null) {
@@ -4011,18 +4138,18 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                   progressUpdates.activeObjective = objectiveUpdate;
                 }
                 
-                // Merge progress into gameTab object
-                Object.assign(gameTab, progressUpdates);
+                // ✅ FIX: Create new object with merged progress instead of mutating
+                updatedGameTab = { ...gameTab, ...progressUpdates };
                 console.log('🎮 [MainApp] Merged progress/objective into gameTab for UI:', progressUpdates);
               }
               
               setConversations(prev => ({
                 ...prev,
-                [targetConversationId]: gameTab
+                [targetConversationId]: updatedGameTab
               }));
               
               await ConversationService.setActiveConversation(targetConversationId);
-              setActiveConversation(gameTab);
+              setActiveConversation(updatedGameTab);
               
               // ✅ FIX: Don't auto-switch session mode - let user control the toggle
               // (Removed: setActiveSession(targetConversationId, true))
@@ -4139,6 +4266,8 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                 ConversationService.updateConversation(targetConversationIdRef.current, progressUpdates)
                   .then(() => {
                     console.log('🎮 [MainApp] Progress persisted to database successfully');
+                    // ✅ FIX: Clear cache to ensure fresh data on next load
+                    ConversationService.clearCache();
                   })
                   .catch(error => console.error('Failed to update progress:', error));
               }
@@ -4157,12 +4286,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                 setConversations(freshConversations);
                 const refreshedConv = freshConversations[activeConversation.id];
                 if (refreshedConv) {
-                  // ✅ Preserve any in-memory progress updates that might not be in DB yet
-                  const currentConv = conversations[activeConversation.id];
-                  if (currentConv?.gameProgress !== undefined && refreshedConv.gameProgress !== currentConv.gameProgress) {
-                    console.log('🎮 [MainApp] Preserving in-memory progress:', currentConv.gameProgress, 'over DB:', refreshedConv.gameProgress);
-                    refreshedConv.gameProgress = currentConv.gameProgress;
-                  }
+                  // ✅ Just set the refreshed conversation - the sync useEffect will handle any needed updates
                   setActiveConversation(refreshedConv);
                 }
               }).catch(error => {
@@ -4225,6 +4349,8 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
           }
           
           await ConversationService.updateConversation(activeConversation.id, progressUpdates);
+          // ✅ FIX: Clear cache to ensure fresh data on next load
+          ConversationService.clearCache();
           
           // Update state
           setConversations(prev => ({
@@ -4610,6 +4736,22 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
           {/* Desktop centered container - always applies max-width on desktop for consistent sizing */}
           <div className="flex-1 flex flex-col overflow-hidden w-full lg:max-w-[900px] lg:mx-auto lg:px-4">
           
+          {/* Subtabs Generation Banner - Show when user upgrades to pro - ABOVE CHAT THREAD NAME */}
+          {/* ✅ FIX: Only show banner for Pro/Vanguard users AND only on game tabs (not Game Hub) */}
+          {showSubtabsGenerationBanner && 
+           (currentUser.tier === 'pro' || currentUser.tier === 'vanguard_pro') && 
+           activeConversation && 
+           !activeConversation.isGameHub && 
+           activeConversation.gameTitle && (
+            <div className="flex-shrink-0 pt-2 lg:pt-6">
+              <SubtabsGenerationBanner
+                onGenerate={handleGenerateSubtabs}
+                isGenerating={isGeneratingSubtabs}
+                progress={generatingSubtabsProgress}
+              />
+            </div>
+          )}
+
           {/* Chat Thread Name - Show on mobile when sidebar is collapsed - MOVED ABOVE BANNERS */}
           {/* z-10 places it below SubTabs (z-50) but above normal flow */}
           {activeConversation && (
@@ -4676,7 +4818,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               </div>
             </div>
           )}
-          
+
           {/* Profile Setup Banner - Show if user hasn't set up profile */}
           {showProfileSetupBanner && onProfileSetupComplete && onProfileSetupDismiss && (
             <div className="flex-shrink-0 pt-2 lg:pt-6">
@@ -4719,7 +4861,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                 </div>
               </div>
             </div>
-          )}hidden lg:flex
+          )}
 
           {/* Game Progress Bar with Game Info Button - Desktop only (>= 1024px) */}
           {/* Mobile shows compact progress bar integrated into thread header above */}
@@ -4804,6 +4946,8 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                   aiModeEnabled={aiModeEnabled}
                   onAiModeToggle={handleAiModeToggle}
                   isPro={currentUser.tier === 'pro' || currentUser.tier === 'vanguard_pro'}
+                  forceExpandSubtabs={forceExpandSubtabs}
+                  onResetForceExpandSubtabs={() => setForceExpandSubtabs(false)}
                 />
               </ErrorBoundary>
             </div>
@@ -4829,6 +4973,13 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
             const status = await supabaseService.getTrialStatus(refreshedUser.authUserId);
             if (status) {
               trialStatusCache.set(refreshedUser.authUserId, status);
+            }
+            
+            // ✅ Show upgrade splash for trial activation
+            if (refreshedUser.tier === 'pro' || refreshedUser.tier === 'vanguard_pro') {
+              console.log('🎉 [MainApp] Trial activated - showing upgrade splash');
+              setUpgradedTier(refreshedUser.tier);
+              setProUpgradeSplashOpen(true);
             }
           }
         }}
@@ -4928,10 +5079,14 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
         onTrialStart={async () => {
           // Refresh user data after trial starts
           console.log('🔄 [MainApp] Trial started - refreshing user data');
+          console.log('🔄 [MainApp] Current tier before refresh:', currentUser.tier);
+          
           await authService.refreshUser();
           const refreshedUser = authService.getCurrentUser();
           if (refreshedUser) {
             console.log('🔄 [MainApp] User refreshed after trial start - tier:', refreshedUser.tier);
+            console.log('🔄 [MainApp] Tier change:', currentUser.tier, '->', refreshedUser.tier);
+            
             setUser(refreshedUser);
             UserService.setCurrentUser(refreshedUser); // ✅ Update UserService cache too
             
@@ -4939,6 +5094,13 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
             const status = await supabaseService.getTrialStatus(refreshedUser.authUserId);
             if (status) {
               trialStatusCache.set(refreshedUser.authUserId, status);
+            }
+            
+            // ✅ Show upgrade splash for trial activation
+            if (refreshedUser.tier === 'pro' || refreshedUser.tier === 'vanguard_pro') {
+              console.log('🎉 [MainApp] Trial activated - showing upgrade splash');
+              setUpgradedTier(refreshedUser.tier);
+              setProUpgradeSplashOpen(true);
             }
           }
         }}

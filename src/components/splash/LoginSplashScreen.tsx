@@ -461,20 +461,20 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
       <div className="flex-1 lg:flex-initial lg:w-1/2 lg:h-full lg:bg-[#121212] flex items-center justify-center overflow-y-auto">
         <div className={`w-full max-w-md lg:max-w-lg xl:max-w-xl relative z-10 transition-all duration-500 ${isAnimating ? 'scale-105' : 'scale-100'} px-5 sm:px-6 lg:px-12 xl:px-16 py-6 sm:py-8 lg:py-8`}>
           {/* Logo and Title */}
-          <div className="text-center mb-3 md:mb-5 lg:mb-6">
+          <div className="text-center mb-6 md:mb-7 lg:mb-8">
             <img
               src="/images/otagon-logo.png"
               alt="Otagon Logo"
-              className="spinning-logo mx-auto mb-2 md:mb-3 lg:mb-4 w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 object-contain aspect-square"
+              className="spinning-logo mx-auto mb-4 md:mb-4 lg:mb-5 w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 object-contain aspect-square"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.style.display = 'none';
               }}
             />
-            <h1 className="text-xl md:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-1 md:mb-2">
+            <h1 className="text-xl md:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2 md:mb-3">
               Welcome to Otagon
             </h1>
-            <p className="text-sm sm:text-sm md:text-base lg:text-base text-text-secondary px-4 mb-3 md:mb-5 lg:mb-6">
+            <p className="text-sm sm:text-sm md:text-base lg:text-base text-text-secondary px-4">
               {emailMode === 'options' 
                 ? 'Sign in to start your gaming adventure' 
                 : emailMode === 'signin' 
@@ -488,22 +488,22 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
 
         {/* Error Message */}
         {errorMessage && (
-          <div className="mb-2 md:mb-3 lg:mb-4 p-1.5 md:p-2.5 lg:p-3 bg-red-500/10 border border-red-500/20 rounded-lg md:rounded-xl text-red-400 text-center text-sm md:text-base">
+          <div className="mb-4 md:mb-4 lg:mb-5 p-3 md:p-3 lg:p-3.5 bg-red-500/10 border border-red-500/20 rounded-lg md:rounded-xl text-red-400 text-center text-sm md:text-base">
             {errorMessage}
           </div>
         )}
 
         {/* Success Message */}
         {successMessage && (
-          <div className="mb-2 md:mb-3 lg:mb-4 p-1.5 md:p-2.5 lg:p-3 bg-green-500/10 border border-green-500/20 rounded-lg md:rounded-xl text-green-400 text-center text-sm md:text-base">
+          <div className="mb-4 md:mb-4 lg:mb-5 p-3 md:p-3 lg:p-3.5 bg-green-500/10 border border-green-500/20 rounded-lg md:rounded-xl text-green-400 text-center text-sm md:text-base">
             {successMessage}
           </div>
         )}
 
         {/* Email Form */}
         {(emailMode === 'signin' || emailMode === 'signup') && (
-          <form onSubmit={handleEmailAuth} className="space-y-2 md:space-y-4 lg:space-y-5 mb-2 md:mb-4" role="form" aria-label={`${emailMode === 'signin' ? 'Sign in' : 'Sign up'} form`}>
-            <div className="space-y-2 md:space-y-4 lg:space-y-5">
+          <form onSubmit={handleEmailAuth} className="space-y-4 md:space-y-5 lg:space-y-6 mb-5 md:mb-6" role="form" aria-label={`${emailMode === 'signin' ? 'Sign in' : 'Sign up'} form`}>
+            <div className="space-y-4 md:space-y-5 lg:space-y-6">
               <div>
                 <label htmlFor="email-input" className="sr-only">
                   Email address
@@ -638,13 +638,13 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
               disabled={isLoading}
               isLoading={isLoading}
               variant="primary"
-              className="w-full mt-4 md:mt-5 lg:mt-6 py-1.5 md:py-2 lg:py-2.5"
+              className="w-full mt-6 md:mt-6 lg:mt-7 py-2.5 md:py-2.5 lg:py-3"
               tabIndex={3}
             >
               {isLoading ? (emailMode === 'signin' ? 'Signing in...' : 'Creating account...') : (emailMode === 'signin' ? 'Sign In' : 'Create Account')}
             </Button>
 
-            <div className="text-center">
+            <div className="text-center mt-4">
               <button
                 type="button"
                 onClick={() => setEmailMode('options')}
@@ -658,7 +658,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
 
         {/* Forgot Password Form */}
         {emailMode === 'forgot-password' && (
-          <form onSubmit={(e) => { e.preventDefault(); handleForgotPassword(); }} className="space-y-2.5 md:space-y-3 mb-3 md:mb-4">
+          <form onSubmit={(e) => { e.preventDefault(); handleForgotPassword(); }} className="space-y-4 md:space-y-4 mb-5 md:mb-6">
             <div>
               <input
                 type="email"
@@ -682,12 +682,12 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
               disabled={isLoading}
               isLoading={isLoading}
               variant="primary"
-              className="w-full"
+              className="w-full py-2.5"
             >
               {isLoading ? 'Sending...' : 'Send Reset Email'}
             </Button>
 
-            <div className="text-center">
+            <div className="text-center mt-4">
               <button
                 type="button"
                 onClick={() => setEmailMode('signin')}
@@ -742,7 +742,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
 
         {/* Auth Options */}
         {emailMode === 'options' && (
-          <div className="space-y-2 md:space-y-3 lg:space-y-3.5">
+          <div className="space-y-3 md:space-y-3.5 lg:space-y-4">
             <button
               onClick={() => handleAuth('google')}
               disabled={isLoading}
@@ -768,7 +768,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
               <span>Continue with Discord</span>
             </button>
 
-            <div className="space-y-2 md:space-y-2.5 lg:space-y-3">
+            <div className="space-y-3 md:space-y-3 lg:space-y-3.5 mt-4 md:mt-5">
               <button
                 onClick={() => setEmailMode('signin')}
                 disabled={isLoading}
@@ -793,14 +793,14 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
         {/* Hide when in signup mode to reduce clutter */}
         {/* When running as installed PWA, this banner is hidden automatically */}
         {emailMode !== 'signup' && (
-          <div className="mt-3 md:mt-4 lg:mt-5">
+          <div className="mt-6 md:mt-6 lg:mt-7">
             <PWAInstallBanner alwaysShowInBrowser={true} />
           </div>
         )}
         
         {/* Back to Landing - Hidden in PWA mode */}
         {!isPWAMode() && (
-          <div className="text-center mt-2 md:mt-4 lg:mt-6">
+          <div className="text-center mt-5 md:mt-6 lg:mt-8">
             <button
               onClick={() => {
                               onBackToLanding();
@@ -817,7 +817,7 @@ const LoginSplashScreen: React.FC<LoginSplashScreenProps> = ({
         )}
 
         {/* Footer - Note: #root already applies safe-area-inset-bottom in PWA mode (globals.css) */}
-        <div className="w-full py-2 md:py-4 lg:py-6 text-center mt-4">
+        <div className="w-full py-3 md:py-5 lg:py-7 text-center mt-6 md:mt-7">
           <p className="text-xs sm:text-sm md:text-sm lg:text-sm text-text-muted">
             By continuing, you agree to our{' '}
             <button

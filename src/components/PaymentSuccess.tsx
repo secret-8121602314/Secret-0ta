@@ -11,6 +11,9 @@ const PaymentSuccess: React.FC = () => {
     const refreshUserData = async () => {
       await authService.refreshUser();
       
+      // ✅ Set flag to show upgrade splash when user lands on /app
+      localStorage.setItem('otakon_show_upgrade_splash', 'true');
+      
       // Redirect to main app after 3 seconds
       setTimeout(() => {
         navigate('/app');

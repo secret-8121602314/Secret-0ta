@@ -148,49 +148,52 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
       {/* Image Modal with Rotation - Fullscreen on mobile landscape */}
       {expandedImage && (
         <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm p-2 sm:p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm"
           onClick={handleCloseViewer}
         >
-          <div className="relative w-full h-full flex flex-col items-center justify-center">
-            {/* Close button */}
-            <button
-              onClick={handleCloseViewer}
-              className="absolute top-2 right-2 sm:top-4 sm:right-4 z-10 w-10 h-10 flex items-center justify-center bg-[#1C1C1C]/80 border border-[#424242] rounded-full text-white hover:bg-[#2C2C2C] transition-colors"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-            {/* Rotate button */}
-            <button
-              onClick={(e) => { e.stopPropagation(); handleRotateImage(); }}
-              className="absolute top-2 left-2 sm:top-4 sm:left-4 z-10 w-10 h-10 flex items-center justify-center bg-[#1C1C1C]/80 border border-[#424242] rounded-full text-white hover:bg-[#2C2C2C] transition-colors"
-              title="Rotate image (R)"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
-            <img
-              src={expandedImage}
-              alt="Full size"
-              className="w-[98vw] h-[90vh] sm:w-full sm:h-full object-contain transition-transform duration-300"
-              style={{ transform: `rotate(${imageRotation}deg)` }}
-              onClick={(e) => e.stopPropagation()}
-            />
-            <div className="flex justify-center mt-3">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDownloadImage(expandedImage, 0);
-                }}
-                className="flex items-center gap-2 px-4 py-2 bg-[#FF4D4D] text-white text-sm font-medium rounded-lg hover:bg-[#E53A3A] transition-colors"
-              >
-                <DownloadIcon className="w-4 h-4" />
-                Download
-              </button>
-            </div>
-          </div>
+          {/* Close button */}
+          <button
+            onClick={handleCloseViewer}
+            className="absolute top-2 right-2 sm:top-4 sm:right-4 z-10 w-10 h-10 flex items-center justify-center bg-[#1C1C1C]/80 border border-[#424242] rounded-full text-white hover:bg-[#2C2C2C] transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          {/* Rotate button */}
+          <button
+            onClick={(e) => { e.stopPropagation(); handleRotateImage(); }}
+            className="absolute top-2 left-2 sm:top-4 sm:left-4 z-10 w-10 h-10 flex items-center justify-center bg-[#1C1C1C]/80 border border-[#424242] rounded-full text-white hover:bg-[#2C2C2C] transition-colors"
+            title="Rotate image (R)"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+          {/* Download button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDownloadImage(expandedImage, 0);
+            }}
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-4 py-2 bg-[#FF4D4D] text-white text-sm font-medium rounded-lg hover:bg-[#E53A3A] transition-colors"
+          >
+            <DownloadIcon className="w-4 h-4" />
+            Download
+          </button>
+          <motion.img
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1, rotate: imageRotation }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            src={expandedImage}
+            alt="Full size"
+            className={`object-contain ${
+              imageRotation === 90 || imageRotation === 270
+                ? 'max-h-[100vw] max-w-[100vh]' // Swap dimensions when rotated for fullscreen
+                : 'max-w-[100vw] max-h-[100vh]'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
       
@@ -366,12 +369,17 @@ const ChatMessageComponent: React.FC<ChatMessageComponentProps> = ({
 // Only re-renders if message props actually change
 const MemoizedChatMessage = memo(ChatMessageComponent, (prevProps, nextProps) => {
   // Custom comparison: only re-render if message props actually change
+  // ✅ FIX: Compare first prompt content, not just length (fixes tab switching showing wrong prompts)
+  const prevFirstPrompt = prevProps.suggestedPrompts[0] || '';
+  const nextFirstPrompt = nextProps.suggestedPrompts[0] || '';
+  
   return (
     prevProps.message.id === nextProps.message.id &&
     prevProps.message.content === nextProps.message.content &&
     prevProps.message.timestamp === nextProps.message.timestamp &&
     prevProps.isLoading === nextProps.isLoading &&
     prevProps.suggestedPrompts.length === nextProps.suggestedPrompts.length &&
+    prevFirstPrompt === nextFirstPrompt && // ✅ Also compare actual prompt content
     prevProps.onDeleteQueuedMessage === nextProps.onDeleteQueuedMessage &&
     prevProps.onEditMessage === nextProps.onEditMessage &&
     prevProps.onFeedback === nextProps.onFeedback &&
@@ -423,6 +431,8 @@ interface ChatInterfaceProps {
   aiModeEnabled?: boolean;
   onAiModeToggle?: () => void;
   isPro?: boolean;
+  forceExpandSubtabs?: boolean; // Force expand SubTabs panel
+  onResetForceExpandSubtabs?: () => void; // Callback to reset forceExpandSubtabs when user closes panel
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -461,7 +471,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onOpenExplorer,
   aiModeEnabled,
   onAiModeToggle,
-  isPro = false
+  isPro = false,
+  forceExpandSubtabs = false,
+  onResetForceExpandSubtabs
 }) => {
   const [message, setMessage] = useState(initialMessage);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -1073,9 +1085,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
         )}
 
-        {/* Active Session Toggle - Floating on right edge above AI Mode button */}
+        {/* Active Session Toggle - Floating on right edge */}
+        {/* For Free users: position at same spacing as AI mode toggle (88px above home) */}
+        {/* For Pro/Vanguard users: position above AI mode toggle */}
         {conversation && gameTabService.isGameTab(conversation) && activeSession && !conversation.isUnreleased && onToggleActiveSession && (
-          <div className="absolute bottom-0 right-4 z-30 pointer-events-none" style={{ bottom: conversation.isGameHub ? '220px' : '160px' }}>
+          <div className="absolute bottom-0 right-4 z-30 pointer-events-none" style={{ bottom: isPro ? (conversation.isGameHub ? '220px' : '160px') : (conversation.isGameHub ? '148px' : '88px') }}>
             <div className="pointer-events-auto">
               <ActiveSessionToggle
                 isActive={activeSession.isActive && activeSession.currentGameId === conversation.id}
@@ -1167,7 +1181,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               onModifyTab={onModifySubtab}
               onDeleteTab={onDeleteSubtab}
               onRetrySubtab={onRetrySubtab}
-              onExpandedChange={setIsSubtabsExpanded}
+              onExpandedChange={(expanded) => {
+                setIsSubtabsExpanded(expanded);
+                // Reset forceExpand when user manually closes the panel
+                if (!expanded && forceExpandSubtabs && onResetForceExpandSubtabs) {
+                  console.log('📂 [ChatInterface] User closed SubTabs - resetting forceExpand');
+                  onResetForceExpandSubtabs();
+                }
+              }}
+              forceExpand={forceExpandSubtabs}
             />
           </ErrorBoundary>
         </div>
@@ -1494,37 +1516,41 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       {/* Queued Image Viewer Modal with Rotation - Fullscreen on mobile landscape */}
       {expandedQueuedImage && (
         <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm p-2 sm:p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm"
           onClick={handleCloseQueuedViewer}
         >
-          <div className="relative w-full h-full flex items-center justify-center">
-            {/* Close button */}
-            <button
-              onClick={handleCloseQueuedViewer}
-              className="absolute top-2 right-2 sm:top-4 sm:right-4 z-10 w-10 h-10 flex items-center justify-center bg-[#1C1C1C]/80 border border-[#424242] rounded-full text-white hover:bg-[#2C2C2C] transition-colors"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-            {/* Rotate button */}
-            <button
-              onClick={(e) => { e.stopPropagation(); handleRotateQueuedImage(); }}
-              className="absolute top-2 left-2 sm:top-4 sm:left-4 z-10 w-10 h-10 flex items-center justify-center bg-[#1C1C1C]/80 border border-[#424242] rounded-full text-white hover:bg-[#2C2C2C] transition-colors"
-              title="Rotate image"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
-            <img
-              src={expandedQueuedImage}
-              alt="Queued image preview"
-              className="max-w-[98vw] max-h-[98vh] sm:max-w-[95vw] sm:max-h-[95vh] object-contain rounded-lg shadow-2xl transition-transform duration-300"
-              style={{ transform: `rotate(${queuedImageRotation}deg)` }}
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
+          {/* Close button */}
+          <button
+            onClick={handleCloseQueuedViewer}
+            className="absolute top-2 right-2 sm:top-4 sm:right-4 z-10 w-10 h-10 flex items-center justify-center bg-[#1C1C1C]/80 border border-[#424242] rounded-full text-white hover:bg-[#2C2C2C] transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          {/* Rotate button */}
+          <button
+            onClick={(e) => { e.stopPropagation(); handleRotateQueuedImage(); }}
+            className="absolute top-2 left-2 sm:top-4 sm:left-4 z-10 w-10 h-10 flex items-center justify-center bg-[#1C1C1C]/80 border border-[#424242] rounded-full text-white hover:bg-[#2C2C2C] transition-colors"
+            title="Rotate image"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+          <motion.img
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1, rotate: queuedImageRotation }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            src={expandedQueuedImage}
+            alt="Queued image preview"
+            className={`object-contain shadow-2xl ${
+              queuedImageRotation === 90 || queuedImageRotation === 270
+                ? 'max-h-[100vw] max-w-[100vh]' // Swap dimensions when rotated for fullscreen
+                : 'max-w-[100vw] max-h-[100vh]'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
     </div>

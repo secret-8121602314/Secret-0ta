@@ -128,8 +128,8 @@ class GameTabService {
       subtabs: subTabs,
       subtabsOrder: subTabs.map(tab => tab.id),
       isActiveSession: true, // Default to Playing Mode when user asks for help
-      activeObjective: '',
-      gameProgress: 0,
+      activeObjective: (data as any).activeObjective || '',
+      gameProgress: (data as any).gameProgress ?? 0,
       isUnreleased: data.isUnreleased || false // Mark if unreleased
     };
 

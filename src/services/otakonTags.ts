@@ -211,7 +211,7 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
   }
   
   // Format 2: [PROGRESS: XX] or PROGRESS: XX
-  if (!progressValue) {
+  if (progressValue === null) {
     const progressMatch2 = rawContent.match(/\[?PROGRESS[:\s]+(\d+)/i);
     if (progressMatch2) {
       progressValue = parseInt(progressMatch2[1], 10);
@@ -220,7 +220,7 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
   }
   
   // Format 3: Progress: XX% or progress is XX%
-  if (!progressValue) {
+  if (progressValue === null) {
     const progressMatch3 = rawContent.match(/(?:progress|completion|game progress)[:\s]+(?:approximately\s+)?(\d+)\s*%/i);
     if (progressMatch3) {
       progressValue = parseInt(progressMatch3[1], 10);
@@ -229,7 +229,7 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
   }
   
   // Format 4: Look for structured progress in stateUpdateTags
-  if (!progressValue) {
+  if (progressValue === null) {
     const stateTagMatch = rawContent.match(/"stateUpdateTags"[^}]*"PROGRESS[:\s]+(\d+)/i);
     if (stateTagMatch) {
       progressValue = parseInt(stateTagMatch[1], 10);
@@ -330,6 +330,11 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
     // Remove orphaned closing brackets that might remain at the end
     .replace(/\]\s*$/g, '')
     .replace(/\}\s*$/g, '') // Also remove trailing }
+    // ✅ FIX: Convert escaped newlines to actual newlines
+    .replace(/\\n/g, '\n')
+    // ✅ FIX: Remove JSON string artifacts (trailing quotes and brackets)
+    .replace(/"\s*\}\s*\]\s*$/g, '')
+    .replace(/"\s*\]\s*$/g, '')
     .trim();
 
   // Log extracted tags summary

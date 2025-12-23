@@ -430,7 +430,11 @@ const GamingExplorerGallery: React.FC<GamingExplorerGalleryProps> = ({ user }) =
               transition={{ type: 'spring', stiffness: 300, damping: 25 }}
               src={selectedImage.imageUrl}
               alt="Screenshot"
-              className="w-[98vw] h-[85vh] sm:w-full sm:h-full object-contain"
+              className={`object-contain ${
+                imageRotation === 90 || imageRotation === 270
+                  ? 'max-h-[100vw] max-w-[100vh]' // Swap dimensions when rotated for fullscreen
+                  : 'max-w-[100vw] max-h-[100vh]'
+              }`}
               onClick={(e) => e.stopPropagation()}
             />
 
