@@ -120,6 +120,11 @@ export class UserService {
       return false;
     }
 
+    // BYOK users have unlimited quota
+    if (currentUser.usesCustomGeminiKey) {
+      return true;
+    }
+
     const { usage } = currentUser;
     if (type === 'text') {
       return usage.textCount < usage.textLimit;

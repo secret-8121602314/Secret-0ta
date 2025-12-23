@@ -105,6 +105,11 @@ export interface User {
   imageLimit: number;
   totalRequests: number;
   lastReset: number; // Unix timestamp (ms) - converted from DB timestamptz
+  // BYOK (Bring Your Own Key) fields (from database)
+  usesCustomGeminiKey: boolean;
+  geminiApiKeyEncrypted?: string | null;
+  customKeyVerifiedAt?: number | null; // Unix timestamp (ms) - converted from DB timestamptz
+  hadCustomKeyBefore: boolean;
   // PC Connection fields (from database)
   connectionCode?: string; // 6-digit pairing code for PC client
   connectionCodeCreatedAt?: number; // Unix timestamp (ms) when code was generated

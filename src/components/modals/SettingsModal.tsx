@@ -6,22 +6,38 @@ import { getCustomerPortalUrl } from '../../services/lemonsqueezy';
 import TrialBanner from '../trial/TrialBanner';
 import Logo from '../ui/Logo';
 import PaymentModal from './PaymentModal';
+import { ApiKeyService } from '../../services/apiKeyService';
+import { toastService } from '../../services/toastService';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   user: User | null;
   onTrialStart?: () => void;
+  initialTab?: 'account' | 'tier' | 'profile' | 'api-keys';
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ 
   isOpen, 
   onClose, 
   user,
-  onTrialStart
+  onTrialStart,
+  initialTab = 'account'
 }) => {
-  const [activeTab, setActiveTab] = useState<'account' | 'tier' | 'profile'>('account');
+  const [activeTab, setActiveTab] = useState<'account' | 'tier' | 'profile' | 'api-keys'>(initialTab);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  
+  // Update active tab when initialTab changes
+  React.useEffect(() => {
+    if (isOpen) {
+      setActiveTab(initialTab);
+    }
+  }, [isOpen, initialTab]);
+  
+  // API Keys tab state
+  const [apiKey, setApiKey] = useState('');
+  const [isTestingKey, setIsTestingKey] = useState(false);
+  const [isSavingKey, setIsSavingKey] = useState(false);
   
   // Profile preferences state (from ProfileSetupBanner)
   const [hintStyle, setHintStyle] = useState(user?.profileData?.hintStyle || 'Balanced');
@@ -129,6 +145,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             }`}
           >
             Profile
+          </button>
+          <button
+            onClick={() => setActiveTab('api-keys')}
+            className={`flex-1 sm:flex-none py-2.5 px-2.5 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-colors active:scale-95 whitespace-nowrap ${
+              activeTab === 'api-keys'
+                ? 'bg-primary text-white'
+                : 'text-text-muted hover:text-text-primary'
+            }`}
+          >
+            <span className="hidden sm:inline">API Keys</span>
+            <span className="sm:hidden">Keys</span>
           </button>
         </div>
 
@@ -550,6 +577,173 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   Save Profile Preferences
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* API Keys Tab */}
+        {activeTab === 'api-keys' && (
+          <div className="space-y-4">
+            <div className="bg-surface/50 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-text-primary mb-2">Bring Your Own Gemini API Key</h3>
+              <p className="text-sm text-text-secondary mb-4">
+                Use your own Google Gemini API key to bypass usage limits and enjoy unlimited queries.
+                Get a free API key from <a 
+                  href="https://aistudio.google.com/app/apikey" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >Google AI Studio</a>.
+              </p>
+              
+              {user.usesCustomGeminiKey ? (
+                /* Key is active - show status and remove option */
+                <div className="space-y-4">
+                  <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-lg font-semibold text-green-300">🔑 Custom Key Active</span>
+                    </div>
+                    <p className="text-sm text-green-200/80">
+                      You're using your own Gemini API key. All AI queries are using your key with unlimited quota.
+                    </p>
+                    {user.customKeyVerifiedAt && (
+                      <p className="text-xs text-green-200/60 mt-2">
+                        Last verified: {new Date(user.customKeyVerifiedAt).toLocaleDateString()}
+                        {ApiKeyService.needsReVerification(new Date(user.customKeyVerifiedAt).toISOString()) && (
+                          <span className="ml-2 text-yellow-400">⚠️ Consider re-testing (&gt;30 days old)</span>
+                        )}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <button
+                      onClick={async () => {
+                        setIsTestingKey(true);
+                        try {
+                          const result = await ApiKeyService.testGeminiKey(user.geminiApiKeyEncrypted || '');
+                          if (result.valid) {
+                            toastService.success('✅ API key is still valid!');
+                          } else {
+                            toastService.error('❌ API key test failed. Consider updating your key.');
+                          }
+                        } finally {
+                          setIsTestingKey(false);
+                        }
+                      }}
+                      disabled={isTestingKey}
+                      className="flex-1 px-4 py-2 bg-surface-light text-text-primary rounded-lg hover:bg-surface transition-colors font-medium disabled:opacity-50"
+                    >
+                      {isTestingKey ? 'Testing...' : 'Re-test Key'}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (confirm('Are you sure you want to remove your custom API key? You\'ll revert to platform quota limits.')) {
+                          try {
+                            await ApiKeyService.removeGeminiKey(user, 'user_action');
+                            toastService.info('🔄 Reverting to platform key. Page will reload...');
+                            setTimeout(() => window.location.reload(), 1500);
+                          } catch (error) {
+                            console.error('Error removing key:', error);
+                          }
+                        }
+                      }}
+                      className="flex-1 px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors font-medium"
+                    >
+                      Remove Key
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* No key active - show input form */
+                <div className="space-y-4">
+                  {user.hadCustomKeyBefore && (
+                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                      <p className="text-sm text-blue-300">
+                        ℹ️ You previously used a custom API key. You can add it again below.
+                      </p>
+                    </div>
+                  )}
+                  
+                  <div>
+                    <label className="text-sm font-medium text-text-primary mb-2 block">
+                      Gemini API Key
+                    </label>
+                    <input
+                      type="password"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      placeholder="AIzaSy..."
+                      className="w-full px-4 py-2 bg-surface-light rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <p className="text-xs text-text-muted mt-1">
+                      Your key is never shared and will be encrypted before storage.
+                    </p>
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    {apiKey.trim() && (
+                      <button
+                        onClick={async () => {
+                          setIsTestingKey(true);
+                          try {
+                            const result = await ApiKeyService.testGeminiKey(apiKey);
+                            if (result.valid) {
+                              toastService.success('✅ API key is valid!');
+                            } else {
+                              toastService.error(result.error || '❌ Invalid API key');
+                            }
+                          } finally {
+                            setIsTestingKey(false);
+                          }
+                        }}
+                        disabled={isTestingKey}
+                        className="flex-1 px-4 py-2 bg-surface-light text-text-primary rounded-lg hover:bg-surface transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isTestingKey ? 'Testing...' : 'Test Key'}
+                      </button>
+                    )}
+                    <button
+                      onClick={async () => {
+                        if (!apiKey.trim()) {
+                          toastService.error('Please enter an API key');
+                          return;
+                        }
+                        setIsSavingKey(true);
+                        try {
+                          await ApiKeyService.saveGeminiKey(user, apiKey);
+                          setApiKey('');
+                          toastService.success('🔄 Custom key saved! Reloading...');
+                          setTimeout(() => window.location.reload(), 1500);
+                        } catch (error) {
+                          console.error('Error saving key:', error);
+                        } finally {
+                          setIsSavingKey(false);
+                        }
+                      }}
+                      disabled={!apiKey.trim() || isSavingKey}
+                      className="flex-1 px-4 py-2 bg-gradient-to-r from-primary to-secondary text-white rounded-lg hover:opacity-90 transition-opacity font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isSavingKey ? 'Saving...' : 'Save & Activate'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Info section */}
+            <div className="bg-surface/30 rounded-lg p-4 border border-surface-light/20">
+              <h4 className="text-sm font-semibold text-text-primary mb-2">How BYOK Works</h4>
+              <ul className="text-xs text-text-secondary space-y-1.5">
+                <li>• <strong>Unlimited queries:</strong> No monthly limits when using your own key</li>
+                <li>• <strong>Secure storage:</strong> Keys are encrypted with AES-256-GCM</li>
+                <li>• <strong>Auto-revert on upgrade:</strong> Platform key restored when you upgrade tiers</li>
+                <li>• <strong>Re-verification:</strong> Test your key every 30 days to ensure it's working</li>
+                <li>• <strong>Your control:</strong> Remove or change your key anytime</li>
+              </ul>
             </div>
           </div>
         )}

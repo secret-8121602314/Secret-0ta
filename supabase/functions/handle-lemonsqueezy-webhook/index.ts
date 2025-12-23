@@ -225,6 +225,10 @@ serve(async (req) => {
         trial_expires_at: null,
         text_limit: 350,
         image_limit: 150,
+        // Clear custom API keys on tier upgrade
+        uses_custom_gemini_key: false,
+        gemini_api_key_encrypted: null,
+        had_custom_key_before: foundUser.uses_custom_gemini_key ? true : (foundUser.had_custom_key_before || false),
         updated_at: new Date().toISOString(),
       };
       console.log('📝 Updating user with:', JSON.stringify(updatePayload));
@@ -245,6 +249,9 @@ serve(async (req) => {
       }
 
       console.log('✅ USER TIER UPDATED SUCCESSFULLY TO:', tier);
+      if (foundUser.uses_custom_gemini_key) {
+        console.log('🔑 Custom API key cleared due to tier upgrade');
+      }
 
       // Step 3: Try to insert subscription record (optional, for tracking)
       try {
@@ -324,13 +331,26 @@ serve(async (req) => {
       }
 
       if (foundUser) {
+        // Get current custom key status before downgrade
+        const { data: userData } = await supabaseRest(
+          'users', 'GET', null, `id=eq.${foundUser.id}&select=uses_custom_gemini_key,had_custom_key_before`
+        );
+        const hadCustomKey = userData && userData.length > 0 && userData[0].uses_custom_gemini_key;
+        
         await supabaseRest('users', 'PATCH', {
           tier: 'free',
           text_limit: 20,
           image_limit: 15,
+          // Clear custom API keys on downgrade
+          uses_custom_gemini_key: false,
+          gemini_api_key_encrypted: null,
+          had_custom_key_before: hadCustomKey ? true : (userData?.[0]?.had_custom_key_before || false),
           updated_at: new Date().toISOString(),
         }, `id=eq.${foundUser.id}`);
         console.log('✅ User downgraded to free');
+        if (hadCustomKey) {
+          console.log('🔑 Custom API key cleared due to downgrade');
+        }
       }
 
       return new Response(

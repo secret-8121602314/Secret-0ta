@@ -63,6 +63,14 @@ export function mapUserData(userData: Record<string, unknown>, authUserId?: stri
     totalRequests,
     lastReset,
     
+    // BYOK (Bring Your Own Key) fields
+    usesCustomGeminiKey: (userData.uses_custom_gemini_key as boolean) || false,
+    geminiApiKeyEncrypted: userData.gemini_api_key_encrypted as string | null | undefined,
+    customKeyVerifiedAt: userData.custom_key_verified_at 
+      ? new Date(userData.custom_key_verified_at as string).getTime() 
+      : null,
+    hadCustomKeyBefore: (userData.had_custom_key_before as boolean) || false,
+    
     // PC Connection fields
     connectionCode: userData.connection_code as string | undefined,
     connectionCodeCreatedAt: userData.connection_code_created_at 

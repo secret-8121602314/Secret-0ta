@@ -19,6 +19,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { decryptApiKey } from "../_shared/encryption.ts";
 
 const GEMINI_API_KEY = Deno.env.get("GEMINI_KEY_CHAT_PROXY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
@@ -196,7 +197,7 @@ serve(async (req) => {
     
     const { data: userData, error: userError } = await supabase
       .from('users')
-      .select('text_count, image_count, text_limit, image_limit, tier')
+      .select('text_count, image_count, text_limit, image_limit, tier, uses_custom_gemini_key, gemini_api_key_encrypted')
       .eq('auth_user_id', userId)
       .single();
 
@@ -215,7 +216,25 @@ serve(async (req) => {
       );
     }
 
-    // Check credit limits
+    // Check if user has custom Gemini API key
+    let geminiApiKey = GEMINI_API_KEY; // Default platform key
+    let isUsingCustomKey = false;
+    
+    if (userData.uses_custom_gemini_key && userData.gemini_api_key_encrypted) {
+      try {
+        geminiApiKey = await decryptApiKey(userData.gemini_api_key_encrypted);
+        isUsingCustomKey = true;
+        console.log(`[ai-chat] 🔑 Using custom API key for user ${userId}`);
+      } catch (error) {
+        console.error(`[ai-chat] ❌ Failed to decrypt custom key for user ${userId}, falling back to platform key:`, error);
+        // Fallback to platform key
+        geminiApiKey = GEMINI_API_KEY;
+        isUsingCustomKey = false;
+      }
+    }
+
+    // Check credit limits (skip for BYOK users)
+    if (!isUsingCustomKey) {
     if (requestType === 'text' && userData.text_count >= userData.text_limit) {
       console.log(`[ai-chat] 🚫 Text credit limit exceeded: ${userData.text_count}/${userData.text_limit}`);
       return new Response(
@@ -259,6 +278,9 @@ serve(async (req) => {
     }
 
     console.log(`[ai-chat] ✅ Credit check passed: ${requestType === 'text' ? userData.text_count : userData.image_count}/${requestType === 'text' ? userData.text_limit : userData.image_limit}`);
+    } else {
+      console.log(`[ai-chat] ⏭️ Skipping quota check - user has custom API key`);
+    }
     
     // Parse request body - handle both custom format and Gemini format
     console.log('[ai-chat] Received request body:', JSON.stringify(body).substring(0, 500));
@@ -348,23 +370,29 @@ serve(async (req) => {
     let usedGrounding = false;
     
     if (tools && tools.length > 0) {
-      console.log('[ai-chat] 🔍 Tools requested, validating grounding quota...');
-      
-      // For chat messages, this is always 'ai_message' usage type
-      const quotaCheck = await validateGroundingQuota(supabase, userId, 'ai_message');
-      
-      if (!quotaCheck.allowed) {
-        console.log(`[ai-chat] ⚠️ Grounding denied: ${quotaCheck.reason}`);
-        // Strip tools to prevent grounded call - don't reject the entire request
-        tools = [];
-      } else {
+      // BYOK users get unlimited grounding since they're using their own API key
+      if (isUsingCustomKey) {
         groundingAllowed = true;
-        console.log(`[ai-chat] ✅ Grounding approved (${quotaCheck.remaining} remaining)`);
+        console.log('[ai-chat] ✅ Grounding approved (BYOK - unlimited)');
+      } else {
+        console.log('[ai-chat] 🔍 Tools requested, validating grounding quota...');
+        
+        // For chat messages, this is always 'ai_message' usage type
+        const quotaCheck = await validateGroundingQuota(supabase, userId, 'ai_message');
+        
+        if (!quotaCheck.allowed) {
+          console.log(`[ai-chat] ⚠️ Grounding denied: ${quotaCheck.reason}`);
+          // Strip tools to prevent grounded call - don't reject the entire request
+          tools = [];
+        } else {
+          groundingAllowed = true;
+          console.log(`[ai-chat] ✅ Grounding approved (${quotaCheck.remaining} remaining)`);
+        }
       }
     }
 
-    // Call Gemini API
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`;
+    // Call Gemini API (with custom or platform key)
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${geminiApiKey}`;
     
     const geminiPayload: any = {
       contents,
@@ -412,7 +440,8 @@ serve(async (req) => {
     
     // 🔒 SECURITY: Increment usage server-side after successful grounded call
     // This prevents client-side manipulation of usage tracking
-    if (usedGrounding) {
+    // Skip tracking for BYOK users since they have unlimited grounding
+    if (usedGrounding && !isUsingCustomKey) {
       const monthKey = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
       
       try {
@@ -432,7 +461,8 @@ serve(async (req) => {
       }
     }
 
-    // 🔒 SECURITY: Increment text/image credit usage after successful AI call
+    // 🔒 SECURITY: Increment text/image credit usage after successful AI call (skip for BYOK users)
+    if (!isUsingCustomKey) {
     try {
       const { error: creditError } = await supabase.rpc('increment_user_usage', {
         p_auth_user_id: userId,
@@ -447,6 +477,9 @@ serve(async (req) => {
       }
     } catch (err) {
       console.error('[ai-chat] Error incrementing credit usage:', err);
+    }
+    } else {
+      console.log(`[ai-chat] ⏭️ Skipping usage increment - user has custom API key`);
     }
 
     return new Response(JSON.stringify({ 

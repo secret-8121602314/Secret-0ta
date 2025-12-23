@@ -9,6 +9,8 @@ interface CreditIndicatorProps {
 const CreditIndicator: React.FC<CreditIndicatorProps> = ({ user, onClick }) => {
   const { textCount, textLimit, imageCount, imageLimit } = user.usage;
   
+  // Check if user is using custom Gemini API key
+  const isUsingCustomKey = user.usesCustomGeminiKey;
 
   const textPercentRemaining = textLimit > 0 ? Math.max(0, 100 - (textCount / textLimit) * 100) : 0;
   const imagePercentRemaining = imageLimit > 0 ? Math.max(0, 100 - (imageCount / imageLimit) * 100) : 0;
@@ -28,12 +30,17 @@ const CreditIndicator: React.FC<CreditIndicatorProps> = ({ user, onClick }) => {
       className="credit-indicator-wrapper"
       style={{
         display: 'inline-block',
-        background: 'linear-gradient(135deg, #E53A3A, #D98C1F)',
+        background: isUsingCustomKey 
+          ? 'linear-gradient(135deg, #10b981, #34d399)' // Green gradient for BYOK
+          : 'linear-gradient(135deg, #E53A3A, #D98C1F)', // Red-orange gradient for normal
         padding: '1px',
         borderRadius: '8px',
-        // Add soft brand gradient shadow (reduced glow)
-        boxShadow: '0 4px 16px rgba(229, 58, 58, 0.2), 0 2px 8px rgba(217, 140, 31, 0.15), 0 1px 4px rgba(0, 0, 0, 0.1)',
-        filter: 'drop-shadow(0 0 10px rgba(229, 58, 58, 0.15))'
+        boxShadow: isUsingCustomKey
+          ? '0 4px 16px rgba(16, 185, 129, 0.3), 0 2px 8px rgba(52, 211, 153, 0.2), 0 1px 4px rgba(0, 0, 0, 0.1)'
+          : '0 4px 16px rgba(229, 58, 58, 0.2), 0 2px 8px rgba(217, 140, 31, 0.15), 0 1px 4px rgba(0, 0, 0, 0.1)',
+        filter: isUsingCustomKey
+          ? 'drop-shadow(0 0 12px rgba(16, 185, 129, 0.2))'
+          : 'drop-shadow(0 0 10px rgba(229, 58, 58, 0.15))'
       }}
     >
       <button
@@ -48,9 +55,19 @@ const CreditIndicator: React.FC<CreditIndicatorProps> = ({ user, onClick }) => {
           width: '100%',
           height: '100%'
         }}
-        aria-label="View query credits"
+        aria-label={isUsingCustomKey ? "Custom API key active - Unlimited queries" : "View query credits"}
       >
-        {/* All Screen Sizes: Circular Bars */}
+        {isUsingCustomKey ? (
+          /* Show infinity symbol/checkmark for BYOK */
+          <div className="w-7 h-7 sm:w-8 sm:h-8 lg:w-9 lg:h-9 xl:w-10 xl:h-10 flex items-center justify-center rounded-full p-0.5" style={{
+            background: 'rgba(16, 185, 129, 0.15)'
+          }}>
+            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        ) : (
+          /* Show normal circular progress bars */
         <div className="w-7 h-7 sm:w-8 sm:h-8 lg:w-9 lg:h-9 xl:w-10 xl:h-10 flex items-center justify-center rounded-full p-0.5" style={{
           background: 'rgba(0, 0, 0, 0.2)'
         }}>
@@ -87,6 +104,7 @@ const CreditIndicator: React.FC<CreditIndicatorProps> = ({ user, onClick }) => {
             />
           </svg>
         </div>
+        )}
       </button>
     </div>
   );
