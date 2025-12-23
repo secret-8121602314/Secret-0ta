@@ -172,31 +172,29 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
           .gt('expires_at', now.toISOString())) as SupabaseResponse<IGDBCacheEntry[]>;
 
         if (!error && cachedSections && cachedSections.length > 0) {
-          console.log('[GamingExplorerHome] Using global Supabase cache');
           const cacheMap = new Map(cachedSections.map(s => [s.cache_key, s.data]));
           
-          const featuredData = cacheMap.get('featured_games');
-          if (featuredData) {
-            setFeaturedGames(featuredData);
-          }
-          const newReleasesData = cacheMap.get('new_releases');
-          if (newReleasesData) {
-            setNewReleases(newReleasesData);
-          }
-          const highestRatedData = cacheMap.get('highest_rated');
-          if (highestRatedData) {
-            setHighestRatedGames(highestRatedData);
-          }
-          const categoriesData = cacheMap.get('categories');
-          if (categoriesData) {
-            setCategoryGamesMap(categoriesData as Record<string, IGDBGameData[]>);
-          }
+          // Check if ALL required cache entries are present
+          const hasAllCache = cacheMap.has('featured_games') && 
+                              cacheMap.has('new_releases') && 
+                              cacheMap.has('highest_rated') && 
+                              cacheMap.has('categories');
           
-          setLoadingFeatured(false);
-          setLoadingNewReleases(false);
-          setLoadingHighestRated(false);
-          setLoadingCategories(false);
-          return;
+          if (hasAllCache) {
+            console.log('[GamingExplorerHome] Using complete global Supabase cache');
+            setFeaturedGames(cacheMap.get('featured_games')!);
+            setNewReleases(cacheMap.get('new_releases')!);
+            setHighestRatedGames(cacheMap.get('highest_rated')!);
+            setCategoryGamesMap(cacheMap.get('categories') as Record<string, IGDBGameData[]>);
+            
+            setLoadingFeatured(false);
+            setLoadingNewReleases(false);
+            setLoadingHighestRated(false);
+            setLoadingCategories(false);
+            return;
+          } else {
+            console.log('[GamingExplorerHome] Partial cache found, fetching missing data');
+          }
         }
       } catch (error) {
         console.error('[GamingExplorerHome] Error loading cache:', error);
@@ -263,6 +261,8 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
         console.error('Error fetching games:', error);
       } finally {
         setLoadingFeatured(false);
+        setLoadingNewReleases(false);
+        setLoadingHighestRated(false);
         setLoadingCategories(false);
       }
     };
