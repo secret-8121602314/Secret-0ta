@@ -245,7 +245,17 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
     console.log(`📊 [otakonTags] ⚠️ No valid progress found in response`);
   }
 
-  // 1d. Handle remaining simple tags (non-JSON values)
+  // 1d. Handle TTS markers (optional - for future use)
+  // Extract content between [OTAKON_TTS_START] and [OTAKON_TTS_END]
+  const ttsMarkerMatch = rawContent.match(/\[OTAKON_TTS_START\]([\s\S]*?)\[OTAKON_TTS_END\]/i);
+  if (ttsMarkerMatch && ttsMarkerMatch[1]) {
+    const ttsContent = ttsMarkerMatch[1].trim();
+    tags.set('TTS_CONTENT', ttsContent);
+    cleanContent = cleanContent.replace(ttsMarkerMatch[0], '');
+    console.log(`🔊 [otakonTags] Extracted TTS_CONTENT (${ttsContent.length} chars):`, ttsContent.substring(0, 50) + '...');
+  }
+
+  // 1e. Handle remaining simple tags (non-JSON values)
   const simpleTagRegex = /\[OTAKON_([A-Z_]+):\s*([^[\]]+?)\]/g;
   let match;
   while ((match = simpleTagRegex.exec(rawContent)) !== null) {
@@ -255,7 +265,7 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
     console.log(`🏷️ [otakonTags] Found tag: ${tagName} = ${match[2].substring(0, 50)}`);
 
     // Skip if already processed
-    if (tagName === 'SUGGESTIONS' || tagName === 'SUBTAB_UPDATE') {
+    if (tagName === 'SUGGESTIONS' || tagName === 'SUBTAB_UPDATE' || tagName === 'TTS_START' || tagName === 'TTS_END') {
       continue;
     }
 

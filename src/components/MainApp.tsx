@@ -3384,8 +3384,9 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
         try {
           // Extract only the Hint section for TTS - stop at any section header
           let textToSpeak = '';
+          let extractionMethod = 'none';
           
-          // TTS ALWAYS reads the Hint section if present
+          // METHOD 1: TTS ALWAYS reads the Hint section if present (primary method)
           // For game-specific tabs, responses should always include a Hint section as the first section
           const hintMatch = response.content.match(/\*?\*?Hint:?\*?\*?\s*/i);
           
@@ -3405,12 +3406,23 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               // No next section found, use all remaining content
               textToSpeak = contentAfterHint.trim();
             }
+            extractionMethod = 'hint';
           } else {
-            // No Hint section found - this is likely Game Hub or unreleased game
-            // For these cases, don't read anything via TTS (they're conversational, not structured)
-            textToSpeak = '';
+            // METHOD 2: Fallback - extract first paragraph if no Hint section found
+            const paragraphs = response.content.split(/\n\n+/);
+            if (paragraphs.length > 0 && paragraphs[0].trim()) {
+              textToSpeak = paragraphs[0].trim();
+              extractionMethod = 'paragraph';
+            } else {
+              // METHOD 3: Last resort - extract first 2-3 sentences
+              const sentences = response.content.match(/[^.!?]+[.!?]+/g);
+              if (sentences && sentences.length > 0) {
+                textToSpeak = sentences.slice(0, Math.min(2, sentences.length)).join(' ').trim();
+                extractionMethod = 'sentences';
+              }
+            }
           }
-          // TTS only activates when a Hint section is present (game-specific responses)
+          // TTS only activates when content is extracted
           
           if (textToSpeak) {
             // Strip markdown and special formatting for better TTS
@@ -3427,10 +3439,12 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               .trim();
             
             if (cleanText && cleanText.length > 10) {
-              console.log('🔊 [TTS] Speaking hint only:', cleanText.substring(0, 100) + '...');
+              console.log(`🔊 [TTS] Extraction method: ${extractionMethod}, speaking ${cleanText.length} chars:`, cleanText.substring(0, 100) + '...');
               // Don't await - let TTS run in background without blocking chat flow
               ttsService.speak(cleanText).catch(err => console.error('TTS Error:', err));
             }
+          } else {
+            console.log('🔊 [TTS] No content extracted for speech');
           }
         } catch (ttsError) {
           console.error('TTS Error:', ttsError);
@@ -4602,23 +4616,41 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                   onClick={() => setSidebarOpen(true)}
                   className="flex-1 bg-gradient-to-r from-surface/30 to-background/30 backdrop-blur-sm border border-surface-light/20 rounded-lg px-4 py-3 transition-all duration-200 hover:from-surface/40 hover:to-background/40 hover:border-surface-light/30 active:scale-[0.98]"
                 >
-                  <h2 className={`text-sm sm:text-base font-semibold bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent ${activeConversation.isGameHub ? 'text-center' : 'text-left'}`}>
-                    {activeConversation.title}
-                  </h2>
-                  {/* Mobile: Compact inline progress bar below title */}
-                  {!activeConversation.isGameHub && activeConversation.gameTitle && (
-                    <div className="mt-2 flex items-center gap-2">
-                      <div className="flex-1 h-1.5 bg-[#1A1A1A] rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-gradient-to-r from-[#D98C1F] to-[#FFB366] rounded-full transition-all duration-500"
-                          style={{ width: `${activeConversation.gameProgress || 0}%` }}
+                  <div className="flex items-start gap-3">
+                    {/* Cover Art Thumbnail for game tabs */}
+                    {!activeConversation.isGameHub && activeConversation.gameTitle && activeConversation.coverUrl && (
+                      <div className="flex-shrink-0">
+                        <img
+                          src={activeConversation.coverUrl}
+                          alt={activeConversation.title}
+                          className="w-9 h-[50px] object-cover rounded shadow-md"
+                          loading="lazy"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
                         />
                       </div>
-                      <span className="text-[10px] font-bold text-[#D98C1F]">
-                        {activeConversation.gameProgress || 0}%
-                      </span>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <h2 className={`text-sm sm:text-base font-semibold bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent ${activeConversation.isGameHub ? 'text-center' : 'text-left'}`}>
+                        {activeConversation.title}
+                      </h2>
+                      {/* Mobile: Compact inline progress bar below title */}
+                      {!activeConversation.isGameHub && activeConversation.gameTitle && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <div className="flex-1 h-1.5 bg-[#1A1A1A] rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-[#D98C1F] to-[#FFB366] rounded-full transition-all duration-500"
+                              style={{ width: `${activeConversation.gameProgress || 0}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] font-bold text-[#D98C1F]">
+                            {activeConversation.gameProgress || 0}%
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </button>
                 {/* Game Info Button - Mobile (right of thread name) */}
                 {!activeConversation.isGameHub && activeConversation.gameTitle && currentGameIGDBData && (

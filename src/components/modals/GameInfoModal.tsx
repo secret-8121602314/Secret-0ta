@@ -249,8 +249,21 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
       title=""
       maxWidth="6xl"
       className="p-3 sm:p-4 md:p-6"
+      showCloseButton={false}
     >
-      <div className="max-h-[85vh] overflow-hidden flex flex-col">
+      <div className="max-h-[85vh] overflow-hidden flex flex-col relative">
+        {/* Floating Close Button */}
+        <motion.button
+          onClick={handleClose}
+          className="absolute top-0 right-0 z-50 p-2 text-text-muted hover:text-text-primary transition-colors duration-200 rounded-xl hover:bg-surface-light/20 bg-neutral-900/80 backdrop-blur-sm shadow-lg flex items-center justify-center"
+          aria-label="Close modal"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </motion.button>
         {/* Loading overlay for similar games */}
         <AnimatePresence>
           {isLoadingSimilar && (

@@ -183,6 +183,62 @@ class AIService {
   }
 
   /**
+   * ✅ VALIDATION MONITORING: Check response format integrity
+   * Validates that required tags are present and subtab updates have proper format
+   * Logs violations without blocking the response
+   */
+  private validateResponseFormat(tags: Map<string, unknown>, conversation: Conversation, rawContent: string): void {
+    const violations: string[] = [];
+    const conversationId = conversation.id;
+    const isGameSpecific = !conversation.isGameHub && conversation.gameTitle;
+
+    // Check required tags for game-specific responses
+    if (isGameSpecific) {
+      if (!tags.has('SUGGESTIONS')) {
+        violations.push('Missing SUGGESTIONS tag');
+      }
+      if (!tags.has('PROGRESS')) {
+        violations.push('Missing PROGRESS tag');
+      }
+    }
+
+    // Validate SUBTAB_UPDATE format if present
+    if (tags.has('SUBTAB_UPDATE')) {
+      const subtabUpdates = tags.get('SUBTAB_UPDATE');
+      if (Array.isArray(subtabUpdates)) {
+        subtabUpdates.forEach((update, index) => {
+          // Check if update has required structure
+          if (typeof update === 'object' && update !== null) {
+            const updateObj = update as Record<string, unknown>;
+            if (!updateObj.tab || !updateObj.content) {
+              violations.push(`SUBTAB_UPDATE[${index}] missing tab or content field`);
+            } else {
+              // Check if content contains UPDATE_BLOCK markers (structured format)
+              const content = String(updateObj.content);
+              if (!content.includes('[UPDATE_BLOCK')) {
+                violations.push(`SUBTAB_UPDATE[${index}] missing [UPDATE_BLOCK] markers - content should be structured`);
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // Log violations if any found (non-blocking)
+    if (violations.length > 0) {
+      console.warn(`⚠️ [AIService] Response format violations detected:`, {
+        conversationId,
+        gameTitle: conversation.gameTitle,
+        violations,
+        tagsSummary: Array.from(tags.keys()),
+        responseLengthChars: rawContent.length
+      });
+    } else if (isGameSpecific) {
+      console.log(`✅ [AIService] Response format validation passed for ${conversation.gameTitle}`);
+    }
+  }
+
+  /**
    * ? REQUEST DEDUPLICATION: Wrapper to prevent duplicate API calls
    * If same request is already in progress, return the existing promise
    */
@@ -527,6 +583,9 @@ class AIService {
       }
       
       const { cleanContent, tags } = parseOtakonTags(rawContent);
+
+      // ✅ VALIDATION MONITORING: Check response format integrity (non-blocking)
+      this.validateResponseFormat(tags, conversation, rawContent);
 
       // Build gamePillData from OTAKON tags if game was detected
       const gameId = tags.get('GAME_ID') as string | undefined;

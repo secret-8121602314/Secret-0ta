@@ -882,6 +882,10 @@ const getGameCompanionPrompt = async (
   isActiveSession: boolean,
   playerProfile?: PlayerProfile
 ): Promise<string> => {
+  // 💬 Compute conversation turn count for response variety
+  const turnCount = Math.floor(conversation.messages.length / 2);
+  console.log(`💬 [PromptSystem] Conversation turn count: ${turnCount}`);
+  
   // Gather subtab context with smart prioritization
   // Strategy: Include FULL content of priority subtabs first, then others if space remains
   let totalChars = 0;
@@ -1164,6 +1168,20 @@ For this query "${userMessage}", use structured sections with bold headers:
    - **Character info**: Add "Character Background:", "Role in Story:"
    - **Build advice**: Add "Key Stats:", "Gear & Upgrades:"
    - **General help**: Add "Lore:", "Places of Interest:", or other relevant sections
+
+**🎨 CONVERSATION VARIETY - PREVENT REPETITION (Turn ${turnCount}):**
+${turnCount <= 4 ? `- Early conversation - standard format is fine
+- Keep responses clear and structured` : ''}
+${turnCount > 4 && turnCount <= 9 ? `- You've had ${turnCount} exchanges - start varying your section headers!
+- Instead of always "Lore:" → Try "Story Context:", "Background:", "History:", "Why It Matters:"
+- Instead of always "Places of Interest:" → Try "Exploration Tips:", "Areas to Check:", "Nearby Secrets:", "Key Locations:"
+- Be creative with secondary sections while keeping "Hint:" first
+- Examples: "What This Means:", "Deeper Context:", "Key Details:", "Character Depth:"` : ''}
+${turnCount > 9 ? `- Deep conversation (${turnCount}+ turns) - be creative with section names!
+- Keep "Hint:" first for TTS, but vary everything else
+- Use unique, contextual headers that match the specific question
+- Avoid repetitive patterns - each response should feel fresh
+- Trust your creativity - natural section names make conversations engaging` : ''}
 
 **CRITICAL FORMATTING RULES:**
 - Bold headers must be on same line: "**Hint:**" NOT "**Hint:\n**"
@@ -1480,12 +1498,13 @@ YOU MUST include [OTAKON_PROGRESS: X] in your response. This is NON-NEGOTIABLE.
 
 **If you cannot determine exact progress, estimate based on visual complexity - NEVER leave progress at 0 if you can see gameplay.**
 
-**CRITICAL - Subtab Updates (Include when providing valuable info):**
-- Use **[OTAKON_SUBTAB_UPDATE: {"tab": "Exact Tab Title", "content": "content"}]** to save important info to subtabs
+**⚠️ CRITICAL - SUBTAB UPDATES ARE SEPARATE FROM CHAT RESPONSES:**
+- Subtab updates use **[OTAKON_SUBTAB_UPDATE: {"tab": "Exact Tab Title", "content": "content"}]**
+- Subtab content MUST ALWAYS use structured [UPDATE_BLOCK] format - THIS NEVER CHANGES
+- Chat response format can vary, but subtab updates stay structured with UPDATE_BLOCK markers
 - Use the EXACT subtab titles shown in the screenshot analysis above (look for "### [Title]" in subtab context)
-- For game-specific tabs like "Sites of Grace Nearby", "Cyberware Build", use those exact titles
-- Example for Elden Ring: [OTAKON_SUBTAB_UPDATE: {"tab": "Sites of Grace Nearby", "content": "**Stormveil Castle**: Main Gate grace found..."}]
-- Example for generic: [OTAKON_SUBTAB_UPDATE: {"tab": "Boss Strategy", "content": "**Boss Name**: Attack patterns include..."}]
+- Example: [OTAKON_SUBTAB_UPDATE: {"tab": "Boss Strategy", "content": "[UPDATE_BLOCK: Latest Attempt]\\n\\nDefeated boss using shield..."}]
+- Subtabs are a knowledge base - keep them organized for consolidation system
 
 **🚨 MANDATORY SUGGESTIONS - NEVER FORGET THIS:**
 You MUST include [OTAKON_SUGGESTIONS: [...]] at the end of EVERY screenshot response!
