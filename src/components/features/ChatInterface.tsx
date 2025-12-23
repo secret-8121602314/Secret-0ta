@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, memo, useCallback } from 'react';
 import { motion } from 'framer-motion';
+import { HomeIcon } from '@heroicons/react/24/solid';
 import { Conversation, ActiveSessionState, ChatMessage } from '../../types';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import SessionSummaryCard, { parseSessionSummaryMessage } from './SessionSummaryCard';
@@ -18,6 +19,7 @@ import { GroundingToggle } from '../GroundingToggle';
 import SubTabs from './SubTabs';
 import { gameTabService } from '../../services/gameTabService';
 import { tabManagementService } from '../../services/tabManagementService';
+import { toastService } from '../../services/toastService';
 import { ChatInterfaceSkeleton } from '../ui/Skeletons';
 
 // ============================================================================
@@ -498,10 +500,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   // Track conversation ID to detect tab switches vs new messages
   const lastConversationIdRef = useRef<string | null>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   // ✅ NEW: Scroll to show the START of new AI messages instead of the end
   // When user sends a message, scroll to position where both query and AI thinking are visible
   const scrollToLatestMessage = useCallback(() => {
@@ -768,7 +766,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     } else if (!isManualUploadMode) {
       console.log('⚠️ [ChatInterface] NOT in manual upload mode (PLAY mode active)');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queuedImages, isManualUploadMode]);
 
   // ✅ NEW: Close quick actions when sidebar opens to prevent overlap
@@ -1147,9 +1144,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 }}
                 title="Open Gaming HQ"
               >
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                </svg>
+                <HomeIcon className="w-6 h-6 text-white" />
               </motion.button>
             </div>
           </div>
@@ -1312,9 +1307,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
           {/* Textarea Container - Grows upward */}
           <div className="relative mb-2">
-            {/* DEBUG: Check queuedImages state */}
-            {console.log('🖼️ [ChatInterface RENDER] queuedImages:', { length: queuedImages.length, hasImages: queuedImages.length > 0, firstUrl: queuedImages[0]?.substring(0, 50) })}
-            
             {/* Queued Screenshots - Show horizontally next to each other */}
             {queuedImages.length > 0 && (
               <div className="mb-2">

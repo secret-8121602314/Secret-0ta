@@ -2,6 +2,7 @@
 console.log('🔥🔥🔥 MAINAPP.TSX LOADED - VERSION DEC20-001 🔥🔥🔥');
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { Cog6ToothIcon, Square3Stack3DIcon, ComputerDesktopIcon } from '@heroicons/react/24/outline';
 import { User, Conversation, Conversations, newsPrompts, ConnectionStatus, SubTab, PlayerProfile, AIResponse } from '../types';
 import { GAME_HUB_ID } from '../constants';
 import { ConversationService } from '../services/conversationService';
@@ -15,13 +16,14 @@ import { sessionSummaryService } from '../services/sessionSummaryService';
 import { gameTabService } from '../services/gameTabService';
 import { errorRecoveryService } from '../services/errorRecoveryService';
 import { UserService } from '../services/userService';
-import { SupabaseService } from '../services/supabaseService';
+import { SupabaseService, supabaseService } from '../services/supabaseService';
 import { supabase } from '../lib/supabase';
 import { tabManagementService } from '../services/tabManagementService';
 import { subtabsService } from '../services/subtabsService';
 import { ttsService } from '../services/ttsService';
 import { toastService } from '../services/toastService';
 import { groundingControlService } from '../services/groundingControlService';
+import { trialStatusCache } from '../services/trialStatusCache';
 // import { MessageRoutingService } from '../services/messageRoutingService'; // Not currently used
 import { sessionService } from '../services/sessionService';
 import { fetchIGDBGameData, IGDBGameData, getSidebarCoverUrl } from '../services/igdbService';
@@ -798,6 +800,18 @@ const MainApp: React.FC<MainAppProps> = ({
             timelineStorage.loadFromSupabase(currentUser.authUserId).catch(err => {
               console.error('[MainApp] Failed to load timeline from Supabase:', err);
             });
+
+            // ✅ PRELOAD: Cache trial status to prevent loading delay in settings menu
+            supabaseService.getTrialStatus(currentUser.authUserId)
+              .then(status => {
+                if (status) {
+                  trialStatusCache.set(currentUser.authUserId, status);
+                  console.log('✅ [MainApp] Trial status preloaded and cached');
+                }
+              })
+              .catch(err => {
+                console.error('[MainApp] Failed to preload trial status:', err);
+              });
           }
           
           // ✅ FIX: Update currentUserId if not set (initial mount case)
@@ -4507,9 +4521,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               className="lg:hidden btn-icon p-3 sm:p-3.5 text-text-muted hover:text-text-primary flex items-center justify-center -ml-1 flex-shrink-0"
               data-no-touch-feedback="true"
             >
-              <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+              <Square3Stack3DIcon className="w-6 h-6 sm:w-7 sm:h-7" />
             </button>
             
             {/* Desktop sidebar toggle - always takes up space to prevent layout shift */}
@@ -4520,9 +4532,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               title="Open sidebar"
               tabIndex={desktopSidebarOpen ? -1 : 0}
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+              <Square3Stack3DIcon className="w-6 h-6" />
             </button>
             
             {/* Logo - always takes up space on desktop to prevent layout shift */}
@@ -4576,10 +4586,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               }`}
               title={connectionStatus === ConnectionStatus.CONNECTED ? 'PC Connected - Click to manage' : 'Connect to PC'}
             >
-              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01" />
-              </svg>
+              <ComputerDesktopIcon className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
             
             <button
@@ -4587,10 +4594,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
               onClick={handleSettingsContextMenu}
               className="btn-icon p-3 text-text-muted hover:text-text-primary transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             >
-              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
+              <Cog6ToothIcon className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
             
           </div>
@@ -4820,6 +4824,12 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
             console.log('🔄 [MainApp] User refreshed after trial start - tier:', refreshedUser.tier);
             setUser(refreshedUser);
             UserService.setCurrentUser(refreshedUser);
+            
+            // ✅ Refresh trial cache
+            const status = await supabaseService.getTrialStatus(refreshedUser.authUserId);
+            if (status) {
+              trialStatusCache.set(refreshedUser.authUserId, status);
+            }
           }
         }}
       />
@@ -4924,6 +4934,12 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
             console.log('🔄 [MainApp] User refreshed after trial start - tier:', refreshedUser.tier);
             setUser(refreshedUser);
             UserService.setCurrentUser(refreshedUser); // ✅ Update UserService cache too
+            
+            // ✅ Refresh trial cache
+            const status = await supabaseService.getTrialStatus(refreshedUser.authUserId);
+            if (status) {
+              trialStatusCache.set(refreshedUser.authUserId, status);
+            }
           }
         }}
         onUpgradeClick={() => {
