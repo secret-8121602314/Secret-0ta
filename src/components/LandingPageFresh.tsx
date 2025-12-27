@@ -1485,6 +1485,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                             }
                                         }}
                                         forceExpand={forceExpandSubtabs}
+                                        isDemo={true}
                                     />
                                 </div>
                             )}

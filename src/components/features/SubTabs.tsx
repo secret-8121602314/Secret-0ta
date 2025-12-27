@@ -74,6 +74,7 @@ interface SubTabsProps {
   onRetrySubtab?: (tabId: string) => void;
   onCreateCustomSubtab?: (name: string, type: string, instructions: string) => void;
   forceExpand?: boolean; // Force expand the panel (used during generation)
+  isDemo?: boolean; // Is this for demo hint (landing page) vs chat interface
 }
 
 const SubTabs: React.FC<SubTabsProps> = ({ 
@@ -87,7 +88,8 @@ const SubTabs: React.FC<SubTabsProps> = ({
   onExpandedChange,
   onRetrySubtab,
   onCreateCustomSubtab,
-  forceExpand = false
+  forceExpand = false,
+  isDemo = false
 }) => {
   const [localActiveTab, setLocalActiveTab] = useState<string>(activeTabId || subtabs[0]?.id || '');
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
@@ -400,11 +402,16 @@ const SubTabs: React.FC<SubTabsProps> = ({
       {/* z-30 ensures it's visible above other content but below sidebar (z-60) on mobile */}
       <button
         onClick={toggleExpanded}
-        className={`w-full flex items-center justify-between py-2 px-3 rounded-lg border transition-all duration-200 relative z-30 ${
+        className={`w-full flex items-center justify-between py-2 px-3 rounded-lg transition-all duration-200 relative z-30 ${
           isExpanded
-            ? 'bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] border-[#FF4D4D] hover:border-[#FFAB40]'
-            : 'bg-[#1C1C1C] hover:bg-[#252525] border-[#424242]/30 hover:border-[#424242]/60'
+            ? 'bg-[#1C1C1C] border-2 border-transparent bg-clip-padding'
+            : 'bg-[#1C1C1C] hover:bg-[#252525] border border-[#424242]/30 hover:border-[#424242]/60'
         }`}
+        style={isExpanded ? {
+          backgroundImage: 'linear-gradient(#1C1C1C, #1C1C1C), linear-gradient(135deg, #FF4D4D, #FFAB40)',
+          backgroundOrigin: 'border-box',
+          backgroundClip: 'padding-box, border-box'
+        } : undefined}
       >
         <div className="flex items-center gap-2">
           <div className={`text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
@@ -461,9 +468,13 @@ const SubTabs: React.FC<SubTabsProps> = ({
             Mobile: FIXED positioning to break out of all stacking contexts and appear above thread name
             Desktop: ABSOLUTE positioning relative to parent
             Panel positioned above Lore & Insights button on mobile (~250px from bottom for button + input)
+            Demo Hint: Uses original positioning (bottom-[70px], max-w-2xl, centered)
           */}
           <div
-            className="lg:absolute fixed lg:bottom-full bottom-[250px] left-3 right-3 lg:left-0 lg:right-0 mb-2 z-50 animate-fade-in"
+            className={isDemo 
+              ? "absolute bottom-full left-0 right-0 px-3 mx-auto max-w-2xl mb-2 z-50 animate-fade-in"
+              : "lg:absolute fixed lg:bottom-full bottom-[250px] left-3 right-3 lg:left-0 lg:right-0 mb-2 z-50 animate-fade-in"
+            }
           >
             <div className="bg-[#1C1C1C]/95 backdrop-blur-md border border-[#424242]/60 rounded-xl shadow-2xl flex flex-col overflow-hidden max-h-[60vh]">
           {/* Tab Headers - Grid layout on all screen sizes */}
@@ -508,6 +519,9 @@ const SubTabs: React.FC<SubTabsProps> = ({
               {/* Add Tab Button */}
               <button
                 onClick={() => {
+                  if (isDemo) { 
+                    return; // Do nothing in demo hint mode
+                  }
                   setShowCustomSubtabModal(true);
                   setCustomSubtabName('');
                   setCustomSubtabType('chat');
@@ -515,6 +529,7 @@ const SubTabs: React.FC<SubTabsProps> = ({
                 }}
                 className="px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-xs font-medium rounded-lg transition-all duration-200 select-none text-center bg-green-500/10 text-green-400 hover:bg-green-500/20 hover:text-green-300 border border-dashed border-green-500/40"
                 title="Add Tab"
+                disabled={isDemo}
               >
                 <div className="flex items-center justify-center gap-1 sm:gap-2">
                   <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -628,6 +643,9 @@ const SubTabs: React.FC<SubTabsProps> = ({
           <div className="py-1">
             <button
               onClick={() => {
+                if (isDemo) {
+                  return; // Do nothing in demo hint mode
+                }
                 // Find the tab to get its current content
                 const tab = subtabs.find(t => t.id === contextMenu.tabId);
                 setModifyModal({
@@ -637,7 +655,12 @@ const SubTabs: React.FC<SubTabsProps> = ({
                 });
                 setContextMenu(null);
               }}
-              className="w-full px-4 py-2 text-left text-sm text-[#F5F5F5] hover:bg-[#E53A3A]/20 transition-colors flex items-center gap-3"
+              className={`w-full px-4 py-2 text-left text-sm transition-colors flex items-center gap-3 ${
+                isDemo 
+                  ? 'text-[#666666] cursor-not-allowed opacity-50' 
+                  : 'text-[#F5F5F5] hover:bg-[#E53A3A]/20 cursor-pointer'
+              }`}
+              disabled={isDemo}
             >
               <svg className="w-4 h-4 text-[#E53A3A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -645,8 +668,18 @@ const SubTabs: React.FC<SubTabsProps> = ({
               <span>Modify Tab</span>
             </button>
             <button
-              onClick={() => handleDeleteConfirm(contextMenu.tabId)}
-              className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-500/20 transition-colors flex items-center gap-3"
+              onClick={() => {
+                if (isDemo) {
+                  return; // Do nothing in demo hint mode
+                }
+                handleDeleteConfirm(contextMenu.tabId);
+              }}
+              className={`w-full px-4 py-2 text-left text-sm transition-colors flex items-center gap-3 ${
+                isDemo 
+                  ? 'text-[#666666] cursor-not-allowed opacity-50' 
+                  : 'text-red-400 hover:bg-red-500/20 cursor-pointer'
+              }`}
+              disabled={isDemo}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
