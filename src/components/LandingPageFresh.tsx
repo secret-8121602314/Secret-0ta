@@ -1271,7 +1271,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
             {/* Main Content */}
             <main>
       {/* Hero Section */}
-                <section className="relative pt-24 md:pt-48 pb-16 md:pb-24 text-center">
+                <section className="relative pt-24 md:pt-32 pb-16 md:pb-24 text-center">
                     
                     <div className="container mx-auto px-6 relative overflow-visible">
                         {/* Logo and Brand - Hero Section */}
@@ -1536,7 +1536,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
               disabled={isSubmitting || isSubmissionSuccessful}
                                     className={`font-bold py-4 sm:py-5 px-8 sm:px-12 rounded-xl transition-all duration-300 transform text-base sm:text-lg relative overflow-hidden group min-h-[56px] ${
                                       isSubmissionSuccessful
-                                        ? 'bg-transparent border-2 border-[#10B981] text-[#10B981] md:hover:scale-100 md:hover:shadow-2xl md:hover:shadow-[#10B981]/30 active:scale-100 disabled:opacity-100 disabled:cursor-not-allowed'
+                                        ? 'bg-transparent border-2 border-green-400 text-green-400 md:hover:scale-100 md:hover:shadow-2xl md:hover:shadow-green-400/30 active:scale-100 disabled:opacity-100 disabled:cursor-not-allowed'
                                         : 'bg-transparent border-2 border-[#E53A3A] text-[#E53A3A] md:hover:scale-105 md:hover:bg-[#E53A3A]/10 md:hover:shadow-2xl md:hover:shadow-[#E53A3A]/30 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100'
                                     }`}
                                 >
@@ -1548,7 +1548,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                                 Joining...
                                             </div>
                                         ) : isSubmissionSuccessful ? (
-                                            <div className="flex items-center justify-center">
+                                            <div className="flex items-center justify-center text-green-400">
                                                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                                 </svg>
