@@ -14,7 +14,7 @@
 import { isPWAMode } from '../utils/pwaDetection';
 
 // Vibration patterns (in milliseconds)
-export const HapticPatterns = {
+export const HapticPatterns: Record<string, number | number[]> = {
   // Simple taps
   light: 10,
   medium: 20,
@@ -36,7 +36,7 @@ export const HapticPatterns = {
   
   // Notifications
   notification: [20, 100, 20, 100, 30],
-} as const;
+};
 
 export type HapticPattern = keyof typeof HapticPatterns;
 

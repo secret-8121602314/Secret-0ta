@@ -34,7 +34,7 @@ const BlogIndexModal: React.FC<BlogIndexModalProps> = ({ isOpen, onClose, onSele
         </div>
 
         {/* Category Filter Pills */}
-        <div className="flex flex-wrap justify-center gap-2 lg:gap-3 mb-10 lg:mb-12">
+        <div className="flex flex-wrap justify-center gap-2 lg:gap-3 mb-12 lg:mb-14">
           {categories.map((cat) => (
             <button
               key={cat}
@@ -51,7 +51,7 @@ const BlogIndexModal: React.FC<BlogIndexModalProps> = ({ isOpen, onClose, onSele
         </div>
 
         {/* Results Count */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-0">
           <h2 className="text-lg lg:text-xl font-semibold text-white">
             {filter === 'all' ? 'All Guides' : `${filter} Guides`}
           </h2>

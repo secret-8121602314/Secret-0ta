@@ -159,7 +159,8 @@ const HowToUseRoute: React.FC = () => {
                 if (dbError) {
                   console.error('[HowToUseRoute] Failed to update PC connection in database:', dbError);
                 } else {
-                                  }
+                  // Success - no action needed
+                }
               });
           }
         }
@@ -241,7 +242,8 @@ const HowToUseRoute: React.FC = () => {
         if (error) {
           console.error('[HowToUseRoute] Background DB update failed:', error);
         } else {
-                  }
+          // Success - no action needed
+        }
       } catch (error) {
         console.error('[HowToUseRoute] Background DB update error:', error);
       }

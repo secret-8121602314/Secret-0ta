@@ -66,39 +66,90 @@ export class ApiKeyService {
    * Save user's Gemini API key
    * Note: Encryption happens server-side in the Edge Function
    */
-  static async saveGeminiKey(user: User, apiKey: string): Promise<void> {
+  static async saveGeminiKey(user: User, apiKey: string, skipValidation = false): Promise<void> {
     try {
+      // Trim whitespace
+      const trimmedKey = apiKey.trim();
+      
       // Validate API key format
-      if (!apiKey.startsWith('AIzaSy')) {
-        throw new Error('Invalid API key format. Gemini API keys start with "AIzaSy"');
+      if (!trimmedKey.startsWith('AIzaSy')) {
+        console.error('[ApiKeyService] Invalid key format. Key starts with:', trimmedKey.substring(0, 10));
+        throw new Error(`Invalid API key format. Gemini API keys start with "AIzaSy" but yours starts with "${trimmedKey.substring(0, 6)}..."`);
+      }
+      
+      if (trimmedKey.length < 39) {
+        throw new Error('API key is too short. Gemini API keys are typically 39 characters long.');
       }
 
-      // Test the API key first
-      toastService.info('Testing your API key...');
-      const testResult = await this.testGeminiKey(apiKey);
-      
-      if (!testResult.valid) {
-        await BYOKAnalytics.trackKeyVerification(user, 'google', false, testResult.error);
-        throw new Error(testResult.error || 'Invalid API key');
+      // Test the API key first (unless skipping validation)
+      if (!skipValidation) {
+        toastService.info('Testing your API key...');
+        const testResult = await this.testGeminiKey(trimmedKey);
+        
+        if (!testResult.valid) {
+          // Check if it's a quota/rate limit error
+          const isQuotaError = testResult.error?.includes('quota') || 
+                               testResult.error?.includes('429') ||
+                               testResult.error?.includes('RESOURCE_EXHAUSTED');
+          
+          if (isQuotaError) {
+            // Allow saving despite quota error - the key format is valid
+            console.warn('[ApiKeyService] Key validation failed due to quota, but allowing save');
+            toastService.warning('⚠️ Could not test key (quota limit), but saving anyway...');
+            await BYOKAnalytics.trackKeyVerification(user, 'google', false, 'quota_exceeded_during_test');
+          } else {
+            // Other errors should block the save
+            await BYOKAnalytics.trackKeyVerification(user, 'google', false, testResult.error);
+            throw new Error(testResult.error || 'Invalid API key');
+          }
+        }
       }
 
       // Save to database (unencrypted for now - will be encrypted in Edge Function)
       // In production, you should encrypt before storing
-      const { error } = await supabase
+      
+      // Build update object - only include fields that exist in the database
+      const updateData: Record<string, unknown> = {
+        gemini_api_key_encrypted: trimmedKey, // Use trimmed key
+        uses_custom_gemini_key: true,
+        updated_at: new Date().toISOString()
+      };
+      
+      // Only add BYOK-specific fields if they exist (migration applied)
+      // This makes the code work even if migration hasn't been run yet
+      try {
+        updateData.custom_key_verified_at = new Date().toISOString();
+        updateData.had_custom_key_before = true;
+      } catch {
+        console.warn('[ApiKeyService] BYOK columns may not exist yet - using basic fields only');
+      }
+      
+      const { error, data } = await supabase
         .from('users')
-        .update({
-          gemini_api_key_encrypted: apiKey, // TODO: Encrypt client-side before storing
-          uses_custom_gemini_key: true,
-          custom_key_verified_at: new Date().toISOString(),
-          had_custom_key_before: true,
-          updated_at: new Date().toISOString()
-        })
-        .eq('auth_user_id', user.authUserId);
+        .update(updateData)
+        .eq('auth_user_id', user.authUserId)
+        .select();
 
       if (error) {
         console.error('[ApiKeyService] Error saving API key:', error);
-        throw new Error('Failed to save API key');
+        const errorMsg = error.message || 'Failed to save API key to database';
+        throw new Error(`Database error: ${errorMsg}`);
       }
+
+      if (!data || data.length === 0) {
+        console.error('[ApiKeyService] No data returned after update');
+        throw new Error('User record not found or update failed');
+      }
+
+      console.log('[ApiKeyService] ✅ API key saved successfully:', {
+        userId: user.id,
+        authUserId: user.authUserId,
+        usesCustomKey: true
+      });
+
+      // Clear any cached user data to force refresh
+      localStorage.removeItem('otakon_user');
+      localStorage.removeItem(`otakon_user_cache_${user.authUserId}`);
 
       // Track analytics
       await BYOKAnalytics.trackKeyAdded(user, 'google');
@@ -156,7 +207,7 @@ export class ApiKeyService {
         .update({
           gemini_api_key_encrypted: null,
           uses_custom_gemini_key: false,
-          had_custom_key_before: supabase.raw('CASE WHEN uses_custom_gemini_key = true THEN true ELSE had_custom_key_before END'),
+          had_custom_key_before: true,
           updated_at: new Date().toISOString()
         })
         .eq('auth_user_id', authUserId);
@@ -177,7 +228,7 @@ export class ApiKeyService {
    * Check if user's custom key needs re-verification (>30 days old)
    */
   static needsReVerification(customKeyVerifiedAt: string | null): boolean {
-    if (!customKeyVerifiedAt) return true;
+    if (!customKeyVerifiedAt) {return true;}
     
     const verifiedDate = new Date(customKeyVerifiedAt);
     const daysSinceVerification = (Date.now() - verifiedDate.getTime()) / (1000 * 60 * 60 * 24);

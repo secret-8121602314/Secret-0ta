@@ -135,6 +135,7 @@ class DailyNewsCacheService {
   public async clearAllCache(): Promise<void> {
     for (const prompt of newsPrompts) {
       const cacheKey = this.getCacheKey(prompt);
+      // eslint-disable-next-line no-await-in-loop
       await cacheService.delete(cacheKey);
     }
     localStorage.removeItem(this.LAST_GROUNDING_KEY);
@@ -148,6 +149,7 @@ class DailyNewsCacheService {
 
     for (const prompt of newsPrompts) {
       const cacheKey = this.getCacheKey(prompt);
+      // eslint-disable-next-line no-await-in-loop
       const cached = await cacheService.get<{ content: string; timestamp: number }>(cacheKey);
 
       if (cached) {

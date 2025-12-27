@@ -158,22 +158,10 @@ export class SubtabsService {
         return false;
       }
 
-      console.error(`🔄 [SubtabsService] Using auth_user_id: ${authUserId} for ${subtabs.length} subtabs`);
-
-      // Delete existing subtabs for this conversation
-      const { error: deleteError } = await supabase
-        .from('subtabs')
-        .delete()
-        .eq('conversation_id', conversationId);
-
-      if (deleteError) {
-        console.error('Error deleting existing subtabs:', deleteError);
-        return false;
-      }
-
-      // Insert new subtabs
+      // 🚀 PERF OPTIMIZATION: Use upsert instead of delete+insert for faster writes
+      // This reduces from 2 DB round-trips to 1
       if (subtabs.length > 0) {
-        const subtabsToInsert = subtabs.map((subtab, index) => {
+        const subtabsToUpsert = subtabs.map((subtab, index) => {
           // ✅ Validate that type exists before mapping
           if (!subtab.type) {
             console.error(`⚠️ [SubtabsService] Subtab "${subtab.title}" has NULL type! Using fallback.`);
@@ -196,21 +184,18 @@ export class SubtabsService {
           };
         });
 
-        console.error('🔄 [SubtabsService] Inserting subtabs:', subtabsToInsert.map(s => ({ title: s.title, tab_type: s.tab_type, has_auth_user_id: !!s.auth_user_id })));
-
         // Types not regenerated yet, but schema migration applied (game_id nullable)
-         
-        const { error: insertError } = await supabase
+        const { error: upsertError } = await supabase
           .from('subtabs')
-          .insert(subtabsToInsert as any);
+          .upsert(subtabsToUpsert as unknown as Record<string, unknown>[], {
+            onConflict: 'id',
+            ignoreDuplicates: false
+          });
 
-        if (insertError) {
-          console.error('❌ [SubtabsService] Error inserting subtabs:', insertError);
-          console.error('❌ [SubtabsService] Failed subtabs data:', JSON.stringify(subtabsToInsert, null, 2));
+        if (upsertError) {
+          console.error('❌ [SubtabsService] Error upserting subtabs:', upsertError);
           return false;
         }
-
-        console.error('✅ [SubtabsService] Successfully inserted', subtabs.length, 'subtabs');
       }
 
       return true;

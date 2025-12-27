@@ -133,12 +133,12 @@ export class BYOKAnalytics {
 
       const totalRequests = data?.length || 0;
       const totalTokens = data?.reduce((sum, record) => {
-        const eventData = record.event_data as Record<string, any>;
-        return sum + (eventData.tokensUsed || 0);
+        const eventData = record.event_data as Record<string, unknown>;
+        return sum + ((eventData.tokensUsed as number) || 0);
       }, 0) || 0;
       
       const providers = [...new Set(
-        data?.map(r => (r.event_data as Record<string, any>).provider) || []
+        data?.map(r => (r.event_data as Record<string, unknown>).provider) || []
       )];
 
       const lastUsed = data && data.length > 0 ? data[0].created_at : null;

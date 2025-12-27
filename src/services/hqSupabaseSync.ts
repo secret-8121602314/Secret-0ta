@@ -166,6 +166,7 @@ export const librarySupabaseSync = {
     console.log(`[LibrarySync] Syncing ${localItems.length} items from localStorage to Supabase...`);
     
     for (const item of localItems) {
+      // eslint-disable-next-line no-await-in-loop
       await this.add(userId, item);
     }
     
@@ -283,6 +284,7 @@ export const timelineSupabaseSync = {
     console.log(`[TimelineSync] Syncing ${localEvents.length} events from localStorage to Supabase...`);
     
     for (const event of localEvents) {
+      // eslint-disable-next-line no-await-in-loop
       await this.add(userId, event);
     }
     

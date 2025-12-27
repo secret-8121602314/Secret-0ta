@@ -146,6 +146,7 @@ const FormattedContent: React.FC<{ content: string }> = ({ content }) => {
 /**
  * Parse a session summary message content into structured data
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export const parseSessionSummaryMessage = (content: string): SessionSummaryCardProps | null => {
   // Check if this is a session summary message by looking for the summary header
   const isPlayingSessionSummary = content.includes('**Playing Session Summary for');

@@ -28,6 +28,7 @@ import {
   queryIGDBGamesByCriteria,
 } from '../../services/igdbService';
 import { supabase } from '../../lib/supabase';
+import type { Json } from '../../types/database';
 import { toastService } from '../../services/toastService';
 
 // Type for Supabase cache entries
@@ -182,10 +183,11 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
           
           if (hasAllCache) {
             console.log('[GamingExplorerHome] Using complete global Supabase cache');
-            setFeaturedGames(cacheMap.get('featured_games')!);
-            setNewReleases(cacheMap.get('new_releases')!);
-            setHighestRatedGames(cacheMap.get('highest_rated')!);
-            setCategoryGamesMap(cacheMap.get('categories') as Record<string, IGDBGameData[]>);
+            setFeaturedGames(cacheMap.get('featured_games') || []);
+            setNewReleases(cacheMap.get('new_releases') || []);
+            setHighestRatedGames(cacheMap.get('highest_rated') || []);
+            const cachedGenres = cacheMap.get('categories') as unknown as Record<string, IGDBGameData[]>;
+            setCategoryGamesMap(cachedGenres);
             
             setLoadingFeatured(false);
             setLoadingNewReleases(false);
@@ -249,10 +251,10 @@ const GamingExplorerHome: React.FC<GamingExplorerHomeProps> = ({ user, onOpenGam
         const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days
         
         const cacheEntries = [
-          { cache_key: 'featured_games', data: featuredResults.slice(0, 8), expires_at: sevenDaysLater.toISOString() },
-          { cache_key: 'new_releases', data: newReleaseResults.slice(0, 6), expires_at: oneDayLater.toISOString() },
-          { cache_key: 'highest_rated', data: highestRatedResults.slice(0, 8), expires_at: sevenDaysLater.toISOString() },
-          { cache_key: 'categories', data: categoryResults, expires_at: sevenDaysLater.toISOString() },
+          { cache_key: 'featured_games', data: featuredResults.slice(0, 8) as unknown as Json, expires_at: sevenDaysLater.toISOString() },
+          { cache_key: 'new_releases', data: newReleaseResults.slice(0, 6) as unknown as Json, expires_at: oneDayLater.toISOString() },
+          { cache_key: 'highest_rated', data: highestRatedResults.slice(0, 8) as unknown as Json, expires_at: sevenDaysLater.toISOString() },
+          { cache_key: 'categories', data: categoryResults as unknown as Json, expires_at: sevenDaysLater.toISOString() },
         ];
         
         await (supabase.from('igdb_home_cache').upsert(cacheEntries, { onConflict: 'cache_key' }) as unknown as Promise<{ error: { message: string } | null }>);

@@ -207,22 +207,26 @@ export class SupabaseService {
       const messages = conv.messages;
       
       const processedMessages = Array.isArray(messages) 
-        ? messages.map((msg: any) => ({
-            id: msg.id,
-            role: msg.role as 'user' | 'assistant' | 'system',
-            content: msg.content,
-            timestamp: safeParseDate(msg.created_at),
-            imageUrl: safeString(msg.image_url, undefined),
-            metadata: typeof msg.metadata === 'object' && msg.metadata !== null ? msg.metadata as Record<string, unknown> : undefined,
-          }))
+        ? messages.map((msg: unknown) => {
+            const message = msg as Record<string, unknown>;
+            return {
+              id: message.id as string,
+              role: message.role as 'user' | 'assistant' | 'system',
+              content: message.content as string,
+              timestamp: safeParseDate(message.created_at as string),
+              imageUrl: safeString(message.image_url as string, undefined),
+              metadata: typeof message.metadata === 'object' && message.metadata !== null ? message.metadata as Record<string, unknown> : undefined,
+            };
+          })
         : [];
       
       // Handle subtabs from the join
       const rawSubtabs = conv.subtabs;
       const processedSubtabs = Array.isArray(rawSubtabs) 
-        ? rawSubtabs.map((subtab: any) => {
-            const metadata = typeof subtab.metadata === 'object' && subtab.metadata !== null 
-              ? subtab.metadata as Record<string, unknown> 
+        ? rawSubtabs.map((subtab: unknown) => {
+            const sub = subtab as Record<string, unknown>;
+            const metadata = typeof sub.metadata === 'object' && sub.metadata !== null 
+              ? sub.metadata as Record<string, unknown> 
               : {};
             
             return {
@@ -244,20 +248,8 @@ export class SupabaseService {
           })
         : [];
       
-      // 🔍 DEBUG: Log subtab mapping to verify correct shape
-      if (processedSubtabs.length > 0 && conv.id !== 'game-hub') {
-        const sample = processedSubtabs[0];
-        console.error('🔍 [Supabase] Subtab mapping verification:', {
-          conversationId: conv.id,
-          sampleSubtab: {
-            hasType: 'type' in sample,
-            hasStatus: 'status' in sample,
-            type: sample.type,
-            status: sample.status,
-            title: sample.title
-          }
-        });
-      }
+      // Subtab mapping verification - enabled only in development with DEBUG flag
+      // Removed: Was logging 15+ times per request
       
       return {
         id: conv.id as string,
@@ -272,15 +264,7 @@ export class SupabaseService {
         subtabsOrder: (conv.subtabs_order as string[]) || [],
         isActiveSession: conv.is_active_session as boolean | null,
         activeObjective: (conv.active_objective as string | null) ?? undefined,
-        gameProgress: (() => {
-          const dbValue = conv.game_progress;
-          const mappedValue = (dbValue as number | null) ?? undefined;
-          // 🔍 DEBUG: Log game_progress mapping for non-Game Hub conversations
-          if (conv.id !== 'game-hub') {
-            console.log('📊 [SupabaseService] Loading gameProgress for', conv.title, '- DB value:', dbValue, '→ Mapped:', mappedValue);
-          }
-          return mappedValue;
-        })(),
+        gameProgress: (conv.game_progress as number | null) ?? undefined,
         createdAt: safeParseDate(conv.created_at as string | null),
         updatedAt: safeParseDate(conv.updated_at as string | null),
         isActive: conv.is_active as boolean | null,
@@ -338,7 +322,7 @@ export class SupabaseService {
        
             const { data, error } = await supabase
         .from('conversations')
-        .upsert(insertData as any, { 
+        .upsert(insertData as unknown as Record<string, unknown>, { 
           onConflict: 'id',
           ignoreDuplicates: false // Update existing record
         })
@@ -402,7 +386,7 @@ export class SupabaseService {
       });
       
       // Debounce batch execution
-      if (this.updateTimer) clearTimeout(this.updateTimer);
+      if (this.updateTimer) {clearTimeout(this.updateTimer);}
       this.updateTimer = setTimeout(() => this.flushUpdateQueue(), this.UPDATE_DEBOUNCE_MS);
       
       return true;
@@ -419,7 +403,7 @@ export class SupabaseService {
     const updates = Array.from(this.updateQueue.entries());
     this.updateQueue.clear();
     
-    if (updates.length === 0) return;
+    if (updates.length === 0) {return;}
     
     // Execute all updates in parallel
     const results = await Promise.allSettled(

@@ -11,6 +11,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import type { Json } from '../types/database';
 import { IGDBGameData } from './igdbService';
 import {
   GameLibraryItem,
@@ -22,7 +23,6 @@ import {
   libraryStorage,
   timelineStorage,
   gameKnowledgeStorage,
-  userProfileStorage,
   searchHistoryStorage,
 } from './gamingExplorerStorage';
 
@@ -64,19 +64,6 @@ interface SupabaseTimelineEvent {
   updated_at: string;
 }
 
-interface SupabaseGamingProfile {
-  id: string;
-  auth_user_id: string;
-  gaming_start_year: number | null;
-  owned_count: number;
-  completed_count: number;
-  wishlist_count: number;
-  favorites_count: number;
-  disliked_count: number;
-  total_hours_played: number;
-  last_updated: string;
-}
-
 // Generic Supabase response types
 type SupabaseResponse<T> = {
   data: T | null;
@@ -107,14 +94,14 @@ export const supabaseLibraryService = {
       const supabaseItems = localItems.map(item => ({
         auth_user_id: authUserId,
         igdb_game_id: item.igdbGameId,
-        game_name: item.gameName,
+        game_title: item.gameName,
         category: item.category,
         platform: item.platform || null,
         personal_rating: item.personalRating || null,
         completion_status: item.completionStatus || null,
         hours_played: item.hoursPlayed || null,
         notes: item.notes || null,
-        igdb_data: item.igdbData || null,
+        igdb_data: (item.igdbData || null) as Json,
         date_added: new Date(item.dateAdded).toISOString(),
         updated_at: new Date(item.updatedAt).toISOString(),
       }));
@@ -207,14 +194,14 @@ export const supabaseLibraryService = {
         .upsert({
           auth_user_id: authUserId,
           igdb_game_id: item.igdbGameId,
-          game_name: item.gameName,
+          game_title: item.gameName,
           category: item.category,
           platform: item.platform || null,
           personal_rating: item.personalRating || null,
           completion_status: item.completionStatus || null,
           hours_played: item.hoursPlayed || null,
           notes: item.notes || null,
-          igdb_data: item.igdbData || null,
+          igdb_data: (item.igdbData || null) as Json,
           date_added: new Date(item.dateAdded).toISOString(),
           updated_at: new Date(item.updatedAt).toISOString(),
         }, {
@@ -282,9 +269,8 @@ export const supabaseTimelineService = {
         auth_user_id: authUserId,
         event_type: event.type,
         event_date: event.eventDate,
-        year: event.year,
-        title: event.title,
-        description: event.description || null,
+        event_title: event.title,
+        event_description: event.description || null,
         specs: event.specs || null,
         photos: event.photos || null,
         igdb_game_id: event.igdbGameId || null,
@@ -367,9 +353,8 @@ export const supabaseTimelineService = {
           auth_user_id: authUserId,
           event_type: event.type,
           event_date: event.eventDate,
-          year: event.year,
-          title: event.title,
-          description: event.description || null,
+          event_title: event.title,
+          event_description: event.description || null,
           specs: event.specs || null,
           photos: event.photos || null,
           igdb_game_id: event.igdbGameId || null,
@@ -400,15 +385,20 @@ export const supabaseTimelineService = {
 export const supabaseProfileService = {
   /**
    * Sync user gaming profile to Supabase
+   * ⚠️ DISABLED - Table does not exist
    */
-  async syncToSupabase(authUserId: string): Promise<{ success: boolean; error?: string }> {
+  async syncToSupabase(_authUserId: string): Promise<{ success: boolean; error?: string }> {
+    console.warn('[SupabaseProfile] Table gaming_profiles does not exist in production schema');
+    return { success: true };
+
+    /* COMMENTED OUT - TABLE DOES NOT EXIST
     try {
       const profile = userProfileStorage.get();
 
       const { error } = (await supabase
         .from('gaming_profiles')
         .upsert({
-          auth_user_id: authUserId,
+          auth_user_id: _authUserId,
           gaming_start_year: profile.gamingStartYear || null,
           owned_count: profile.libraryStats.ownedCount,
           completed_count: profile.libraryStats.completedCount,
@@ -438,7 +428,7 @@ export const supabaseProfileService = {
    * Fetch user gaming profile from Supabase
    * ⚠️ DISABLED - Table does not exist
    */
-  async fetch(authUserId: string): Promise<UserGamingProfile | null> {
+  async fetch(_authUserId: string): Promise<UserGamingProfile | null> {
     console.warn('[SupabaseProfile] Table gaming_profiles does not exist in production schema');
     return null;
     
@@ -447,7 +437,7 @@ export const supabaseProfileService = {
       const { data, error } = (await supabase
         .from('gaming_profiles')
         .select('*')
-        .eq('auth_user_id', authUserId)
+        .eq('auth_user_id', _authUserId)
         .single()) as SupabaseResponse<SupabaseGamingProfile>;
 
       if (error || !data) {
@@ -471,6 +461,7 @@ export const supabaseProfileService = {
       console.error('[SupabaseProfile] Fetch exception:', error);
       return null;
     }
+    */
   },
 };
 
@@ -493,7 +484,7 @@ export const supabaseSearchHistoryService = {
       const supabaseItems = localHistory.map(item => ({
         auth_user_id: authUserId,
         igdb_game_id: item.gameData.id,
-        game_data: item.gameData,
+        game_data: item.gameData as unknown as Json,
         searched_at: new Date(item.searchedAt).toISOString(),
       }));
 
@@ -525,7 +516,7 @@ export const supabaseSearchHistoryService = {
         .upsert({
           auth_user_id: authUserId,
           igdb_game_id: gameData.id,
-          game_data: gameData,
+          game_data: gameData as unknown as Json,
           searched_at: new Date().toISOString(),
         }, {
           onConflict: 'auth_user_id,igdb_game_id',
@@ -533,7 +524,6 @@ export const supabaseSearchHistoryService = {
     } catch (error) {
       console.error('[SupabaseSearchHistory] Add error:', error);
     }
-    */
   },
 };
 
@@ -560,14 +550,14 @@ export const supabaseKnowledgeService = {
           auth_user_id: authUserId,
           igdb_game_id: k.igdbGameId,
           game_name: k.gameName,
-          walkthrough_data: k.walkthroughData || null,
-          story_progression: k.storyProgression || null,
-          collectibles: k.collectibles || null,
-          achievements: k.achievements || null,
-          tips_and_tricks: k.tipsAndTricks || null,
-          boss_strategies: k.bossStrategies || null,
-          character_builds: k.characterBuilds || null,
-          game_mechanics: k.gameMechanics || null,
+          walkthrough_data: (k.walkthroughData || null) as Json,
+          story_progression: (k.storyProgression || null) as Json,
+          collectibles: (k.collectibles || null) as Json,
+          achievements: (k.achievements || null) as Json,
+          tips_and_tricks: (k.tipsAndTricks || null) as Json,
+          boss_strategies: (k.bossStrategies || null) as Json,
+          character_builds: (k.characterBuilds || null) as Json,
+          game_mechanics: (k.gameMechanics || null) as Json,
           extracted_at: new Date(k.extractedAt).toISOString(),
           last_updated: new Date(k.lastUpdated).toISOString(),
         }));

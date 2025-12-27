@@ -82,7 +82,7 @@ const BlogPostModal: React.FC<BlogPostModalProps> = ({
         
         return (
           <section key={idx} className="mb-10 lg:mb-12">
-            <h2 className="text-2xl lg:text-3xl font-bold text-white mb-5 pb-3 border-b border-neutral-800/70">
+            <h2 className="text-2xl lg:text-3xl font-bold text-white mb-5">
               {renderTitle()}
             </h2>
             <div className="space-y-4">
@@ -285,7 +285,7 @@ const BlogPostModal: React.FC<BlogPostModalProps> = ({
         </button>
 
         {/* Article Header */}
-        <header className="mb-8 lg:mb-10 max-w-5xl">
+        <header className="mb-12 lg:mb-16 max-w-5xl">
           {/* Meta Tags */}
           <div className="flex flex-wrap items-center gap-3 mb-5">
             <span className="text-sm font-bold text-primary bg-primary/15 px-4 py-1.5 rounded-full">

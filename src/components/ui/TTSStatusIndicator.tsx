@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 export interface TTSStatus {
   status: 'available' | 'unavailable' | 'error' | 'testing';
@@ -17,9 +17,9 @@ export const TTSStatusIndicator: React.FC<{
 
   useEffect(() => {
     checkTTSAvailability();
-  }, []);
+  }, [checkTTSAvailability]);
 
-  const checkTTSAvailability = async () => {
+  const checkTTSAvailability = useCallback(async () => {
     try {
       // Check if TTS is supported
       if (!('speechSynthesis' in window)) {
@@ -68,7 +68,7 @@ export const TTSStatusIndicator: React.FC<{
         lastError: error
       });
     }
-  };
+  }, [ttsStatus.status]);
 
   const getStatusIcon = () => {
     switch (ttsStatus.status) {

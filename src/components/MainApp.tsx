@@ -43,7 +43,6 @@ import { FeatureInfoModal } from './modals/FeatureInfoModal';
 import Logo from './ui/Logo';
 import CreditIndicator from './ui/CreditIndicator';
 import HandsFreeToggle from './ui/HandsFreeToggle';
-import AIToggleButton from './ui/AIToggleButton';
 import { AppLoadingScreen } from './ui/AppLoadingScreen';
 import SettingsContextMenu from './ui/SettingsContextMenu';
 import ProfileSetupBanner from './ui/ProfileSetupBanner';
@@ -344,7 +343,7 @@ const MainApp: React.FC<MainAppProps> = ({
         setActiveConversation(updatedConversation);
       }
     }
-  }, [conversations, activeConversation?.id, activeConversation?.gameProgress, activeConversation?.activeObjective, activeConversation?.subtabs?.length]);
+  }, [conversations, activeConversation]);
 
   // Helper function to refresh quota from server
   const refreshQuota = useCallback(async () => {
@@ -387,25 +386,17 @@ const MainApp: React.FC<MainAppProps> = ({
 
   // ✅ CRITICAL: Load suggested prompts from last AI message when conversation changes
   useEffect(() => {
-    console.log('🎯 [PROMPTS] useEffect triggered, activeConversation:', activeConversation?.id, activeConversation?.gameTitle);
-    
     // Skip if we're currently setting suggestions from an AI response
     if (isSettingSuggestionsFromAI.current) {
-      console.log('📌 [MainApp] Skipping useEffect - AI is setting suggestions');
       return;
     }
     
     // ✅ FIX: Use activeConversation directly since it's the source of truth for the current tab
     // Don't use conversations map lookup as it can be stale
     if (!activeConversation?.id || !activeConversation?.messages) {
-      console.log('🎯 [PROMPTS] No active conversation or messages, clearing prompts');
       setSuggestedPrompts([]);
       return;
     }
-
-    // ✅ SIMPLIFIED: Always load prompts when conversation changes - no ref caching
-    // The ref caching was causing stale data issues when switching tabs
-    console.log('🎯 [PROMPTS] Loading prompts for:', activeConversation.id, 'messages:', activeConversation.messages.length);
 
     // Find the last assistant message with suggestions (check both field and metadata)
     const lastAIMessage = [...activeConversation.messages]
@@ -421,7 +412,9 @@ const MainApp: React.FC<MainAppProps> = ({
       // Get suggestions from metadata only
       const savedPrompts = lastAIMessage.metadata?.suggestedPrompts;
       if (savedPrompts && Array.isArray(savedPrompts) && savedPrompts.length > 0) {
-        console.log('🎯 [PROMPTS] ✅ Setting AI prompts for', activeConversation.gameTitle || activeConversation.title, ':', savedPrompts.slice(0, 2));
+        if (import.meta.env.DEV) {
+          console.log('🎯 [PROMPTS] ✅ Setting AI prompts for', activeConversation.gameTitle || activeConversation.title, ':', savedPrompts.slice(0, 2));
+        }
         setSuggestedPrompts(savedPrompts);
         return;
       }
@@ -432,9 +425,8 @@ const MainApp: React.FC<MainAppProps> = ({
       activeConversation.id,
       activeConversation.isGameHub ?? false
     );
-    console.log('🎯 [PROMPTS] No AI prompts - using fallback for', activeConversation.gameTitle || activeConversation.title);
     setSuggestedPrompts(fallbackSuggestions);
-  }, [activeConversation?.id, activeConversation?.messages?.length]); // ✅ FIX: Use messages length to avoid array reference issues
+  }, [activeConversation?.id, activeConversation?.messages, activeConversation?.gameTitle, activeConversation?.isGameHub, activeConversation?.title]);
 
   // Handle WebSocket messages for screenshot processing
   // Note: Connection confirmation (partner_connected) is handled by MainAppRoute
@@ -726,56 +718,62 @@ const MainApp: React.FC<MainAppProps> = ({
   }, []);
 
   // ✅ FIX: Subscribe to auth state changes to detect new user login after logout AND tier changes
+  // 🚀 PERF: Added debouncing to prevent rapid-fire state updates
   useEffect(() => {
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    let lastProcessedUserId: string | null = null;
+    let lastProcessedTier: string | undefined = undefined;
+    
     const unsubscribe = authService.subscribe((authState) => {
       const newUserId = authState.user?.authUserId || null;
       const newTier = authState.user?.tier;
-      const currentTier = user?.tier;
       
-      console.log('🔍 [MainApp] Auth state change detected:', {
-        previousUserId: currentUserId,
-        newUserId,
-        currentTier,
-        newTier,
-        isLoading: authState.isLoading,
-        isLoggingOut: isLoggingOutRef.current
-      });
-      
-      // ✅ FIX: Update user state when userId changes OR tier changes
-      const userIdChanged = newUserId !== currentUserId;
-      const tierChanged = newTier && currentTier && newTier !== currentTier;
-      
-      if (userIdChanged || tierChanged) {
-        console.log('🔍 [MainApp] User state change:', {
-          userIdChanged,
-          tierChanged,
-          previousTier: currentTier,
-          newTier,
-          previousUserId: currentUserId,
-          newUserId
-        });
-        
-        // Update user state from authState
-        if (authState.user) {
-          setUser(authState.user);
-          UserService.setCurrentUser(authState.user);
-          console.log('✅ [MainApp] User state updated from authService subscription');
-        }
-        
-        // Update current user ID if it changed
-        if (userIdChanged && newUserId) {
-          // ✅ FIX: If we're getting a new user ID, logout is complete
-          // Clear the flag to allow loadData to proceed
-          if (isLoggingOutRef.current) {
-            console.log('🔍 [MainApp] New user detected while logout flag was set - clearing flag');
-            isLoggingOutRef.current = false;
-          }
-          setCurrentUserId(newUserId);
-        }
+      // 🚀 PERF: Skip if nothing actually changed (prevents duplicate processing)
+      if (newUserId === lastProcessedUserId && newTier === lastProcessedTier) {
+        return;
       }
+      
+      // Clear any pending debounce
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+      
+      // 🚀 PERF: Debounce state updates by 100ms to batch rapid auth events
+      debounceTimer = setTimeout(() => {
+        const currentTier = user?.tier;
+        
+        // ✅ FIX: Update user state when userId changes OR tier changes
+        const userIdChanged = newUserId !== currentUserId;
+        const tierChanged = newTier && currentTier && newTier !== currentTier;
+        
+        if (userIdChanged || tierChanged) {
+          // Update tracking vars
+          lastProcessedUserId = newUserId;
+          lastProcessedTier = newTier;
+          
+          // Update user state from authState
+          if (authState.user) {
+            setUser(authState.user);
+            UserService.setCurrentUser(authState.user);
+          }
+          
+          // Update current user ID if it changed
+          if (userIdChanged && newUserId) {
+            // ✅ FIX: If we're getting a new user ID, logout is complete
+            // Clear the flag to allow loadData to proceed
+            if (isLoggingOutRef.current) {
+              isLoggingOutRef.current = false;
+            }
+            setCurrentUserId(newUserId);
+          }
+        }
+      }, 100);
     });
 
     return () => {
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
       unsubscribe();
     };
   }, [currentUserId, user?.tier]);
@@ -1141,11 +1139,22 @@ const MainApp: React.FC<MainAppProps> = ({
     const currentTier = currentUser?.tier || 'free';
     const previousTier = previousTierRef.current;
     
-    console.log('🔄 [TierChange] Effect triggered - currentTier:', currentTier, 'previousTier:', previousTier, 'isInitializing:', isInitializing, 'hasInitialized:', hasInitializedTierRef.current);
+    // ✅ OPTIMIZATION: Short-circuit first - most common case is unchanged tier
+    // This check runs first to avoid logging on every render
+    if (previousTier === currentTier && hasInitializedTierRef.current) {
+      return; // Silent exit - no logging needed for unchanged tier
+    }
+    
+    // Only log on actual state transitions
+    if (import.meta.env.DEV) {
+      console.log('🔄 [TierChange] Effect triggered - currentTier:', currentTier, 'previousTier:', previousTier, 'isInitializing:', isInitializing, 'hasInitialized:', hasInitializedTierRef.current);
+    }
     
     // Skip on initial mount (no previous tier set yet)
     if (previousTier === null) {
-      console.log('🔄 [TierChange] Initial tier set:', currentTier);
+      if (import.meta.env.DEV) {
+        console.log('🔄 [TierChange] Initial tier set:', currentTier);
+      }
       previousTierRef.current = currentTier;
       return;
     }
@@ -1153,21 +1162,21 @@ const MainApp: React.FC<MainAppProps> = ({
     // ✅ FIX: Skip if we're still in the initial loading phase
     // This prevents false upgrade detection when user data loads with actual tier
     if (isInitializing) {
-      console.log('🔄 [TierChange] Skipping tier change during initialization');
       return;
     }
     
     // ✅ FIX: Mark as initialized after first proper load, skip first "real" tier set
     if (!hasInitializedTierRef.current && user?.id) {
       hasInitializedTierRef.current = true;
-      console.log('🔄 [TierChange] First user load - tier initialized to:', currentTier);
+      if (import.meta.env.DEV) {
+        console.log('🔄 [TierChange] First user load - tier initialized to:', currentTier);
+      }
       previousTierRef.current = currentTier;
       return;
     }
     
-    // Skip if tier hasn't changed
+    // Skip if tier hasn't changed (redundant check for clarity)
     if (previousTier === currentTier) {
-      console.log('🔄 [TierChange] Tier unchanged - no action needed');
       return;
     }
     
@@ -1219,7 +1228,7 @@ const MainApp: React.FC<MainAppProps> = ({
       console.log('🔄 [TierChange] User downgraded to free tier - subtabs preserved but will not update');
       toastService.info('Subscription ended. Your game insights are preserved but won\'t update until you resubscribe.');
     }
-  }, [currentUser?.tier, conversations, isInitializing, user?.id]);
+  }, [currentUser?.tier, currentUser?.trialExpiresAt, conversations, isInitializing, user?.id]);
 
   // ✅ CHECK FOR GAMES WITHOUT SUBTABS: Show banner for pro/vanguard users who have game tabs without lore & insights
   useEffect(() => {
@@ -2315,9 +2324,9 @@ const MainApp: React.FC<MainAppProps> = ({
       return;
     }
 
-    // ✅ OPTIMIZATION: Progressive backoff - start with 2s, increase to 3s after 10 attempts
-    // Reduces unnecessary database queries while subtabs are generating
-    const pollInterval = attempts < 10 ? 2000 : 3000;
+    // ✅ OPTIMIZATION: Progressive backoff with exponential growth
+    // Start at 1.5s, increase to reduce DB load: 1.5s -> 2s -> 2.5s -> 3s (cap)
+    const pollInterval = Math.min(1500 + (attempts * 150), 3000);
     await new Promise(resolve => setTimeout(resolve, pollInterval));
 
     try {
@@ -2344,33 +2353,19 @@ const MainApp: React.FC<MainAppProps> = ({
         const status = tab.status || (tab.metadata?.status as string);
         return status === 'loading';
       });
-      const loadedSubtabs = targetConv.subtabs.filter(tab => {
-        const status = tab.status || (tab.metadata?.status as string);
-        return status === 'loaded';
-      });
       const stillLoading = loadingSubtabs.length > 0;
       
+      // Only log on first attempt
       if (attempts === 0) {
-        console.error(`🎮 [MainApp] 🔍 Starting poll for "${targetConv.title}" (${targetConv.subtabs.length} subtabs, ${loadingSubtabs.length} loading)`);
+        console.log(`🎮 [MainApp] 🔍 Starting poll for "${targetConv.title}" (${targetConv.subtabs.length} subtabs, ${loadingSubtabs.length} loading)`);
       }
       
       if (!stillLoading) {
         // Subtabs have finished loading!
-        console.error(`🎮 [MainApp] ✅ All subtabs loaded for "${targetConv.title}" after ${attempts} attempts`);
-        console.error(`🎮 [MainApp] 📊 Final status: ${loadedSubtabs.length} loaded, ${loadingSubtabs.length} loading`);
+        console.log(`🎮 [MainApp] ✅ All subtabs loaded for "${targetConv.title}" after ${attempts} attempts`);
         
         // ✅ FIX: Deep clone to ensure React detects changes
         const freshConversations = deepCloneConversations(updatedConversations);
-        
-        // ✅ FIX: Force update conversations state with new reference
-        setConversations(freshConversations);
-        
-        // ✅ FIX: CRITICAL - ALWAYS update active conversation if this is the active tab
-        console.error('🎮 [MainApp] 🔍 Active conversation check:', {
-          activeConvId: activeConversation?.id,
-          targetConvId: conversationId,
-          matches: activeConversation?.id === conversationId
-        });
         
         // ✅ CRITICAL FIX: Update active conversation to force React re-render
         // Add timestamp to guarantee object reference change
@@ -2379,12 +2374,6 @@ const MainApp: React.FC<MainAppProps> = ({
           subtabs: freshConversations[conversationId].subtabs?.map(st => ({ ...st })) || [],
           _updateTimestamp: Date.now() // Force new object reference
         };
-        
-        console.error('🎮 [MainApp] ✅ FORCE-UPDATING active conversation with loaded subtabs');
-        console.error('🎮 [MainApp] 📊 Subtab statuses:', updatedActiveConv.subtabs.map(s => ({ title: s.title, status: s.status })));
-        console.error('🎮 [MainApp] 📊 Setting active conversation to trigger re-render...');
-        console.error('🎮 [MainApp] 📊 Old active conv ID:', activeConversation?.id);
-        console.error('🎮 [MainApp] 📊 New active conv ID:', updatedActiveConv.id);
         
         // ✅ First update conversations dict
         setConversations({
@@ -2396,9 +2385,9 @@ const MainApp: React.FC<MainAppProps> = ({
         return;
       }
 
-      // Still loading, continue polling
-      if (attempts % 5 === 0 || attempts === 1) {
-        console.error(`🎮 [MainApp] 🔄 "${targetConv.title}": ${loadingSubtabs.length} subtabs still loading... (attempt ${attempts + 1})`);
+      // Still loading, continue polling - log less frequently
+      if (attempts % 10 === 0) {
+        console.log(`🎮 [MainApp] 🔄 "${targetConv.title}": ${loadingSubtabs.length} subtabs still loading... (attempt ${attempts + 1})`);
       }
       pollForSubtabUpdates(conversationId, attempts + 1, maxAttempts);
     } catch (error) {
@@ -2494,9 +2483,7 @@ const MainApp: React.FC<MainAppProps> = ({
         userId: user.id,
         userTier: currentUser.tier, // Pass user tier for subtabs gating
         aiResponse: gameInfo.aiResponse as AIResponse | undefined, // Pass AI response for subtab population
-        isUnreleased: gameInfo.isUnreleased || false, // Pass unreleased status
-        gameProgress: gameInfo.gameProgress, // Pass initial progress from AI response
-        activeObjective: gameInfo.activeObjective // Pass initial objective from AI response
+        isUnreleased: gameInfo.isUnreleased || false // Pass unreleased status
       });
 
       // Add to conversations state
@@ -2902,6 +2889,79 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
     setTimeout(() => {
       handleSendMessageRef.current?.(retryPrompt);
     }, 100);
+  }, [activeConversation, setConversations, setActiveConversation]);
+
+  // ✅ CREATE CUSTOM SUBTAB: User-defined subtab with custom instructions
+  const handleCreateCustomSubtab = useCallback(async (
+    name: string,
+    type: string,
+    instructions: string
+  ) => {
+    if (!activeConversation) {
+      console.warn('[MainApp] Cannot create custom subtab: no active conversation');
+      toastService.error('No active conversation');
+      return;
+    }
+    
+    console.log('📝 [MainApp] Creating custom subtab:', { name, type, instructions });
+    
+    try {
+      // 1. Generate a unique ID for the new subtab
+      const newSubtabId = `custom_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      
+      // 2. Create the new subtab with loading state
+      const newSubtab: SubTab = {
+        id: newSubtabId,
+        title: name,
+        type: type as SubTab['type'],
+        content: 'Generating custom content...',
+        status: 'loading' as const,
+        isNew: true,
+        instruction: instructions
+      };
+      
+      // 3. Add to conversation's subtabs
+      const updatedSubtabs = [...(activeConversation.subtabs || []), newSubtab];
+      
+      // 4. Update conversation
+      const updatedConversation = {
+        ...activeConversation,
+        subtabs: updatedSubtabs,
+        subtabsOrder: updatedSubtabs.map(s => s.id),
+        updatedAt: Date.now()
+      };
+      
+      // 5. Update local state immediately
+      setConversations(prev => ({
+        ...prev,
+        [activeConversation.id]: updatedConversation
+      }));
+      setActiveConversation(updatedConversation);
+      
+      // 6. Save to database
+      await subtabsService.addSubtab(activeConversation.id, newSubtab);
+      
+      // 7. Force expand subtabs to show the new tab
+      setForceExpandSubtabs(true);
+      
+      // 8. Send AI request to generate content for this specific tab
+      const generatePrompt = `[SYSTEM: Generate content for custom subtab]
+
+Tab Name: "${name}"
+Tab Type: ${type}
+User Instructions: "${instructions}"
+
+Please generate comprehensive content for this custom tab based on the user's instructions. Use [OTAKON_SUBTAB_UPDATE: {"tab": "${name}", "content": "..."}] to provide the content.`;
+      
+      setTimeout(() => {
+        handleSendMessageRef.current?.(generatePrompt);
+      }, 100);
+      
+      toastService.success(`Creating "${name}" tab...`);
+    } catch (error) {
+      console.error('[MainApp] Error creating custom subtab:', error);
+      toastService.error(`Failed to create "${name}" tab`);
+    }
   }, [activeConversation, setConversations, setActiveConversation]);
 
   // ✅ RETRY: Resend the last user message
@@ -3728,8 +3788,14 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
       // 🔒 TIER-GATING: Only process subtab updates for Pro/Vanguard users
       const isPaidUser = currentUser?.tier === 'pro' || currentUser?.tier === 'vanguard_pro';
       if (response.otakonTags.has('SUBTAB_UPDATE') && isPaidUser) {
-        const subtabUpdates = response.otakonTags.get('SUBTAB_UPDATE') as Array<{tab: string; content: string}>;
-        if (Array.isArray(subtabUpdates) && subtabUpdates.length > 0) {
+        const subtabUpdates = response.otakonTags.get('SUBTAB_UPDATE') as Array<{tab?: string; id?: string; tabId?: string; content: string}>;
+        
+        // ✅ SAFETY CHECK: Skip if Game Hub or no subtabs
+        if (activeConversation.isGameHub) {
+          console.log(`📝 [MainApp] Skipping subtab updates for Game Hub`);
+        } else if (!activeConversation.subtabs || activeConversation.subtabs.length === 0) {
+          console.log(`📝 [MainApp] Skipping subtab updates - no subtabs exist yet`);
+        } else if (Array.isArray(subtabUpdates) && subtabUpdates.length > 0) {
           console.log(`📝 [MainApp] OTAKON_SUBTAB_UPDATE detected:`, subtabUpdates.length, 'updates');
           
           // Map tab names to subtab IDs and update
@@ -3760,26 +3826,39 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
           // Convert SUBTAB_UPDATE format to progressiveInsightUpdates format
           const mappedUpdates = subtabUpdates
             .map(update => {
+              // ✅ SAFETY: Handle both "tab", "id", and "tabId" field names from AI
+              const tabIdentifier = update.tab || update.id || update.tabId;
+              
+              if (!tabIdentifier) {
+                console.warn(`📝 [MainApp] Skipping update with no tab identifier:`, update);
+                return null;
+              }
+              
+              if (!update.content) {
+                console.warn(`📝 [MainApp] Skipping update with no content for tab: "${tabIdentifier}"`);
+                return null;
+              }
+              
               // Try multiple matching strategies
-              const tabKey = update.tab.toLowerCase();
+              const tabKey = tabIdentifier.toLowerCase();
               const tabKeyUnderscore = tabKey.replace(/\s+/g, '_');
               const tabKeyClean = tabKey.replace(/[^a-z0-9]/g, '');
               
               const tabId = tabNameToId[tabKey] || 
                            tabNameToId[tabKeyUnderscore] || 
                            tabNameToId[tabKeyClean] ||
-                           tabNameToId[update.tab]; // Try original case
+                           tabNameToId[tabIdentifier]; // Try original case
               
               if (tabId) {
                 // Find the actual subtab to get its correct title
                 const actualTab = currentSubtabs.find(t => t.id === tabId);
                 return {
                   tabId,
-                  title: actualTab?.title || update.tab,
+                  title: actualTab?.title || tabIdentifier,
                   content: update.content
                 };
               }
-              console.warn(`📝 [MainApp] Could not find subtab for: "${update.tab}". Available tabs:`, Object.keys(tabNameToId));
+              console.warn(`📝 [MainApp] Could not find subtab for: "${tabIdentifier}". Available tabs:`, Object.keys(tabNameToId));
               return null;
             })
             .filter(Boolean) as Array<{tabId: string; title: string; content: string}>;
@@ -4942,6 +5021,7 @@ Please regenerate the "${tabTitle}" content incorporating the user's feedback. M
                   onModifySubtab={handleModifySubtab}
                   onDeleteSubtab={handleDeleteSubtab}
                   onRetrySubtab={handleRetrySubtab}
+                  onCreateCustomSubtab={handleCreateCustomSubtab}
                   onOpenExplorer={() => { haptic.modalOpen(); setGamingExplorerOpen(true); }}
                   aiModeEnabled={aiModeEnabled}
                   onAiModeToggle={handleAiModeToggle}

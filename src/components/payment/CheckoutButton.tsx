@@ -92,15 +92,17 @@ const CheckoutButton: React.FC<CheckoutButtonProps> = ({
               attempts++;
               
               // Wait 1 second between attempts (total: ~12 seconds)
+              // eslint-disable-next-line no-await-in-loop
               await new Promise(resolve => setTimeout(resolve, 1000));
               
               try {
                 console.log(`🔄 Attempt ${attempts}/${maxAttempts}: Checking for tier update...`);
+                // eslint-disable-next-line no-await-in-loop
                 tierUpdated = await checkTierUpdate();
                 
                 if (tierUpdated) {
                   const currentUser = authService.getAuthState().user;
-                  console.log(`✅ Tier updated to: ${currentUser?.tier}`);
+                  console.log('✅ Tier updated to:', currentUser?.tier);
                   break;
                 } else {
                   console.log(`⏳ Still free tier, retrying... (${attempts}/${maxAttempts})`);

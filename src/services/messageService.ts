@@ -93,6 +93,7 @@ export class MessageService {
 
       return (data || []).map(msg => {
         const metadata = jsonToRecord(msg.metadata);
+        const suggestedPrompts = metadata?.suggestedPrompts;
         return {
           id: msg.id,
           role: msg.role as 'user' | 'assistant' | 'system',
@@ -101,7 +102,7 @@ export class MessageService {
           imageUrl: msg.image_url || undefined,
           metadata: metadata,
           // ✅ Restore suggestedPrompts from metadata for UI display
-          suggestedPrompts: metadata?.suggestedPrompts as string[] | undefined,
+          suggestedPrompts: Array.isArray(suggestedPrompts) ? suggestedPrompts as string[] : undefined,
         };
       });
     } catch (error) {
@@ -124,10 +125,12 @@ export class MessageService {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
         if (attempt > 0) {
+          // eslint-disable-next-line no-await-in-loop
           await new Promise(resolve => setTimeout(resolve, delays[attempt]));
           console.warn(`🔄 [MessageService] Retry attempt ${attempt + 1}/${maxRetries}`);
         }
         
+        // eslint-disable-next-line no-await-in-loop
         const { data, error } = await supabase.rpc('add_message', {
           p_conversation_id: conversationId,
           p_role: message.role,
@@ -147,6 +150,7 @@ export class MessageService {
         }
 
         // Fetch the newly created message
+        // eslint-disable-next-line no-await-in-loop
         const { data: newMessage, error: fetchError } = await supabase
           .from('messages')
           .select('*')
@@ -401,9 +405,9 @@ export class MessageService {
       }
 
       return {
-        conversationsProcessed: data[0].conversations_processed,
-        messagesCreated: data[0].messages_created,
-        errors: data[0].errors,
+        conversationsProcessed: data?.[0]?.conversations_processed ?? 0,
+        messagesCreated: data?.[0]?.messages_created ?? 0,
+        errors: data?.[0]?.errors ?? 0,
       };
     } catch (error) {
       console.error('Error migrating messages:', error);
@@ -428,8 +432,8 @@ export class MessageService {
       }
 
       return {
-        conversationsUpdated: data[0].conversations_updated,
-        errors: data[0].errors,
+        conversationsUpdated: data?.[0]?.conversations_updated ?? 0,
+        errors: data?.[0]?.errors ?? 0,
       };
     } catch (error) {
       console.error('Error rolling back messages:', error);

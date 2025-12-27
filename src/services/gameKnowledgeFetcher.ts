@@ -248,11 +248,13 @@ async function fetchGameKnowledge(igdbGameId: number, gameName: string): Promise
     // Post-Jan 2025 games: Only Pro/Vanguard can fetch (grounding needed)
     
     // Get game info to check release date
-    const { data: gameData } = await supabase
-      .from('games_library')
-      .select('igdb_data')
-      .eq('igdb_game_id', igdbGameId)
-      .single();
+    // DISABLED: games_library table doesn't exist in current schema
+    // const { data: gameData } = await supabase
+    //   .from('games_library')
+    //   .select('igdb_data')
+    //   .eq('igdb_game_id', igdbGameId)
+    //   .single();
+    const gameData = null;
     
     const releaseDate = gameData?.igdb_data?.first_release_date; // Unix timestamp in seconds
     const isPostCutoff = releaseDate ? (releaseDate * 1000) > new Date('2025-01-31T23:59:59Z').getTime() : false;
@@ -264,11 +266,13 @@ async function fetchGameKnowledge(igdbGameId: number, gameName: string): Promise
     });
     
     // Get user tier
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('tier')
-      .eq('auth_user_id', session.user.id)
-      .single();
+    // DISABLED: profiles table doesn't exist in current schema
+    // const { data: profile } = await supabase
+    //   .from('profiles')
+    //   .select('tier')
+    //   .eq('auth_user_id', session.user.id)
+    //   .single();
+    const profile = null;
     
     const tier = profile?.tier || 'free';
     const isPro = tier === 'pro' || tier === 'vanguard_pro';

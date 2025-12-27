@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import Logo from './ui/Logo';
 import CheckIcon from './ui/CheckIcon';
 import StarIcon from './ui/StarIcon';
@@ -12,6 +13,9 @@ import { AITextLoading } from './ui/AITextLoading';
 import { blogPosts, BlogPost } from '../data/blogPosts';
 import { BlinkBlur } from 'react-loading-indicators';
 import { FEATURE_FLAGS } from '../constants';
+import { GlassNavDropdown } from './layout/GlassNavDropdown';
+import SubTabs from './features/SubTabs';
+import type { SubTab } from '../types/subtab';
 
 // Import feature images
 import feature1 from '../assets/images/feature-images/feature1.png';
@@ -22,7 +26,7 @@ import feature5 from '../assets/images/feature-images/feature5.png';
 import feature6 from '../assets/images/feature-images/feature6.png';
 import geminiLogo from '../assets/images/landing/google.png';
 import pcAppImage from '../assets/images/landing/PC app.png';
-import dragonVideo from '../assets/video/dragon_compressed.mp4';
+import videoHome from '../assets/video/video-home.webm';
 
 const GamepadIcon = ({ className }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -540,29 +544,127 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
 
   const [scrollY, setScrollY] = useState(0);
   const backgroundRef = useRef<HTMLDivElement>(null);
+  const heroRef = useRef<HTMLDivElement>(null);
 
   // Landing page loading state
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [showLogo, setShowLogo] = useState(false);
+  
+  // Navigation bar visibility based on scroll
+  const [showNavbar, setShowNavbar] = useState(false);
 
   // Interactive hint demo states
   const [hintDemoState, setHintDemoState] = useState<'idle' | 'loading' | 'streaming' | 'revealed'>('idle');
   const [streamedText, setStreamedText] = useState('');
   const [currentDemoIndex, setCurrentDemoIndex] = useState(0);
+  const [showSubtabsPanel, setShowSubtabsPanel] = useState(false);
+  const subtabsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [showScreenshotFlash, setShowScreenshotFlash] = useState(false);
+  const [forceExpandSubtabs, setForceExpandSubtabs] = useState(false);
   
   // Demo data - cycles through these on "Try Again" - memoized to prevent unnecessary re-renders
   const demoData = React.useMemo(() => [
     {
+      game: 'cyberpunk',
       image: '/images/landing/hint.jpg',
       query: 'What should I do here?',
       hint: 'The immediate priority is to read the message from Takemura and proceed to the objective marker on Jig-Jig Street.'
     },
     {
+      game: 'elden-ring',
       image: '/images/landing/hint2.webp',
       query: 'What am I looking at?',
       hint: 'You are gazing upon the magnificent, yet menacing entrance to the Raya Lucaria Academy. Before attempting to breach the main gate, ensure you have secured the necessary Academy Glimstone Key.'
     }
   ], []);
+  
+  // SubTab demo data for Lore & Insights
+  const demoSubTabs = React.useMemo(() => ({
+    'cyberpunk': [
+      {
+        id: 'story-progress',
+        title: 'Story Progress',
+        content: 'V is currently navigating the complexities of Night City\'s underworld. After the heist gone wrong, survival means making difficult choices while Takemura seeks answers about Saburo Arasaka\'s death. The biochip carrying Johnny Silverhand is slowly overwriting your consciousness.',
+        type: 'story' as const,
+        isNew: false,
+        status: 'loaded' as const
+      },
+      {
+        id: 'fixers-gigs',
+        title: 'Fixers & Gigs',
+        content: 'Regina Jones has several data recovery gigs available in Watson. Wakako is offering a lucrative extraction job in Japantown. Building reputation with fixers unlocks access to better gear, vehicles, and high-stakes contracts across Night City\'s districts.',
+        type: 'walkthrough' as const,
+        isNew: false,
+        status: 'loaded' as const
+      },
+      {
+        id: 'cyberware-build',
+        title: 'Cyberware Build',
+        content: 'For stealth builds, prioritize optical camo and cyberdeck upgrades at Ripperdocs. Combat-focused builds benefit from Mantis Blades or Gorilla Arms. Don\'t forget to slot appropriate mods and keep an eye on your cyberware capacity limit.',
+        type: 'strategies' as const,
+        isNew: false,
+        status: 'loaded' as const
+      },
+      {
+        id: 'characters-relationships',
+        title: 'Characters & Relationships',
+        content: 'Your relationship with Johnny Silverhand evolves through dialogue choices. Panam, Judy, River, and Kerry each offer unique storylines and romance options. Building trust with these characters unlocks their personal quests and impacts the ending possibilities.',
+        type: 'characters' as const,
+        isNew: false,
+        status: 'loaded' as const
+      },
+      {
+        id: 'night-city-secrets',
+        title: 'Night City Secrets',
+        content: 'Hidden throughout Night City are legendary weapons, secret apartments, and cryptic messages left by previous residents. Tarot cards scattered across the city reveal insights into Johnny\'s past. Don\'t miss the hidden Delamain cars and BD recordings.',
+        type: 'tips' as const,
+        isNew: false,
+        status: 'loaded' as const
+      }
+    ],
+    'elden-ring': [
+      {
+        id: 'story-so-far',
+        title: 'Story So Far',
+        content: 'As a Tarnished, you\'ve been called back to the Lands Between to claim the Elden Ring and become Elden Lord. The Academy of Raya Lucaria holds the second Great Rune, guarded by Rennala, Queen of the Full Moon. The stars themselves have been halted, affecting the destiny of all.',
+        type: 'story' as const,
+        isNew: false,
+        status: 'loaded' as const
+      },
+      {
+        id: 'sites-of-grace',
+        title: 'Sites of Grace Nearby',
+        content: 'The South Raya Lucaria Gate Grace is just ahead. Inside the academy, you\'ll find the Schoolhouse Classroom and Debate Parlor Graces. Be sure to activate them—the enemies here hit hard, and the Red Wolf of Radagon guards the inner chambers.',
+        type: 'tips' as const,
+        isNew: false,
+        status: 'loaded' as const
+      },
+      {
+        id: 'boss-strategy',
+        title: 'Boss Strategy',
+        content: 'Rennala fights in two phases. Phase one requires breaking the protective barrier by striking glowing students. Phase two unleashes her full sorcery—dodge her Comet Azur and summoned spirits. Magic resistance and close-range combat are key to victory.',
+        type: 'strategies' as const,
+        isNew: false,
+        status: 'loaded' as const
+      },
+      {
+        id: 'character-questlines',
+        title: 'Character Questlines',
+        content: 'Sorcerer Thops seeks a second Glintstone Key to re-enter the academy. Sellen\'s quest involves finding hidden sorcerers and choosing sides in an academic power struggle. Ranni\'s questline intersects here—her fate is tied to the stars.',
+        type: 'characters' as const,
+        isNew: false,
+        status: 'loaded' as const
+      },
+      {
+        id: 'remembrances-items',
+        title: 'Remembrances & Items',
+        content: 'Defeating Rennala grants her Remembrance, which can be exchanged for either the Rennala\'s Full Moon sorcery or the Carian Regal Scepter. The academy also contains the Lazuli Glintstone Set, various sorcery scrolls, and memory stones for spell slots.',
+        type: 'items' as const,
+        isNew: false,
+        status: 'loaded' as const
+      }
+    ]
+  }), []);
   
   const currentDemo = demoData[currentDemoIndex];
 
@@ -601,6 +703,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
         const path = window.location.pathname;
         if (path !== '/' && path !== '') {
             onDirectNavigation(path);
+        }
+        // Restore waitlist state from localStorage
+        const savedEmail = localStorage.getItem('waitlist_email');
+        const savedSuccess = localStorage.getItem('waitlist_success');
+        if (savedEmail) {
+            setEmail(savedEmail);
+        }
+        if (savedSuccess === 'true') {
+            setIsSubmissionSuccessful(true);
+            setSubmitMessage('Thanks for joining! We\'ll email you when access is ready.');
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Only run once on mount to check initial URL
@@ -679,50 +791,61 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
         };
     }, []);
 
-    // Parallax scroll effect
+    // Parallax scroll effect + navbar show/hide
     useEffect(() => {
         const handleScroll = () => {
-            setScrollY(window.scrollY);
+            const scrollElement = backgroundRef.current;
+            if (!scrollElement) return;
+            
+            const currentScroll = scrollElement.scrollTop;
+            setScrollY(currentScroll);
+            
+            // Show navbar after scrolling past hero logo section (about 400px)
+            const shouldShow = currentScroll > 300;
+            console.log('🔍 Scroll position:', currentScroll, 'Show navbar:', shouldShow);
+            setShowNavbar(shouldShow);
         };
 
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
+        // Initial check on mount
+        handleScroll();
+
+        const scrollElement = backgroundRef.current;
+        if (scrollElement) {
+            scrollElement.addEventListener('scroll', handleScroll, { passive: true });
+        }
+        
+        return () => {
+            if (scrollElement) {
+                scrollElement.removeEventListener('scroll', handleScroll);
+            }
+        };
     }, []);
 
     // Interactive hint demo - F1 keyboard listener
     const triggerHintDemo = useCallback(() => {
         if (hintDemoState === 'loading' || hintDemoState === 'streaming') { return; }
         
-        setHintDemoState('loading');
-        setStreamedText('');
+        // Show screenshot flash first
+        setShowScreenshotFlash(true);
+        setShowSubtabsPanel(false);
+        setForceExpandSubtabs(false);
         
-        // After loading animation, start streaming the text
+        // Clear any existing timeout
+        if (subtabsTimeoutRef.current) {
+            clearTimeout(subtabsTimeoutRef.current);
+            subtabsTimeoutRef.current = null;
+        }
+        
+        // After flash (1s), show loading state
         setTimeout(() => {
-            setHintDemoState('streaming');
-            let charIndex = 0;
-            const hint = currentDemo.hint;
-            const streamInterval = setInterval(() => {
-                if (charIndex < hint.length) {
-                    setStreamedText(hint.substring(0, charIndex + 1));
-                    charIndex++;
-                } else {
-                    clearInterval(streamInterval);
-                    setHintDemoState('revealed');
-                }
-            }, 25); // 25ms per character for smooth streaming
-        }, 1800); // Show loading animation for 1.8s
-    }, [hintDemoState, currentDemo.hint]);
-
-    const resetHintDemo = useCallback(() => {
-        // Cycle to next demo and immediately start loading/streaming
-        setCurrentDemoIndex(prev => {
-            const nextIdx = (prev + 1) % demoData.length;
             setHintDemoState('loading');
             setStreamedText('');
+            
+            // After loading animation, start streaming the text
             setTimeout(() => {
                 setHintDemoState('streaming');
                 let charIndex = 0;
-                const hint = demoData[nextIdx].hint;
+                const hint = currentDemo.hint;
                 const streamInterval = setInterval(() => {
                     if (charIndex < hint.length) {
                         setStreamedText(hint.substring(0, charIndex + 1));
@@ -730,9 +853,79 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                     } else {
                         clearInterval(streamInterval);
                         setHintDemoState('revealed');
+                        
+                        // Show SubTabs panel after 800ms, then force expand after 2 more seconds
+                        console.log('🎯 Setting timeout to show SubTabs in 800ms');
+                        subtabsTimeoutRef.current = setTimeout(() => {
+                            console.log('🎯 800ms passed - showing SubTabs panel');
+                            setShowSubtabsPanel(true);
+                            
+                            // Auto-expand after 2 more seconds
+                            setTimeout(() => {
+                                console.log('🎯 2s passed after reveal - force expanding SubTabs');
+                                setForceExpandSubtabs(true);
+                            }, 2000);
+                        }, 800);
                     }
-                }, 25);
-            }, 1800);
+                }, 25); // 25ms per character for smooth streaming
+            }, 1800); // Show loading animation for 1.8s
+        }, 1000); // Wait for screenshot flash to complete
+    }, [hintDemoState, currentDemo.hint]);
+
+    const resetHintDemo = useCallback(() => {
+        // Clear SubTabs timeout
+        if (subtabsTimeoutRef.current) {
+            clearTimeout(subtabsTimeoutRef.current);
+            subtabsTimeoutRef.current = null;
+        }
+        setShowSubtabsPanel(false);
+        setForceExpandSubtabs(false);
+        
+        // Clear waitlist form state
+        setEmail('');
+        setIsSubmissionSuccessful(false);
+        setSubmitMessage('');
+        localStorage.removeItem('waitlist_email');
+        localStorage.removeItem('waitlist_success');
+        
+        // Show screenshot flash first
+        setShowScreenshotFlash(true);
+        
+        // Cycle to next demo and start loading/streaming after flash
+        setCurrentDemoIndex(prev => {
+            const nextIdx = (prev + 1) % demoData.length;
+            
+            // After flash (1s), show loading state
+            setTimeout(() => {
+                setHintDemoState('loading');
+                setStreamedText('');
+                setTimeout(() => {
+                    setHintDemoState('streaming');
+                    let charIndex = 0;
+                    const hint = demoData[nextIdx].hint;
+                    const streamInterval = setInterval(() => {
+                        if (charIndex < hint.length) {
+                            setStreamedText(hint.substring(0, charIndex + 1));
+                            charIndex++;
+                        } else {
+                            clearInterval(streamInterval);
+                            setHintDemoState('revealed');
+                            
+                            // Show SubTabs panel after 800ms, then force expand after 2 more seconds
+                            subtabsTimeoutRef.current = setTimeout(() => {
+                                setShowSubtabsPanel(true);
+                                
+                                // Auto-expand after 2 more seconds
+                                setTimeout(() => {
+                                    console.log('🎯 2s passed after reveal - force expanding SubTabs');
+                                    setForceExpandSubtabs(true);
+                                }, 2000);
+                            }, 800);
+                        }
+                    }, 25);
+                }, 1800);
+            }, 1000); // Wait for screenshot flash
+            
             return nextIdx;
         });
     }, [demoData]);
@@ -743,17 +936,67 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
+                
+                // Clear any existing SubTabs timeout
+                if (subtabsTimeoutRef.current) {
+                    clearTimeout(subtabsTimeoutRef.current);
+                    subtabsTimeoutRef.current = null;
+                }
+                setShowSubtabsPanel(false);
+                setForceExpandSubtabs(false);
+                
+                // Show screenshot flash first
+                setShowScreenshotFlash(true);
+                
                 setHintDemoState(prev => {
                     if (prev === 'revealed') {
                         // Cycle to next demo and immediately start loading/streaming
                         setCurrentDemoIndex(prevIdx => {
                             const nextIdx = (prevIdx + 1) % demoData.length;
-                            setHintDemoState('loading');
-                            setStreamedText('');
+                            
+                            // After flash (1s), show loading state
+                            setTimeout(() => {
+                                setHintDemoState('loading');
+                                setStreamedText('');
+                                setTimeout(() => {
+                                    setHintDemoState('streaming');
+                                    let charIndex = 0;
+                                    const hint = demoData[nextIdx].hint;
+                                    const streamInterval = setInterval(() => {
+                                        if (charIndex < hint.length) {
+                                            setStreamedText(hint.substring(0, charIndex + 1));
+                                            charIndex++;
+                                        } else {
+                                            clearInterval(streamInterval);
+                                            setHintDemoState('revealed');
+                                            
+                                            // Show SubTabs panel after 800ms, then force expand after 2 more seconds
+                                            subtabsTimeoutRef.current = setTimeout(() => {
+                                                setShowSubtabsPanel(true);
+                                                
+                                                // Auto-expand after 2 more seconds
+                                                setTimeout(() => {
+                                                    console.log('🎯 2s passed after reveal - force expanding SubTabs');
+                                                    setForceExpandSubtabs(true);
+                                                }, 2000);
+                                            }, 800);
+                                        }
+                                    }, 25);
+                                }, 1800);
+                            }, 1000); // Wait for screenshot flash
+                            
+                            return nextIdx;
+                        });
+                        return 'loading';
+                    } else if (prev === 'idle') {
+                        setStreamedText('');
+                        
+                        // After flash (1s), show loading state
+                        setTimeout(() => {
                             setTimeout(() => {
                                 setHintDemoState('streaming');
+                                const hint = demoData[currentDemoIndex].hint;
                                 let charIndex = 0;
-                                const hint = demoData[nextIdx].hint;
                                 const streamInterval = setInterval(() => {
                                     if (charIndex < hint.length) {
                                         setStreamedText(hint.substring(0, charIndex + 1));
@@ -761,28 +1004,21 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                     } else {
                                         clearInterval(streamInterval);
                                         setHintDemoState('revealed');
+                                        
+                                        // Show SubTabs panel after 800ms, then force expand after 2 more seconds
+                                        subtabsTimeoutRef.current = setTimeout(() => {
+                                            setShowSubtabsPanel(true);
+                                            
+                                            // Auto-expand after 2 more seconds
+                                            setTimeout(() => {
+                                                console.log('🎯 2s passed after reveal - force expanding SubTabs');
+                                                setForceExpandSubtabs(true);
+                                            }, 2000);
+                                        }, 800);
                                     }
                                 }, 25);
                             }, 1800);
-                            return nextIdx;
-                        });
-                        return 'loading';
-                    } else if (prev === 'idle') {
-                        setStreamedText('');
-                        setTimeout(() => {
-                            setHintDemoState('streaming');
-                            const hint = demoData[currentDemoIndex].hint;
-                            let charIndex = 0;
-                            const streamInterval = setInterval(() => {
-                                if (charIndex < hint.length) {
-                                    setStreamedText(hint.substring(0, charIndex + 1));
-                                    charIndex++;
-                                } else {
-                                    clearInterval(streamInterval);
-                                    setHintDemoState('revealed');
-                                }
-                            }, 25);
-                        }, 1800);
+                        }, 1000); // Wait for screenshot flash
                         return 'loading';
                     }
                     return prev;
@@ -791,7 +1027,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
             }
         };
         document.addEventListener('keydown', handleKeyDown, true);
-        return () => document.removeEventListener('keydown', handleKeyDown, true);
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown, true);
+            // Cleanup timeout on unmount
+            if (subtabsTimeoutRef.current) {
+                clearTimeout(subtabsTimeoutRef.current);
+            }
+        };
     }, [currentDemoIndex, demoData]);
 
     // Scroll animations for mobile only
@@ -885,7 +1127,17 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
 
   const handleWaitlistSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Email validation regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
     if (!email) {
+      setSubmitMessage('Please enter your email address.');
+      return;
+    }
+    
+    if (!emailRegex.test(email)) {
+      setSubmitMessage('Please enter a valid email address.');
       return;
     }
 
@@ -897,6 +1149,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
       
       if (result.success) {
         setIsSubmissionSuccessful(true);
+        // Save to localStorage for persistence across page refreshes
+        localStorage.setItem('waitlist_email', email);
+        localStorage.setItem('waitlist_success', 'true');
         if (result.alreadyExists) {
           setSubmitMessage('You\'re already on our waitlist! We\'ll email you when access is ready.');
         } else {
@@ -1000,99 +1255,153 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
             <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-[#111111] via-[#111111]/80 to-transparent -z-5 pointer-events-none"></div>
             <div className="absolute bottom-0 left-0 w-full h-64 bg-gradient-to-t from-[#111111] via-[#111111]/80 to-transparent -z-5 pointer-events-none"></div>
 
+            {/* Navigation - Show after scrolling past hero */}
+            <div 
+                className={`fixed top-0 left-0 right-0 z-[9999] px-4 pt-2 transition-all duration-300 ${
+                    showNavbar ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'
+                }`}
+                style={{ 
+                    willChange: 'transform, opacity',
+                    backfaceVisibility: 'hidden'
+                }}
+            >
+                <GlassNavDropdown />
+            </div>
+
             {/* Main Content */}
             <main>
       {/* Hero Section */}
-                <section className="relative pt-20 pb-16 md:pb-24 text-center">
+                <section className="relative pt-24 md:pt-48 pb-16 md:pb-24 text-center">
                     
                     <div className="container mx-auto px-6 relative overflow-visible">
-                        <div className="flex flex-col items-center justify-center gap-1 md:gap-4 mb-4 md:mb-10 overflow-visible">
+                        {/* Logo and Brand - Hero Section */}
+                        <div 
+                            ref={heroRef}
+                            className="flex flex-col items-center justify-center gap-1 md:gap-4 mb-4 md:mb-10"
+                        >
                             <div
-                              style={{
-                                opacity: showLogo ? 1 : 0,
-                                transition: 'opacity 0.6s ease-in-out'
-                              }}
+                                style={{
+                                    opacity: showLogo ? 1 : 0,
+                                    transition: 'opacity 0.6s ease-in-out'
+                                }}
                             >
-                              <Logo className="h-32 w-32" spinOnce={showLogo} />
+                                <Logo className="h-32 w-32" spinOnce={showLogo} />
                             </div>
                             <div className="relative inline-block">
-                              <h1 
-                                  className="text-6xl md:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] leading-none py-2"
-                                  style={{
-                                      lineHeight: '1.3',
-                                      paddingTop: '0.25rem',
-                                      paddingBottom: '0.25rem',
-                                      display: 'block',
-                                      overflow: 'visible',
-                                      minHeight: '1.3em',
-                                      height: 'auto'
-                                  }}
-                              >
-                Otagon
-              </h1>
-            </div>
-          </div>
-          
+                                <h1
+                                    className="text-6xl md:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] leading-none py-2"
+                                    style={{
+                                        lineHeight: '1.3',
+                                        opacity: showLogo ? 1 : 0,
+                                        transition: 'opacity 0.6s ease-in-out 0.3s'
+                                    }}
+                                >
+                                    Otagon
+                                </h1>
+                            </div>
+                        </div>
+                        
+                        {/* Main Heading */}
                         <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-3 md:mb-6 text-white leading-tight">
                             Beat Every Challenge. Keep Every Secret.
                         </h2>
                         
-                        <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-neutral-300 mb-6 md:mb-8 font-medium px-4">
-                            Get instant, AI-powered hints on your phone while playing PC games. No spoilers, no alt-tabbing, just pure gaming
+                        <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-neutral-300 mb-12 md:mb-16 font-medium px-4">
+                            Get instant, AI-powered hints on your phone or second monitor while playing PC games. No spoilers, no alt-tabbing, just pure gaming
                         </p>
-                        
-                        {/* Social Proof - HIDDEN FOR NOW */}
-                        <div className="hidden">
-                            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-8">
-                                <div className="flex items-center gap-2 text-lg text-neutral-300">
-                                    <div className="flex -space-x-2">
-                                        {[...Array(5)].map((_, i) => (
-                                            <div key={i} className="w-8 h-8 rounded-full overflow-hidden">
-                                                <img 
-                                                    src={`/images/landing/${i + 1}.png`}
-                                                    alt={`Gamer ${i + 1}`}
-                                                    className="w-full h-full rounded-full object-cover"
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <span className="ml-2">
-                                        <span className="font-bold text-white">1000+</span> gamers waiting
-                                    </span>
-                                </div>
-                                <div className="hidden sm:block w-px h-6 bg-neutral-600"></div>
-                                <div className="flex items-center gap-2 text-lg text-neutral-300">
-                                    <svg className="w-5 h-5 text-[#FFAB40]" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
-                                    </svg>
-                                    <span>Trusted by <span className="font-bold text-white">50+</span> beta testers</span>
-                                </div>
-                            </div>
-                        </div>
 
+                        {/* Interactive Hint Demo - Moved to top */}
                         <div 
                             ref={chatHintRef}
-                            className="relative mx-auto my-16 w-full max-w-2xl h-auto rounded-3xl bg-black/60 backdrop-blur-xl p-2 shadow-2xl animate-glow-pulse"
+                            className="relative mx-auto mb-9 w-full max-w-2xl h-auto rounded-3xl backdrop-blur-xl p-2 shadow-2xl animate-glow-pulse"
+                            style={{ backgroundColor: '#000000' }}
                         >
-                            <div className="bg-transparent rounded-2xl p-6 min-h-[320px] sm:min-h-[360px] relative">
+                            {/* Screenshot Flash - Scoped to demo hint only */}
+                            {showScreenshotFlash && (
+                                <div
+                                    className="absolute inset-0 z-50 flex items-center justify-center rounded-3xl pointer-events-none transition-opacity duration-300 animate-fade-in"
+                                    onAnimationEnd={() => {
+                                        // Hide after animation completes
+                                        setTimeout(() => setShowScreenshotFlash(false), 700);
+                                    }}
+                                >
+                                    {/* Backdrop blur */}
+                                    <div className="absolute inset-0 backdrop-blur-lg bg-black/60 rounded-3xl" />
+                                    
+                                    {/* Flash content */}
+                                    <div className="relative flex flex-col items-center justify-center gap-4 transition-transform duration-300 scale-100">
+                                        {/* Screenshot icon */}
+                                        <div className="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 rounded-2xl backdrop-blur-md border-2 border-emerald-400/50 shadow-2xl shadow-emerald-500/30">
+                                            <svg
+                                                viewBox="0 0 64 64"
+                                                className="w-12 h-12 sm:w-16 sm:h-16"
+                                                fill="none"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                            >
+                                                <rect
+                                                    x="8"
+                                                    y="8"
+                                                    width="48"
+                                                    height="36"
+                                                    rx="4"
+                                                    stroke="#10b981"
+                                                    strokeWidth="2.5"
+                                                    fill="none"
+                                                />
+                                                <circle cx="32" cy="26" r="6" fill="#FFAB40" />
+                                                <path d="M16 44 L48 44" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" />
+                                                <path d="M20 48 L44 48" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" />
+                                            </svg>
+                                        </div>
+                                        
+                                        {/* Text */}
+                                        <div className="px-6 py-3 bg-gradient-to-r from-surface/95 to-surface-light/95 backdrop-blur-md rounded-xl border border-emerald-400/30 shadow-xl">
+                                            <p className="text-base sm:text-lg font-semibold text-emerald-400 whitespace-nowrap">
+                                                Screenshot Captured
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            <div className={`bg-transparent rounded-2xl p-6 min-h-[320px] sm:min-h-[360px] relative transition-opacity duration-300 ${showScreenshotFlash ? 'opacity-0' : 'opacity-100'}`}>
                                 {/* Idle State - Prompt to interact */}
-                                <div className={`flex flex-col items-center justify-center py-10 px-6 text-center space-y-4 transition-all duration-300 ${hintDemoState === 'idle' ? 'opacity-100' : 'opacity-0 absolute inset-0 pointer-events-none'}`}>
-                                    <img
-                                        src="/images/mascot/4.png"
-                                        alt="Otagon Mascot"
-                                        className="w-56 h-56 sm:w-64 sm:h-64 object-contain aspect-square mx-auto"
-                                        data-no-viewer="true"
-                                        onError={(e) => {
-                                            const target = e.target as HTMLImageElement;
-                                            target.style.display = 'none';
-                                        }}
-                                    />
-                                    <div className="space-y-2 md:space-y-4">
-                                        <p className="text-lg text-neutral-300">
+                                <div className={`flex flex-col items-center justify-center py-10 px-6 text-center transition-all duration-300 ${hintDemoState === 'idle' ? 'opacity-100' : 'opacity-0 absolute inset-0 pointer-events-none'}`}>
+                                    <div className="w-full max-w-2xl sm:max-w-3xl mx-auto mb-4">
+                                        <video
+                                            src={videoHome}
+                                            className="w-full h-auto object-contain aspect-square"
+                                            autoPlay
+                                            muted
+                                            playsInline
+                                            preload="auto"
+                                            webkit-playsinline="true"
+                                            x5-playsinline="true"
+                                            disablePictureInPicture
+                                            style={{
+                                                objectFit: 'contain',
+                                                maxWidth: '100%',
+                                                height: 'auto'
+                                            }}
+                                            onLoadedMetadata={(e) => {
+                                                const target = e.target as HTMLVideoElement;
+                                                target.play().catch((error) => {
+                                                    console.log('Autoplay prevented:', error);
+                                                });
+                                            }}
+                                            onError={(e) => {
+                                                const target = e.target as HTMLVideoElement;
+                                                console.warn('Video failed to load:', target.error);
+                                            }}
+                                        />
+                                    </div>
+                                    {/* Text below video */}
+                                    <div className="space-y-2 md:space-y-3">
+                                        <p className="text-sm sm:text-base md:text-lg text-neutral-300">
                                             Start a conversation with <span className="bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent font-semibold">Otagon</span>
                                         </p>
-                                        <p className="text-sm text-neutral-500 hidden md:block">Press <kbd className="px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-[#FFAB40] font-mono text-xs">F1</kbd> or click the button below to get a hint</p>
-                                        <p className="text-sm text-neutral-500 md:hidden">Tap the button below to get a hint</p>
+                                        <p className="text-xs sm:text-sm text-neutral-500 hidden md:block">Press <kbd className="px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-[#FFAB40] font-mono text-xs">F1</kbd> or click the button below to get a hint</p>
+                                        <p className="text-xs sm:text-sm text-neutral-500 md:hidden">Tap the button below to get a hint</p>
                                     </div>
                                 </div>
                                 
@@ -1139,7 +1448,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                                 <p className="text-base text-[#F5F5F5] leading-relaxed">
                                                     {streamedText}
                                                     {hintDemoState === 'streaming' && (
-                                                        <span className="inline-block w-2 h-4 bg-[#FFAB40] ml-0.5 animate-pulse"></span>
+                                        <span className="inline-block w-2 h-4 bg-[#FFAB40] ml-0.5 animate-pulse"></span>
                                                     )}
                                                 </p>
                                             </div>
@@ -1147,10 +1456,42 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                     )}
                                 </div>
                             </div>
+                            
+                            {/* Lore & Insights SubTabs Panel - Outside main chat container */}
+                            {(() => {
+                                console.log('🎯 SubTabs render check:', {
+                                    showSubtabsPanel,
+                                    hintDemoState,
+                                    currentGame: currentDemo.game,
+                                    hasSubtabs: !!demoSubTabs[currentDemo.game as keyof typeof demoSubTabs]
+                                });
+                                return null;
+                            })()}
+                            {showSubtabsPanel && hintDemoState === 'revealed' && (
+                                <div className={`flex-shrink-0 px-3 pt-4 pb-2 z-50 relative transition-all duration-400 w-full ${
+                                    showSubtabsPanel ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
+                                }`}>
+                                    <SubTabs
+                                        subtabs={demoSubTabs[currentDemo.game as keyof typeof demoSubTabs]}
+                                        isLoading={false}
+                                        onFeedback={() => {}}
+                                        onModifyTab={() => {}}
+                                        onDeleteTab={() => {}}
+                                        onRetrySubtab={() => {}}
+                                        onExpandedChange={(expanded) => {
+                                            // Reset forceExpand when user manually closes the panel
+                                            if (!expanded) {
+                                                setForceExpandSubtabs(false);
+                                            }
+                                        }}
+                                        forceExpand={forceExpandSubtabs}
+                                    />
+                                </div>
+                            )}
                         </div>
                         
                         {/* Interactive Demo Button */}
-                        <div className="w-full max-w-2xl mx-auto mb-14 mt-10">
+                        <div className="w-full max-w-2xl mx-auto mb-12 mt-6 px-8">
                             {hintDemoState === 'idle' ? (
                                 <button
                                     onClick={triggerHintDemo}
@@ -1159,12 +1500,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                     <span className="hidden md:inline">Press</span>
                                     <kbd className="hidden md:inline px-2 py-1 bg-white/20 border border-white/30 rounded text-sm font-mono">F1</kbd>
                                     <span className="hidden md:inline">or Click to Get Hint</span>
-                                    <span className="md:hidden">Tap or press F1 on keyboard to get hint</span>
+                                    <span className="md:hidden">Tap or press F1 to get hint</span>
                                 </button>
                             ) : (
                                 <button
                                     onClick={resetHintDemo}
-                                    className="w-full group flex items-center justify-center gap-2 bg-transparent border-2 border-[#E53A3A]/60 text-[#E53A3A] font-medium py-4 px-6 rounded-xl transition-all duration-300 hover:border-[#E53A3A] hover:bg-[#E53A3A]/10 hover:text-[#E53A3A] hover:shadow-[0_0_20px_rgba(229,58,58,0.2)]"
+                                    className="w-full group flex items-center justify-center gap-2 bg-transparent border-2 border-neutral-600 text-neutral-300 font-medium py-4 px-6 rounded-xl transition-all duration-300 hover:border-neutral-500 hover:bg-neutral-800/30 hover:text-white hover:shadow-[0_0_20px_rgba(163,163,163,0.2)]"
                                 >
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -1173,33 +1514,29 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 </button>
                             )}
                         </div>
-                        
-                        <p className="text-xl md:text-2xl text-neutral-300 max-w-4xl mx-auto mb-16 mt-14 leading-relaxed">
-              Stuck on a puzzle? Can't find that hidden path? Otagon sees exactly what you see and delivers the perfect hint—not the solution. Snap a screenshot, get unstuck in seconds, and keep that 'aha!' moment all for yourself. No more tab-hopping through spoiler-filled wikis.
-            </p>
 
                         {/* Enhanced Waitlist Form */}
                         <div className="max-w-2xl mx-auto px-4">
                             <form id="waitlist-form" onSubmit={handleWaitlistSubmit} className="flex flex-col sm:flex-row gap-4 mb-4">
                                 <div className="flex-grow relative group">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email address"
-              required
-              disabled={isSubmitting}
+                                    <input
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="Enter your email address"
+                                        required
+                                        disabled={isSubmitting}
                                         className="w-full bg-[#0A0A0A]/80 border-2 border-neutral-700/60 rounded-xl py-4 sm:py-5 px-4 sm:px-6 text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#E53A3A]/50 focus:border-[#E53A3A]/80 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-base sm:text-lg backdrop-blur-sm hover:border-neutral-600/80 hover:bg-[#0A0A0A] text-center sm:text-left"
-              aria-label="Email for waitlist"
-            />
+                                        aria-label="Email for waitlist"
+                                    />
                                 </div>
                                 <button
               type="submit"
               disabled={isSubmitting || isSubmissionSuccessful}
-                                    className={`text-white font-bold py-4 sm:py-5 px-8 sm:px-12 rounded-xl transition-all duration-300 transform text-base sm:text-lg relative overflow-hidden group min-h-[56px] ${
+                                    className={`font-bold py-4 sm:py-5 px-8 sm:px-12 rounded-xl transition-all duration-300 transform text-base sm:text-lg relative overflow-hidden group min-h-[56px] ${
                                       isSubmissionSuccessful
-                                        ? 'bg-gradient-to-r from-[#10B981] to-[#059669] md:hover:scale-100 md:hover:shadow-2xl md:hover:shadow-[#10B981]/30 active:scale-100 disabled:opacity-100 disabled:cursor-not-allowed'
-                                        : 'bg-gradient-to-r from-[#E53A3A] to-[#D98C1F] md:hover:scale-105 md:hover:shadow-2xl md:hover:shadow-[#E53A3A]/30 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100'
+                                        ? 'bg-transparent border-2 border-[#10B981] text-[#10B981] md:hover:scale-100 md:hover:shadow-2xl md:hover:shadow-[#10B981]/30 active:scale-100 disabled:opacity-100 disabled:cursor-not-allowed'
+                                        : 'bg-transparent border-2 border-[#E53A3A] text-[#E53A3A] md:hover:scale-105 md:hover:bg-[#E53A3A]/10 md:hover:shadow-2xl md:hover:shadow-[#E53A3A]/30 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100'
                                     }`}
                                 >
                                     <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -1222,22 +1559,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                     </span>
                                 </button>
           </form>
-
-                            {/* Trust Indicators */}
-                            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-neutral-400">
-                                <div className="flex items-center gap-2">
-                                    <CheckIcon className="w-4 h-4 text-green-400" />
-                                    <span>No spam, ever</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <CheckIcon className="w-4 h-4 text-green-400" />
-                                    <span>Free to join</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <CheckIcon className="w-4 h-4 text-green-400" />
-                                    <span>Early access</span>
-                                </div>
-                            </div>
                         </div>
 
           {submitMessage && (
@@ -1253,7 +1574,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                 </section>
 
                 {/* How It Works Section */}
-                <section className="py-16 md:py-24 bg-transparent relative">
+                <section id="how-it-works" className="py-16 md:py-24 bg-transparent relative">
                     <div className="container mx-auto px-8 max-w-6xl relative">
                         <div className="text-center mb-12 md:mb-16 animate-fade-slide-up">
                             <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-white mb-6">How It Works</h2>
@@ -1762,12 +2083,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 testimonials={[
                                     {
                                         quote: "Finally, a gaming assistant that doesn't spoil the story! I was stuck on a puzzle in Elden Ring for hours, and Otagon gave me just the right hint to figure it out myself.",
-                                        author: "Sarah Chen",
+                                        author: "Nikki Ash",
                                         title: "Souls-like Enthusiast"
                                     },
                                     {
                                         quote: "The PC-to-mobile sync is a game-changer. I can get help without alt-tabbing and losing my immersion. It's like having a gaming buddy who knows exactly when to chime in.",
-                                        author: "Marcus Rodriguez",
+                                        author: "Chloe Chase",
                                         title: "RPG Completionist"
                                     },
                                     {
@@ -1784,7 +2105,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                             <div ref={(el) => (testimonialRefs.current[0] = el)}>
                                 <Testimonial
                                     quote="Finally, a gaming assistant that doesn't spoil the story! I was stuck on a puzzle in Elden Ring for hours, and Otagon gave me just the right hint to figure it out myself."
-                                    author="Sarah Chen"
+                                    author="Nikki Ash"
                                     title="Souls-like Enthusiast"
                                     index={0}
                                     isVisible={testimonialsVisible[0] || false}
@@ -1793,7 +2114,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                             <div ref={(el) => (testimonialRefs.current[1] = el)}>
                                 <Testimonial
                                     quote="The PC-to-mobile sync is a game-changer. I can get help without alt-tabbing and losing my immersion. It's like having a gaming buddy who knows exactly when to chime in."
-                                    author="Marcus Rodriguez"
+                                    author="Chloe Chase"
                                     title="RPG Completionist"
                                     index={1}
                                     isVisible={testimonialsVisible[1] || false}
@@ -2018,16 +2339,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                                 <p className="text-xl md:text-2xl text-neutral-300 font-medium">
                                     Service Designer
                                 </p>
-                            </div>                            {/* Personal Quote - Centered */}
-                            <div className="max-w-4xl mx-auto mb-12">
-                                <div className="bg-gradient-to-r from-[#0F0F0F]/60 to-[#1A1A1A]/60 border-2 border-neutral-700/60 rounded-2xl p-8 md:p-10 backdrop-blur-sm">
-                                    <p className="text-[#CFCFCF] leading-relaxed text-lg md:text-xl italic">
-                                        "I've rage-quit games because one Google search spoiled the entire ending. I've wasted hours stuck because I was too stubborn to look it up. Otagon is the tool I wish I had growing up—smart help that respects your journey."
-              </p>
-            </div>
-          </div>
-
-                            {/* Contact Buttons - Centered */}
+                            </div>                            {/* Contact Buttons - Centered */}
                             <div className="flex flex-col sm:flex-row items-center justify-center gap-6 md:gap-8">
                                 <a
                                     href="https://www.linkedin.com/in/readmetxt/"
@@ -2059,65 +2371,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
         </div>
                 </section>
 
-                {/* Gaming Guides Section */}
-                <section id="guides" className="py-16 md:py-24 bg-transparent relative overflow-hidden">
-                    <div className="container mx-auto px-8 max-w-7xl relative">
-                        {/* Section Header */}
-                        <div className="text-center mb-12 md:mb-16 animate-fade-slide-up">
-                            <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white mb-6">
-                                Master Any Game with AI
-                            </h2>
-                            <p className="text-lg md:text-xl text-neutral-300 leading-relaxed max-w-3xl mx-auto">
-                                Comprehensive guides powered by Otagon AI. From boss strategies to perfection runs, 
-                                learn how to leverage AI assistance for ultimate gaming success.
-                            </p>
-                        </div>
-
-                        {/* Blog Cards Grid - Clean & Minimal */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-12">
-                            {blogPosts.slice(0, 6).map((post: BlogPost, index: number) => (
-                                <button
-                                    key={post.id}
-                                    onClick={() => onSelectBlogPost(post.slug)}
-                                    className="group bg-neutral-900/60 border border-neutral-800 rounded-xl p-5 text-left transition-all duration-300 hover:border-primary/50 hover:bg-neutral-800/60 animate-fade-slide-up"
-                                    style={{ animationDelay: `${index * 80}ms` }}
-                                >
-                                    {/* Game & Time - Compact Header */}
-                                    <div className="flex items-center justify-between mb-3">
-                                        <span className="text-xs font-semibold text-secondary">{post.game}</span>
-                                        <span className="text-xs text-text-muted">{post.readTime}</span>
-                                    </div>
-
-                                    {/* Title - Main Focus */}
-                                    <h3 className="text-lg font-bold text-white mb-2 group-hover:text-primary transition-colors duration-200 line-clamp-2">
-                                        {post.title}
-                                    </h3>
-
-                                    {/* Arrow indicator */}
-                                    <div className="flex items-center justify-between mt-4">
-                                        <span className="text-xs text-text-muted bg-neutral-800/80 px-2 py-1 rounded">{post.category}</span>
-                                        <svg className="w-4 h-4 text-text-muted group-hover:text-primary group-hover:translate-x-1 transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* View All Guides Button */}
-                        <div className="text-center animate-fade-slide-up">
-                            <button
-                                onClick={onOpenBlog}
-                                className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-primary to-secondary text-white font-bold text-lg rounded-xl hover:shadow-2xl hover:shadow-primary/30 transition-all duration-300 hover:scale-105 active:scale-95"
-                            >
-                                <span>View All Gaming Guides</span>
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </section>
       </main>
 
       {/* Footer */}
@@ -2128,14 +2381,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted: _onGetStarted, 
                         <div className="flex flex-col md:flex-row items-center gap-3 md:gap-6 text-sm font-medium text-neutral-400 order-1 md:order-2">
                            <div className="flex items-center gap-4 md:gap-6">
                                <a href="#pricing" onClick={handleScrollTo('pricing')} className="hover:text-white transition-colors">Pricing</a>
-                               <button type="button" onClick={onOpenBlog} className="hover:text-white transition-colors active:scale-95">Gaming Guides</button>
-                               <button type="button" onClick={onOpenAbout} className="hover:text-white transition-colors active:scale-95">About</button>
-                               <button type="button" onClick={onOpenTerms} className="hover:text-white transition-colors active:scale-95">Terms</button>
+                               <Link to="/blog" className="hover:text-white transition-colors active:scale-95">Gaming Guides</Link>
+                               <Link to="/about" className="hover:text-white transition-colors active:scale-95">About</Link>
+                               <Link to="/terms" className="hover:text-white transition-colors active:scale-95">Terms</Link>
                            </div>
                            <div className="flex items-center gap-4 md:gap-6">
-                               <button type="button" onClick={onOpenPrivacy} className="hover:text-white transition-colors active:scale-95">Privacy</button>
-                               <button type="button" onClick={onOpenRefund} className="hover:text-white transition-colors active:scale-95">Refund Policy</button>
-                               <button type="button" onClick={onOpenContact} className="hover:text-white transition-colors active:scale-95">Contact Us</button>
+                               <Link to="/privacy" className="hover:text-white transition-colors active:scale-95">Privacy</Link>
+                               <Link to="/refund" className="hover:text-white transition-colors active:scale-95">Refund Policy</Link>
+                               <Link to="/contact" className="hover:text-white transition-colors active:scale-95">Contact Us</Link>
                            </div>
             </div>
             

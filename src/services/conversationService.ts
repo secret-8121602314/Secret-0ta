@@ -148,23 +148,6 @@ export class ConversationService {
   }
 
   /**
-   * Monitor localStorage usage and log warnings if approaching quota
-   */
-  private static monitorStorageUsage(): void {
-    try {
-      const stats = StorageService.getStorageStats();
-      const percentage = stats.percentage * 100;
-      
-      // Only log if critically high (>95%)
-      if (percentage > 95) {
-        console.warn(`localStorage usage at ${percentage.toFixed(1)}%`);
-      }
-    } catch {
-      // Silently fail - this is just monitoring
-    }
-  }
-
-  /**
    * Clear the conversations cache to force fresh database read
    */
   static clearCache(): void {
@@ -475,8 +458,9 @@ export class ConversationService {
 
   static async addConversation(conversation: Conversation): Promise<{ success: boolean; reason?: string }> {
     // ✅ PERFORMANCE: Check if there's already a pending creation for this conversation
-    if (this.pendingCreations.has(conversation.id)) {
-            return await this.pendingCreations.get(conversation.id)!;
+    const pendingCreation = this.pendingCreations.get(conversation.id);
+    if (pendingCreation) {
+      return await pendingCreation;
     }
 
     // Create a new promise and store it
@@ -774,6 +758,7 @@ export class ConversationService {
         
         // Delete messages one by one (MessageService only has deleteMessage, not deleteMessages)
         for (const messageId of messageIds) {
+          // eslint-disable-next-line no-await-in-loop
           await messageService.deleteMessage(conversationId, messageId);
         }
         

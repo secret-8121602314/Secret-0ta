@@ -17,7 +17,7 @@ interface CreditModalProps {
   onOpenSettings?: (tab?: string) => void;
 }
 
-const CreditModal: React.FC<CreditModalProps> = ({ isOpen, onClose, onUpgrade, user, onOpenSettings }) => {
+const CreditModal: React.FC<CreditModalProps> = ({ isOpen, onClose, onUpgrade: _onUpgrade, user, onOpenSettings }) => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [groundingQuota, setGroundingQuota] = useState<{
     gameKnowledge: { used: number; limit: number; remaining: number };
@@ -27,11 +27,6 @@ const CreditModal: React.FC<CreditModalProps> = ({ isOpen, onClose, onUpgrade, u
     currentCount: number;
     limit: number;
   } | null>(null);
-  
-  // BYOK state
-  const [apiKey, setApiKey] = useState('');
-  const [isTestingKey, setIsTestingKey] = useState(false);
-  const [isSavingKey, setIsSavingKey] = useState(false);
   
   // Fetch grounding quota for Pro/Vanguard users
   useEffect(() => {
@@ -309,7 +304,7 @@ const CreditModal: React.FC<CreditModalProps> = ({ isOpen, onClose, onUpgrade, u
                 </div>
                 <button
                   onClick={async () => {
-                    if (confirm('Remove your custom API key and revert to platform limits?')) {
+                    if (window.confirm('Remove your custom API key and revert to platform limits?')) {
                       try {
                         await ApiKeyService.removeGeminiKey(user, 'user_action');
                         toastService.info('🔄 Reverting to platform key. Reloading...');

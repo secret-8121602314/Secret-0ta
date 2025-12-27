@@ -384,6 +384,19 @@ function App() {
       console.log('🔐 [App] Signed out event received');
       cleanupDOMStyles(); // ✅ MOBILE FIX: Clean up DOM before state change
       setAuthState({ user: null, isLoading: false, error: null });
+      
+      // ✅ FIX: Redirect to login if not already there
+      setAppState((prev: AppState) => {
+        // Only change if we're not already on login
+        if (prev.onboardingStatus !== 'login') {
+          return {
+            ...prev,
+            view: 'app',
+            onboardingStatus: 'login'
+          };
+        }
+        return prev;
+      });
     };
 
     // ✅ FIX: Handle session expiry - prompt user to re-login
@@ -391,13 +404,26 @@ function App() {
       const customEvent = event as CustomEvent<{ reason: string; timestamp: number }>;
       console.warn('🔐 [App] Session expired:', customEvent.detail?.reason);
       
-      // Show warning toast - session expired
-      toastService.warning('Your session has expired. Please log in again to continue.');
+      // Show error toast with action - session expired
+      toastService.error('Your session has expired. Redirecting to login...', {
+        duration: 3000,
+        action: {
+          label: 'Login Now',
+          onClick: () => {
+            setAuthState({ user: null, isLoading: false, error: null });
+            setAppState((prev: AppState) => ({
+              ...prev,
+              view: 'app',
+              onboardingStatus: 'login'
+            }));
+          }
+        }
+      });
       
       // ✅ MOBILE FIX: Clean up DOM before state change
       cleanupDOMStyles();
       
-      // Clear state and redirect to login after a short delay
+      // Clear state and redirect to login
       setTimeout(() => {
         setAuthState({ user: null, isLoading: false, error: null });
         setAppState((prev: AppState) => ({
@@ -405,7 +431,7 @@ function App() {
           view: 'app',
           onboardingStatus: 'login'
         }));
-      }, 1500);
+      }, 1000);
     };
 
     window.addEventListener('otakon:session-refreshed', handleSessionRefreshed);

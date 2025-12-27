@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { SubTab } from '../../types';
 import { MarkdownRenderer } from './MarkdownRenderer';
 
@@ -71,6 +72,7 @@ interface SubTabsProps {
   onDeleteTab?: (tabId: string) => void;
   onExpandedChange?: (isExpanded: boolean) => void;
   onRetrySubtab?: (tabId: string) => void;
+  onCreateCustomSubtab?: (name: string, type: string, instructions: string) => void;
   forceExpand?: boolean; // Force expand the panel (used during generation)
 }
 
@@ -84,6 +86,7 @@ const SubTabs: React.FC<SubTabsProps> = ({
   onDeleteTab,
   onExpandedChange,
   onRetrySubtab,
+  onCreateCustomSubtab,
   forceExpand = false
 }) => {
   const [localActiveTab, setLocalActiveTab] = useState<string>(activeTabId || subtabs[0]?.id || '');
@@ -112,9 +115,33 @@ const SubTabs: React.FC<SubTabsProps> = ({
   const [modifySuggestion, setModifySuggestion] = useState('');
   const [isModifying, setIsModifying] = useState(false);
   const modifyInputRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Custom subtab creation modal state
+  const [showCustomSubtabModal, setShowCustomSubtabModal] = useState(false);
+  const [customSubtabName, setCustomSubtabName] = useState('');
+  const [customSubtabType, setCustomSubtabType] = useState<string>('chat');
+  const [customSubtabInstructions, setCustomSubtabInstructions] = useState('');
+  const [isCreatingCustomSubtab, setIsCreatingCustomSubtab] = useState(false);
+  const customSubtabNameRef = useRef<HTMLInputElement>(null);
 
   const currentActiveTab = activeTabId || localActiveTab;
-  const activeTab = subtabs.find(tab => tab.id === currentActiveTab);
+  const activeTab = useMemo(() => subtabs.find(tab => tab.id === currentActiveTab), [subtabs, currentActiveTab]);
+  
+  // 🚀 PERF: Memoize expensive derived values to prevent recalculation on every render
+  const { allLoading, hasLoadedContent, contentSignature } = useMemo(() => {
+    const allLoad = subtabs.every(tab => tab.status === 'loading');
+    const hasLoaded = subtabs.some(tab => 
+      tab.status === 'loaded' && 
+      tab.content && 
+      tab.content.trim().length > 0 && 
+      tab.content.trim() !== 'Loading...'
+    );
+    const signature = subtabs
+      .filter(tab => tab.status === 'loaded' && tab.content && tab.content.trim().length > 0)
+      .map(tab => `${tab.id}:${tab.content?.length || 0}`)
+      .join('|');
+    return { allLoading: allLoad, hasLoadedContent: hasLoaded, contentSignature: signature };
+  }, [subtabs]);
   
   // Track if we've already responded to forceExpand to prevent re-expansion after user closes
   const hasForceExpandedRef = useRef(false);
@@ -158,6 +185,13 @@ const SubTabs: React.FC<SubTabsProps> = ({
     }
   }, [modifyModal]);
   
+  // Focus custom subtab name input when modal opens
+  useEffect(() => {
+    if (showCustomSubtabModal && customSubtabNameRef.current) {
+      customSubtabNameRef.current.focus();
+    }
+  }, [showCustomSubtabModal]);
+  
   // Handle modify submit
   const handleModifySubmit = useCallback(() => {
     if (!modifyModal || !modifySuggestion.trim() || isModifying) { return; }
@@ -180,6 +214,29 @@ const SubTabs: React.FC<SubTabsProps> = ({
     setIsModifying(false);
   }, [modifyModal, modifySuggestion, isModifying, onModifyTab]);
   
+  // Handle custom subtab creation
+  const handleCustomSubtabCreate = useCallback(() => {
+    if (!customSubtabName.trim() || !customSubtabInstructions.trim() || isCreatingCustomSubtab) { return; }
+    
+    setIsCreatingCustomSubtab(true);
+    
+    // Call the parent handler with custom subtab data
+    if (onCreateCustomSubtab) {
+      onCreateCustomSubtab(
+        customSubtabName.trim(),
+        customSubtabType,
+        customSubtabInstructions.trim()
+      );
+    }
+    
+    // Close modal and reset state
+    setShowCustomSubtabModal(false);
+    setCustomSubtabName('');
+    setCustomSubtabType('chat');
+    setCustomSubtabInstructions('');
+    setIsCreatingCustomSubtab(false);
+  }, [customSubtabName, customSubtabType, customSubtabInstructions, isCreatingCustomSubtab, onCreateCustomSubtab]);
+  
   // Handle delete confirmation
   const handleDeleteConfirm = useCallback((tabId: string) => {
     if (onDeleteTab) {
@@ -191,9 +248,24 @@ const SubTabs: React.FC<SubTabsProps> = ({
   // Handle right-click on subtab (desktop)
   const handleContextMenu = (e: React.MouseEvent, tab: SubTab) => {
     e.preventDefault();
+    e.stopPropagation();
+    // Position menu slightly below and to the right of cursor with viewport boundary checking
+    const menuWidth = 180;
+    const menuHeight = 120;
+    const offsetX = 5;
+    const offsetY = 5;
+    
+    const adjustedX = Math.min(e.clientX + offsetX, window.innerWidth - menuWidth - 10);
+    const adjustedY = Math.min(e.clientY + offsetY, window.innerHeight - menuHeight - 10);
+    
+    console.log('Context menu triggered:', { adjustedX, adjustedY, tabTitle: tab.title });
+    
+    // Highlight/activate the tab when right-clicking
+    handleTabClick(tab.id);
+    
     setContextMenu({
-      x: e.clientX,
-      y: e.clientY,
+      x: adjustedX,
+      y: adjustedY,
       tabId: tab.id,
       tabTitle: tab.title
     });
@@ -201,14 +273,29 @@ const SubTabs: React.FC<SubTabsProps> = ({
   
   // Handle long-press on subtab (mobile)
   const handleTouchStart = (e: React.TouchEvent, tab: SubTab) => {
+    const startTouch = e.touches[0];
+    
+    console.log('Touch started:', tab.title);
+    
     longPressTimer.current = setTimeout(() => {
-      const touch = e.touches[0];
+      console.log('Long press triggered for:', tab.title);
+      const touch = e.touches[0] || startTouch;
+      // Position menu slightly offset from touch point with viewport boundary checking
+      const menuWidth = 180;
+      const menuHeight = 120;
+      const offsetX = 10;
+      const offsetY = 10;
+      
+      const adjustedX = Math.min(touch.clientX + offsetX, window.innerWidth - menuWidth - 10);
+      const adjustedY = Math.min(touch.clientY + offsetY, window.innerHeight - menuHeight - 10);
+      
       setContextMenu({
-        x: touch.clientX,
-        y: touch.clientY,
+        x: adjustedX,
+        y: adjustedY,
         tabId: tab.id,
         tabTitle: tab.title
       });
+      console.log(`Long-pressed: ${tab.title} at (${adjustedX}, ${adjustedY})`);
     }, 500); // 500ms hold to trigger
   };
   
@@ -218,17 +305,14 @@ const SubTabs: React.FC<SubTabsProps> = ({
       longPressTimer.current = null;
     }
   };
+  
+  const handleTouchMove = () => {
+    // Allow small movements, only cancel if significant movement
+    // For now, don't cancel on move to allow long press to work
+  };
 
-  // 🔍 DEBUG: Log subtabs state on every render
-  console.log('🎨 [SubTabs] Rendering:', {
-    subtabCount: subtabs.length,
-    statuses: subtabs.map(s => ({ title: s.title, status: s.status, hasContent: !!s.content })),
-    isExpanded,
-    hasUserInteracted,
-    activeTabTitle: activeTab?.title,
-    activeTabStatus: activeTab?.status,
-    activeTabHasContent: !!activeTab?.content
-  });
+  // 🔍 DEBUG: Log subtabs state on every render - only in development and throttled
+  // 🚀 PERF: Removed per-render logging - use React DevTools instead for debugging
 
   // Auto-expand when subtabs finish loading (ONLY if user hasn't manually controlled it)
   useEffect(() => {
@@ -237,34 +321,11 @@ const SubTabs: React.FC<SubTabsProps> = ({
       return;
     }
 
-    // Create a content signature to detect actual content changes
-    const currentContentSignature = subtabs
-      .filter(tab => tab.status === 'loaded' && tab.content && tab.content.trim().length > 0)
-      .map(tab => `${tab.id}:${tab.content?.length || 0}`)
-      .join('|');
+    // Use memoized contentSignature instead of recalculating
+    const currentContentSignature = contentSignature;
     
     // Check if content has actually changed (new content generated/updated)
     const contentChanged = currentContentSignature !== prevContentRef.current && currentContentSignature.length > 0;
-    
-    // ✅ FIX: More robust status checks
-    const allLoading = subtabs.every(tab => tab.status === 'loading');
-    const hasLoadedContent = subtabs.some(tab => 
-      tab.status === 'loaded' && 
-      tab.content && 
-      tab.content.trim().length > 0 && 
-      tab.content.trim() !== 'Loading...'
-    );
-    
-    console.log('📂 [SubTabs] useEffect triggered:', {
-      allLoading,
-      hasLoadedContent,
-      contentChanged,
-      isExpanded,
-      hasUserInteracted,
-      isInitialMount: isInitialMountRef.current,
-      currentContentSignature: currentContentSignature.substring(0, 50),
-      prevContentSignature: prevContentRef.current.substring(0, 50)
-    });
     
     // ✅ FIX: Collapse if all loading
     if (allLoading && isExpanded) {
@@ -302,7 +363,8 @@ const SubTabs: React.FC<SubTabsProps> = ({
     if (currentContentSignature.length > 0) {
       prevContentRef.current = currentContentSignature;
     }
-  }, [subtabs, isExpanded, hasUserInteracted, onExpandedChange]);
+  // 🚀 PERF: Use memoized values in dependencies to reduce effect triggers
+  }, [contentSignature, allLoading, hasLoadedContent, isExpanded, hasUserInteracted, onExpandedChange]);
 
   const handleTabClick = (tabId: string) => {
     setLocalActiveTab(tabId);
@@ -338,12 +400,16 @@ const SubTabs: React.FC<SubTabsProps> = ({
       {/* z-30 ensures it's visible above other content but below sidebar (z-60) on mobile */}
       <button
         onClick={toggleExpanded}
-        className="w-full flex items-center justify-between py-2 px-3 rounded-lg bg-[#1C1C1C] hover:bg-[#252525] border border-[#424242]/30 hover:border-[#424242]/60 transition-all duration-200 relative z-30"
+        className={`w-full flex items-center justify-between py-2 px-3 rounded-lg border transition-all duration-200 relative z-30 ${
+          isExpanded
+            ? 'bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] border-[#FF4D4D] hover:border-[#FFAB40]'
+            : 'bg-[#1C1C1C] hover:bg-[#252525] border-[#424242]/30 hover:border-[#424242]/60'
+        }`}
       >
         <div className="flex items-center gap-2">
           <div className={`text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
             isExpanded 
-              ? 'bg-gradient-to-r from-[#FF4D4D] to-[#FFAB40] bg-clip-text text-transparent' 
+              ? 'text-white' 
               : 'text-[#A3A3A3]'
           }`}>
             Lore & Insights
@@ -384,19 +450,11 @@ const SubTabs: React.FC<SubTabsProps> = ({
         <>
           {/* Backdrop overlay - close on click (both mobile and desktop) */}
           <div
-            className="fixed inset-0 z-40"
+            className="fixed inset-0 z-40 bg-black/20"
             onClick={() => {
               setIsExpanded(false);
               setHasUserInteracted(true);
               onExpandedChange?.(false); // Notify parent that user closed the panel
-            }}
-          />
-          {/* Chat area backdrop blur - only visible when subtabs expanded */}
-          <div
-            className="fixed inset-0 z-35 backdrop-blur-sm pointer-events-none"
-            style={{
-              WebkitBackdropFilter: 'blur(4px)',
-              backdropFilter: 'blur(4px)'
             }}
           />
           {/* 
@@ -419,7 +477,7 @@ const SubTabs: React.FC<SubTabsProps> = ({
                   onContextMenu={(e) => handleContextMenu(e, tab)}
                   onTouchStart={(e) => handleTouchStart(e, tab)}
                   onTouchEnd={handleTouchEnd}
-                  onTouchMove={handleTouchEnd}
+                  onTouchMove={handleTouchMove}
                   className={`
                     px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-xs font-medium rounded-lg transition-all duration-200 select-none
                     text-center
@@ -446,13 +504,32 @@ const SubTabs: React.FC<SubTabsProps> = ({
                   </div>
                 </button>
               ))}
+              
+              {/* Add Tab Button */}
+              <button
+                onClick={() => {
+                  setShowCustomSubtabModal(true);
+                  setCustomSubtabName('');
+                  setCustomSubtabType('chat');
+                  setCustomSubtabInstructions('');
+                }}
+                className="px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-xs font-medium rounded-lg transition-all duration-200 select-none text-center bg-green-500/10 text-green-400 hover:bg-green-500/20 hover:text-green-300 border border-dashed border-green-500/40"
+                title="Add Tab"
+              >
+                <div className="flex items-center justify-center gap-1 sm:gap-2">
+                  <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span className="leading-tight">Add Tab</span>
+                </div>
+              </button>
             </div>
           </div>
 
           {/* Tab Content - Scrollable area that fills available space */}
           {activeTab && (
             <div 
-              className="p-3 sm:p-4 flex-1 min-h-0 overflow-y-auto custom-scrollbar transition-all duration-300 rounded-b-xl bg-[#2E2E2E]/40"
+              className="p-4 sm:p-5 md:p-6 flex-1 min-h-0 overflow-y-auto custom-scrollbar transition-all duration-300 rounded-b-xl bg-[#2E2E2E]/40 text-left"
             >
               {activeTab.status === 'loading' || (!activeTab.content && isLoading) ? (
                 <div className="flex items-center justify-center py-8">
@@ -470,7 +547,7 @@ const SubTabs: React.FC<SubTabsProps> = ({
                   <p className="text-sm mt-1">Please try again later</p>
                 </div>
               ) : activeTab.content ? (
-                <div className="prose prose-invert prose-sm max-w-none">
+                <div className="prose prose-invert prose-sm max-w-none text-left">
                   <MarkdownRenderer
                     content={activeTab.content}
                     variant="subtab"
@@ -480,11 +557,12 @@ const SubTabs: React.FC<SubTabsProps> = ({
                   
                   {/* Feedback buttons */}
                   {onFeedback && (
-                    <div className="flex items-center gap-2 mt-4 pt-3 border-t border-[#424242]/50">
-                      <span className="text-xs text-[#A3A3A3] mr-2">Was this helpful?</span>
+                    <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-[#424242]/50">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-[#A3A3A3] mr-2">Was this helpful?</span>
                       <button
                         onClick={() => onFeedback(activeTab.id, 'up')}
-                        className="p-1.5 rounded-lg text-[#A3A3A3] hover:text-green-400 hover:bg-green-400/10 transition-colors"
+                        className="p-1.5 rounded-lg text-[#A3A3A3] hover:text-green-400 hover:bg-green-400/10 transition-colors flex items-center justify-center"
                         title="Helpful"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -493,7 +571,7 @@ const SubTabs: React.FC<SubTabsProps> = ({
                       </button>
                       <button
                         onClick={() => onFeedback(activeTab.id, 'down')}
-                        className="p-1.5 rounded-lg text-[#A3A3A3] hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                        className="p-1.5 rounded-lg text-[#A3A3A3] hover:text-red-400 hover:bg-red-400/10 transition-colors flex items-center justify-center"
                         title="Not helpful"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -503,7 +581,7 @@ const SubTabs: React.FC<SubTabsProps> = ({
                       {onRetrySubtab && (
                         <button
                           onClick={() => onRetrySubtab(activeTab.id)}
-                          className="p-1.5 rounded-lg text-[#A3A3A3] hover:text-[#FF4D4D] hover:bg-[#FF4D4D]/10 transition-colors"
+                          className="p-1.5 rounded-lg text-[#A3A3A3] hover:text-[#FF4D4D] hover:bg-[#FF4D4D]/10 transition-colors flex items-center justify-center"
                           title="Retry generating this tab"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -511,6 +589,9 @@ const SubTabs: React.FC<SubTabsProps> = ({
                           </svg>
                         </button>
                       )}
+                      </div>
+                      <span className="text-[10px] text-[#666666] hidden sm:block">Right-click tabs</span>
+                      <span className="text-[10px] text-[#666666] sm:hidden">Long press tabs</span>
                     </div>
                   )}
                 </div>
@@ -526,15 +607,17 @@ const SubTabs: React.FC<SubTabsProps> = ({
       </>
       )}
       
-      {/* Right-click Context Menu */}
-      {contextMenu && (
+      {/* Right-click Context Menu - Rendered via Portal to escape overflow constraints */}
+      {contextMenu && createPortal(
         <div
           ref={contextMenuRef}
           className="fixed bg-[#1C1C1C] border border-[#424242] rounded-lg shadow-2xl overflow-hidden"
           style={{
             left: contextMenu.x,
             top: contextMenu.y,
-            zIndex: 10000
+            zIndex: 999999,
+            maxWidth: '180px',
+            pointerEvents: 'auto'
           }}
         >
           <div className="px-3 py-2 border-b border-[#424242]/50 bg-[#2A2A2A]">
@@ -571,7 +654,8 @@ const SubTabs: React.FC<SubTabsProps> = ({
               <span>Delete Tab</span>
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       
       {/* Modify Modal Overlay */}
@@ -667,6 +751,153 @@ const SubTabs: React.FC<SubTabsProps> = ({
             </div>
           </div>
         </div>
+      )}
+      
+      {/* Custom Subtab Creation Modal */}
+      {showCustomSubtabModal && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onClick={() => {
+              setShowCustomSubtabModal(false);
+              setCustomSubtabName('');
+              setCustomSubtabType('chat');
+              setCustomSubtabInstructions('');
+            }}
+          />
+          
+          {/* Modal Content */}
+          <div className="relative w-full max-w-md bg-[#1A1A1A] rounded-xl border border-[#424242] shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[#424242]/50 bg-[#2A2A2A]">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <svg className="w-5 h-5 text-[#E53A3A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Create Custom Tab
+              </h3>
+              <button
+                onClick={() => {
+                  setShowCustomSubtabModal(false);
+                  setCustomSubtabName('');
+                  setCustomSubtabType('chat');
+                  setCustomSubtabInstructions('');
+                }}
+                className="text-[#A3A3A3] hover:text-white transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Modal Body */}
+            <div className="p-4 space-y-4">
+              <p className="text-sm text-[#A3A3A3]">
+                Create a custom tab with specific instructions for AI generation.
+              </p>
+              
+              {/* Tab Name Input */}
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">
+                  Tab Name <span className="text-[#E53A3A]">*</span>
+                </label>
+                <input
+                  ref={customSubtabNameRef}
+                  type="text"
+                  value={customSubtabName}
+                  onChange={(e) => setCustomSubtabName(e.target.value)}
+                  placeholder="e.g., Boss Strategies, Secret Locations, Build Guide..."
+                  className="w-full px-3 py-2 bg-[#2A2A2A] border border-[#424242] rounded-lg text-white placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#E53A3A]/50 focus:border-[#E53A3A]"
+                  maxLength={50}
+                />
+              </div>
+              
+              {/* Tab Type Selection */}
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">
+                  Tab Type
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.entries(subtabStyles).map(([type, style]) => (
+                    <button
+                      key={type}
+                      onClick={() => setCustomSubtabType(type)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-all ${
+                        customSubtabType === type
+                          ? 'border-current bg-current/10'
+                          : 'border-[#424242] bg-[#2A2A2A] hover:border-[#666666]'
+                      }`}
+                      style={{ 
+                        color: customSubtabType === type ? style.accent : '#A3A3A3'
+                      }}
+                    >
+                      <span className="text-base">{style.icon}</span>
+                      <span className="text-sm font-medium capitalize">{type}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Instructions Input */}
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">
+                  Instructions for AI <span className="text-[#E53A3A]">*</span>
+                </label>
+                <textarea
+                  value={customSubtabInstructions}
+                  onChange={(e) => setCustomSubtabInstructions(e.target.value)}
+                  placeholder={`Describe what information this tab should contain. Be specific about what you want the AI to generate...\n\nExample: "Create a detailed boss guide covering attack patterns, telegraphs, phase transitions, effective counter-strategies, and recommended equipment for each major boss encounter."`}
+                  className="w-full h-32 px-3 py-2 bg-[#2A2A2A] border border-[#424242] rounded-lg text-white placeholder-[#6B7280] resize-none focus:outline-none focus:ring-2 focus:ring-[#E53A3A]/50 focus:border-[#E53A3A]"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                      handleCustomSubtabCreate();
+                    }
+                  }}
+                />
+                <p className="text-xs text-[#6B7280] mt-1">
+                  Press Ctrl+Enter to create
+                </p>
+              </div>
+            </div>
+            
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-3 px-4 py-3 border-t border-[#424242]/50 bg-[#2A2A2A]">
+              <button
+                onClick={() => {
+                  setShowCustomSubtabModal(false);
+                  setCustomSubtabName('');
+                  setCustomSubtabType('chat');
+                  setCustomSubtabInstructions('');
+                }}
+                className="px-4 py-2 text-sm font-medium text-[#A3A3A3] hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCustomSubtabCreate}
+                disabled={!customSubtabName.trim() || !customSubtabInstructions.trim() || isCreatingCustomSubtab}
+                className="px-4 py-2 text-sm font-medium bg-[#E53A3A] text-white rounded-lg hover:bg-[#CC2E2E] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+              >
+                {isCreatingCustomSubtab ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Create Tab
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

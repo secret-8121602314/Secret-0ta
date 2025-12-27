@@ -107,11 +107,11 @@ class GameTabService {
       // progressiveInsightUpdates and gamePillData.wikiContent are for UPDATES, not initial content
       // This ensures consistent subtab structure that can be properly updated later
       subTabs = this.generateInitialSubTabs(data.genre || 'Default', data.playerProfile, {});
-      console.error('🎮 [GameTabService] Created', subTabs.length, 'template subtabs (will be populated by generateInitialInsights)');
+      console.log('🎮 [GameTabService] Created', subTabs.length, 'template subtabs (will be populated by generateInitialInsights)');
     } else if (data.isUnreleased) {
-      console.error('🎮 [GameTabService] Creating unreleased game tab (no subtabs, Discuss mode only)');
+      console.log('🎮 [GameTabService] Creating unreleased game tab (no subtabs, Discuss mode only)');
     } else {
-      console.error('🔒 [GameTabService] Subtabs disabled for free tier users');
+      console.log('🔒 [GameTabService] Subtabs disabled for free tier users');
     }
     
     // Create the conversation
@@ -128,8 +128,8 @@ class GameTabService {
       subtabs: subTabs,
       subtabsOrder: subTabs.map(tab => tab.id),
       isActiveSession: true, // Default to Playing Mode when user asks for help
-      activeObjective: (data as any).activeObjective || '',
-      gameProgress: (data as any).gameProgress ?? 0,
+      activeObjective: (data as unknown as Record<string, unknown>).activeObjective as string || '',
+      gameProgress: (data as unknown as Record<string, unknown>).gameProgress as number ?? 0,
       isUnreleased: data.isUnreleased || false // Mark if unreleased
     };
 
@@ -164,13 +164,8 @@ class GameTabService {
 
     // Save subtabs using the subtabsService (handles both JSONB and normalized approaches)
     if (subTabs.length > 0 && isPro) {
-      console.error('🎮 [GameTabService] Saving', subTabs.length, 'subtabs for conversation:', conversation.id);
-      console.error('🎮 [GameTabService] Subtabs:', JSON.stringify(subTabs.map(s => ({ id: s.id, title: s.title, type: s.type, hasType: !!s.type })), null, 2));
-      
-      // ✅ OPTIMIZED: Reduced from 1000ms to 200ms - Supabase writes complete in <100ms
-      // This ensures the conversation exists with auth_user_id set before subtab insert
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
+      // ✅ OPTIMIZED: Removed explicit delay - conversation is already saved above
+      // The await on addConversation() guarantees conversation exists before subtab insert
       let success = await subtabsService.setSubtabs(conversation.id, subTabs);
       
       // ✅ FIX: Retry once if initial write fails (RLS policy timing issue)
@@ -182,13 +177,13 @@ class GameTabService {
         if (!success) {
           console.error('❌ [GameTabService] Retry also failed - subtabs will be created by generateInitialInsights');
         } else {
-          console.error('✅ [GameTabService] Retry succeeded');
+          console.log('✅ [GameTabService] Retry succeeded');
         }
       }
     } else if (!isPro) {
-      console.error('🔒 [GameTabService] Skipping subtabs save for free tier user');
+      // Debug: Silently skip for free tier
     } else {
-      console.error('🎮 [GameTabService] No subtabs to save for conversation:', conversation.id);
+      console.log('🎮 [GameTabService] No subtabs to save for conversation:', conversation.id);
     }
 
     // 🔒 TIER-GATING: Generate AI insights in background only for Pro users
@@ -196,26 +191,32 @@ class GameTabService {
     // This prevents extra Gemini calls on every message
     const isFirstMessage = conversation.messages.length <= 2; // User message + AI response = 2
     
-    if (isPro && isFirstMessage) {
+    // ✅ FIX: Always generate insights for new tabs with subtabs, regardless of aiResponse presence
+    if (isPro && isFirstMessage && conversation.subtabs && conversation.subtabs.length > 0) {
       console.log(`🎯 [GameTabService] First message detected - will generate initial insights for: ${conversation.gameTitle}`);
-      if (!data.aiResponse) {
-        this.generateInitialInsights(conversation, data.playerProfile, data.aiResponse, userTier).catch(error => 
-          console.error('Background insight generation failed:', error)
-        );
+      console.log(`🎯 [GameTabService] Subtabs status:`, conversation.subtabs.map(s => ({ title: s.title, content: s.content.substring(0, 30) })));
+      
+      // Always generate insights if subtabs exist (they start with "Loading..." content)
+      const needsInsights = conversation.subtabs.some(tab => tab.content === 'Loading...' || tab.status === 'loading');
+      if (needsInsights) {
+        console.log(`🎯 [GameTabService] ${conversation.subtabs.length} subtabs need content - calling generateInitialInsights`);
+        // ✅ CRITICAL: Pass aiResponse so the AI has context from the screenshot
+        this.generateInitialInsights(conversation, data.playerProfile, data.aiResponse, userTier).catch(error => {
+          console.error('❌❌❌ SUBTAB GENERATION FAILED ❌❌❌');
+          console.error('Error details:', error);
+          console.error('Error message:', error.message);
+          console.error('Error stack:', error.stack);
+          toastService.error('Failed to generate game insights. Please try again.');
+        });
       } else {
-        // If some subtabs still have "Loading..." content, generate insights for them in background
-        const needsInsights = conversation.subtabs?.some(tab => tab.content === 'Loading...');
-        if (needsInsights) {
-          // ✅ CRITICAL: Pass aiResponse so the AI has context from the screenshot
-          this.generateInitialInsights(conversation, data.playerProfile, data.aiResponse, userTier).catch(error => 
-            console.error('Background insight generation failed:', error)
-          );
-        }
+        console.log(`✅ [GameTabService] All subtabs already have content, skipping generation`);
       }
     } else if (isPro && !isFirstMessage) {
       console.log(`📝 [GameTabService] Subsequent message (${conversation.messages.length} msgs) - skipping insight generation to save Gemini calls`);
+    } else if (!isPro) {
+      // Silently skip for free tier (not an error)
     } else {
-      console.error('🔒 [GameTabService] Skipping AI insight generation for free tier user');
+      console.warn('⚠️ [GameTabService] No subtabs to populate - this may indicate subtab creation was skipped');
     }
 
     // Return immediately without waiting for insights
@@ -234,7 +235,7 @@ class GameTabService {
    * NOTE: Currently disabled - using null in generateInitialSubTabs
    */
   // @ts-ignore - Disabled for now
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   private getGameSpecificTabCustomizations(gameTitle: string): ProfileSpecificTab[] | null {
     const gameLower = gameTitle.toLowerCase();
     
@@ -1042,28 +1043,17 @@ class GameTabService {
         }
         
         if (!content) {
-          // ✅ IMPROVED FALLBACK: Use the actual AI response from initial message
-          // The AI already analyzed the screenshot - use that content!
+          // ✅ FIXED: Proper fallback logic when AI doesn't return content for this specific subtab
+          // This happens when:
+          // 1. AI returns empty {} (API error or free tier block)
+          // 2. titleToKeyMap is missing this specific subtab title
+          // 3. AI didn't generate content for this particular tab
           
-          // Extract the relevant part from conversation context based on tab type
-          let fallbackContent = conversationContext;
+          // Don't dump the full conversationContext - that was the original bug
+          // Instead, show a user-friendly message encouraging them to ask questions
+          content = `## ${subTab.title}\n\n*I haven't generated detailed content for this section yet.*\n\n**What would you like to know about ${subTab.title.toLowerCase()}?**\n\nFeel free to ask me specific questions in the chat, and I'll help you with:\n\n• ${subTab.title.toLowerCase()} strategies and tips\n• Relevant information from your current gameplay\n• Personalized recommendations based on your progress\n\nYou can also ask me to "update ${subTab.title}" to generate comprehensive content for this tab!`;
           
-          // Try to extract specific sections if they exist in the AI response
-          if (subTab.type === 'story' && conversationContext.includes('Lore:')) {
-            const loreMatch = conversationContext.match(/Lore:(.*?)(?=\n\n|\n[A-Z]|$)/s);
-            fallbackContent = loreMatch ? loreMatch[1].trim() : conversationContext;
-          } else if (subTab.type === 'strategies' && conversationContext.includes('Analysis:')) {
-            const analysisMatch = conversationContext.match(/Analysis:(.*?)(?=\n\n|\n[A-Z]|$)/s);
-            fallbackContent = analysisMatch ? analysisMatch[1].trim() : conversationContext;
-          } else if (subTab.type === 'tips' && conversationContext.includes('Hint:')) {
-            const hintMatch = conversationContext.match(/Hint:(.*?)(?=\n\n|\n[A-Z]|$)/s);
-            fallbackContent = hintMatch ? hintMatch[1].trim() : conversationContext;
-          }
-          
-          content = `## ${subTab.title}\n\n${fallbackContent}`;
-          
-          console.error(`🤖 [GameTabService] Subtab "${subTab.title}" using fallback content from AI response (${content.length} chars)`);
-          console.error(`🤖 [GameTabService] Preview:`, content.substring(0, 150) + '...');
+          console.error(`🤖 [GameTabService] Subtab "${subTab.title}" - no AI content available (key: ${insightKey}), using helpful fallback message`);
         }
         
         return {
@@ -1698,6 +1688,7 @@ class GameTabService {
         const subTabs = this.generateInitialSubTabs(conv.genre || 'Default', playerProfile, {});
         
         // Update conversation with subtabs
+        // eslint-disable-next-line no-await-in-loop
         await ConversationService.updateConversation(conv.id, {
           subtabs: subTabs,
           subtabsOrder: subTabs.map(tab => tab.id),
@@ -1705,9 +1696,11 @@ class GameTabService {
         });
 
         // Save subtabs to database
+        // eslint-disable-next-line no-await-in-loop
         await subtabsService.setSubtabs(conv.id, subTabs);
 
         // Generate insights - this updates subtabs with actual content
+        // eslint-disable-next-line no-await-in-loop
         await this.generateInitialInsights(
           { ...conv, subtabs: subTabs },
           playerProfile,
@@ -1731,6 +1724,7 @@ class GameTabService {
         if (i < gameTabs.length - 1) {
           const delayMs = 3000 + Math.random() * 2000; // 3-5 seconds with randomization
           console.log(`🔄 [GameTabService] Waiting ${Math.round(delayMs)}ms before next game...`);
+          // eslint-disable-next-line no-await-in-loop
           await new Promise(resolve => setTimeout(resolve, delayMs));
         }
       } catch (error) {

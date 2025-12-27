@@ -323,7 +323,12 @@ serve(async (req) => {
       if (parts.length === 0) {
         return new Response(JSON.stringify({ error: "Message must contain text or image" }), {
           status: 400,
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type"
+          },
         });
       }
       
@@ -360,7 +365,12 @@ serve(async (req) => {
     if (!contents) {
       return new Response(JSON.stringify({ error: "Missing required field: prompt or contents" }), {
         status: 400,
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type"
+        },
       });
     }
 
@@ -427,7 +437,12 @@ serve(async (req) => {
       console.error("Gemini API error:", geminiData);
       return new Response(JSON.stringify({ error: "AI service error", details: geminiData }), {
         status: geminiResponse.status,
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type"
+        },
       });
     }
 

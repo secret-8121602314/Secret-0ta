@@ -550,17 +550,17 @@ html, body {
 
 /* Enhanced Chat Message System */
 .chat-message-user {
-  @apply text-sm sm:text-base text-rose-300;
-  @apply bg-gradient-to-r from-rose-900/15 to-rose-800/15;
+  @apply text-sm sm:text-base text-red-300;
+  @apply bg-gradient-to-r from-red-900/15 to-red-800/15;
   @apply py-2.5 px-5 sm:py-3 sm:px-5 rounded-2xl rounded-br-none;
-  @apply border-2 border-rose-500/40;
+  @apply border-2 border-red-500/40;
   @apply backdrop-blur-sm shadow-lg;
   @apply max-w-2xl ml-auto;
 }
 
 .chat-message-ai {
-  @apply border-2 border-neutral-700/60;
-  @apply bg-gradient-to-r from-neutral-800/15 to-neutral-700/15;
+  @apply border-2 border-gray-700/60;
+  @apply bg-gradient-to-r from-gray-800/15 to-gray-700/15;
   @apply p-4 sm:p-5 rounded-2xl rounded-bl-none;
   @apply text-left;
   @apply backdrop-blur-sm shadow-lg;

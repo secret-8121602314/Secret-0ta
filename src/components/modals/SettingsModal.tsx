@@ -582,7 +582,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         )}
 
         {/* API Keys Tab */}
-        {activeTab === 'api-keys' && (
+        {activeTab === 'api-keys' && user && (
           <div className="space-y-4">
             <div className="bg-surface/50 rounded-lg p-4">
               <h3 className="text-lg font-semibold text-text-primary mb-2">Bring Your Own Gemini API Key</h3>
@@ -641,7 +641,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     </button>
                     <button
                       onClick={async () => {
-                        if (confirm('Are you sure you want to remove your custom API key? You\'ll revert to platform quota limits.')) {
+                        if (window.confirm('Are you sure you want to remove your custom API key? You\'ll revert to platform quota limits.')) {
                           try {
                             await ApiKeyService.removeGeminiKey(user, 'user_action');
                             toastService.info('🔄 Reverting to platform key. Page will reload...');
@@ -687,44 +687,62 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   <div className="flex gap-3">
                     {apiKey.trim() && (
                       <button
-                        onClick={async () => {
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('[SettingsModal] Test Key clicked');
                           setIsTestingKey(true);
                           try {
+                            console.log('[SettingsModal] Testing API key...');
                             const result = await ApiKeyService.testGeminiKey(apiKey);
+                            console.log('[SettingsModal] Test result:', result);
                             if (result.valid) {
                               toastService.success('✅ API key is valid!');
                             } else {
                               toastService.error(result.error || '❌ Invalid API key');
                             }
+                          } catch (error) {
+                            console.error('[SettingsModal] Test error:', error);
+                            toastService.error('Failed to test API key');
                           } finally {
                             setIsTestingKey(false);
                           }
                         }}
                         disabled={isTestingKey}
+                        type="button"
                         className="flex-1 px-4 py-2 bg-surface-light text-text-primary rounded-lg hover:bg-surface transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isTestingKey ? 'Testing...' : 'Test Key'}
                       </button>
                     )}
                     <button
-                      onClick={async () => {
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('[SettingsModal] Save & Activate clicked');
                         if (!apiKey.trim()) {
+                          console.log('[SettingsModal] No API key entered');
                           toastService.error('Please enter an API key');
                           return;
                         }
+                        console.log('[SettingsModal] Starting save process...');
                         setIsSavingKey(true);
                         try {
-                          await ApiKeyService.saveGeminiKey(user, apiKey);
+                          await ApiKeyService.saveGeminiKey(user, apiKey, false);
                           setApiKey('');
                           toastService.success('🔄 Custom key saved! Reloading...');
+                          // Give time for toast to show before reload
                           setTimeout(() => window.location.reload(), 1500);
                         } catch (error) {
-                          console.error('Error saving key:', error);
-                        } finally {
+                          console.error('[SettingsModal] Error saving key:', error);
+                          const errorMsg = error instanceof Error ? error.message : 'Failed to save API key';
+                          toastService.error(`❌ ${errorMsg}`);
+                          // Don't reload on error
                           setIsSavingKey(false);
                         }
                       }}
                       disabled={!apiKey.trim() || isSavingKey}
+                      type="button"
                       className="flex-1 px-4 py-2 bg-gradient-to-r from-primary to-secondary text-white rounded-lg hover:opacity-90 transition-opacity font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isSavingKey ? 'Saving...' : 'Save & Activate'}

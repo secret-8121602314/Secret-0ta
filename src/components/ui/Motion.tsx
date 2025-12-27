@@ -2,6 +2,7 @@
  * Motion Components - Reusable Framer Motion animation wrappers
  * These components provide consistent animations across the app.
  */
+/* eslint-disable react-refresh/only-export-components */
 import React from 'react';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 

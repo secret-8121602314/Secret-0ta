@@ -259,7 +259,6 @@ export async function getBehaviorContext(
 // NOTE: Gemini 2.5 Flash supports ~1M INPUT tokens - we can use much more!
 const MAX_SUBTAB_CHARS = 3000;     // Match storage limit - AI sees same content as user
 const MAX_SUBTABS_CONTEXT = 20000; // Budget for subtabs only (keeps them manageable)
-const MAX_TOTAL_INPUT_TOKENS = 900000; // Total input budget: ~900K tokens (~3.6M chars) - well within 1M limit
 // Game knowledge (60K tokens = ~240K chars) is injected OUTSIDE subtab budget
 
 // Why separate budgets?
@@ -837,7 +836,7 @@ async function buildGameLibraryContext(): Promise<string> {
     const gameTabs = Object.values(conversations)
       .filter(conv => !conv.isGameHub && conv.gameTitle)
       .map(conv => ({
-        title: conv.gameTitle!,
+        title: conv.gameTitle || 'Unknown',
         genre: conv.genre || 'Unknown',
         progress: conv.gameProgress || 0,
         isUnreleased: conv.isUnreleased || false

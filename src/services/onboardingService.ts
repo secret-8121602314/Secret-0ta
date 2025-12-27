@@ -383,7 +383,7 @@ class OnboardingService {
             data,
             timestamp: new Date().toISOString()
           })
-        } as any);
+        } as { user_id: string; auth_user_id: string; event_type: string; event_data: unknown });
 
     } catch (error) {
       console.error('Error tracking onboarding step:', error);
@@ -405,7 +405,7 @@ class OnboardingService {
             data,
             timestamp: new Date().toISOString()
           })
-        } as any);
+        } as { user_id: string; auth_user_id: string; event_type: string; event_data: unknown });
 
     } catch (error) {
       console.error('Error tracking onboarding dropoff:', error);

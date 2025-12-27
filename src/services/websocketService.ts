@@ -211,8 +211,8 @@ const connect = (
       const jitter = Math.random() * 300;
       const delay = base + jitter;
       setTimeout(() => {
-        if (!ws && handlers && shouldReconnect) {
-          connect(lastCode!, handlers.onOpen, handlers.onMessage, handlers.onError, handlers.onClose);
+        if (!ws && handlers && shouldReconnect && lastCode) {
+          connect(lastCode, handlers.onOpen, handlers.onMessage, handlers.onError, handlers.onClose);
         }
       }, delay);
     }

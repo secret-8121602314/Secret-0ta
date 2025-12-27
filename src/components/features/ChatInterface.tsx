@@ -427,6 +427,7 @@ interface ChatInterfaceProps {
   onModifySubtab?: (tabId: string, tabTitle: string, suggestion: string, currentContent: string) => void;
   onDeleteSubtab?: (tabId: string) => void;
   onRetrySubtab?: (tabId: string) => void;
+  onCreateCustomSubtab?: (name: string, type: string, instructions: string) => void;
   onOpenExplorer?: () => void;
   aiModeEnabled?: boolean;
   onAiModeToggle?: () => void;
@@ -468,6 +469,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onModifySubtab,
   onDeleteSubtab,
   onRetrySubtab,
+  onCreateCustomSubtab,
   onOpenExplorer,
   aiModeEnabled,
   onAiModeToggle,
@@ -1181,6 +1183,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               onModifyTab={onModifySubtab}
               onDeleteTab={onDeleteSubtab}
               onRetrySubtab={onRetrySubtab}
+              onCreateCustomSubtab={onCreateCustomSubtab}
               onExpandedChange={(expanded) => {
                 setIsSubtabsExpanded(expanded);
                 // Reset forceExpand when user manually closes the panel

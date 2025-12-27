@@ -39,7 +39,7 @@ export const ScreenshotFlash: React.FC<ScreenshotFlashProps> = ({ show, isMulti,
     }
   }, [show, stableOnHide]);
 
-  if (!show && !isVisible) return null;
+  if (!show && !isVisible) {return null;}
 
   return (
     <div

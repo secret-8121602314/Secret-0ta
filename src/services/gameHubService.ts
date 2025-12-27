@@ -65,7 +65,7 @@ class GameHubService {
   /**
    * Get trending games
    */
-  async getTrendingGames(): Promise<any[]> {
+  async getTrendingGames(): Promise<unknown[]> {
     // TODO: Implement trending games feature
     return [];
   }
@@ -73,7 +73,7 @@ class GameHubService {
   /**
    * Search games
    */
-  async searchGames(_query: string): Promise<any[]> {
+  async searchGames(_query: string): Promise<unknown[]> {
     // TODO: Implement game search
         return [];
   }

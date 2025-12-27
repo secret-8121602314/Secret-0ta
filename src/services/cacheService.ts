@@ -280,7 +280,7 @@ class CacheService {
   /**
    * Get user-specific cache entries
    */
-  async getUserCacheEntries(userId: string): Promise<any[]> {
+  async getUserCacheEntries(userId: string): Promise<unknown[]> {
     try {
       const { data, error } = await supabase.rpc('get_user_cache_entries', { p_user_id: userId });
       if (error) {

@@ -35,7 +35,8 @@ const FeaturesConnectedRoute: React.FC = () => {
         if (error) {
           console.error('[FeaturesConnectedRoute] Background DB update failed:', error);
         } else {
-                  }
+          // Success - no action needed
+        }
       } catch (error) {
         console.error('[FeaturesConnectedRoute] Background DB update error:', error);
       }

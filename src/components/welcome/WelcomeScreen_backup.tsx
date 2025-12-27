@@ -6,7 +6,6 @@ import {
   DevicePhoneMobileIcon,
   BookOpenIcon,
   BoltIcon,
-  CommandLineIcon,
   LinkIcon,
   CpuChipIcon,
   GlobeAltIcon,
@@ -19,22 +18,8 @@ import {
   AcademicCapIcon,
   ChevronRightIcon,
   RocketLaunchIcon,
-  ArrowPathIcon,
-  TrashIcon,
-  PencilSquareIcon,
-  PlayIcon,
-  PauseIcon,
-  UserCircleIcon,
-  StarIcon,
-  TagIcon,
-  CalendarIcon,
-  TrophyIcon,
   ComputerDesktopIcon,
-  ArrowDownTrayIcon,
-  KeyboardIcon,
   ChartBarIcon,
-  Cog6ToothIcon,
-  QuestionMarkCircleIcon
 } from '@heroicons/react/24/outline';
 
 interface WelcomeScreenProps {

@@ -1,41 +1,4 @@
 {
-  "redirects": [
-    {
-      "source": "/about",
-      "destination": "/?modal=about",
-      "permanent": true
-    },
-    {
-      "source": "/privacy",
-      "destination": "/?modal=privacy",
-      "permanent": true
-    },
-    {
-      "source": "/terms",
-      "destination": "/?modal=terms",
-      "permanent": true
-    },
-    {
-      "source": "/refund",
-      "destination": "/?modal=refund",
-      "permanent": true
-    },
-    {
-      "source": "/contact",
-      "destination": "/?modal=contact",
-      "permanent": true
-    },
-    {
-      "source": "/blog",
-      "destination": "/?modal=blog",
-      "permanent": true
-    },
-    {
-      "source": "/blog/:slug",
-      "destination": "/?modal=blog&post=:slug",
-      "permanent": true
-    }
-  ],
   "rewrites": [
     {
       "source": "/(.*)",

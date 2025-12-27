@@ -1,8 +1,17 @@
 node_modules
 .env
-.env.local.env.secrets
+.env.local
+.env.production
+.env.secrets
+.env.*.local
 
 # LemonSqueezy secrets - NEVER COMMIT
 *.secrets
 *secret*
+
+# Prevent accidental commits of sensitive files
+*.key
+*.pem
+*-key.json
+service-account*.json
 

@@ -7,7 +7,7 @@ let currentText = '';
 let wakeLock: WakeLockSentinel | null = null;
 let audioContext: AudioContext | null = null;
 let silentAudio: HTMLAudioElement | null = null;
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 let _isBackgroundPlayback = false;
 let keepAliveInterval: NodeJS.Timeout | null = null;
 

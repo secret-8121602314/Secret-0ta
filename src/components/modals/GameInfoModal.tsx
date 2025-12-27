@@ -31,7 +31,7 @@ type TabType = 'overview' | 'media' | 'similar';
 const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData: initialGameData, gameName: _gameName, userTier }) => {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [currentGameData, setCurrentGameData] = useState<IGDBGameData | null>(initialGameData);
-  const [gameHistory, setGameHistory] = useState<IGDBGameData[]>([]);
+  const [_gameHistory, _setGameHistory] = useState<IGDBGameData[]>([]);
   const [isLoadingSimilar, setIsLoadingSimilar] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   // Force re-render when library changes
@@ -149,7 +149,7 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
   // Update current game data when initial data changes
   useEffect(() => {
     setCurrentGameData(initialGameData);
-    setGameHistory([]);
+    _setGameHistory([]);
     setActiveTab('overview');
   }, [initialGameData]);
 
@@ -157,7 +157,7 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
   const handleClose = useCallback(() => {
     // Reset to initial game data when closing
     setCurrentGameData(initialGameData);
-    setGameHistory([]);
+    _setGameHistory([]);
     setActiveTab('overview');
     setSelectedImageIndex(null);
     onClose();
@@ -175,7 +175,7 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
       if (newGameData) {
         // Save current game to history for potential back navigation
         if (currentGameData) {
-          setGameHistory(prev => [...prev, currentGameData]);
+          _setGameHistory(prev => [...prev, currentGameData]);
         }
         setCurrentGameData(newGameData);
         setActiveTab('overview');
@@ -196,15 +196,14 @@ const GameInfoModal: React.FC<GameInfoModalProps> = ({ isOpen, onClose, gameData
 
   // Handle back navigation in game history
   // Future use: Will be used when implementing back button in UI
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _handleBack = useCallback(() => {
-    if (gameHistory.length > 0) {
-      const previousGame = gameHistory[gameHistory.length - 1];
-      setGameHistory(prev => prev.slice(0, -1));
-      setCurrentGameData(previousGame);
-      setActiveTab('overview');
-    }
-  }, [gameHistory]);
+  // const _handleBack = useCallback(() => {
+  //   if (gameHistory.length > 0) {
+  //     const previousGame = gameHistory[gameHistory.length - 1];
+  //     setGameHistory(prev => prev.slice(0, -1));
+  //     setCurrentGameData(previousGame);
+  //     setActiveTab('overview');
+  //   }
+  // }, [gameHistory]);
 
   // Get all media (screenshots + artworks)
   const allMedia = [

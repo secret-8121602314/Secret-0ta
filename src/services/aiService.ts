@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, GenerativeModel, SchemaType, HarmCategory, HarmBlockThreshold, SafetySetting, Part, InlineDataPart, TextPart } from "@google/generative-ai";
+import { GenerativeModel, SchemaType, Part, InlineDataPart, TextPart } from "@google/generative-ai";
 import { parseOtakonTags } from './otakonTags';
 import { AIResponse, Conversation, User, insightTabsConfig, PlayerProfile } from '../types';
 import type { ViteImportMeta, UserProfileData } from '../types/enhanced';
@@ -16,34 +16,14 @@ import { ConversationService } from './conversationService';
 import { behaviorService } from './ai/behaviorService';
 import { correctionService } from './ai/correctionService';
 import { groundingControlService, type GroundingQueryType, type GroundingUsageType } from './groundingControlService';
-import { gameKnowledgeCacheService } from './gameKnowledgeCacheService';
-import { libraryStorage } from './gamingExplorerStorage';
 
 // ✅ SECURITY: Always use Edge Function proxy (API key never exposed to client)
 const USE_EDGE_FUNCTION = true;
 
 // ? FIX 1: Gemini API Safety Settings
-const SAFETY_SETTINGS: SafetySetting[] = [
-  {
-    category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-    threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-  },
-  {
-    category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-    threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-  },
-  {
-    category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-    threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-  },
-  {
-    category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-    threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-  },
-];
+// REMOVED: Unused safety settings constant
 
 class AIService {
-  private genAI: GoogleGenerativeAI;
   private flashModel: GenerativeModel;
   private proModel: GenerativeModel;
   private flashModelWithGrounding: GenerativeModel;
@@ -70,7 +50,6 @@ class AIService {
     // ✅ SECURITY: Edge Function mode only (no fallback to direct API)
     // All AI calls are proxied through authenticated Supabase Edge Functions
     // API keys are stored server-side and never exposed to client
-    this.genAI = {} as GoogleGenerativeAI;
     this.flashModel = {} as GenerativeModel;
     this.proModel = {} as GenerativeModel;
     this.flashModelWithGrounding = {} as GenerativeModel;
@@ -78,7 +57,6 @@ class AIService {
 
   // ✅ Track Edge Function calls for debugging rate limit issues
   private static edgeFunctionCallCount = 0;
-  private static lastCallTimestamp = Date.now();
 
   /**
    * ? SECURITY: Call Edge Function proxy instead of direct API
@@ -97,22 +75,54 @@ class AIService {
   }): Promise<{ response: string; success: boolean; usage?: Record<string, unknown>; groundingMetadata?: Record<string, unknown> }> {
     // ✅ Log every API call for debugging
     AIService.edgeFunctionCallCount++;
-    const now = Date.now();
-    const timeSinceLastCall = now - AIService.lastCallTimestamp;
-    AIService.lastCallTimestamp = now;
     
     // Determine which edge function to call (default to chat for user-facing messages)
     const callType = request.callType || 'chat';
     const edgeFunctionUrl = this.edgeFunctionUrls[callType];
     
-    // Get user's JWT token
-    const { data: { session } } = await supabase.auth.getSession();
+    // Get user's JWT token with automatic refresh
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError) {
+      console.error('❌ [AIService] Session error:', sessionError);
+      throw new Error('Failed to get authentication session');
+    }
     
     if (!session) {
-      throw new Error('Not authenticated');
+      console.error('❌ [AIService] No active session found');
+      throw new Error('Not authenticated - please log in again');
     }
 
-    // Call Edge Function (server-side proxy)
+    // Check if token is expired or about to expire (within 5 minutes)
+    const tokenExpiresAt = session.expires_at ? session.expires_at * 1000 : 0;
+    const now = Date.now();
+    const fiveMinutes = 5 * 60 * 1000;
+    
+    if (tokenExpiresAt && (tokenExpiresAt - now) < fiveMinutes) {
+      console.log('🔄 [AIService] Token expired or expiring soon, refreshing...');
+      const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (refreshError || !refreshedSession) {
+        console.error('❌ [AIService] Failed to refresh session:', refreshError);
+        throw new Error('Session expired - please log in again');
+      }
+      
+      console.log('✅ [AIService] Session refreshed successfully');
+      // Use the refreshed session token
+      const response = await fetch(edgeFunctionUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${refreshedSession.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(request),
+        signal: request.abortSignal
+      });
+      
+      return await this.handleEdgeFunctionResponse(response);
+    }
+
+    // Call Edge Function (server-side proxy) with current token
     const response = await fetch(edgeFunctionUrl, {
       method: 'POST',
       headers: {
@@ -122,12 +132,74 @@ class AIService {
       body: JSON.stringify(request),
       signal: request.abortSignal
     });
+    
+    // If we get a 401, try refreshing the session once and retry
+    if (response.status === 401) {
+      console.log('🔄 [AIService] Got 401, attempting session refresh and retry...');
+      const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (refreshError || !refreshedSession) {
+        console.error('❌ [AIService] Session refresh failed after 401:', refreshError);
+        
+        // Trigger session expired event for proper UI handling
+        window.dispatchEvent(new CustomEvent('otakon:session-expired', {
+          detail: { 
+            reason: refreshError?.message || 'Refresh token expired',
+            timestamp: Date.now()
+          }
+        }));
+        
+        // Sign out to clear invalid session
+        await supabase.auth.signOut();
+        
+        throw new Error('Your session has expired. Please log in again to continue.');
+      }
+      
+      console.log('✅ [AIService] Session refreshed, retrying request...');
+      const retryResponse = await fetch(edgeFunctionUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${refreshedSession.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(request),
+        signal: request.abortSignal
+      });
+      
+      return await this.handleEdgeFunctionResponse(retryResponse);
+    }
+    
+    return await this.handleEdgeFunctionResponse(response);
+  }
 
+  /**
+   * Handle Edge Function response and errors
+   */
+  private async handleEdgeFunctionResponse(response: Response): Promise<{ response: string; success: boolean; usage?: Record<string, unknown>; groundingMetadata?: Record<string, unknown> }> {
     if (!response.ok) {
-      const error = await response.json();
+      // Try to parse error response, handle case where it might fail (e.g., CORS blocking)
+      let error: { error?: string; details?: unknown } = {};
+      try {
+        error = await response.json();
+      } catch {
+        // Response might not be JSON (e.g., platform-level 429 with CORS issues)
+        error = { error: `HTTP ${response.status}: ${response.statusText}` };
+      }
+      
       console.error(`❌ [AIService] Edge Function Call #${AIService.edgeFunctionCallCount} FAILED:`, error);
       
-      // ✅ CRITICAL: Detect rate limit/quota errors and throw specific error
+      // Log details if present (often contains the actual error from Gemini)
+      if (error.details) {
+        console.error('❌ [AIService] Error details from upstream API:', error.details);
+      }
+      
+      // Handle 401 errors specifically
+      if (response.status === 401) {
+        console.error('❌ [AIService] 401 Unauthorized - session may be invalid');
+        throw new Error('Unauthorized - your session has expired. Please refresh the page to log in again.');
+      }
+      
+      // ✅ CRITICAL: Detect rate limit/quota errors
       const errorMessage = error.error || 'AI service error';
       const errorDetails = JSON.stringify(error.details || '');
       
@@ -141,8 +213,11 @@ class AIService {
                          errorDetails.includes('quota');
       
       if (isRateLimit) {
-        console.error('🚫 [AIService] RATE LIMIT DETECTED - This error should NOT be retried!');
-        throw new Error(`RATE_LIMIT_ERROR: ${errorMessage}`);
+        // Extract actual error from details if available
+        const detailsObj = error.details as Record<string, unknown>;
+        const actualError = (detailsObj?.error as { message?: string })?.message || (detailsObj?.message as string) || errorMessage;
+        console.error('🚫 [AIService] RATE LIMIT DETECTED:', actualError);
+        throw new Error(`RATE_LIMIT_ERROR: ${actualError}`);
       }
       
       throw new Error(errorMessage);
@@ -1020,7 +1095,19 @@ Example format:
     
     const prompt = basePrompt + immersionContext + structuredInstructions;
     
-        // Check if request was aborted
+    // 🚀 PERF OPTIMIZATION: Start grounding check early (non-blocking)
+    // This runs in parallel while we prepare other things
+    const groundingCheckPromise = user?.authUserId 
+      ? groundingControlService.checkGroundingEligibility(
+          user.authUserId,
+          user.tier,
+          userMessage,
+          conversation.gameTitle,
+          igdbReleaseDate
+        )
+      : Promise.resolve(null);
+    
+    // Check if request was aborted
     if (abortSignal?.aborted) {
       throw new DOMException('Request was aborted', 'AbortError');
     }
@@ -1033,14 +1120,9 @@ Example format:
       let groundingQueryType: GroundingQueryType = 'general_knowledge';
       let groundingUsageType: GroundingUsageType = 'ai_message';
       
-      if (user?.authUserId) {
-        const groundingCheck = await groundingControlService.checkGroundingEligibility(
-          user.authUserId,
-          user.tier,
-          userMessage,
-          conversation.gameTitle,
-          igdbReleaseDate // Pass IGDB release date for accurate post-cutoff detection
-        );
+      // 🚀 PERF: Await the grounding check that was started earlier
+      const groundingCheck = await groundingCheckPromise;
+      if (groundingCheck) {
         useGrounding = groundingCheck.useGrounding;
         groundingQueryType = groundingCheck.queryType;
         groundingUsageType = groundingCheck.usageType;
@@ -1049,19 +1131,7 @@ Example format:
         // Note: Game knowledge fetches don't call this function, they use Edge Function directly
         if (useGrounding && !manualGroundingEnabled && groundingUsageType === 'ai_message') {
           useGrounding = false;
-          console.log('🔒 [AIService] Grounding disabled by user toggle for AI message');
         }
-        
-        console.log('🔍 [AIService] Grounding eligibility:', {
-          tier: user.tier,
-          queryType: groundingQueryType,
-          useGrounding,
-          usageType: groundingUsageType,
-          manualToggle: manualGroundingEnabled,
-          reason: groundingCheck.reason,
-          remaining: groundingCheck.remainingQuota,
-          igdbReleaseDate: igdbReleaseDate ? new Date(igdbReleaseDate * 1000).toISOString() : 'N/A'
-        });
       }
       
       console.log(`📡 [GEMINI CALL #5] 🏗️ Main Structured Response | Game: ${conversation.gameTitle || 'Game Hub'} | Message: ${userMessage.substring(0, 50)}... | HasImage: ${hasImages} | Grounding: ${useGrounding}`);
@@ -1849,18 +1919,21 @@ NOW generate COMPREHENSIVE valid JSON for ALL these tab IDs (MUST include every 
         }
       }
 
-      // 🚨 CRITICAL: Ensure ALL subtabs have content - THROW ERROR if batch generation failed
+      // 🚨 CRITICAL: Ensure ALL subtabs have content - fill missing ones with fallback instead of throwing error
       const configForValidation = insightTabsConfig[genre] || insightTabsConfig['Default'];
       const missingAfterParse = configForValidation.filter(tab => !insights[tab.id] || insights[tab.id].trim().length < 20);
       if (missingAfterParse.length > 0) {
-        const errorMsg = `🚨 [generateInitialInsights] BATCH GENERATION FAILED! Missing ${missingAfterParse.length}/${configForValidation.length} subtabs: ${missingAfterParse.map(t => t.id).join(', ')}`;
+        const errorMsg = `⚠️ [generateInitialInsights] PARTIAL GENERATION: Missing ${missingAfterParse.length}/${configForValidation.length} subtabs: ${missingAfterParse.map(t => t.id).join(', ')}`;
         console.error(errorMsg);
         console.error('📋 Raw AI response (first 1000 chars):', responseText.substring(0, 1000));
         console.error('📋 Expected subtabs:', configForValidation.map(t => t.id));
         console.error('📋 Received subtabs:', Object.keys(insights));
         
-        // DON'T silently fallback - throw error so we know batch generation is broken
-        throw new Error(errorMsg);
+        // Fill missing subtabs with fallback content instead of throwing error
+        missingAfterParse.forEach(tab => {
+          insights[tab.id] = `# ${tab.title}\n\nThis section will be populated as you continue chatting about **${gameTitle}**.\n\n*${tab.instruction}*`;
+          console.log(`✅ [generateInitialInsights] Added fallback for "${tab.title}"`);
+        });
       }
 
       // Cache for 24 hours

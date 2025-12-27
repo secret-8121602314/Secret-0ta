@@ -64,8 +64,8 @@ const GamingExplorerModal: React.FC<GamingExplorerModalProps> = ({
       const localStorageHasYear = !userProfileStorage.needsOnboarding();
       
       // If Supabase has it but localStorage doesn't, sync it
-      if (supabaseHasYear && !localStorageHasYear) {
-        userProfileStorage.setGamingStartYear(user.profileData.gamingStartYear!);
+      if (supabaseHasYear && !localStorageHasYear && user.profileData.gamingStartYear) {
+        userProfileStorage.setGamingStartYear(user.profileData.gamingStartYear);
       }
       
       // Show onboarding only if both don't have it

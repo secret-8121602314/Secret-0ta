@@ -49,16 +49,16 @@ let db: IDBPDatabase<ImageCacheDB> | null = null;
 
 // Fallback to localStorage for tiny images
 const STORAGE_PREFIX = 'otagon_img_cache_';
-const MAX_LOCALSTORAGE_KB = 200; // Only cache very small images in localStorage
+const _MAX_LOCALSTORAGE_KB = 200; // Only cache very small images in localStorage
 
-// Track localStorage usage
-let estimatedCacheSize = 0;
+// Track localStorage usage (now using a mutable object to avoid reassignment)
+let _estimatedCacheSize = 0;
 
 /**
  * Initialize IndexedDB
  */
 const initDB = async (): Promise<IDBPDatabase<ImageCacheDB>> => {
-  if (db) return db;
+  if (db) {return db;}
   
   try {
     db = await openDB<ImageCacheDB>(DB_NAME, DB_VERSION, {
@@ -80,19 +80,14 @@ const initDB = async (): Promise<IDBPDatabase<ImageCacheDB>> => {
  * Check if IndexedDB cache is valid
  */
 const isCacheValid = (): boolean => {
-  try {
-    // IndexedDB is always fresh, no version check needed
-    return true;
-  } catch (error) {
-    console.error('[ImagePreloader] Cache validation error:', error);
-    return false;
-  }
+  // IndexedDB is always fresh, no version check needed
+  return true;
 };
 
 /**
  * Estimate IndexedDB + localStorage usage for image cache
  */
-const estimateCacheSize = async (): Promise<number> => {
+const _estimateCacheSize = async (): Promise<number> => {
   let totalSize = 0;
   try {
     // Check IndexedDB quota
@@ -144,7 +139,7 @@ const saveImageToIndexedDB = async (src: string, img: HTMLImageElement): Promise
     canvas.height = img.naturalHeight;
     const ctx = canvas.getContext('2d');
     
-    if (!ctx) return;
+    if (!ctx) {return;}
     
     ctx.drawImage(img, 0, 0);
     const base64 = canvas.toDataURL('image/png');
@@ -169,7 +164,7 @@ const saveImageToIndexedDB = async (src: string, img: HTMLImageElement): Promise
         canvas.width = img.naturalWidth;
         canvas.height = img.naturalHeight;
         const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+        if (!ctx) {return;}
         
         ctx.drawImage(img, 0, 0);
         const base64 = canvas.toDataURL('image/png');
@@ -191,7 +186,7 @@ const loadImageFromIndexedDB = async (src: string): Promise<HTMLImageElement | n
     const database = await initDB();
     const cached = await database.get('images', src);
     
-    if (!cached || !cached.data) return null;
+    if (!cached || !cached.data) {return null;}
     
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -214,7 +209,7 @@ const loadImageFromIndexedDB = async (src: string): Promise<HTMLImageElement | n
     try {
       const storageKey = `${STORAGE_PREFIX}${encodeURIComponent(src)}`;
       const base64 = localStorage.getItem(storageKey);
-      if (!base64) return null;
+      if (!base64) {return null;}
       
       return new Promise((resolve, reject) => {
         const img = new Image();
@@ -254,7 +249,7 @@ export const preloadImage = async (src: string): Promise<HTMLImageElement> => {
       if (cachedImg) {
         return cachedImg;
       }
-    } catch (error) {
+    } catch (_error) {
       console.warn(`[ImagePreloader] Failed to load from cache, fetching fresh: ${src}`);
     }
   }
@@ -368,7 +363,7 @@ export const getCachedImage = (src: string): HTMLImageElement | undefined => {
 export const clearImageCache = async (): Promise<void> => {
   await clearOldCache();
   imageCache.clear();
-  estimatedCacheSize = 0;
+  _estimatedCacheSize = 0;
   console.log('[ImagePreloader] All caches cleared');
 };
 

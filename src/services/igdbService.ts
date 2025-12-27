@@ -306,7 +306,7 @@ export async function fetchIGDBGameById(gameId: number): Promise<IGDBGameData | 
  * Uses IGDB's date-based filtering and sorting
  */
 export async function queryIGDBGamesByCriteria(
-  queryType: 'recent_releases' | 'latest_games' | 'upcoming' | 'top_rated' | 'popular',
+  queryType: 'recent_releases' | 'latest_games' | 'upcoming' | 'top_rated' | 'popular' | 'genre_action' | 'genre_rpg' | 'genre_adventure' | 'genre_shooter' | 'genre_indie' | 'genre_strategy',
   limit: number = 10
 ): Promise<IGDBGameData[]> {
   try {
@@ -575,7 +575,7 @@ export async function fetchCoverUrlsFromCache(gameNames: string[]): Promise<Map<
   
   // If all found in local cache, return immediately
   if (missingFromLocalCache.length === 0) {
-    console.log('[IGDBService] All cover URLs from localStorage cache:', coverUrls.size);
+    // Removed excessive logging - was logging 8+ times per request
     return coverUrls;
   }
   

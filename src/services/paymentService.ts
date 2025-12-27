@@ -25,7 +25,7 @@ import {
 import type { User } from '../types';
 
 class PaymentService implements IPaymentService {
-  private isInitialized = false;
+  private _isInitialized = false;
   private config: PaymentConfig | null = null;
 
   /**
@@ -40,7 +40,7 @@ class PaymentService implements IPaymentService {
    */
   async initialize(config: PaymentConfig): Promise<void> {
     this.config = config;
-    this.isInitialized = true;
+    this._isInitialized = true;
   }
 
   /**
@@ -74,13 +74,13 @@ class PaymentService implements IPaymentService {
       startDate: new Date().toISOString(),
       endDate: null,
       cancelAtPeriodEnd: false,
-    } as Subscription;
+    } as unknown as Subscription;
   }
 
   /**
    * Update an existing subscription
    */
-  async updateSubscription(subscriptionId: string, tier: 'pro' | 'vanguard_pro'): Promise<Subscription> {
+  async updateSubscription(_subscriptionId: string, _tier: 'pro' | 'vanguard_pro'): Promise<Subscription> {
     // LemonSqueezy handles subscription updates via customer portal
     console.warn('Subscription updates should be done via customer portal:', getCustomerPortalUrl());
     throw new Error('Please use the customer portal to update your subscription');
@@ -89,7 +89,7 @@ class PaymentService implements IPaymentService {
   /**
    * Cancel a subscription
    */
-  async cancelSubscription(subscriptionId: string, immediate = false): Promise<void> {
+  async cancelSubscription(_subscriptionId: string, _immediate = false): Promise<void> {
     // LemonSqueezy handles cancellations via customer portal
     console.warn('Subscription cancellations should be done via customer portal:', getCustomerPortalUrl());
     throw new Error('Please use the customer portal to cancel your subscription');
@@ -98,7 +98,7 @@ class PaymentService implements IPaymentService {
   /**
    * Reactivate a canceled subscription
    */
-  async reactivateSubscription(subscriptionId: string): Promise<Subscription> {
+  async reactivateSubscription(_subscriptionId: string): Promise<Subscription> {
     console.warn('Subscription reactivation should be done via customer portal:', getCustomerPortalUrl());
     throw new Error('Please use the customer portal to reactivate your subscription');
   }
@@ -119,7 +119,7 @@ class PaymentService implements IPaymentService {
       startDate: sub.created_at,
       endDate: sub.ends_at,
       cancelAtPeriodEnd: sub.status === 'cancelled' && sub.ends_at !== null,
-    })) as Subscription[];
+    })) as unknown as Subscription[];
   }
 
   /**
@@ -141,7 +141,7 @@ class PaymentService implements IPaymentService {
       startDate: subscription.created_at,
       endDate: subscription.ends_at,
       cancelAtPeriodEnd: subscription.status === 'cancelled' && subscription.ends_at !== null,
-    } as Subscription;
+    } as unknown as Subscription;
   }
 
   /**

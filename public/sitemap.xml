@@ -3,192 +3,203 @@
   <!-- Homepage -->
   <url>
     <loc>https://otagon.app/</loc>
-    <lastmod>2025-12-11</lastmod>
+    <lastmod>2025-12-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   
-  <!-- Landing Page Modals -->
+  <!-- Legal/Info Pages -->
   <url>
     <loc>https://otagon.app/about</loc>
-    <lastmod>2025-12-11</lastmod>
+    <lastmod>2025-12-27</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   
   <url>
     <loc>https://otagon.app/privacy</loc>
-    <lastmod>2025-12-11</lastmod>
+    <lastmod>2025-12-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://otagon.app/terms</loc>
-    <lastmod>2025-12-11</lastmod>
+    <lastmod>2025-12-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://otagon.app/refund</loc>
-    <lastmod>2025-12-11</lastmod>
+    <lastmod>2025-12-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://otagon.app/contact</loc>
-    <lastmod>2025-12-11</lastmod>
+    <lastmod>2025-12-27</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.6</priority>
   </url>
   
   <!-- Blog Index -->
   <url>
     <loc>https://otagon.app/blog</loc>
-    <lastmod>2025-12-11</lastmod>
+    <lastmod>2025-12-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   
   <!-- Blog Posts -->
   <url>
-    <loc>https://otagon.app/blog/how-to-use-otagon-guide</loc>
-    <lastmod>2025-10-27</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  
-  <url>
     <loc>https://otagon.app/blog/elden-ring-malenia-guide</loc>
-    <lastmod>2025-10-28</lastmod>
+    <lastmod>2025-12-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-  
-  <url>
-    <loc>https://otagon.app/blog/stardew-valley-perfection-guide</loc>
-    <lastmod>2025-10-30</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  
   <url>
     <loc>https://otagon.app/blog/baldurs-gate-3-honor-mode-guide</loc>
-    <lastmod>2025-11-03</lastmod>
+    <lastmod>2025-12-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-  
+  <url>
+    <loc>https://otagon.app/blog/stardew-valley-perfection-guide</loc>
+    <lastmod>2025-12-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
   <url>
     <loc>https://otagon.app/blog/sekiro-deflection-mastery-guide</loc>
-    <lastmod>2025-11-02</lastmod>
+    <lastmod>2025-12-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-  
   <url>
     <loc>https://otagon.app/blog/hollow-knight-navigation-guide</loc>
-    <lastmod>2025-11-05</lastmod>
+    <lastmod>2025-12-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-  
   <url>
     <loc>https://otagon.app/blog/witcher-3-alchemy-oils-guide</loc>
-    <lastmod>2025-11-06</lastmod>
+    <lastmod>2025-12-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-  
   <url>
     <loc>https://otagon.app/blog/civilization-6-adjacency-guide</loc>
-    <lastmod>2025-11-04</lastmod>
+    <lastmod>2025-12-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-  
   <url>
     <loc>https://otagon.app/blog/cyberpunk-2077-hacking-guide</loc>
-    <lastmod>2025-11-09</lastmod>
+    <lastmod>2025-12-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-  
   <url>
     <loc>https://otagon.app/blog/xcom-2-tactics-guide</loc>
-    <lastmod>2025-11-07</lastmod>
+    <lastmod>2025-12-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-  
   <url>
     <loc>https://otagon.app/blog/terraria-boss-progression-guide</loc>
-    <lastmod>2025-11-10</lastmod>
+    <lastmod>2025-12-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-  
   <url>
     <loc>https://otagon.app/blog/minecraft-redstone-guide</loc>
-    <lastmod>2025-11-11</lastmod>
+    <lastmod>2025-12-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-  
   <url>
     <loc>https://otagon.app/blog/factorio-ratios-guide</loc>
-    <lastmod>2025-11-08</lastmod>
+    <lastmod>2025-12-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-  
+  <url>
+    <loc>https://otagon.app/blog/how-to-use-otagon-guide</loc>
+    <lastmod>2025-12-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
   <url>
     <loc>https://otagon.app/blog/dark-souls-3-nameless-king-guide</loc>
-    <lastmod>2025-11-12</lastmod>
+    <lastmod>2025-12-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-  
   <url>
     <loc>https://otagon.app/blog/monster-hunter-fatalis-guide</loc>
-    <lastmod>2025-11-13</lastmod>
+    <lastmod>2025-12-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-  
   <url>
     <loc>https://otagon.app/blog/hades-high-heat-guide</loc>
-    <lastmod>2025-11-14</lastmod>
+    <lastmod>2025-12-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-  
   <url>
     <loc>https://otagon.app/blog/subnautica-survival-guide</loc>
-    <lastmod>2025-11-15</lastmod>
+    <lastmod>2025-12-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-  
   <url>
     <loc>https://otagon.app/blog/disco-elysium-skills-guide</loc>
-    <lastmod>2025-11-16</lastmod>
+    <lastmod>2025-12-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-  
   <url>
     <loc>https://otagon.app/blog/dead-cells-boss-cell-guide</loc>
-    <lastmod>2025-11-17</lastmod>
+    <lastmod>2025-12-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-  
   <url>
     <loc>https://otagon.app/blog/outer-wilds-exploration-guide</loc>
-    <lastmod>2025-11-18</lastmod>
+    <lastmod>2025-12-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://otagon.app/blog/cities-skylines-2-traffic-guide</loc>
+    <lastmod>2025-12-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://otagon.app/blog/fallout-4-settlement-building-guide</loc>
+    <lastmod>2025-12-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://otagon.app/blog/hitman-3-silent-assassin-guide</loc>
+    <lastmod>2025-12-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://otagon.app/blog/slay-the-spire-deck-building-guide</loc>
+    <lastmod>2025-12-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://otagon.app/blog/satisfactory-factory-optimization-guide</loc>
+    <lastmod>2025-12-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>

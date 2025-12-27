@@ -1,0 +1,530 @@
+ChatInterface.tsx:857 📸 [ChatInterface] Image preview created: {hasResult: true, resultLength: 79463, resultStart: 'data:image/webp;base64,UklGRrToAABXRUJQVlA4IKjoAAB...'}
+ChatInterface.tsx:800 📤 [ChatInterface] Submit attempt: {message: '', hasMessage: false, hasImageFile: true, hasImagePreview: true, queuedImagesCount: 0, …}
+ChatInterface.tsx:836 📤 [ChatInterface] Submitting: {message: '', hasImage: true, imageUrl: 'data:image/webp;base64,UklGRrToAABXRUJQVlA4IKjoAAB...'}
+MainApp.tsx:3057 📸 [MainApp] Sending message with image: {message: '', hasImage: true, imageUrl: 'data:image/webp;base64,UklGRrToAABXRUJQVlA4IKjoAAB...'}
+MainApp.tsx:3419 🚀 [MainApp] About to call getChatResponseWithStructure with: {conversationId: 'game-hub', messageLength: 0, hasImage: true, sessionActive: false}
+cacheService.ts:79 [CacheService] Cache MISS (memory-only mode): ai_structured_game-hub_353e6_false_true
+MainApp.tsx:132 🔄 [MainApp] User changed: 9281a3bd-b0fc-4ea7-ad31-23341ea1c191 tier: pro
+MainApp.tsx:147 🎯 [MainApp] Suggestions (4): (3) ["What's the latest gaming news?", 'Which games are releasing soon?', 'What are the latest game reviews?']
+cacheService.ts:101 [CacheService] Cache MISS (memory), trying Supabase: user:c8844271-ab4f-4943-9844-cc644249b691
+cacheService.ts:113 [CacheService] Cache MISS (Supabase): user:c8844271-ab4f-4943-9844-cc644249b691
+authService.ts:281 🔍 [AuthService] No cached user found, loading from database...
+groundingControlService.ts:403 [GroundingControl] getGroundingUsage called for: c8844271-ab4f-4943-9844-cc644249b691
+groundingControlService.ts:458 [GroundingControl] Raw data from DB: null
+groundingControlService.ts:462 [GroundingControl] No usage record found for this month - user has full quota
+groundingControlService.ts:692 🔍 [GroundingControl] Check result: {tier: 'pro', queryType: 'general_knowledge', useGrounding: false, usageType: 'ai_message', reason: 'General gaming knowledge - AI can answer from training', …}
+aiService.ts:1037 📡 [GEMINI CALL #5] 🏗️ Main Structured Response | Game: Game Hub | Message: ... | HasImage: true | Grounding: false
+MainApp.tsx:132 🔄 [MainApp] User changed: 9281a3bd-b0fc-4ea7-ad31-23341ea1c191 tier: pro
+aiService.ts:1083 🤖 [AIService] Raw AI response (last 500 chars): Glintstone Key located exactly?", "How do I beat the Red Wolf of Radagon inside?", "Are there any illusory walls in the Academy?"]]
+
+**Internal Data Structure**
+```json
+{
+  "followUpPrompts": [
+    "Where is the Glintstone Key located exactly?",
+    "How do I beat the Red Wolf of Radagon inside?",
+    "Are there any illusory walls in the Academy?"
+  ],
+  "stateUpdateTags": [
+    "PROGRESS: 35",
+    "OBJECTIVE: Infiltrating the Academy of Raya Lucaria"
+  ],
+  "progressiveInsightUpdates": []
+}
+```
+aiService.ts:1084 🤖 [AIService] Checking for PROGRESS in raw response: ✅ FOUND (OTAKON_PROGRESS format)
+aiService.ts:1092 🏷️ [AIService] Extracted otakonTags: {tagCount: 8, tagKeys: Array(8), progressValue: 35, objectiveValue: '"Infiltrating the Academy of Raya Lucaria"', suggestionsValue: Array(3)}
+aiService.ts:1101 🎯 [AIService] Suggestions from parseOtakonTags: (3) ['Where is the Glintstone Key located exactly?', 'How do I beat the Red Wolf of Radagon inside?', 'Are there any illusory walls in the Academy?'] Length: 3
+aiService.ts:1108 📊 [AIService] Added PROGRESS to stateUpdateTags: 35
+aiService.ts:1113 🎯 [AIService] Added OBJECTIVE to stateUpdateTags: "Infiltrating the Academy of Raya Lucaria"
+aiService.ts:1131 📤 [AIService] Final aiResponse: {hasContent: true, contentLength: 1467, stateUpdateTags: Array(2), otakonTagKeys: Array(8)}
+MainApp.tsx:3438 ✅ [MainApp] getChatResponseWithStructure completed, response: {hasContent: true, contentLength: 1467, hasFollowUpPrompts: true, hasSuggestions: true, followUpPromptsRaw: '["Where is the Glintstone Key located exactly?","H…","Are there any illusory walls in the Academy?"]', …}
+MainApp.tsx:3448 🔍 [MainApp] FULL followUpPrompts array: (3) ['Where is the Glintstone Key located exactly?', 'How do I beat the Red Wolf of Radagon inside?', 'Are there any illusory walls in the Academy?']
+MainApp.tsx:3449 🔍 [MainApp] FULL suggestions array: (3) ['Where is the Glintstone Key located exactly?', 'How do I beat the Red Wolf of Radagon inside?', 'Are there any illusory walls in the Academy?']
+MainApp.tsx:3458 🔍 [MainApp] RAW suggestionsToUse: (3) ['Where is the Glintstone Key located exactly?', 'How do I beat the Red Wolf of Radagon inside?', 'Are there any illusory walls in the Academy?']
+MainApp.tsx:3459 🔍 [MainApp] suggestionsToUse type: object
+MainApp.tsx:3460 🔍 [MainApp] suggestionsToUse is Array: true
+MainApp.tsx:3461 🔍 [MainApp] suggestionsToUse length: 3
+MainApp.tsx:3462 🔍 [MainApp] suggestionsToUse content: ["Where is the Glintstone Key located exactly?","How do I beat the Red Wolf of Radagon inside?","Are there any illusory walls in the Academy?"]
+MainApp.tsx:3463 🔍 [MainApp] response.followUpPrompts type: object isArray: true length: 3
+MainApp.tsx:3464 🔍 [MainApp] response.suggestions type: object isArray: true length: 3
+suggestedPromptsService.ts:127 🔧 [SuggestedPromptsService] processAISuggestions INPUT: (3) ['Where is the Glintstone Key located exactly?', 'How do I beat the Red Wolf of Radagon inside?', 'Are there any illusory walls in the Academy?']
+suggestedPromptsService.ts:128 🔧 [SuggestedPromptsService] INPUT type: object
+suggestedPromptsService.ts:129 🔧 [SuggestedPromptsService] INPUT is Array: true
+suggestedPromptsService.ts:130 🔧 [SuggestedPromptsService] INPUT JSON: ["Where is the Glintstone Key located exactly?","How do I beat the Red Wolf of Radagon inside?","Are there any illusory walls in the Academy?"]
+suggestedPromptsService.ts:146 🔧 [SuggestedPromptsService] Input is array, checking elements...
+suggestedPromptsService.ts:155 🔧 [SuggestedPromptsService] Array after filtering: (3) ['Where is the Glintstone Key located exactly?', 'How do I beat the Red Wolf of Radagon inside?', 'Are there any illusory walls in the Academy?']
+suggestedPromptsService.ts:207 🔧 [SuggestedPromptsService] suggestionsArray before filter: (3) ['Where is the Glintstone Key located exactly?', 'How do I beat the Red Wolf of Radagon inside?', 'Are there any illusory walls in the Academy?']
+suggestedPromptsService.ts:208 🔧 [SuggestedPromptsService] RESULT after filter/map/slice: (3) ['Where is the Glintstone Key located exactly?', 'How do I beat the Red Wolf of Radagon inside?', 'Are there any illusory walls in the Academy?']
+suggestedPromptsService.ts:209 🔧 [SuggestedPromptsService] RESULT length: 3
+MainApp.tsx:3475 🔍 [MainApp] AFTER processAISuggestions: (3) ['Where is the Glintstone Key located exactly?', 'How do I beat the Red Wolf of Radagon inside?', 'Are there any illusory walls in the Academy?']
+MainApp.tsx:3476 🔍 [MainApp] processedSuggestions length: 3
+MainApp.tsx:3477 🔍 [MainApp] processedSuggestions content: ["Where is the Glintstone Key located exactly?","How do I beat the Red Wolf of Radagon inside?","Are there any illusory walls in the Academy?"]
+MainApp.tsx:3639 🚨🚨🚨 [MainApp] AI RESPONSE PROCESSING STARTED 🚨🚨🚨
+handleSendMessage @ MainApp.tsx:3639
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:846
+callCallback2 @ chunk-TH7NCS4R.js?v=21523175:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=21523175:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=21523175:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=21523175:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=21523175:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=21523175:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=21523175:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=21523175:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=21523175:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=21523175:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=21523175:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=21523175:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=21523175:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=21523175:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=21523175:5455
+MainApp.tsx:3640 🚨 Response object: {
+  "hasContent": true,
+  "contentLength": 1467,
+  "stateUpdateTags": [
+    "PROGRESS: 35",
+    "OBJECTIVE: \"Infiltrating the Academy of Raya Lucaria\""
+  ],
+  "hasOtakonTags": true,
+  "otakonTagKeys": [
+    "SUGGESTIONS",
+    "PROGRESS",
+    "OBJECTIVE",
+    "SUBTAB_UPDATE",
+    "GAME_ID",
+    "CONFIDENCE",
+    "GENRE",
+    "IS_FULLSCREEN"
+  ]
+}
+handleSendMessage @ MainApp.tsx:3640
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:846
+callCallback2 @ chunk-TH7NCS4R.js?v=21523175:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=21523175:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=21523175:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=21523175:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=21523175:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=21523175:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=21523175:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=21523175:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=21523175:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=21523175:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=21523175:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=21523175:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=21523175:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=21523175:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=21523175:5455
+MainApp.tsx:3654 📊 [MainApp] AI Response received: {hasStateUpdateTags: true, stateUpdateTags: Array(2), hasOtakonTags: true, otakonTagKeys: Array(8), contentPreview: '**Hint:** You are standing at the threshold of the… wearing the Kaiden armor, your best strategy ins'}
+MainApp.tsx:3669 🎮 [MainApp] Processing state update tags: (2) ['PROGRESS: 35', 'OBJECTIVE: "Infiltrating the Academy of Raya Lucaria"']
+handleSendMessage @ MainApp.tsx:3669
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:846
+callCallback2 @ chunk-TH7NCS4R.js?v=21523175:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=21523175:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=21523175:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=21523175:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=21523175:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=21523175:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=21523175:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=21523175:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=21523175:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=21523175:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=21523175:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=21523175:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=21523175:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=21523175:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=21523175:5455
+MainApp.tsx:3676 🎮 [MainApp] Found progress in stateUpdateTags: 35%
+handleSendMessage @ MainApp.tsx:3676
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:846
+callCallback2 @ chunk-TH7NCS4R.js?v=21523175:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=21523175:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=21523175:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=21523175:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=21523175:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=21523175:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=21523175:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=21523175:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=21523175:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=21523175:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=21523175:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=21523175:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=21523175:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=21523175:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=21523175:5455
+MainApp.tsx:3685 🎮 [MainApp] Found objective in stateUpdateTags: "Infiltrating the Academy of Raya Lucaria"
+handleSendMessage @ MainApp.tsx:3685
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:846
+callCallback2 @ chunk-TH7NCS4R.js?v=21523175:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=21523175:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=21523175:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=21523175:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=21523175:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=21523175:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=21523175:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=21523175:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=21523175:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=21523175:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=21523175:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=21523175:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=21523175:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=21523175:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=21523175:5455
+MainApp.tsx:3713 🎮 [MainApp] 📌 Deferring progress/objective updates until after migration decision: {progressUpdate: 35, objectiveUpdate: '"Infiltrating the Academy of Raya Lucaria"'}
+handleSendMessage @ MainApp.tsx:3713
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:846
+callCallback2 @ chunk-TH7NCS4R.js?v=21523175:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=21523175:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=21523175:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=21523175:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=21523175:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=21523175:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=21523175:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=21523175:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=21523175:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=21523175:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=21523175:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=21523175:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=21523175:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=21523175:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=21523175:5455
+MainApp.tsx:3961 🎮 [MainApp] DEBUG - All otakon tags from AI response: {hasGameId: true, allTagKeys: Array(8), allTagValues: {…}, imageUrl: '(has image)', activeConversationId: 'game-hub', …}
+MainApp.tsx:3995 🎮 [MainApp] DEBUG - Game tab creation decision: {gameTitle: 'Elden Ring', confidence: 'high', confidenceIsHigh: true, isFullscreen: true, wasImageQuery: true, …}
+MainApp.tsx:428 🎯 [PROMPTS] ✅ Setting AI prompts for Game Hub : (2) ['Where is the Glintstone Key located exactly?', 'How do I beat the Red Wolf of Radagon inside?']
+MainApp.tsx:147 🎯 [MainApp] Suggestions (3): (3) ['Where is the Glintstone Key located exactly?', 'How do I beat the Red Wolf of Radagon inside?', 'Are there any illusory walls in the Academy?']
+MainApp.tsx:4027 🎮 [MainApp] Creating new game tab for: Elden Ring (released)
+MainApp.tsx:2459 🎮 [MainApp] handleCreateGameTab called: {gameTitle: 'Elden Ring', currentUserTier: 'pro', hasAiResponse: true, isUnreleased: false}
+MainApp.tsx:2485 🎮 [MainApp] Creating new game tab via gameTabService: {conversationId: 'game-elden-ring', userTier: 'pro'}
+gameTabService.ts:94 🎮 [GameTabService] Creating new game tab: {gameTitle: 'Elden Ring', userTier: 'pro', isPro: true, isUnreleased: false, hasAiResponse: true}
+gameTabService.ts:602 🎮 [GameTabService] Using genre-based subtabs for genre: Souls-like
+generateInitialSubTabs @ gameTabService.ts:602
+createGameTab @ gameTabService.ts:109
+await in createGameTab
+handleCreateGameTab @ MainApp.tsx:2491
+handleSendMessage @ MainApp.tsx:4036
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:846
+callCallback2 @ chunk-TH7NCS4R.js?v=21523175:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=21523175:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=21523175:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=21523175:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=21523175:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=21523175:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=21523175:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=21523175:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=21523175:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=21523175:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=21523175:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=21523175:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=21523175:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=21523175:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=21523175:5455
+gameTabService.ts:110 🎮 [GameTabService] Created 9 template subtabs (will be populated by generateInitialInsights)
+aiService.ts:1145 📚 [AIService] Stored 4 topics for behavior tracking
+gameTabService.ts:141 🎮 [GameTabService] Created new tab (cache preserved for performance): game-elden-ring
+gameTabService.ts:151 🎮 [GameTabService] Triggering background game knowledge fetch for Elden Ring (IGDB: 119133)
+gameKnowledgeFetcher.ts:428 🎮 [GameKnowledge] 🚀 TRIGGER called for: Elden Ring (IGDB ID: 119133)
+gameKnowledgeFetcher.ts:443 🎮 [GameKnowledge] ✅ Background fetch initiated for Elden Ring
+subtabsService.ts:41 🔄 [SubtabsService] Creating 9 subtabs in normalized table for conversation: game-elden-ring
+setSubtabs @ subtabsService.ts:41
+createGameTab @ gameTabService.ts:169
+await in createGameTab
+handleCreateGameTab @ MainApp.tsx:2491
+handleSendMessage @ MainApp.tsx:4036
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:846
+callCallback2 @ chunk-TH7NCS4R.js?v=21523175:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=21523175:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=21523175:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=21523175:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=21523175:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=21523175:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=21523175:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=21523175:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=21523175:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=21523175:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=21523175:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=21523175:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=21523175:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=21523175:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=21523175:5455
+gameKnowledgeFetcher.ts:221 🎮 [GameKnowledge] Knowledge already exists in global cache for Elden Ring
+subtabsService.ts:44   ✅ Table write: SUCCESS
+setSubtabs @ subtabsService.ts:44
+await in setSubtabs
+createGameTab @ gameTabService.ts:169
+await in createGameTab
+handleCreateGameTab @ MainApp.tsx:2491
+handleSendMessage @ MainApp.tsx:4036
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:846
+callCallback2 @ chunk-TH7NCS4R.js?v=21523175:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=21523175:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=21523175:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=21523175:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=21523175:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=21523175:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=21523175:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=21523175:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=21523175:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=21523175:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=21523175:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=21523175:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=21523175:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=21523175:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=21523175:5455
+gameTabService.ts:197 🎯 [GameTabService] First message detected - will generate initial insights for: Elden Ring
+gameTabService.ts:198 🎯 [GameTabService] Subtabs status: (9) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+gameTabService.ts:203 🎯 [GameTabService] 9 subtabs need content - calling generateInitialInsights
+gameTabService.ts:732 🤖 [GameTabService] 🔄 [game-elden-ring] Generating initial insights for: Elden Ring
+generateInitialInsights @ gameTabService.ts:732
+(anonymous) @ gameTabService.ts:213
+igdbService.ts:204 [IGDBService] Session cache hit: Elden Ring
+MainApp.tsx:2520 📚 [MainApp] Auto-added game to Owned library: Elden Ring
+MainApp.tsx:4052 🎮 [MainApp] Auto-switching new game tab to Playing mode
+MainApp.tsx:4065 🎮 [MainApp] Migration detected - target: game-elden-ring source: game-hub
+MainApp.tsx:4068 💾 [MainApp] Saving user message to TARGET conversation...
+gameKnowledgeFetcher.ts:428 🎮 [GameKnowledge] 🚀 TRIGGER called for: Elden Ring (IGDB ID: 119133)
+gameKnowledgeFetcher.ts:443 🎮 [GameKnowledge] ✅ Background fetch initiated for Elden Ring
+MainApp.tsx:2526 🎯 [MainApp] Triggered background game knowledge fetch for: {gameTitle: 'Elden Ring', igdbId: 119133, tier: 'pro'}
+gameKnowledgeFetcher.ts:221 🎮 [GameKnowledge] Knowledge already exists in global cache for Elden Ring
+gameTabService.ts:794 🤖 [GameTabService] [game-elden-ring] Using AI response as context (1467 chars)
+generateInitialInsights @ gameTabService.ts:794
+await in generateInitialInsights
+(anonymous) @ gameTabService.ts:213
+gameTabService.ts:799 🤖 [GameTabService] [game-elden-ring] 🚀 Calling AI generateInitialInsights...
+generateInitialInsights @ gameTabService.ts:799
+await in generateInitialInsights
+(anonymous) @ gameTabService.ts:213
+cacheService.ts:101 [CacheService] Cache MISS (memory), trying Supabase: insights_elden-ring_AIAnalysisHintYouarestandingatthethr_p0
+cacheService.ts:113 [CacheService] Cache MISS (Supabase): insights_elden-ring_AIAnalysisHintYouarestandingatthethr_p0
+aiService.ts:1719 📡 [GEMINI CALL #3] 🎯 Generate Initial Insights | Game: Elden Ring | Genre: Souls-like | Progress: 0% | Tabs: 9
+conversationService.ts:616 ✅ [ConversationService] Message saved to database: 2172f04a-c7b1-42ed-aace-df319b0c3b62
+addMessage @ conversationService.ts:616
+await in addMessage
+handleSendMessage @ MainApp.tsx:4069
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:846
+callCallback2 @ chunk-TH7NCS4R.js?v=21523175:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=21523175:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=21523175:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=21523175:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=21523175:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=21523175:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=21523175:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=21523175:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=21523175:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=21523175:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=21523175:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=21523175:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=21523175:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=21523175:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=21523175:5455
+MainApp.tsx:4072 💾 [MainApp] Saving AI message to TARGET conversation...
+conversationService.ts:616 ✅ [ConversationService] Message saved to database: 62888b65-8eac-4b95-9c43-b8872cf25f0c
+addMessage @ conversationService.ts:616
+await in addMessage
+handleSendMessage @ MainApp.tsx:4073
+await in handleSendMessage
+handleSubmit @ ChatInterface.tsx:846
+callCallback2 @ chunk-TH7NCS4R.js?v=21523175:3680
+invokeGuardedCallbackDev @ chunk-TH7NCS4R.js?v=21523175:3705
+invokeGuardedCallback @ chunk-TH7NCS4R.js?v=21523175:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-TH7NCS4R.js?v=21523175:3742
+executeDispatch @ chunk-TH7NCS4R.js?v=21523175:7046
+processDispatchQueueItemsInOrder @ chunk-TH7NCS4R.js?v=21523175:7066
+processDispatchQueue @ chunk-TH7NCS4R.js?v=21523175:7075
+dispatchEventsForPlugins @ chunk-TH7NCS4R.js?v=21523175:7083
+(anonymous) @ chunk-TH7NCS4R.js?v=21523175:7206
+batchedUpdates$1 @ chunk-TH7NCS4R.js?v=21523175:18966
+batchedUpdates @ chunk-TH7NCS4R.js?v=21523175:3585
+dispatchEventForPluginEventSystem @ chunk-TH7NCS4R.js?v=21523175:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-TH7NCS4R.js?v=21523175:5484
+dispatchEvent @ chunk-TH7NCS4R.js?v=21523175:5478
+dispatchDiscreteEvent @ chunk-TH7NCS4R.js?v=21523175:5455
+MainApp.tsx:4076 ✅ [MainApp] Messages saved to target with IDs: {userMessageDbId: '2172f04a-c7b1-42ed-aace-df319b0c3b62', aiMessageDbId: '62888b65-8eac-4b95-9c43-b8872cf25f0c'}
+MainApp.tsx:4085 🎮 [MainApp] 💾 Batching progress 35% to database for: game-elden-ring
+MainApp.tsx:4090 🎮 [MainApp] 💾 Batching objective to database for: game-elden-ring
+MainApp.tsx:4095 ✅ [MainApp] Progress/objective saved to database (batched)
+MainApp.tsx:4486 🔓 [MainApp] Processing lock released
+MainApp.tsx:357 [MainApp] Fetching quota for user: c8844271-ab4f-4943-9844-cc644249b691 tier: pro
+groundingControlService.ts:579 [GroundingControl] getRemainingQuota called with: {authUserId: 'c8844271-ab4f-4943-9844-cc644249b691', tier: 'pro'}
+groundingControlService.ts:403 [GroundingControl] getGroundingUsage called for: c8844271-ab4f-4943-9844-cc644249b691
+groundingControlService.ts:458 [GroundingControl] Raw data from DB: null
+groundingControlService.ts:462 [GroundingControl] No usage record found for this month - user has full quota
+groundingControlService.ts:582 [GroundingControl] getGroundingUsage returned: {gameKnowledge: 0, aiMessages: 0, total: 0}
+groundingControlService.ts:585 [GroundingControl] Limits for tier: {gameKnowledge: 20, aiMessages: 30}
+MainApp.tsx:363 [MainApp] Quota received: {gameKnowledge: {…}, aiMessages: {…}}
+MainApp.tsx:364 [MainApp] Setting aiMessagesQuota to: 30
+MainApp.tsx:428 🎯 [PROMPTS] ✅ Setting AI prompts for Elden Ring : (2) ['Where is the Glintstone Key located exactly?', 'How do I beat the Red Wolf of Radagon inside?']
+MainApp.tsx:1288 ⚠️ [MainApp] Skipping realtime subscription - conversation does not belong to current user: {conversationId: 'game-elden-ring', conversationUserId: 'c8844271-ab4f-4943-9844-cc644249b691', currentUserId: '9281a3bd-b0fc-4ea7-ad31-23341ea1c191'}
+(anonymous) @ MainApp.tsx:1288
+commitHookEffectListMount @ chunk-TH7NCS4R.js?v=21523175:16963
+commitPassiveMountOnFiber @ chunk-TH7NCS4R.js?v=21523175:18206
+commitPassiveMountEffects_complete @ chunk-TH7NCS4R.js?v=21523175:18179
+commitPassiveMountEffects_begin @ chunk-TH7NCS4R.js?v=21523175:18169
+commitPassiveMountEffects @ chunk-TH7NCS4R.js?v=21523175:18159
+flushPassiveEffectsImpl @ chunk-TH7NCS4R.js?v=21523175:19543
+flushPassiveEffects @ chunk-TH7NCS4R.js?v=21523175:19500
+(anonymous) @ chunk-TH7NCS4R.js?v=21523175:19381
+workLoop @ chunk-TH7NCS4R.js?v=21523175:197
+flushWork @ chunk-TH7NCS4R.js?v=21523175:176
+performWorkUntilDeadline @ chunk-TH7NCS4R.js?v=21523175:384
+MainApp.tsx:1369 🎮 [IGDB] Effect triggered: {hasActiveConv: true, gameTitle: 'Elden Ring', isGameHub: false, convId: 'game-elden-ring', prevFetched: null}
+MainApp.tsx:1393 🎮 [MainApp] Fetching IGDB data for: Elden Ring
+igdbService.ts:204 [IGDBService] Session cache hit: Elden Ring
+MainApp.tsx:2437 🎮 [MainApp] 🔄 Detected loading subtabs on tab switch for "Elden Ring"
+(anonymous) @ MainApp.tsx:2437
+commitHookEffectListMount @ chunk-TH7NCS4R.js?v=21523175:16963
+commitPassiveMountOnFiber @ chunk-TH7NCS4R.js?v=21523175:18206
+commitPassiveMountEffects_complete @ chunk-TH7NCS4R.js?v=21523175:18179
+commitPassiveMountEffects_begin @ chunk-TH7NCS4R.js?v=21523175:18169
+commitPassiveMountEffects @ chunk-TH7NCS4R.js?v=21523175:18159
+flushPassiveEffectsImpl @ chunk-TH7NCS4R.js?v=21523175:19543
+flushPassiveEffects @ chunk-TH7NCS4R.js?v=21523175:19500
+(anonymous) @ chunk-TH7NCS4R.js?v=21523175:19381
+workLoop @ chunk-TH7NCS4R.js?v=21523175:197
+flushWork @ chunk-TH7NCS4R.js?v=21523175:176
+performWorkUntilDeadline @ chunk-TH7NCS4R.js?v=21523175:384
+MainApp.tsx:2438 🎮 [MainApp] 📊 Subtab statuses: (9) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+(anonymous) @ MainApp.tsx:2438
+commitHookEffectListMount @ chunk-TH7NCS4R.js?v=21523175:16963
+commitPassiveMountOnFiber @ chunk-TH7NCS4R.js?v=21523175:18206
+commitPassiveMountEffects_complete @ chunk-TH7NCS4R.js?v=21523175:18179
+commitPassiveMountEffects_begin @ chunk-TH7NCS4R.js?v=21523175:18169
+commitPassiveMountEffects @ chunk-TH7NCS4R.js?v=21523175:18159
+flushPassiveEffectsImpl @ chunk-TH7NCS4R.js?v=21523175:19543
+flushPassiveEffects @ chunk-TH7NCS4R.js?v=21523175:19500
+(anonymous) @ chunk-TH7NCS4R.js?v=21523175:19381
+workLoop @ chunk-TH7NCS4R.js?v=21523175:197
+flushWork @ chunk-TH7NCS4R.js?v=21523175:176
+performWorkUntilDeadline @ chunk-TH7NCS4R.js?v=21523175:384
+MainApp.tsx:147 🎯 [MainApp] Suggestions (3): (3) ['Where is the Glintstone Key located exactly?', 'How do I beat the Red Wolf of Radagon inside?', 'Are there any illusory walls in the Academy?']
+MainApp.tsx:1401 ✅ [MainApp] IGDB data loaded: Elden Ring
+MainApp.tsx:1405 🖼️ [MainApp] Cover URL for sidebar: https://images.igdb.com/igdb/image/upload/t_cover_small/co4jni.jpg Original: https://images.igdb.com/igdb/image/upload/t_cover_big/co4jni.jpg
+MainApp.tsx:1413 🖼️ [MainApp] Updated conversation with coverUrl: game-elden-ring
+GameInfoModal.tsx:110 [GameInfoModal] Checking categories, version: 0
+GameInfoModal.tsx:110 [GameInfoModal] Checking categories, version: 0
+MainApp.tsx:2372 🎮 [MainApp] 🔍 Starting poll for "Elden Ring" (9 subtabs, 9 loading)
+MainApp.tsx:2402 🎮 [MainApp] 🔄 "Elden Ring": 9 subtabs still loading... (attempt 1)
+gameTabService.ts:808 🤖 [GameTabService] [game-elden-ring] 📥 AI returned: 9 insights
+generateInitialInsights @ gameTabService.ts:808
+await in generateInitialInsights
+(anonymous) @ gameTabService.ts:213
+gameTabService.ts:815 🤖 [GameTabService] [game-elden-ring] ✅ Got 9 insights: (9) ['story_so_far', 'boss_strategy', 'hidden_paths', 'build_optimization', 'missed_items', 'points_of_interest', 'death_recovery', 'level_layout', 'npc_questlines']
+generateInitialInsights @ gameTabService.ts:815
+await in generateInitialInsights
+(anonymous) @ gameTabService.ts:213
+gameTabService.ts:829 🤖 [GameTabService] [game-elden-ring] 📖 Read 9 subtabs from database
+generateInitialInsights @ gameTabService.ts:829
+await in generateInitialInsights
+(anonymous) @ gameTabService.ts:213
+gameTabService.ts:1033 🤖 [GameTabService] Building content mapping for subtabs...
+generateInitialInsights @ gameTabService.ts:1033
+await in generateInitialInsights
+(anonymous) @ gameTabService.ts:213
+gameTabService.ts:1034 🤖 [GameTabService] AI returned insight keys: (9) ['story_so_far', 'boss_strategy', 'hidden_paths', 'build_optimization', 'missed_items', 'points_of_interest', 'death_recovery', 'level_layout', 'npc_questlines']
+generateInitialInsights @ gameTabService.ts:1034
+await in generateInitialInsights
+(anonymous) @ gameTabService.ts:213
+gameTabService.ts:1050 ✅ [GameTabService] Subtab "Story So Far" → key "story_so_far" → AI content (936 chars)
+(anonymous) @ gameTabService.ts:1050
+generateInitialInsights @ gameTabService.ts:1037
+await in generateInitialInsights
+(anonymous) @ gameTabService.ts:213
+gameTabService.ts:1050 ✅ [GameTabService] Subtab "Boss Strategy" → key "boss_strategy" → AI content (984 chars)
+(anonymous) @ gameTabService.ts:1050
+generateInitialInsights @ gameTabService.ts:1037
+await in generateInitialInsights
+(anonymous) @ gameTabService.ts:213
+gameTabService.ts:1050 ✅ [GameTabService] Subtab "Hidden Paths & Secrets" → key "hidden_paths" → AI content (905 chars)
+(anonymous) @ gameTabService.ts:1050
+generateInitialInsights @ gameTabService.ts:1037
+await in generateInitialInsights
+(anonymous) @ gameTabService.ts:213
+gameTabService.ts:1050 ✅ [GameTabService] Subtab "Build Optimization" → key "build_optimization" → AI content (984 chars)
+(anonymous) @ gameTabService.ts:1050
+generateInitialInsights @ gameTabService.ts:1037
+await in generateInitialInsights
+(anonymous) @ gameTabService.ts:213
+gameTabService.ts:1050 ✅ [GameTabService] Subtab "Items You May Have Missed" → key "missed_items" → AI content (854 chars)
+(anonymous) @ gameTabService.ts:1050
+generateInitialInsights @ gameTabService.ts:1037
+await in generateInitialInsights
+(anonymous) @ gameTabService.ts:213
+gameTabService.ts:1050 ✅ [GameTabService] Subtab "Points of Interest" → key "points_of_interest" → AI content (869 chars)
+(anonymous) @ gameTabService.ts:1050
+generateInitialInsights @ gameTabService.ts:1037
+await in generateInitialInsights
+(anonymous) @ gameTabService.ts:213
+gameTabService.ts:1050 ✅ [GameTabService] Subtab "Death Recovery Strategy" → key "death_recovery" → AI content (757 chars)
+(anonymous) @ gameTabService.ts:1050
+generateInitialInsights @ gameTabService.ts:1037
+await in generateInitialInsights
+(anonymous) @ gameTabService.ts:213
+gameTabService.ts:1050 ✅ [GameTabService] Subtab "Level Layout Insights" → key "level_layout" → AI content (782 chars)
+(anonymous) @ gameTabService.ts:1050
+generateInitialInsights @ gameTabService.ts:1037
+await in generateInitialInsights
+(anonymous) @ gameTabService.ts:213
+gameTabService.ts:1050 ✅ [GameTabService] Subtab "NPC Questlines" → key "npc_questlines" → AI content (877 chars)
+(anonymous) @ gameTabService.ts:1050
+generateInitialInsights @ gameTabService.ts:1037
+await in generateInitialInsights
+(anonymous) @ gameTabService.ts:213
+gameTabService.ts:1097 🤖 [GameTabService] Updating subtabs with content...
+generateInitialInsights @ gameTabService.ts:1097
+await in generateInitialInsights
+(anonymous) @ gameTabService.ts:213
+gameTabService.ts:1107 🤖 [GameTabService] Subtabs to save: (9) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+generateInitialInsights @ gameTabService.ts:1107
+await in generateInitialInsights
+(anonymous) @ gameTabService.ts:213
+gameTabService.ts:1108 🤖 [GameTabService] ALL statuses: (9) ['loaded', 'loaded', 'loaded', 'loaded', 'loaded', 'loaded', 'loaded', 'loaded', 'loaded']
+generateInitialInsights @ gameTabService.ts:1108
+await in generateInitialInsights
+(anonymous) @ gameTabService.ts:213
+gameTabService.ts:1109 🤖 [GameTabService] ALL types: (9) ['story', 'strategies', 'tips', 'strategies', 'items', 'tips', 'tips', 'strategies', 'tips']
+generateInitialInsights @ gameTabService.ts:1109
+await in generateInitialInsights
+(anonymous) @ gameTabService.ts:213
+gameTabService.ts:1112 🤖 [GameTabService] 🗑️ Clearing cache BEFORE subtabs write...
+generateInitialInsights @ gameTabService.ts:1112
+await in generateInitialInsights
+(anonymous) @ gameTabService.ts:213
+subtabsService.ts:41 🔄 [SubtabsService] Updating 9 subtabs in normalized table for conversation: game-elden-ring
+setSubtabs @ subtabsService.ts:41
+generateInitialInsights @ gameTabService.ts:1115
+await in generateInitialInsights
+(anonymous) @ gameTabService.ts:213
+subtabsService.ts:44   ✅ Table write: SUCCESS
+setSubtabs @ subtabsService.ts:44
+await in setSubtabs
+generateInitialInsights @ gameTabService.ts:1115
+await in generateInitialInsights
+(anonymous) @ gameTabService.ts:213
+gameTabService.ts:1119 🤖 [GameTabService] ✅ Subtabs dual-write complete (table + JSONB)
+generateInitialInsights @ gameTabService.ts:1119
+await in generateInitialInsights
+(anonymous) @ gameTabService.ts:213
+gameTabService.ts:1126 🤖 [GameTabService] 🔍 Subtabs saved successfully, skipping verification read
+generateInitialInsights @ gameTabService.ts:1126
+await in generateInitialInsights
+(anonymous) @ gameTabService.ts:213
+gameTabService.ts:1132 🤖 [GameTabService] ✅ Conversation metadata updated
+generateInitialInsights @ gameTabService.ts:1132
+await in generateInitialInsights
+(anonymous) @ gameTabService.ts:213
+gameTabService.ts:1167 🤖 [GameTabService] [game-elden-ring] Generation tracking cleaned up
+generateInitialInsights @ gameTabService.ts:1167
+await in generateInitialInsights
+(anonymous) @ gameTabService.ts:213
+MainApp.tsx:2377 🎮 [MainApp] ✅ All subtabs loaded for "Elden Ring" after 6 attempts
+SubTabs.tsx:295 📂 [SubTabs] Initial mount complete - content already exists, NOT auto-expanding
+MainApp.tsx:428 🎯 [PROMPTS] ✅ Setting AI prompts for Elden Ring : (2) ['Where is the Glintstone Key located exactly?', 'How do I beat the Red Wolf of Radagon inside?']
+MainApp.tsx:147 🎯 [MainApp] Suggestions (3): (3) ['Where is the Glintstone Key located exactly?', 'How do I beat the Red Wolf of Radagon inside?', 'Are there any illusory walls in the Academy?']

@@ -14,7 +14,6 @@
  */
 
 import { IGDBGameData } from './igdbService';
-import { triggerGameKnowledgeFetch } from './gameKnowledgeFetcher';
 import { newsCacheService } from './newsCacheService';
 import { librarySupabaseSync, timelineSupabaseSync, screenshotsSupabaseSync } from './hqSupabaseSync';
 import { authService } from './authService';

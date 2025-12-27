@@ -14,6 +14,15 @@ import MainAppRoute from './routes/MainAppRoute';
 import RootLayout from './routes/RootLayout';
 import PaymentSuccess from '../components/PaymentSuccess';
 
+// Import SEO-optimized pages
+import { AboutPage } from '../pages/seo/AboutPage';
+import { PrivacyPage } from '../pages/seo/PrivacyPage';
+import { TermsPage } from '../pages/seo/TermsPage';
+import { RefundPage } from '../pages/seo/RefundPage';
+import { ContactPage } from '../pages/seo/ContactPage';
+import { BlogIndexPage } from '../pages/seo/BlogIndexPage';
+import { BlogPostPage } from '../pages/seo/BlogPostPage';
+
 /**
  * Router loader: Check authentication and onboarding status
  * This runs before each route renders to ensure proper navigation flow
@@ -286,34 +295,34 @@ const routes: RouteObject[] = [
         loader: appLoader,
         element: <MainAppRoute />,
       },
-      // Modal routes - redirect to landing with modal param
+      // SEO-optimized pages (replaces modal redirects)
       {
         path: '/about',
-        loader: () => redirect('/?modal=about'),
+        element: <AboutPage />,
       },
       {
         path: '/privacy',
-        loader: () => redirect('/?modal=privacy'),
+        element: <PrivacyPage />,
       },
       {
         path: '/terms',
-        loader: () => redirect('/?modal=terms'),
+        element: <TermsPage />,
       },
       {
         path: '/refund',
-        loader: () => redirect('/?modal=refund'),
+        element: <RefundPage />,
       },
       {
         path: '/contact',
-        loader: () => redirect('/?modal=contact'),
+        element: <ContactPage />,
       },
       {
         path: '/blog',
-        loader: () => redirect('/?modal=blog'),
+        element: <BlogIndexPage />,
       },
       {
         path: '/blog/:slug',
-        loader: ({ params }) => redirect(`/?modal=blog&post=${params.slug}`),
+        element: <BlogPostPage />,
       },
       // Catch-all: redirect to home
       {
@@ -329,9 +338,6 @@ const routes: RouteObject[] = [
  */
 export const router = createBrowserRouter(routes, {
   basename: '/',
-  future: {
-    v7_startTransition: true,
-  },
 });
 
 /**

@@ -3,60 +3,52 @@
  * Handles both simple tags [OTAKON_TAG: value] and complex tags with JSON arrays/objects
  * Also extracts structured data from "Internal Data Structure" JSON blocks
  * 
- * SIMPLIFIED FORMATTING CLEANUP - Consolidated from 12+ regex phases into streamlined logic
- * ORDER: 1) Extract tags from raw 2) Clean content after extraction
+ * 🚀 PERF OPTIMIZED: Reduced logging, consolidated regex patterns, early exits
  */
 export const parseOtakonTags = (rawContent: string): { cleanContent: string; tags: Map<string, unknown> } => {
   const tags = new Map<string, unknown>();
   let cleanContent = rawContent;
   
-  console.log(`🏷️ [otakonTags] Parsing response (${rawContent.length} chars)...`);
+  // 🚀 PERF: Skip processing for short responses (likely errors or simple messages)
+  if (rawContent.length < 50) {
+    return { cleanContent: rawContent.trim(), tags };
+  }
 
   // ============================================
   // STEP 0: EXTRACT FROM "Internal Data Structure" JSON BLOCKS
   // This handles the new AI response format with embedded JSON
   // ============================================
   
-  // Look for JSON block after "Internal Data Structure" header (with optional markdown formatting)
-  const internalDataPatterns = [
-    /\*\*Internal Data Structure\*\*:?\s*\n*\s*```json\s*([\s\S]*?)```/i, // **Internal Data Structure** with json
-    /\*\*Internal Data Structure\*\*:?\s*\n*\s*```\s*([\s\S]*?)```/i, // **Internal Data Structure** without json tag
-    /Internal Data Structure:?\s*\n*\s*```json\s*([\s\S]*?)```/i, // Plain text with json
-    /Internal Data Structure:?\s*\n*\s*```\s*([\s\S]*?)```/i, // Plain text without json tag
-    /Internal Data Structure:?\s*\n*(\{[\s\S]*?\})\s*```/i, // Match until closing ```
-    /Internal Data Structure:?\s*\n*(\{[\s\S]*?"followUpPrompts"[\s\S]*?\})\s*$/i,
-    /"Internal Data Structure":?\s*\n*(\{[\s\S]*?"followUpPrompts"[\s\S]*?\})/i,
-  ];
+  // 🚀 PERF: Combined pattern with alternation for single regex pass
+  const internalDataMatch = rawContent.match(
+    /(?:\*\*)?Internal Data Structure(?:\*\*)?:?\s*\n*\s*```(?:json)?\s*([\s\S]*?)```|Internal Data Structure:?\s*\n*(\{[\s\S]*?"followUpPrompts"[\s\S]*?\})\s*$/i
+  );
   
-  for (const pattern of internalDataPatterns) {
-    const match = rawContent.match(pattern);
-    if (match && match[1]) {
+  if (internalDataMatch) {
+    const jsonStr = (internalDataMatch[1] || internalDataMatch[2] || '').trim();
+    if (jsonStr) {
       try {
-        const jsonStr = match[1].trim();
         const parsed = JSON.parse(jsonStr);
-        console.log(`🏷️ [otakonTags] Found Internal Data Structure JSON:`, Object.keys(parsed));
         
         // Extract followUpPrompts
         if (parsed.followUpPrompts && Array.isArray(parsed.followUpPrompts)) {
           tags.set('SUGGESTIONS', parsed.followUpPrompts);
-          console.log(`🏷️ [otakonTags] ✅ Extracted followUpPrompts from JSON:`, parsed.followUpPrompts);
         }
         
-        // Extract stateUpdateTags for progress
+        // Extract stateUpdateTags for progress and objective in one pass
         if (parsed.stateUpdateTags && Array.isArray(parsed.stateUpdateTags)) {
           for (const tag of parsed.stateUpdateTags) {
-            const progressMatch = String(tag).match(/PROGRESS[:\s]+(\d+)/i);
+            const tagStr = String(tag);
+            const progressMatch = tagStr.match(/PROGRESS[:\s]+(\d+)/i);
             if (progressMatch) {
               const progress = parseInt(progressMatch[1], 10);
               if (progress >= 0 && progress <= 100) {
                 tags.set('PROGRESS', progress);
-                console.log(`📊 [otakonTags] ✅ Extracted PROGRESS from stateUpdateTags: ${progress}%`);
               }
             }
-            const objectiveMatch = String(tag).match(/OBJECTIVE[:\s]+(.+)/i);
+            const objectiveMatch = tagStr.match(/OBJECTIVE[:\s]+(.+)/i);
             if (objectiveMatch) {
               tags.set('OBJECTIVE', objectiveMatch[1].trim());
-              console.log(`🎯 [otakonTags] ✅ Extracted OBJECTIVE from stateUpdateTags`);
             }
           }
         }
@@ -64,12 +56,9 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
         // Extract progressiveInsightUpdates for subtabs
         if (parsed.progressiveInsightUpdates && Array.isArray(parsed.progressiveInsightUpdates)) {
           tags.set('SUBTAB_UPDATE', parsed.progressiveInsightUpdates);
-          console.log(`📑 [otakonTags] ✅ Extracted ${parsed.progressiveInsightUpdates.length} subtab updates from JSON`);
         }
-        
-        break; // Found and parsed successfully
-      } catch (e) {
-        console.warn('[otakonTags] Failed to parse Internal Data Structure JSON:', e);
+      } catch (_e) {
+        // JSON parse failed, continue with legacy parsing
       }
     }
   }
@@ -100,7 +89,6 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
         
         if (parsed.followUpPrompts && Array.isArray(parsed.followUpPrompts)) {
           tags.set('SUGGESTIONS', parsed.followUpPrompts);
-          console.log(`🏷️ [otakonTags] ✅ Extracted followUpPrompts from embedded JSON:`, parsed.followUpPrompts);
         }
       } catch (_e) {
         // Try simpler extraction - just the array
@@ -110,11 +98,10 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
             const prompts = JSON.parse(`[${arrayMatch[1]}]`);
             if (Array.isArray(prompts) && prompts.length > 0) {
               tags.set('SUGGESTIONS', prompts);
-              console.log(`🏷️ [otakonTags] ✅ Extracted followUpPrompts array:`, prompts);
             }
           }
         } catch (_e2) {
-          console.warn('[otakonTags] Could not extract followUpPrompts from JSON');
+          // Could not extract followUpPrompts
         }
       }
     }
@@ -137,7 +124,6 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
         if (Array.isArray(suggestions)) {
           tags.set('SUGGESTIONS', suggestions);
           cleanContent = cleanContent.replace(suggestionsMatch[0], '');
-          console.log(`🏷️ [otakonTags] Extracted SUGGESTIONS:`, suggestions);
           continue;
         }
       } catch (_e) {
@@ -149,14 +135,12 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
       const suggestions = JSON.parse(jsonStr);
       tags.set('SUGGESTIONS', suggestions);
       cleanContent = cleanContent.replace(suggestionsMatch[0], '');
-      console.log(`🏷️ [otakonTags] Extracted SUGGESTIONS:`, suggestions);
     } catch (_e) {
-      console.warn('[OtakonTags] Failed to parse SUGGESTIONS JSON:', suggestionsMatch[1]);
+      // Silently skip malformed suggestions
     }
   }
 
   // 1b. Handle SUBTAB_UPDATE with nested JSON object
-  // Match and remove ALL occurrences even if parsing fails
   const subtabUpdateRegex = /\[OTAKON_SUBTAB_UPDATE:\s*\{[^\]]*\}\s*\]/g;
   let subtabMatch;
   const subtabUpdates: unknown[] = [];
@@ -168,17 +152,15 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
         subtabUpdates.push(update);
       }
     } catch (_e) {
-      console.warn('[OtakonTags] Failed to parse SUBTAB_UPDATE JSON:', subtabMatch[0]);
+      // Skip malformed subtab updates
     }
-    // Always remove the tag from content, even if parsing failed
     cleanContent = cleanContent.replace(subtabMatch[0], '');
   }
   if (subtabUpdates.length > 0) {
     tags.set('SUBTAB_UPDATE', subtabUpdates);
   }
 
-  // 1b2. Handle SUBTAB_CONSOLIDATE with nested JSON object (full replacement)
-  // This is used when AI consolidates old collapsed content into a summary
+  // 1b2. Handle SUBTAB_CONSOLIDATE with nested JSON object
   const subtabConsolidateRegex = /\[OTAKON_SUBTAB_CONSOLIDATE:\s*\{[^\]]*\}\s*\]/g;
   let consolidateMatch;
   const consolidateUpdates: unknown[] = [];
@@ -188,71 +170,45 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
       if (jsonMatch) {
         const update = JSON.parse(jsonMatch[0]);
         consolidateUpdates.push(update);
-        console.log(`📦 [otakonTags] Extracted SUBTAB_CONSOLIDATE:`, update);
       }
     } catch (_e) {
-      console.warn('[OtakonTags] Failed to parse SUBTAB_CONSOLIDATE JSON:', consolidateMatch[0]);
+      // Skip malformed consolidate updates
     }
-    // Always remove the tag from content
     cleanContent = cleanContent.replace(consolidateMatch[0], '');
   }
   if (consolidateUpdates.length > 0) {
     tags.set('SUBTAB_CONSOLIDATE', consolidateUpdates);
   }
 
-  // 1c. ROBUST PROGRESS DETECTION - Look for multiple formats
+  // 1c. PROGRESS DETECTION - Look for multiple formats using combined regex
   let progressValue: number | null = null;
   
-  // Format 1: [OTAKON_PROGRESS: XX]
-  const progressMatch1 = rawContent.match(/\[OTAKON_PROGRESS[:\s]+(\d+)/i);
-  if (progressMatch1) {
-    progressValue = parseInt(progressMatch1[1], 10);
-    console.log(`📊 [otakonTags] Found OTAKON_PROGRESS format: ${progressMatch1[0]} → ${progressValue}%`);
-  }
+  // Combined regex for all progress formats
+  const progressPatterns = [
+    /\[OTAKON_PROGRESS[:\s]+(\d+)/i,           // [OTAKON_PROGRESS: XX]
+    /\[?PROGRESS[:\s]+(\d+)/i,                  // [PROGRESS: XX] or PROGRESS: XX
+    /(?:progress|completion|game progress)[:\s]+(?:approximately\s+)?(\d+)\s*%/i,  // Progress: XX%
+    /"stateUpdateTags"[^}]*"PROGRESS[:\s]+(\d+)/i  // stateUpdateTags PROGRESS
+  ];
   
-  // Format 2: [PROGRESS: XX] or PROGRESS: XX
-  if (progressValue === null) {
-    const progressMatch2 = rawContent.match(/\[?PROGRESS[:\s]+(\d+)/i);
-    if (progressMatch2) {
-      progressValue = parseInt(progressMatch2[1], 10);
-      console.log(`📊 [otakonTags] Found PROGRESS format: ${progressMatch2[0]} → ${progressValue}%`);
+  for (const pattern of progressPatterns) {
+    const match = rawContent.match(pattern);
+    if (match) {
+      progressValue = parseInt(match[1], 10);
+      break;
     }
   }
   
-  // Format 3: Progress: XX% or progress is XX%
-  if (progressValue === null) {
-    const progressMatch3 = rawContent.match(/(?:progress|completion|game progress)[:\s]+(?:approximately\s+)?(\d+)\s*%/i);
-    if (progressMatch3) {
-      progressValue = parseInt(progressMatch3[1], 10);
-      console.log(`📊 [otakonTags] Found inline progress format: ${progressMatch3[0]} → ${progressValue}%`);
-    }
-  }
-  
-  // Format 4: Look for structured progress in stateUpdateTags
-  if (progressValue === null) {
-    const stateTagMatch = rawContent.match(/"stateUpdateTags"[^}]*"PROGRESS[:\s]+(\d+)/i);
-    if (stateTagMatch) {
-      progressValue = parseInt(stateTagMatch[1], 10);
-      console.log(`📊 [otakonTags] Found stateUpdateTags PROGRESS: ${stateTagMatch[0]} → ${progressValue}%`);
-    }
-  }
-  
-  // If we found a valid progress value, add it to tags
   if (progressValue !== null && progressValue >= 0 && progressValue <= 100) {
     tags.set('PROGRESS', progressValue);
-    console.log(`📊 [otakonTags] ✅ Set PROGRESS tag to: ${progressValue}%`);
-  } else {
-    console.log(`📊 [otakonTags] ⚠️ No valid progress found in response`);
   }
 
   // 1d. Handle TTS markers (optional - for future use)
-  // Extract content between [OTAKON_TTS_START] and [OTAKON_TTS_END]
   const ttsMarkerMatch = rawContent.match(/\[OTAKON_TTS_START\]([\s\S]*?)\[OTAKON_TTS_END\]/i);
   if (ttsMarkerMatch && ttsMarkerMatch[1]) {
     const ttsContent = ttsMarkerMatch[1].trim();
     tags.set('TTS_CONTENT', ttsContent);
     cleanContent = cleanContent.replace(ttsMarkerMatch[0], '');
-    console.log(`🔊 [otakonTags] Extracted TTS_CONTENT (${ttsContent.length} chars):`, ttsContent.substring(0, 50) + '...');
   }
 
   // 1e. Handle remaining simple tags (non-JSON values)
@@ -261,8 +217,6 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
   while ((match = simpleTagRegex.exec(rawContent)) !== null) {
     const tagName = match[1];
     let tagValue: unknown = match[2].trim();
-    
-    console.log(`🏷️ [otakonTags] Found tag: ${tagName} = ${match[2].substring(0, 50)}`);
 
     // Skip if already processed
     if (tagName === 'SUGGESTIONS' || tagName === 'SUBTAB_UPDATE' || tagName === 'TTS_START' || tagName === 'TTS_END') {
@@ -285,14 +239,9 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
     // Handle PROGRESS tag - ensure it's a number
     if (tagName === 'PROGRESS') {
       const strVal = String(tagValue).trim();
-      // Handle various formats: "50", "50%", "40-60" (take first), "~45", etc.
       const numMatch = strVal.match(/(\d+)/);
       if (numMatch) {
-        const numValue = parseInt(numMatch[1], 10);
-        tagValue = Math.min(100, Math.max(0, numValue)); // Clamp 0-100
-        console.log(`📊 [otakonTags] Parsed PROGRESS: "${strVal}" → ${tagValue}`);
-      } else {
-        console.warn(`📊 [otakonTags] Could not parse PROGRESS value: "${strVal}"`);
+        tagValue = Math.min(100, Math.max(0, parseInt(numMatch[1], 10)));
       }
     }
 
@@ -336,11 +285,6 @@ export const parseOtakonTags = (rawContent: string): { cleanContent: string; tag
     .replace(/"\s*\}\s*\]\s*$/g, '')
     .replace(/"\s*\]\s*$/g, '')
     .trim();
-
-  // Log extracted tags summary
-  if (tags.size > 0) {
-    console.log(`🏷️ [otakonTags] Extracted ${tags.size} tags:`, Array.from(tags.keys()).join(', '));
-  }
 
   return { cleanContent, tags };
 };
